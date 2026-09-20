@@ -246,28 +246,9 @@ impl RustRssMcp {
 )]
 impl ServerHandler for RustRssMcp {}
 
-/// 解析库路径：环境变量 → 命令行参数 → 平台默认位置
+/// 解析库路径（与界面共用 core 的同一套规则，保证两边指向同一个文件）
 pub fn resolve_db_path() -> PathBuf {
-    if let Ok(p) = std::env::var("RUSTSS_DB") {
-        if !p.trim().is_empty() {
-            return PathBuf::from(p);
-        }
-    }
-    if let Some(p) = std::env::args().nth(1) {
-        if !p.trim().is_empty() {
-            return PathBuf::from(p);
-        }
-    }
-    let base = std::env::var("XDG_DATA_HOME")
-        .map(PathBuf::from)
-        .ok()
-        .or_else(|| {
-            std::env::var("HOME")
-                .ok()
-                .map(|h| PathBuf::from(h).join(".local/share"))
-        })
-        .unwrap_or_else(|| PathBuf::from("/tmp"));
-    base.join("rustrss").join("rustrss.sqlite")
+    rustrss_core::resolve_db_path()
 }
 
 /// 以 stdio 传输运行（由 MCP 客户端作为子进程拉起）

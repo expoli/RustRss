@@ -47,7 +47,7 @@ pub enum FetchResult {
 }
 
 /// 上次抓取留下的条件请求凭据
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CacheHeaders {
     pub etag: Option<String>,
     pub last_modified: Option<String>,
@@ -181,45 +181,62 @@ where
     out
 }
 
-/// 刷新指定订阅源。
-///
-/// 顺序刻意是「先并发抓、后串行写」，并且单个源失败不影响其他源。
-pub async fn refresh(
-    store: &Store,
-    fetcher: &Fetcher,
-    feed_ids: &[i64],
-    concurrency: usize,
-) -> Result<RefreshReport> {
-    // 1) 先取齐抓取所需的元信息（短暂串行）
+/// 一个订阅源的抓取任务（抓取阶段需要的全部信息，不持有 Store）
+#[derive(Debug, Clone, PartialEq)]
+pub struct RefreshJob {
+    pub feed_id: i64,
+    pub url: String,
+    pub cache: CacheHeaders,
+}
+
+/// 抓取阶段的结果
+#[derive(Debug, Clone, PartialEq)]
+pub struct FetchedFeed {
+    pub feed_id: i64,
+    pub url: String,
+    pub outcome: FetchResult,
+}
+
+/// 阶段一：把「要抓什么」从库里读出来（短暂串行，随后不再碰库）
+pub fn collect_jobs(store: &Store, feed_ids: &[i64]) -> Result<Vec<RefreshJob>> {
     let mut jobs = Vec::with_capacity(feed_ids.len());
     for id in feed_ids {
-        match store.feed_endpoint(*id) {
-            Ok((url, etag, last_modified)) => jobs.push((*id, url, etag, last_modified)),
-            Err(e) => {
-                return Err(e);
-            }
-        }
+        let (url, etag, last_modified) = store.feed_endpoint(*id)?;
+        jobs.push(RefreshJob {
+            feed_id: *id,
+            url,
+            cache: CacheHeaders { etag, last_modified },
+        });
     }
-    if jobs.is_empty() {
-        return Ok(RefreshReport::default());
-    }
+    Ok(jobs)
+}
 
-    // 2) 并发抓取（此阶段不碰数据库）
+/// 阶段二：并发抓取（此阶段不需要数据库，因此可以安全地跨任务）
+pub async fn fetch_jobs(fetcher: &Fetcher, jobs: Vec<RefreshJob>, concurrency: usize) -> Vec<FetchedFeed> {
     let fetcher = fetcher.clone();
-    let results = bounded_map(jobs, concurrency, move |(id, url, etag, last_modified)| {
+    bounded_map(jobs, concurrency, move |job| {
         let fetcher = fetcher.clone();
         async move {
-            let outcome = fetcher
-                .fetch(&url, CacheHeaders { etag, last_modified })
-                .await;
-            (id, url, outcome)
+            let outcome = fetcher.fetch(&job.url, job.cache.clone()).await;
+            FetchedFeed {
+                feed_id: job.feed_id,
+                url: job.url,
+                outcome,
+            }
         }
     })
-    .await;
+    .await
+}
 
-    // 3) 串行落库
+/// 阶段三：串行落库（写入阶段；顺序执行符合 SQLite 单写者的现实）
+pub fn apply_results(store: &Store, results: Vec<FetchedFeed>) -> Result<RefreshReport> {
     let mut report = RefreshReport::default();
-    for (feed_id, url, outcome) in results {
+    for FetchedFeed {
+        feed_id,
+        url,
+        outcome,
+    } in results
+    {
         match outcome {
             FetchResult::NotModified { etag, last_modified } => {
                 store.record_fetch(
@@ -290,6 +307,21 @@ pub async fn refresh(
         }
     }
     Ok(report)
+}
+
+/// 刷新指定订阅源（三个阶段串起来；界面里因为要跨 await 持锁，会分阶段调用）
+pub async fn refresh(
+    store: &Store,
+    fetcher: &Fetcher,
+    feed_ids: &[i64],
+    concurrency: usize,
+) -> Result<RefreshReport> {
+    let jobs = collect_jobs(store, feed_ids)?;
+    if jobs.is_empty() {
+        return Ok(RefreshReport::default());
+    }
+    let results = fetch_jobs(fetcher, jobs, concurrency).await;
+    apply_results(store, results)
 }
 
 /// 刷新全部订阅源

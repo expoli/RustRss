@@ -11,9 +11,11 @@
     "windows": [
       {
         "label": "main",
-        "title": "RustRss M0 探针",
-        "width": 1100,
-        "height": 800
+        "title": "RustRss",
+        "width": 1240,
+        "height": 820,
+        "minWidth": 900,
+        "minHeight": 600
       }
     ],
     "security": {

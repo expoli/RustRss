@@ -8,10 +8,15 @@ pub mod fetch;
 pub mod html;
 pub mod model;
 pub mod parse;
+pub mod paths;
 pub mod store;
 
 pub use ai::{AiClient, AiConfig, AiError, Provider, RequestPreview};
-pub use fetch::{bounded_map, refresh, refresh_all, Fetcher, FetchResult, RefreshReport};
+pub use fetch::{
+    apply_results, bounded_map, collect_jobs, fetch_jobs, refresh, refresh_all, Fetcher,
+    FetchResult, RefreshReport,
+};
+pub use paths::{default_data_dir, default_db_path, resolve_db_path};
 pub use model::{Entry, Feed, IdOrigin};
 pub use parse::{parse, ParseError};
 pub use store::{EntryQuery, EntryRow, FeedRow, InsertStats, MarkScope, Store, StoreError};

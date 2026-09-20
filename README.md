@@ -84,6 +84,28 @@ RUSTSS_AI_PROVIDER=anthropic RUSTSS_AI_MODEL=claude-x RUSTSS_AI_KEY=... \
 
 尚未做（属设置/界面层，已列入待办）：**API key 存入操作系统凭据库**、设置界面、以及「发送前确认」的交互。
 
+### 桌面界面（三栏）
+
+```bash
+cargo run -p rustrss-desktop                              # 默认库：~/.local/share/rustrss/rustrss.sqlite
+RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
+```
+
+- [x] 三栏：智能视图（全部未读 / 星标 / 全部）+ 订阅源（未读数、抓取失败红点）｜文章列表｜正文
+- [x] 键盘导航：`j`/`k` 上下 · `Enter` 打开 · `u` 未读切换 · `s` 星标 · `r` 刷新 · `/` 搜索 · `Esc` 清除 · `g`/`G` 首尾
+- [x] 全文搜索（接 FTS5，中文可用）、刷新全部、单源双击重试、添加订阅、浏览器打开、复制链接
+- [x] 正文安全渲染：白名单清洗 + 相对地址图片/链接解析（详见下）
+- [ ] OPML 导入导出
+- [ ] i18n（zh-CN / en）
+- [ ] 便携模式（`portable.txt`）、CSP 收紧（当前 `csp: null`）、列表虚拟化（当前硬上限 200 条）
+- [ ] 三平台打包（deb / rpm 优先）
+
+两条刻意的设计选择：
+
+1. **只有主动打开才标记已读**（点击 / `j` / `k` / `Enter`）——切换视图或刷新列表不会把没看过的文章标成已读。
+2. **正文经白名单清洗后才进 DOM**：脚本、事件处理器、`javascript:` 一律拦下；相对地址的图片与链接会按文章 URL 解析成绝对地址（否则 feed 里的图片全不显示）。
+  页面启动时会跑一次自检（构造带 `<script>`/`onerror`/`javascript:` 的脏 HTML，验证清洗结果与相对地址解析），结果上报到 stdout：日志里看到 `sanitizer selftest ok` 即通过——**这个自检不是形式，它已经拓出两个真 bug**（清洗时误删 `body`；把相对图片当非法地址删掉）。
+
 ## 进度
 
 ### M1 · core 数据层（进行中）

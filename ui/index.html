@@ -4,134 +4,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RustRss M0 探针</title>
+  <title>RustRss</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-  <header>
-    <h1>RustRss M0 探针</h1>
-    <p class="sub">
-      用途：在写任何业务代码前，验证 Linux（X11 / Wayland）上四件事能不能做真——
-      <b>①中文输入法 ②分数缩放 ③资源占用 ④正文渲染</b>。
-      本页不含任何业务逻辑，只做测量与记录。
-    </p>
-    <p class="sub">
-      <button id="mouse-check">鼠标通道自检（点我）</button>
-      <span id="mouse-out" class="badge">未点</span>
-      &nbsp;|&nbsp; 键盘信号：<span id="kbd-badge" class="badge">尚未收到按键</span>
-    </p>
-    <p class="sub">
-      怎么用：点一下上面那个按钮（验证鼠标事件到了应用）→ 再点任意输入框，看边框变不变蓝（焦点指示）→
-      然后按几个字母，看左边「键盘信号」计数动不动。三项各是一个是非题，能直接定位问题所在。
-    </p>
+  <header class="toolbar">
+    <span class="brand">RustRss</span>
+    <input id="search" type="search" placeholder="搜索标题与正文（按 / 聚焦）" autocomplete="off" />
+    <div class="grow"></div>
+    <button id="btn-refresh" title="刷新全部订阅（r）">刷新全部</button>
+    <button id="btn-add" title="添加订阅">添加订阅</button>
+    <span id="status" class="status" role="status"></span>
   </header>
 
   <main>
-    <!-- 1. 环境信息 -->
-    <section class="card">
-      <h2>① 环境与后端</h2>
-      <pre id="env" class="kv">采集ing…</pre>
+    <aside class="sidebar">
+      <nav id="views" class="views"></nav>
+      <div class="section-title">
+        <span>订阅源</span>
+        <span id="feeds-meta" class="dim"></span>
+      </div>
+      <ul id="feeds" class="feeds"></ul>
+      <div id="add-row" class="add-row hidden">
+        <input id="add-url" placeholder="https://example.com/feed.xml" autocomplete="off" />
+        <button id="add-ok">添加</button>
+      </div>
+      <div class="sidebar-foot">
+        <span id="db-info" class="dim" title="数据库位置"></span>
+      </div>
+    </aside>
+
+    <section class="list">
+      <div class="list-head">
+        <span id="list-title">全部未读</span>
+        <span id="list-count" class="dim"></span>
+      </div>
+      <ul id="entries" class="entries"></ul>
     </section>
 
-    <!-- 2. 中文输入法 -->
-    <section class="card">
-      <h2>② 中文输入法（头号风险项）</h2>
-      <p class="hint">
-        用 fcitx5 在这个框里打中文。需要确认三点：<b>候选窗出现在光标处</b>、<b>能中英切换</b>、<b>文字能上屏</b>。
-      </p>
-      <input id="ime-input" type="text" placeholder="在这里打中文（例如：你好世界）" />
-      <textarea id="ime-area" rows="2" placeholder="多行框也试一下（组合输入跨行行为）"></textarea>
-      <div class="row">
-        <button id="ime-flush">把输入法事件打到终端</button>
-        <button id="ime-clear">清空</button>
-        <span id="ime-summary" class="badge">尚未输入</span>
-      </div>
-      <pre id="ime-log" class="log">（事件日志）</pre>
-    </section>
-
-    <!-- 3. 分数缩放 -->
-    <section class="card">
-      <h2>③ 分数缩放 / HiDPI</h2>
-      <p class="hint">
-        判断方法：下面条带的 1px 细线若出现明暗不均/摩尔纹，或小字发虚，说明被合成器按整数放大（GTK3 不支持
-        wp_fractional_scale_v1 的典型表现）。
-      </p>
-      <div class="ruler" id="ruler"></div>
-      <div class="blur-test">
-        <span class="t9">9px 小字看不清就是糊</span>
-        <span class="t11">11px 中文正文字号参照</span>
-        <span class="t16">16px 常规正文</span>
-      </div>
-      <div class="row">
-        <button id="measure">测量并打到终端</button>
-        <span id="measure-out" class="badge">未测量</span>
-      </div>
-    </section>
-
-    <!-- 4. 正文渲染 -->
-    <section class="card">
-      <h2>④ 正文渲染样例</h2>
-      <article class="article">
-        <h3>一篇真实排版的样例文章：中文与 Latin mixed 混排</h3>
-        <p class="meta">示例来源 · 2026-09-20 · 约 3 分钟</p>
-        <p>
-          这一段用来判断正文的字号、行高与断行是否舒服。混入长英文词组 Consistent
-          Typography、代码标识符 <code>rustrss_core::ingest::parse</code>，以及中文标点：，“引号”、（）——测试标点挤压是否正确。
+    <article id="reader" class="reader">
+      <div class="reader-empty">
+        <p>从中间列表选一篇文章。</p>
+        <p class="dim">
+          快捷键：<b>j</b>/<b>k</b> 上下 · <b>Enter</b> 打开 · <b>u</b> 未读切换 · <b>s</b> 星标 ·
+          <b>r</b> 刷新 · <b>/</b> 搜索 · <b>Esc</b> 清除搜索
         </p>
-        <p>
-          下一段测试不可断长串（最容易撑破布局的情况）：
-          <span class="longurl">https://example.com/a/very/long/path/that/should/not/break/your/layout/at/all/ever/1234567890</span>
-        </p>
-        <img alt="内联 SVG 示例图（无网络请求）"
-          src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='200'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%233b82f6'/><stop offset='1' stop-color='%2310b981'/></linearGradient></defs><rect width='640' height='200' fill='url(%23g)'/><text x='24' y='108' font-size='28' fill='white' font-family='sans-serif'>Article image sample</text></svg>" />
-        <blockquote>引用块：验证左边框、缩进与颜色。</blockquote>
-        <table>
-          <thead>
-            <tr><th>列</th><th>示例值</th><th>说明</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>订阅源</td><td>128</td><td>表格边框与斑马纹</td></tr>
-            <tr><td>未读</td><td>1,204</td><td>数字对齐</td></tr>
-          </tbody>
-        </table>
-        <pre><code>// 代码块：语法高亮的载体，同时测横向溢出
-fn render(article: &amp;Article) -&gt; Result&lt;Html, Error&gt; {
-    let body = sanitize(&amp;article.content_html)?; // 长行测试：aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    Ok(wrap(body))
-}</code></pre>
-      </article>
-    </section>
-
-    <section class="card">
-      <h2>⑤ 剪贴板（三条写入路径独立验证）</h2>
-      <p class="hint">
-        三条路径互不掩盖：WebKit 的 Web Clipboard API、旧的 execCommand 兜底、Tauri 插件（Rust 侧）。
-        点完每个按钮后，<b>到终端或任意编辑器里粘贴</b>，看哪一条真的写进了系统剪贴板。
-      </p>
-      <div class="row">
-        <button id="clip-verify">逐条验证（写入后立即读回比对）</button>
-        <button id="clip-web">① Web API 写</button>
-        <button id="clip-exec">② execCommand 写</button>
-        <button id="clip-tauri">③ Tauri 插件写</button>
-        <button id="clip-read">读回来核对</button>
       </div>
-      <pre id="clip-out" class="log">（点击上面的按钮开始）</pre>
-      <p class="hint">
-        人工项（自动化拿不到）：<b>选中下面这段文字按 Ctrl+C</b>，再到终端里 Ctrl+Shift+V 粘贴，
-        确认 webview 的原生复制通不通。
-      </p>
-      <code id="clip-native">RUSTSS-NATIVE-COPY-选我按Ctrl+C复制</code>
-    </section>
-
-    <section class="card">
-      <h2>诊断汇总（IPC 不可用时可手工复制）</h2>
-      <div class="row">
-        <button id="dump">汇总并复制到下面的框</button>
-        <span id="dump-state" class="badge">未汇总</span>
-      </div>
-      <textarea id="dump-out" rows="6" placeholder="点上面的按钮生成 JSON"></textarea>
-    </section>
+    </article>
   </main>
 
   <script src="app.js"></script>

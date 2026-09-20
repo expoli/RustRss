@@ -8,8 +8,11 @@ license.workspace = true
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+rustrss-core = { path = "../crates/rustrss-core" }
 tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [features]
 default = []

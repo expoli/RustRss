@@ -27,6 +27,8 @@ use tokens::{plan_query, to_tokens};
 pub enum StoreError {
     #[error("数据库错误: {0}")]
     Sqlite(#[from] rusqlite::Error),
+    #[error("文件系统错误: {0}")]
+    Io(String),
     #[error("数据不合法: {0}")]
     Invalid(String),
 }
@@ -96,7 +98,17 @@ pub struct Store {
 
 impl Store {
     /// 打开（或创建）数据库文件并执行迁移。
+    ///
+    /// 父目录不存在会自动创建——首次运行时 `~/.local/share/rustrss/` 往往还不存在，
+    /// 而 sqlite 自己不会建目录（否则报 `unable to open database file`，很难定位）。
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let path = path.as_ref();
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() && !parent.exists() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| StoreError::Io(format!("创建目录 {} 失败: {e}", parent.display())))?;
+            }
+        }
         Self::init(Connection::open(path)?)
     }
 
@@ -503,6 +515,15 @@ impl Store {
         Ok(self
             .conn
             .query_row("SELECT COUNT(*) FROM entries", [], |r| r.get(0))?)
+    }
+
+    /// 星标总数
+    pub fn starred_total(&self) -> Result<i64> {
+        Ok(self.conn.query_row(
+            "SELECT COUNT(*) FROM entries WHERE starred = 1",
+            [],
+            |r| r.get(0),
+        )?)
     }
 
     // ---------------------------------------------------------------- AI 缓存

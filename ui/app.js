@@ -1,400 +1,584 @@
-// RustRss M0 探针前端：只采集数据，不做业务。
-// 采集口径与外部测量（/proc RSS、启动耗时）保持一致，便于横向对比。
+// RustRss 界面逻辑。
+//
+// 两条刻意的设计选择：
+// 1. **只有用户主动打开文章才标记已读**（点击 / j / k / Enter）。切换视图或刷新只是
+//    加载列表，不会顺手把没看过的文章标成已读。
+// 2. 正文一律经白名单清洗后再插入 DOM。feed 是不可信输入，绝不能让它执行脚本。
 
-const $ = (id) => document.getElementById(id);
+const el = (id) => document.getElementById(id);
 
-/** 通过 Tauri IPC 把一行诊断打到 stdout；IPC 不可用时返回 false，页面上仍可见 */
-async function toStdout(tag, payload) {
-  const line = `${tag} ${JSON.stringify(payload)}`;
-  try {
-    if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
-      await window.__TAURI__.core.invoke('probe_log', { line });
-      return true;
-    }
-  } catch (err) {
-    console.warn('probe_log failed:', err);
+async function invoke(cmd, args = {}) {
+  if (!window.__TAURI__ || !window.__TAURI__.core) {
+    throw new Error('IPC 不可用（不在 Tauri 中运行？）');
   }
-  return false;
-}
-
-/** 绘制相关的环境信息：dpr 与 matchMedia 分辨率探针用来判断分数缩放是否真的生效 */
-function collectEnv() {
-  let glRenderer = 'no-webgl';
   try {
-    const gl = document.createElement('canvas').getContext('webgl');
-    if (gl) {
-      const ext = gl.getExtension('WEBGL_debug_renderer_info');
-      glRenderer = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
-    }
-  } catch (err) {
-    glRenderer = 'webgl-error: ' + err;
+    return await window.__TAURI__.core.invoke(cmd, args);
+  } catch (e) {
+    throw new Error(typeof e === 'string' ? e : (e && e.message ? e.message : String(e)));
   }
-
-  const dprProbes = [1, 1.25, 1.5, 1.75, 2].filter(
-    (d) => window.matchMedia(`(resolution: ${d}dppx)`).matches
-  );
-
-  const nav = performance.getEntriesByType('navigation')[0];
-  const paints = performance.getEntriesByType('paint');
-  const fcp = paints.find((p) => p.name === 'first-contentful-paint');
-
-  return {
-    dpr: window.devicePixelRatio,
-    dprProbes,
-    inner: [window.innerWidth, window.innerHeight],
-    outer: [window.outerWidth, window.outerHeight],
-    screen: [screen.width, screen.height],
-    avail: [screen.availWidth, screen.availHeight],
-    visualViewportScale: window.visualViewport ? window.visualViewport.scale : null,
-    colorScheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-    glRenderer,
-    // 应用内可见的首帧时间（毫秒，相对导航开始）；WebKit 未实现 paint timing 时为 null
-    domContentLoadedMs: nav ? Math.round(nav.domContentLoadedEventEnd) : null,
-    loadEventMs: nav ? Math.round(nav.loadEventEnd) : null,
-    firstContentfulPaintMs: fcp ? Math.round(fcp.startTime) : null,
-    userAgent: navigator.userAgent,
-  };
 }
 
-function renderEnv(env) {
-  const lines = [
-    `devicePixelRatio      ${env.dpr}          （探针命中：${env.dprProbes.join(', ') || '无'} dppx）`,
-    `innerWidth x Height   ${env.inner.join(' x ')}`,
-    `outerWidth x Height   ${env.outer.join(' x ')}`,
-    `screen                ${env.screen.join(' x ')}   avail ${env.avail.join(' x ')}`,
-    `visualViewport.scale  ${env.visualViewportScale}`,
-    `配色                   ${env.colorScheme}`,
-    `GL renderer           ${env.glRenderer}`,
-    `首帧（应用内计时）     FCP=${env.firstContentfulPaintMs}ms  DCL=${env.domContentLoadedMs}ms  load=${env.loadEventMs}ms`,
-    `UA                    ${env.userAgent}`,
-  ];
-  $('env').textContent = lines.join('\n');
+/** 诊断输出：打到应用 stdout，便于无人值守时核对界面状态（不依赖肉眼看屏幕） */
+function log(line) {
+  console.log('[ui]', line);
+  invoke('ui_log', { line }).catch(() => {});
 }
 
-// ---------- 输入法事件 ----------
-const imeLog = [];
-function pushIme(entry) {
-  imeLog.push(entry);
-  if (imeLog.length > 80) imeLog.shift();
-  $('ime-log').textContent = imeLog
-    .map((e) => `${e.t}  ${e.type.padEnd(17)} ${e.detail}`)
-    .join('\n');
-  $('ime-log').scrollTop = $('ime-log').scrollHeight;
+const state = {
+  db: null,
+  feeds: [],
+  entries: [],
+  view: { kind: 'unread' },
+  feedId: null,
+  selectedId: null,
+  query: '',
+};
 
-  const sessions = imeLog.filter((e) => e.type === 'compositionend').length;
-  const committed = imeLog
-    .filter((e) => e.type === 'compositionend')
-    .map((e) => e.detail)
-    .join('');
-  $('ime-summary').textContent = `组合会话 ${sessions} 次 · 上屏「${committed}」`;
-}
+const VIEWS = [
+  { kind: 'unread', label: '全部未读', icon: '●' },
+  { kind: 'starred', label: '星标', icon: '★' },
+  { kind: 'all', label: '全部', icon: '≡' },
+];
 
-function attachIme(el, name) {
-  const since = performance.now();
-  const stamp = () => `+${Math.round(performance.now() - since)}ms`;
+// ---------------------------------------------------------------- 正文清洗
 
-  el.addEventListener('compositionstart', (e) =>
-    pushIme({ t: stamp(), type: 'compositionstart', detail: `${name} data="${e.data}"` })
-  );
-  el.addEventListener('compositionupdate', (e) =>
-    pushIme({ t: stamp(), type: 'compositionupdate', detail: `${name} data="${e.data}"` })
-  );
-  el.addEventListener('compositionend', (e) =>
-    pushIme({ t: stamp(), type: 'compositionend', detail: `${name} data="${e.data}" → 值="${el.value}"` })
-  );
-  el.addEventListener('input', (e) =>
-    pushIme({
-      t: stamp(),
-      type: 'input',
-      detail: `${name} isComposing=${e.isComposing} inputType=${e.inputType} 值="${el.value}"`,
-    })
-  );
-  el.addEventListener('keydown', (e) =>
-    pushIme({
-      t: stamp(),
-      type: 'keydown',
-      detail: `${name} key=${e.key} code=${e.code} isComposing=${e.isComposing}`,
-    })
-  );
-}
+const ALLOWED_TAGS = {
+  p: [], br: [], hr: [], h1: [], h2: [], h3: [], h4: [], h5: [], h6: [],
+  ul: [], ol: [], li: [], blockquote: [], pre: [], code: [],
+  table: [], thead: [], tbody: [], tfoot: [], tr: [], th: [], td: [],
+  figure: [], figcaption: [], div: [], span: [],
+  strong: [], em: [], b: [], i: [], u: [], s: [], del: [], ins: [], sup: [], sub: [], mark: [],
+  img: ['src', 'alt', 'title', 'width', 'height'],
+  a: ['href', 'title'],
+};
 
-function imeSnapshot() {
-  return {
-    sessions: imeLog.filter((e) => e.type === 'compositionend').length,
-    committedText: imeLog
-      .filter((e) => e.type === 'compositionend')
-      .map((e) => e.detail)
-      .join(''),
-    events: imeLog.slice(-40),
-  };
-}
+const DROP_ENTIRELY = new Set([
+  'script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button',
+  'textarea', 'select', 'link', 'meta', 'base', 'svg', 'math', 'video', 'audio', 'source',
+]);
 
-// ---------- 键盘事件实时可见（用于区分「收不到键盘」与「输入法不可用」）----------
-let kbdCount = 0;
-let kbdLastFlush = -1e9; // 故意用极小值：保证页面刚加载时的第一个按键也会被上报（之前用 0 会把首键吞掉）
-function attachGlobalKeyboard() {
-  window.addEventListener(
-    'keydown',
-    (e) => {
-      kbdCount += 1;
-      const badge = $('kbd-badge');
-      if (badge) {
-        badge.textContent = `已收到 ${kbdCount} 次按键，最后：key=${e.key} code=${e.code} isComposing=${e.isComposing} 目标=${e.target.tagName}`;
-      }
-      const now = performance.now();
-      if (now - kbdLastFlush > 300) {
-        kbdLastFlush = now;
-        toStdout('KEY', { count: kbdCount, key: e.key, code: e.code, composing: e.isComposing, target: e.target.tagName });
-      }
-    },
-    true // 捕获阶段：即使事件最终没落在输入框上也能看到
-  );
-}
+/** 危险协议：这些一律不允许出现在 href/src 上 */
+const DANGEROUS_SCHEME = /^\s*(javascript|vbscript|file|blob):/i;
 
 /**
- * 自检：主动派发一个合成 keydown，验证「监听器 → 防抖 → IPC → stdout」这条链路通不通。
- * 它不能证明真键盘事件能到达（那是操作系统/合成器的事），但能排除「探针本身是坏的」这一情形：
- * 只要日志里有 key=SelfTest 的那行，后续「按了键但计数不动」就可以归因到输入通道，而不是探针。
+ * 白名单清洗：不在名单里的标签只保留文字内容（unwrap），危险标签整段丢弃。
+ * 同时把相对路径的图片解析成绝对地址（否则图片全是裂的）。
+ *
+ * 注意：清洗只对 `body` 的子树做，**不能把 body 自己当普通元素评估** ——
+ * body 不在白名单里，会被当作「未知标签」unwrap 掉，导致后续 doc.body 为空。
+ * （这个 bug 是启动时通过 ui_log 上报报错拓出来的，不是看界面看出来的。）
  */
-function keyboardSelfTest() {
-  const before = kbdCount;
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'SelfTest', code: 'SelfTest', bubbles: true }));
-  const ok = kbdCount > before;
-  $('env').textContent += `\n键盘采集链路自检      ${ok ? '通过（keydown 监听与上报链路可用）' : '失败（监听器没被触发，探针本身有问题）'}`;
-  // 显式上报自检结果：不依赖防抖逻辑，确保外部能判定「探针可用」
-  toStdout('KBD-SELFTEST', { ok, count: kbdCount });
-  return ok;
-}
+function sanitize(html, baseUrl) {
+  let doc;
+  try {
+    doc = new DOMParser().parseFromString(html, 'text/html');
+  } catch {
+    return escapeHtml(html);
+  }
+  const root = doc && (doc.body || doc.documentElement);
+  if (!root) return escapeHtml(html);
 
-// ---------- 启动 ----------
-window.addEventListener('DOMContentLoaded', () => {
-  const env = collectEnv();
-  renderEnv(env);
-
-  attachIme($('ime-input'), 'input');
-  attachIme($('ime-area'), 'textarea');
-  attachGlobalKeyboard();
-  keyboardSelfTest();
-
-  // 首帧计时可能晚于 DOMContentLoaded 才可用，稍后重采一次
-  setTimeout(() => {
-    const later = collectEnv();
-    renderEnv(later);
-    toStdout('ENV', later);
-  }, 1500);
-
-  // 改 KDE 缩放会触发 resize：这时重采一次，正好拿到缩放变化后的 dpr
-  let resizeTimer = null;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      const after = collectEnv();
-      renderEnv(after);
-      toStdout('RESIZE', after);
-    }, 400);
-  });
-
-  // 窗口 / 显示器状态：多屏、缩放场景下定位窗口到底落在哪里
-  // （多屏时窗口可能开在你没在看的屏上，这一步把事实打出来而不是靠猜）
-  (async () => {
-    try {
-      const info = JSON.parse(await window.__TAURI__.core.invoke('win_info'));
-      await toStdout('WIN', info);
-      $('env').textContent += `\n窗口(物理像素)        visible=${info.visible} minimized=${info.minimized} pos=${JSON.stringify(info.pos_phys)} outer=${JSON.stringify(info.outer_phys)} scale=${info.scale_factor}`;
-      $('env').textContent += `\n当前显示器            ${JSON.stringify(info.monitor)}`;
-      $('env').textContent += `\n全部显示器            ${JSON.stringify(info.monitors)}`;
-      await window.__TAURI__.core.invoke('win_focus');
-      const after = JSON.parse(await window.__TAURI__.core.invoke('win_info'));
-      await toStdout('WIN-AFTER-FOCUS', after);
-    } catch (err) {
-      $('env').textContent += `\n窗口信息              获取失败: ${err}`;
+  const cleanElement = (node) => {
+    const tag = node.tagName.toLowerCase();
+    if (DROP_ENTIRELY.has(tag)) {
+      node.remove();
+      return;
     }
-  })();
+    if (!(tag in ALLOWED_TAGS)) {
+      const parent = node.parentNode;
+      if (!parent) return;
+      while (node.firstChild) parent.insertBefore(node.firstChild, node);
+      node.remove();
+      return;
+    }
 
-  // 鼠标通道自检：只靠点击，不依赖键盘；我这边能收到上报即证明鼠标事件到达了应用
-  $('mouse-check').addEventListener('click', async () => {
-    const ok = await toStdout('MOUSE', { at: Date.now() });
-    $('mouse-out').textContent = ok ? '已上报到终端' : 'IPC 不可用';
-  });
-
-  $('ime-flush').addEventListener('click', async () => {
-    const ok = await toStdout('IME', imeSnapshot());    $('ime-summary').textContent += ok ? ' · 已打到终端' : ' · IPC 不可用（请手工复制）';
-  });
-
-  $('ime-clear').addEventListener('click', () => {
-    imeLog.length = 0;
-    $('ime-log').textContent = '（事件日志）';
-    $('ime-summary').textContent = '尚未输入';
-  });
-
-  $('measure').addEventListener('click', async () => {
-    const m = {
-      ...collectEnv(),
-      rulerRect: rectOf($('ruler')),
-      box100: rectOf(document.querySelector('.blur-test')),
-    };
-    const ok = await toStdout('SCALE', m);
-    $('measure-out').textContent = ok ? '已打到终端' : 'IPC 不可用，请手工复制';
-    $('dump-out').value = JSON.stringify(m, null, 2);
-  });
-
-  $('dump').addEventListener('click', () => {
-    const all = { env: collectEnv(), ime: imeSnapshot(), log: imeLog.length };
-    $('dump-out').value = JSON.stringify(all, null, 2);
-    $('dump-state').textContent = '已生成';
-    toStdout('DUMP', all);
-  });
-
-  // ---------- 剪贴板：三条路径独立验证 ----------
-  $('clip-web').addEventListener('click', async () => {
-    const r = await clipTestWeb();
-    clipLog(`① Web API（navigator.clipboard）: ${r.ok ? '写入成功' : '失败 → ' + r.err}`);
-    toStdout('CLIP-WEB', r);
-  });
-  $('clip-exec').addEventListener('click', async () => {
-    const r = await clipTestExec();
-    clipLog(`② execCommand 兜底: ${r.ok ? '写入成功' : '失败 → ' + r.err}`);
-    toStdout('CLIP-EXEC', r);
-  });
-  $('clip-tauri').addEventListener('click', async () => {
-    const r = await clipTestTauri();
-    clipLog(`③ Tauri 插件（Rust 侧）: ${r.ok ? '写入成功' : '失败 → ' + r.err}`);
-    toStdout('CLIP-TAURI', r);
-  });
-  $('clip-read').addEventListener('click', async () => {
-    const r = await clipReadBack();
-    clipLog(`读回：web=${JSON.stringify(r.web)}  tauri=${JSON.stringify(r.tauri)}`);
-    toStdout('CLIP-READ', r);
-  });
-
-  // 逐条验证：每写一条后立即用插件（独立通道）读回，避免“报成功但没落地”
-  $('clip-verify').addEventListener('click', async () => {
-    const readBack = async () => {
-      try {
-        return await window.__TAURI__.core.invoke('clip_read');
-      } catch (e) {
-        return 'ERR ' + String(e);
+    const allowed = ALLOWED_TAGS[tag];
+    for (const attr of Array.from(node.attributes)) {
+      const name = attr.name.toLowerCase();
+      if (!allowed.includes(name)) {
+        node.removeAttribute(attr.name);
+        continue;
       }
+      const value = attr.value.trim();
+      // 只拦危险协议，**不要**在这里判相对地址：相对地址是正常的，
+      // 会在下面被解析成绝对地址。（先前就是在这里把相对图片直接删了，
+      // 导致 feed 里的图片全不显示 —— 自检把它拓了出来。）
+      if ((name === 'href' || name === 'src') && DANGEROUS_SCHEME.test(value)) {
+        node.removeAttribute(attr.name);
+        continue;
+      }
+      if (name === 'src' && /^data:/i.test(value) && !/^data:image\//i.test(value)) {
+        node.removeAttribute('src');
+      }
+    }
+
+    if (tag === 'a') {
+      node.setAttribute('rel', 'noopener noreferrer');
+      const href = node.getAttribute('href');
+      if (!href) {
+        node.remove();
+        return;
+      }
+      // 相对链接也要解析成绝对地址，否则交给系统浏览器时无法打开
+      if (!/^[#]/.test(href) && !/^data:/i.test(href)) {
+        try {
+          node.setAttribute('href', new URL(href, baseUrl || location.href).toString());
+        } catch {
+          node.removeAttribute('href');
+          node.remove();
+        }
+      }
+    }
+    if (tag === 'img') {
+      const src = node.getAttribute('src');
+      if (!src) return;
+      if (!/^data:/i.test(src)) {
+        try {
+          node.setAttribute('src', new URL(src, baseUrl || location.href).toString());
+        } catch {
+          node.removeAttribute('src');
+        }
+      }
+      node.setAttribute('loading', 'lazy');
+      node.setAttribute('referrerpolicy', 'no-referrer');
+    }
+  };
+
+  // 后序遍历：先处理子树再评估自身，这样 unwrap 不会丢掉已处理好的内容
+  const walkChildren = (node) => {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === 1) {
+        walkChildren(child);
+        cleanElement(child);
+      } else if (child.nodeType === 8) {
+        child.remove(); // 注释一并去掉
+      }
+    }
+  };
+
+  walkChildren(root);
+  return root.innerHTML;
+}
+
+// ---------------------------------------------------------------- 渲染
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts * 1000);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  return sameDay
+    ? d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
+function setStatus(text, isError = false) {
+  const node = el('status');
+  node.textContent = text || '';
+  node.classList.toggle('error', isError);
+}
+
+function renderSidebar() {
+  const views = el('views');
+  views.innerHTML = '';
+  const counts = {
+    unread: state.db ? state.db.unread : 0,
+    starred: state.db ? state.db.starred : 0,
+    all: state.db ? state.db.entries : 0,
+  };
+  for (const v of VIEWS) {
+    const li = document.createElement('li');
+    li.className = state.view.kind === v.kind ? 'active' : '';
+    li.innerHTML = `<span class="icon">${v.icon}</span><span>${v.label}</span><span class="count">${counts[v.kind]}</span>`;
+    li.onclick = () => setView({ kind: v.kind });
+    views.appendChild(li);
+  }
+
+  const feeds = el('feeds');
+  feeds.innerHTML = '';
+  for (const f of state.feeds) {
+    const li = document.createElement('li');
+    const failed = f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified';
+    li.className = state.view.kind === 'feed' && state.feedId === f.id ? 'active' : '';
+    li.title = failed
+      ? `上次抓取：${f.last_status}｜${f.last_error || ''}\n双击可重试`
+      : `${f.url}\n双击刷新此源`;
+    li.innerHTML = `<span class="name">${escapeHtml(f.title)}</span>${failed ? '<span class="dot">●</span>' : ''}<span class="count">${f.unread}</span>`;
+    li.onclick = () => setView({ kind: 'feed', feedId: f.id });
+    li.ondblclick = () => refreshOne(f.id);
+    feeds.appendChild(li);
+  }
+  el('feeds-meta').textContent = `${state.feeds.length} 个`;
+  if (state.db) {
+    const info = el('db-info');
+    info.textContent = `${state.db.entries} 篇 · ${state.db.dbPath}`;
+    info.title = state.db.dbPath;
+  }
+}
+
+function escapeHtml(text) {
+  return String(text ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+function viewTitle() {
+  if (state.view.kind === 'search') return `搜索：${state.query}`;
+  if (state.view.kind === 'feed') {
+    const feed = state.feeds.find((f) => f.id === state.feedId);
+    return feed ? feed.title : '订阅源';
+  }
+  return VIEWS.find((v) => v.kind === state.view.kind)?.label ?? '文章';
+}
+
+function renderList() {
+  el('list-title').textContent = viewTitle();
+  el('list-count').textContent = state.entries.length ? `${state.entries.length} 篇` : '';
+
+  const list = el('entries');
+  list.innerHTML = '';
+  if (!state.entries.length) {
+    const li = document.createElement('li');
+    li.className = 'dim';
+    li.style.cursor = 'default';
+    li.textContent = state.view.kind === 'unread' ? '没有未读文章' : '这里还没有文章';
+    list.appendChild(li);
+    return;
+  }
+
+  for (const e of state.entries) {
+    const li = document.createElement('li');
+    li.className = `${e.id === state.selectedId ? 'active' : ''} ${e.read ? 'read' : ''}`;
+    li.dataset.id = String(e.id);
+    const star = e.starred ? '<span class="star">★</span>' : '';
+    li.innerHTML = `
+      <span class="title">${escapeHtml(e.title)}</span>
+      <span class="meta"><span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}</span>
+      ${e.summary ? `<span class="summary">${escapeHtml(e.summary)}</span>` : ''}`;
+    li.onclick = () => openEntry(e.id, { markRead: true });
+    list.appendChild(li);
+  }
+}
+
+function renderReaderEmpty() {
+  el('reader').innerHTML = `<div class="reader-empty">
+      <p>从中间列表选一篇文章。</p>
+      <p class="dim">快捷键：<b>j</b>/<b>k</b> 上下 · <b>Enter</b> 打开 · <b>u</b> 未读切换 ·
+      <b>s</b> 星标 · <b>r</b> 刷新 · <b>/</b> 搜索 · <b>Esc</b> 清除搜索</p>
+    </div>`;
+}
+
+function renderReader(entry) {
+  const reader = el('reader');
+  const body = entry.content_html
+    ? sanitize(entry.content_html, entry.url)
+    : (entry.content_text || '')
+        .split(/\n{1,}/)
+        .map((p) => `<p>${escapeHtml(p)}</p>`)
+        .join('');
+
+  reader.innerHTML = `
+    <div class="reader-head">
+      <h1>${escapeHtml(entry.title)}</h1>
+      <div class="meta">
+        <span>${escapeHtml(entry.feed_title)}</span>
+        <span>${fmtTime(entry.published_at)}</span>
+        ${entry.author ? `<span>${escapeHtml(entry.author)}</span>` : ''}
+      </div>
+    </div>
+    <div class="reader-actions">
+      <button id="act-read">${entry.read ? '标为未读' : '标为已读'}</button>
+      <button id="act-star">${entry.starred ? '取消星标' : '加星标'}</button>
+      ${entry.url ? '<button id="act-open">浏览器打开</button><button id="act-copy">复制链接</button>' : ''}
+    </div>
+    <div class="article">${body}</div>`;
+
+  el('act-read').onclick = () => toggleRead();
+  el('act-star').onclick = () => toggleStar();
+  if (entry.url) {
+    el('act-open').onclick = () => invoke('open_external', { url: entry.url }).catch((e) => setStatus(e.message, true));
+    el('act-copy').onclick = () =>
+      invoke('clip_write', { text: entry.url })
+        .then(() => setStatus('链接已复制'))
+        .catch((e) => setStatus('复制失败：' + e.message, true));
+  }
+
+  // 正文里的链接交给系统浏览器，避免在应用内导航走丢
+  reader.querySelectorAll('a[href]').forEach((a) => {
+    a.onclick = (ev) => {
+      ev.preventDefault();
+      invoke('open_external', { url: a.getAttribute('href') }).catch((e) => setStatus(e.message, true));
     };
-    const rows = [];
-
-    const tWeb = CLIP_TEXT('WEB');
-    let wWeb;
-    try {
-      await navigator.clipboard.writeText(tWeb);
-      wWeb = 'API 报告成功';
-    } catch (e) {
-      wWeb = 'API 报错 ' + String(e);
-    }
-    const rWeb = await readBack();
-    rows.push(`① Web API    : ${wWeb}｜剪贴板实际=${JSON.stringify(rWeb).slice(0, 44)}｜落地=${rWeb === tWeb}`);
-
-    const tExec = CLIP_TEXT('EXEC');
-    let wExec;
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = tExec;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      wExec = ok ? '返回 true' : '返回 false';
-    } catch (e) {
-      wExec = '抛错 ' + String(e);
-    }
-    const rExec = await readBack();
-    rows.push(`② execCommand: ${wExec}｜剪贴板实际=${JSON.stringify(rExec).slice(0, 44)}｜落地=${rExec === tExec}`);
-
-    const tTauri = CLIP_TEXT('TAURI');
-    let wTauri;
-    try {
-      await window.__TAURI__.core.invoke('clip_write', { text: tTauri });
-      wTauri = '调用成功';
-    } catch (e) {
-      wTauri = '报错 ' + String(e);
-    }
-    const rTauri = await readBack();
-    rows.push(`③ Tauri 插件 : ${wTauri}｜剪贴板实际=${JSON.stringify(rTauri).slice(0, 44)}｜落地=${rTauri === tTauri}`);
-
-    rows.forEach(clipLog);
-    toStdout('CLIP-VERIFY', { rows });
   });
-});
-
-function rectOf(el) {
-  if (!el) return null;
-  const r = el.getBoundingClientRect();
-  return { x: r.x, y: r.y, w: r.width, h: r.height };
+  reader.scrollTop = 0;
 }
 
-// ---------- 剪贴板自检：每条路径独立验证，互不掩盖 ----------
-const CLIP_TEXT = (tag) => `RUSTSS-CLIP-${tag}-${Date.now()}`;
+// ---------------------------------------------------------------- 数据流
 
-function clipLog(msg) {
-  const el = $('clip-out');
-  el.textContent += `\n${msg}`;
-  el.scrollTop = el.scrollHeight;
+async function loadAll() {
+  const [db, feeds] = await Promise.all([invoke('db_info'), invoke('list_feeds')]);
+  state.db = db;
+  state.feeds = feeds;
+  renderSidebar();
+  await loadEntries();
+  log(`loaded feeds=${db.feeds} entries=${db.entries} unread=${db.unread} starred=${db.starred}`);
 }
 
-/** 路径①：WebKit 的 Web Clipboard API（产品里不应当依赖它） */
-async function clipTestWeb() {
-  if (!navigator.clipboard || !navigator.clipboard.writeText) {
-    return { path: 'web:navigator.clipboard', ok: false, err: 'API 不存在' };
+async function loadEntries() {
+  const kind = state.view.kind;
+  let rows;
+  if (kind === 'search') {
+    rows = state.query ? await invoke('search', { query: state.query, limit: 200 }) : [];
+  } else {
+    rows = await invoke('list_entries', {
+      feedId: kind === 'feed' ? state.feedId : null,
+      unreadOnly: kind === 'unread',
+      starredOnly: kind === 'starred',
+      limit: 200,
+    });
   }
+  state.entries = rows;
+  if (!rows.some((e) => e.id === state.selectedId)) {
+    state.selectedId = rows.length ? rows[0].id : null;
+  }
+  renderList();
+  if (state.selectedId) {
+    // 视图切换只加载，不标记已读
+    const entry = await invoke('get_entry', { id: state.selectedId });
+    if (entry) renderReader(entry);
+  } else {
+    renderReaderEmpty();
+  }
+  log(`view=${kind}${state.feedId ? '#' + state.feedId : ''} count=${rows.length}`);
+}
+
+async function setView(view) {
+  state.view = view;
+  state.feedId = view.feedId ?? null;
+  if (view.kind !== 'search') {
+    el('search').value = '';
+    state.query = '';
+  }
+  renderSidebar();
+  await loadEntries();
+}
+
+/** 打开某篇文章；markRead=true 表示这是用户主动打开的动作 */
+async function openEntry(id, { markRead }) {
+  const entry = await invoke('get_entry', { id });
+  if (!entry) return;
+  state.selectedId = id;
+  renderList();
+  renderReader(entry);
+  if (markRead && !entry.read) {
+    await invoke('set_read', { ids: [id], read: true });
+    const row = state.entries.find((e) => e.id === id);
+    if (row) row.read = true;
+    renderList();
+    await refreshCounts();
+  }
+  log(`open id=${id} markRead=${markRead} read=${entry.read}`);
+}
+
+async function refreshCounts() {
+  const [db, feeds] = await Promise.all([invoke('db_info'), invoke('list_feeds')]);
+  state.db = db;
+  state.feeds = feeds;
+  renderSidebar();
+}
+
+function move(delta) {
+  if (!state.entries.length) return;
+  const idx = state.entries.findIndex((e) => e.id === state.selectedId);
+  const next = Math.max(0, Math.min(state.entries.length - 1, (idx < 0 ? 0 : idx) + delta));
+  openEntry(state.entries[next].id, { markRead: true });
+}
+
+function jump(toEnd) {
+  if (!state.entries.length) return;
+  const target = toEnd ? state.entries[state.entries.length - 1] : state.entries[0];
+  openEntry(target.id, { markRead: true });
+}
+
+async function toggleRead() {
+  const row = state.entries.find((e) => e.id === state.selectedId);
+  if (!row) return;
+  const read = !row.read;
+  await invoke('set_read', { ids: [row.id], read });
+  row.read = read;
+  // 未读视图下标记已读后，该条应从列表消失
+  if (state.view.kind === 'unread' && read) {
+    state.entries = state.entries.filter((e) => e.id !== row.id);
+    state.selectedId = state.entries.length ? state.entries[0].id : null;
+    renderList();
+    if (state.selectedId) await openEntry(state.selectedId, { markRead: false });
+    else renderReaderEmpty();
+  } else {
+    const fresh = await invoke('get_entry', { id: row.id });
+    if (fresh) renderReader(fresh);
+    renderList();
+  }
+  await refreshCounts();
+}
+
+async function toggleStar() {
+  const row = state.entries.find((e) => e.id === state.selectedId);
+  if (!row) return;
+  const starred = !row.starred;
+  await invoke('set_starred', { ids: [row.id], starred });
+  row.starred = starred;
+  const fresh = await invoke('get_entry', { id: row.id });
+  if (fresh) renderReader(fresh);
+  renderList();
+  await refreshCounts();
+}
+
+async function doRefresh() {
+  const btn = el('btn-refresh');
+  btn.disabled = true;
+  setStatus('正在刷新…');
   try {
-    await navigator.clipboard.writeText(CLIP_TEXT('WEB'));
-    return { path: 'web:navigator.clipboard', ok: true };
+    const r = await invoke('refresh_all', { concurrency: 6 });
+    const summary = `成功 ${r.fetched}｜未修改 ${r.not_modified}｜新增 ${r.inserted}｜失败 ${r.failures.length}`;
+    setStatus('刷新完成：' + summary);
+    log(`refresh_all ${summary}`);
+    for (const f of r.failures) log(`refresh failure feed=${f.feed_id} ${f.url} :: ${f.error}`);
+    await loadAll();
   } catch (e) {
-    return { path: 'web:navigator.clipboard', ok: false, err: String(e) };
+    setStatus('刷新失败：' + e.message, true);
+    log(`refresh_all failed: ${e.message}`);
+  } finally {
+    btn.disabled = false;
   }
 }
 
-/** 路径②：旧的 execCommand('copy') 兜底 */
-async function clipTestExec() {
+async function refreshOne(feedId) {
+  setStatus('正在刷新该源…');
   try {
-    const ta = document.createElement('textarea');
-    ta.value = CLIP_TEXT('EXEC');
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand('copy');
-    document.body.removeChild(ta);
-    return { path: 'execCommand', ok, err: ok ? null : 'execCommand 返回 false' };
+    const r = await invoke('refresh_feed', { feedId, concurrency: 1 });
+    setStatus(`该源刷新完成：新增 ${r.inserted}｜未修改 ${r.not_modified}｜失败 ${r.failures.length}`);
+    await loadAll();
   } catch (e) {
-    return { path: 'execCommand', ok: false, err: String(e) };
+    setStatus('刷新失败：' + e.message, true);
   }
 }
 
-/** 路径③：Tauri 剪贴板插件（Rust 侧），产品里应当走这条 */
-async function clipTestTauri() {
+async function doAddFeed() {
+  const input = el('add-url');
+  const url = input.value.trim();
+  if (!url) return;
   try {
-    if (!window.__TAURI__ || !window.__TAURI__.core) {
-      return { path: 'tauri:clipboard-manager', ok: false, err: 'IPC 不可用' };
+    const id = await invoke('add_feed', { url });
+    setStatus('已添加，正在抓取…');
+    log(`add_feed id=${id} url=${url}`);
+    const r = await invoke('refresh_feed', { feedId: id, concurrency: 1 });
+    setStatus(`已添加：新增 ${r.inserted} 篇`);
+    input.value = '';
+    await loadAll();
+  } catch (e) {
+    setStatus('添加失败：' + e.message, true);
+    log(`add_feed failed: ${e.message}`);
+  }
+}
+
+// ---------------------------------------------------------------- 启动与键盘
+
+/**
+ * 启动自检：验证「feed 里的脚本不会活下来」与「相对地址会被解析」两条。
+ * 结果通过 ui_log 上报，因此不需要人工看界面也能确认——这是 spec 里的硬验收点。
+ */
+function selfTestSanitizer() {
+  const base = 'https://example.com/posts/1';
+  const dirty = `
+    <div><p>正常段落</p><script>window.__pwned = 1<\/script>
+    <style>p{color:red}</style>
+    <img src="img/a.png" onerror="window.__pwned=2">
+    <a href="javascript:window.__pwned=3">js链接</a>
+    <a href="/about">相对链接</a>
+    <iframe src="https://evil.example"></iframe></div>`;
+  const clean = sanitize(dirty, base);
+
+  const failures = [];
+  if (/<script/i.test(clean)) failures.push('script 标签残留');
+  if (/<style/i.test(clean)) failures.push('style 标签残留');
+  if (/onerror/i.test(clean)) failures.push('事件处理器残留');
+  if (/javascript:/i.test(clean)) failures.push('javascript: 链接残留');
+  if (/<iframe/i.test(clean)) failures.push('iframe 残留');
+  if (!clean.includes('正常段落')) failures.push('正常内容被误删');
+  if (!clean.includes('https://example.com/posts/img/a.png')) failures.push('相对图片未解析为绝对地址');
+  if (!clean.includes('https://example.com/about')) failures.push('相对链接未解析为绝对地址');
+  if (window.__pwned) failures.push('脚本被实际执行了');
+
+  log(failures.length ? `sanitizer selftest FAILED: ${failures.join('; ')}` : 'sanitizer selftest ok');
+  return failures.length === 0;
+}
+
+async function boot() {
+  selfTestSanitizer();
+  try {
+    await loadAll();
+  } catch (e) {
+    setStatus('初始化失败：' + e.message, true);
+    log(`boot failed: ${e.message}`);
+    return;
+  }
+
+  el('btn-refresh').onclick = doRefresh;
+  el('btn-add').onclick = () => {
+    const row = el('add-row');
+    row.classList.toggle('hidden');
+    if (!row.classList.contains('hidden')) el('add-url').focus();
+  };
+  el('add-ok').onclick = doAddFeed;
+  el('add-url').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doAddFeed();
+    if (e.key === 'Escape') el('add-row').classList.add('hidden');
+  });
+
+  let searchTimer = null;
+  el('search').addEventListener('input', (e) => {
+    const value = e.target.value.trim();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(async () => {
+      state.query = value;
+      if (value) {
+        state.view = { kind: 'search' };
+        renderSidebar();
+        await loadEntries();
+      } else {
+        await setView({ kind: 'unread' });
+      }
+    }, 250);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const inField = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+    if (e.key === '/' && !inField) {
+      e.preventDefault();
+      el('search').focus();
+      return;
     }
-    await window.__TAURI__.core.invoke('clip_write', { text: CLIP_TEXT('TAURI') });
-    return { path: 'tauri:clipboard-manager', ok: true };
-  } catch (e) {
-    return { path: 'tauri:clipboard-manager', ok: false, err: String(e) };
-  }
+    if (e.key === 'Escape') {
+      el('search').value = '';
+      el('search').blur();
+      el('add-row').classList.add('hidden');
+      if (state.view.kind === 'search') setView({ kind: 'unread' });
+      return;
+    }
+    if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
+
+    switch (e.key) {
+      case 'j': case 'ArrowDown': e.preventDefault(); move(1); break;
+      case 'k': case 'ArrowUp': e.preventDefault(); move(-1); break;
+      case 'Enter': e.preventDefault(); if (state.selectedId) openEntry(state.selectedId, { markRead: true }); break;
+      case 'u': e.preventDefault(); toggleRead().catch((err) => setStatus(err.message, true)); break;
+      case 's': e.preventDefault(); toggleStar().catch((err) => setStatus(err.message, true)); break;
+      case 'r': e.preventDefault(); doRefresh(); break;
+      case 'g': e.preventDefault(); jump(false); break;
+      case 'G': e.preventDefault(); jump(true); break;
+      default: break;
+    }
+  });
 }
 
-/** 读回系统剪贴板：用来确认“写入成功”是否真的落到了系统剪贴板 */
-async function clipReadBack() {
-  const out = { web: null, tauri: null };
-  try {
-    out.web = navigator.clipboard && navigator.clipboard.readText
-      ? await navigator.clipboard.readText()
-      : 'API 不存在';
-  } catch (e) {
-    out.web = 'ERR ' + String(e);
-  }
-  try {
-    out.tauri = await window.__TAURI__.core.invoke('clip_read');
-  } catch (e) {
-    out.tauri = 'ERR ' + String(e);
-  }
-  return out;
-}
+window.addEventListener('DOMContentLoaded', boot);

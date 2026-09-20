@@ -3355,6 +3355,9 @@ dependencies = [
 name = "rustrss-desktop"
 version = "0.0.0"
 dependencies = [
+ "rustrss-core",
+ "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-clipboard-manager",
