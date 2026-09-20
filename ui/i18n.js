@@ -111,6 +111,22 @@ const DICTS = {
     'settings.ai.testOk': '连接可用。模型回复：{reply}',
     'settings.ai.testFailed': '连接失败：{error}',
 
+    'common.yes': '是',
+    'common.no': '否',
+
+    'settings.mcp.title': 'MCP（让 agent 读你的订阅）',
+    'settings.mcp.enabled': '启用 MCP HTTP 服务',
+    'settings.mcp.hint': '仅监听回环地址（127.0.0.1），且每个请求都要带 token；关掉即停止服务并释放端口。',
+    'settings.mcp.port': '端口',
+    'settings.mcp.copySnippet': '复制客户端配置',
+    'settings.mcp.rotate': '轮换 token（旧 token 立即失效）',
+    'settings.mcp.statusRunning': '运行中：{url}｜仅回环：{loopback}｜token：{token}',
+    'settings.mcp.statusStopped': '未运行（未启用或启动失败）｜token：{token}',
+    'settings.mcp.copied': '客户端配置已复制（含 token，粘贴后请自行保管）',
+    'settings.mcp.copyFailed': '复制失败：{error}',
+    'settings.mcp.rotated': 'token 已轮换，旧 token 立即失效',
+    'settings.mcp.failed': '操作失败：{error}',
+
     'status.refreshing': '正在刷新…',
     'status.refreshDone': '刷新完成：成功 {fetched}｜未修改 {notModified}｜新增 {inserted}｜失败 {failures}',
     'status.refreshFailed': '刷新失败：{error}',
@@ -232,6 +248,23 @@ const DICTS = {
     'settings.ai.testing': 'Testing…',
     'settings.ai.testOk': 'Connection works. Model replied: {reply}',
     'settings.ai.testFailed': 'Connection failed: {error}',
+
+    'common.yes': 'yes',
+    'common.no': 'no',
+
+    'settings.mcp.title': 'MCP (let an agent read your feeds)',
+    'settings.mcp.enabled': 'Enable the MCP HTTP server',
+    'settings.mcp.hint':
+      'Loopback only (127.0.0.1) and every request must carry the token; switching it off stops the server and frees the port.',
+    'settings.mcp.port': 'Port',
+    'settings.mcp.copySnippet': 'Copy client config',
+    'settings.mcp.rotate': 'Rotate token (old one stops working)',
+    'settings.mcp.statusRunning': 'Running: {url} | loopback only: {loopback} | token: {token}',
+    'settings.mcp.statusStopped': 'Not running (disabled or failed to start) | token: {token}',
+    'settings.mcp.copied': 'Client config copied (it contains the token - keep it safe)',
+    'settings.mcp.copyFailed': 'Copy failed: {error}',
+    'settings.mcp.rotated': 'Token rotated; the old one stopped working',
+    'settings.mcp.failed': 'Action failed: {error}',
 
     'status.refreshing': 'Refreshing…',
     'status.refreshDone':

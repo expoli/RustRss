@@ -157,6 +157,32 @@
         <p id="ai-status" class="dim small">—</p>
       </div>
 
+      <div class="dialog-section">
+        <h3 data-i18n="settings.mcp.title"></h3>
+
+        <label class="setting-row">
+          <input type="checkbox" id="set-mcp-enabled" />
+          <span>
+            <b data-i18n="settings.mcp.enabled"></b>
+            <small data-i18n="settings.mcp.hint"></small>
+          </span>
+        </label>
+
+        <div class="form-row">
+          <label for="mcp-port" data-i18n="settings.mcp.port"></label>
+          <input id="mcp-port" type="number" min="1024" max="65535" />
+        </div>
+
+        <p id="mcp-status" class="dim small">—</p>
+
+        <div class="setting-actions">
+          <button id="mcp-copy-snippet" data-i18n="settings.mcp.copySnippet"></button>
+          <button id="mcp-rotate" data-i18n="settings.mcp.rotate"></button>
+        </div>
+
+        <textarea id="mcp-snippet" rows="7" readonly></textarea>
+      </div>
+
       <p class="dim small" data-i18n="settings.storageHint"></p>
     </div>
   </div>

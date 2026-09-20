@@ -31,11 +31,44 @@ src-tauri/             Tauri 2 桌面应用（当前为 M0 诊断探针）
 ui/                    桌面应用前端（当前为探针页面）
 ```
 
-### MCP 服务器（已接真实库）
+### MCP 服务器（stdio + HTTP 两种传输，已接真实库）
 
 工具集（**只读**，写入类属 P1）：`list_feeds` / `list_articles` / `get_article` / `search_articles` / `db_stats`。
 
 口径：**列表只回元数据 + 短摘要（≤140 字），正文必须用 `get_article` 单独取**；所有列表有上限（默认 10、上限 50）。这是为了不让单次响应撑爆 agent 上下文（见 PRD §6 风险 3）。
+
+两种传输：
+
+- **stdio**：客户端把 `rustrss-mcp` 当子进程拉起；
+- **HTTP**（streamable HTTP）：`rustrss-mcp --http 127.0.0.1:8817`（token 取 `RUSTSS_MCP_TOKEN`，未设则随机生成并打印），或在应用「**设置 → MCP**」里启用——设置页会直接给出可粘贴的客户端配置片段与一行 `claude mcp add` 命令，并可一键复制。
+
+约束（均有测试）：**只绑回环**（非回环地址直接拒绝启动）、无 token / 错 token 一律 401、`/health` 不鉴权且不含任何订阅数据、token 轮换后旧值立即失效。客户端需带 `Accept: application/json, text/event-stream`——这是 MCP 传输规范的要求（rmcp 不对则 406），不是本项目的额外限制。
+
+实测（2026-09-20）：
+
+- `ss -ltn` 显示监听 `127.0.0.1:8817`（不是 `0.0.0.0`）；`/health` 无 token → 200；`/mcp` 无 token 或错 token → 401；对 token（查询串或 `Authorization: Bearer`）→ 200 且能取到真实订阅数据。
+- **真实客户端**：Claude Code 以 HTTP + Authorization 头接入，正确报出 3 个订阅源；当被要求列未读条目时，它发现库里未读为 0 并**拒绝编造**，指出前提不成立。
+
+<details>
+<summary>客户端配置片段示例（应用内可直接复制）</summary>
+
+```json
+{
+  "mcpServers": {
+    "rustrss": {
+      "type": "http",
+      "url": "http://127.0.0.1:8817/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
+    }
+  }
+}
+```
+
+```bash
+# 或者一行命令（Claude Code）
+claude mcp add --transport http rustrss http://127.0.0.1:8817/mcp --header "Authorization: Bearer <token>"
+```
+</details>
 
 ```bash
 # 直接跑（stdio；库路径：$RUSTSS_DB → 第一个参数 → ~/.local/share/rustrss/rustrss.sqlite）
@@ -105,7 +138,8 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 
 - [x] 三栏：智能视图（全部未读 / 星标 / 全部）+ 订阅源（未读数、抓取失败红点）｜文章列表｜正文
 - [x] 键盘导航：`j`/`k` 上下 · `Enter` 打开 · `u` 未读切换 · `s` 星标 · `r` 刷新 · `/` 搜索 · `Esc` 清除 · `g`/`G` 首尾
-- [x] 设置面板：「`j`/`k` 浏览时标记已读」开关（默认开）+ 当前视图全部已读 / 全部未读（撤销）
+- [x] 设置面板：「`j`/`k` 浏览时标记已读」开关（默认开）+ 当前视图全部已读 / 全部未读（撤销）+ 界面语言 + AI + MCP
+- [x] MCP：stdio 与 HTTP 双传输，HTTP 仅回环 + token；应用内一键生成并复制客户端配置
 - [x] 全文搜索（接 FTS5，中文可用）、刷新全部、单源双击重试、添加订阅、浏览器打开、复制链接
 - [x] 正文安全渲染：白名单清洗 + 相对地址图片/链接解析（详见下）
 - [x] OPML 导入 / 导出（嵌套文件夹压平成 `父/子`；按 `xmlUrl` 去重）

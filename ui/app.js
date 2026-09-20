@@ -60,6 +60,7 @@ const state = {
   // 权威值在 Rust 侧（get_ui_settings），这里只是启动前的占位
   settings: { mark_read_on_navigate: true },
   ai: null,
+  mcp: null,
 };
 
 const VIEWS = [
@@ -389,23 +390,25 @@ function renderReader(entry) {
 // ---------------------------------------------------------------- 数据流
 
 async function loadAll() {
-  const [db, feeds, settings, ai] = await Promise.all([
+  const [db, feeds, settings, ai, mcp] = await Promise.all([
     invoke('db_info'),
     invoke('list_feeds'),
     invoke('get_ui_settings'),
     invoke('get_ai_settings'),
+    invoke('get_mcp_settings'),
   ]);
   state.db = db;
   state.feeds = feeds;
   state.settings = settings;
   state.ai = ai;
+  state.mcp = mcp;
   // 语言设置来自数据库；先应用再渲染，避免先闪一下默认语言
   setLocale(settings.locale || 'auto');
   applyStaticI18n();
   renderSidebar();
   await loadEntries();
   log(
-    `loaded feeds=${db.feeds} entries=${db.entries} unread=${db.unread} starred=${db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key}`
+    `loaded feeds=${db.feeds} entries=${db.entries} unread=${db.unread} starred=${db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}`
   );
 }
 
@@ -696,10 +699,28 @@ function fillAiForm() {
   });
 }
 
+function fillMcpForm() {
+  const mcp = state.mcp;
+  if (!mcp) return;
+  el('set-mcp-enabled').checked = mcp.enabled;
+  el('mcp-port').value = mcp.port;
+  el('mcp-snippet').value = mcp.snippet || '';
+  // token 只显示首尾：设置页不需要完整明文，需要时用「复制客户端配置」
+  const masked = mcp.token ? `${mcp.token.slice(0, 6)}…${mcp.token.slice(-4)}` : '(无)';
+  el('mcp-status').textContent = mcp.running
+    ? t('settings.mcp.statusRunning', {
+        url: mcp.url,
+        loopback: mcp.loopback_only ? t('common.yes') : t('common.no'),
+        token: masked,
+      })
+    : t('settings.mcp.statusStopped', { token: masked });
+}
+
 function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
   el('set-language').value = state.settings.locale || 'auto';
   fillAiForm();
+  fillMcpForm();
   el('settings-overlay').classList.remove('hidden');
 }
 
@@ -780,8 +801,7 @@ async function boot() {
 
   el('settings-close').onclick = () => el('settings-overlay').classList.add('hidden');
 
-  el('set-language').addEventListener('change', async (e) => {
-    try {
+  el('set-language').addEventListener('change', async (e) => {    try {
       state.settings = await invoke('set_ui_locale', { locale: e.target.value });
       setLocale(state.settings.locale || 'auto');
       applyStaticI18n();
@@ -856,6 +876,55 @@ async function boot() {
     if (e.key === 'Enter') doAddFeed();
     if (e.key === 'Escape') el('add-row').classList.add('hidden');
   });
+
+  el('set-mcp-enabled').addEventListener('change', async (e) => {
+    try {
+      state.mcp = await invoke('set_mcp_enabled', { enabled: e.target.checked });
+      fillMcpForm();
+      setStatus(e.target.checked && state.mcp.running ? `${state.mcp.url}` : '');
+      log(
+        `mcp enabled=${e.target.checked} running=${state.mcp.running} url=${state.mcp.url ?? '-'} port=${state.mcp.port}`
+      );
+    } catch (err) {
+      e.target.checked = false;
+      el('mcp-status').textContent = t('settings.mcp.failed', { error: err.message });
+      log(`mcp enable failed: ${err.message}`);
+    }
+  });
+
+  el('mcp-port').addEventListener('change', async (e) => {
+    const port = Number(e.target.value);
+    try {
+      state.mcp = await invoke('set_mcp_port', { port });
+      fillMcpForm();
+      log(`mcp port=${state.mcp.port} running=${state.mcp.running}`);
+    } catch (err) {
+      el('mcp-status').textContent = t('settings.mcp.failed', { error: err.message });
+      log(`mcp port failed: ${err.message}`);
+    }
+  });
+
+  el('mcp-copy-snippet').onclick = async () => {
+    try {
+      await invoke('clip_write', { text: el('mcp-snippet').value });
+      setStatus(t('settings.mcp.copied'));
+      log('mcp snippet copied');
+    } catch (err) {
+      setStatus(t('settings.mcp.copyFailed', { error: err.message }), true);
+    }
+  };
+
+  el('mcp-rotate').onclick = async () => {
+    try {
+      state.mcp = await invoke('rotate_mcp_token');
+      fillMcpForm();
+      setStatus(t('settings.mcp.rotated'));
+      log(`mcp token rotated running=${state.mcp.running}`);
+    } catch (err) {
+      el('mcp-status').textContent = t('settings.mcp.failed', { error: err.message });
+      log(`mcp rotate failed: ${err.message}`);
+    }
+  };
 
   let searchTimer = null;
   el('search').addEventListener('input', (e) => {

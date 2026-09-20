@@ -6,9 +6,16 @@ license.workspace = true
 
 [dependencies]
 rustrss-core = { path = "../rustrss-core" }
-rmcp = { version = "3", features = ["server", "macros", "schemars", "transport-io"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std"] }
+rmcp = { version = "3", features = ["server", "macros", "schemars", "transport-io", "transport-streamable-http-server"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "net", "sync"] }
+axum = "0.8"
+uuid = { version = "1", features = ["v4"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "1"
+thiserror = "2"
 anyhow = "1"
+
+[dev-dependencies]
+# 测试里当 HTTP 客户端用（与 rustrss-core 用的是同一个客户端）
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "json"] }

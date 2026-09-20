@@ -273,7 +273,118 @@ pub fn ui_log(line: String) {
     println!("[ui] {line}");
 }
 
-// ---------------------------------------------------------------- AI
+// ---------------------------------------------------------------- MCP
+
+#[derive(Serialize)]
+pub struct McpSettingsView {
+    pub enabled: bool,
+    pub port: u16,
+    pub token: String,
+    pub running: bool,
+    pub url: Option<String>,
+    /// 可直接粘贴给客户端的配置片段（含一行命令）
+    pub snippet: String,
+    /// 服务是否只绑回环——界面上如实展示，而不是只写在文档里
+    pub loopback_only: bool,
+}
+
+fn mcp_view(state: &AppState) -> R<McpSettingsView> {
+    state.with_store(|s| {
+        let enabled = s
+            .bool_setting(crate::mcp_server::K_ENABLED, false)
+            .map_err(err)?;
+        let port = crate::mcp_server::port_from_store(s);
+        let token = crate::mcp_server::token_from_store(s)?;
+        let url = state.mcp.url();
+        let snippet = url
+            .as_deref()
+            .map(|u| crate::mcp_server::client_snippet(u, &token))
+            .unwrap_or_default();
+        Ok(McpSettingsView {
+            enabled,
+            port,
+            token,
+            running: state.mcp.is_running(),
+            loopback_only: url
+                .as_deref()
+                .map(crate::mcp_server::is_loopback_url)
+                .unwrap_or(true),
+            url,
+            snippet,
+        })
+    })
+}
+
+#[tauri::command]
+pub fn get_mcp_settings(state: State<'_, AppState>) -> R<McpSettingsView> {
+    mcp_view(&state)
+}
+
+#[tauri::command]
+pub async fn set_mcp_enabled(state: State<'_, AppState>, enabled: bool) -> R<McpSettingsView> {
+    let (port, token) = state.with_store(|s| {
+        s.set_bool_setting(crate::mcp_server::K_ENABLED, enabled)
+            .map_err(err)?;
+        let token = crate::mcp_server::token_from_store(s)?;
+        Ok((crate::mcp_server::port_from_store(s), token))
+    })?;
+    if enabled {
+        let db = state.db_path.clone();
+        state
+            .mcp
+            .start(&db, token, port)
+            .await
+            .map_err(|e| format!("启动 MCP HTTP 服务失败: {e}"))?;
+    } else {
+        state.mcp.stop();
+    }
+    mcp_view(&state)
+}
+
+#[tauri::command]
+pub async fn set_mcp_port(state: State<'_, AppState>, port: u16) -> R<McpSettingsView> {
+    let (enabled, token) = state.with_store(|s| {
+        s.set_setting(crate::mcp_server::K_PORT, &port.to_string())
+            .map_err(err)?;
+        let enabled = s
+            .bool_setting(crate::mcp_server::K_ENABLED, false)
+            .map_err(err)?;
+        let token = crate::mcp_server::token_from_store(s)?;
+        Ok((enabled, token))
+    })?;
+    if enabled {
+        let db = state.db_path.clone();
+        state
+            .mcp
+            .start(&db, token, port)
+            .await
+            .map_err(|e| format!("换端口失败: {e}"))?;
+    }
+    mcp_view(&state)
+}
+
+/// 轮换 token：先换库里的值，再用新 token 重启服务——旧 token 立即失效。
+#[tauri::command]
+pub async fn rotate_mcp_token(state: State<'_, AppState>) -> R<McpSettingsView> {
+    let (enabled, port, token) = state.with_store(|s| {
+        let fresh = rustrss_mcp::http::generate_token();
+        s.set_setting(crate::mcp_server::K_TOKEN, &fresh)
+            .map_err(err)?;
+        let enabled = s
+            .bool_setting(crate::mcp_server::K_ENABLED, false)
+            .map_err(err)?;
+        Ok((enabled, crate::mcp_server::port_from_store(s), fresh))
+    })?;
+    if enabled {
+        let db = state.db_path.clone();
+        state
+            .mcp
+            .start(&db, token, port)
+            .await
+            .map_err(|e| format!("轮换 token 失败: {e}"))?;
+    }
+    mcp_view(&state)
+}
 
 #[derive(Serialize)]
 pub struct AiSettingsView {

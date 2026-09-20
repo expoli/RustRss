@@ -13,6 +13,8 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+pub mod http;
+
 use rmcp::{
     handler::server::wrapper::Parameters, tool, tool_handler, tool_router, transport::stdio,
     ServerHandler, ServiceExt,
@@ -252,8 +254,7 @@ pub fn resolve_db_path() -> PathBuf {
 }
 
 /// 以 stdio 传输运行（由 MCP 客户端作为子进程拉起）
-pub async fn serve_stdio(server: RustRssMcp) -> anyhow::Result<()> {
-    let service = server.serve(stdio()).await?;
+pub async fn serve_stdio(server: RustRssMcp) -> anyhow::Result<()> {    let service = server.serve(stdio()).await?;
     service.waiting().await?;
     Ok(())
 }

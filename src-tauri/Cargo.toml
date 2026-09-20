@@ -9,6 +9,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 rustrss-core = { path = "../crates/rustrss-core" }
+rustrss-mcp = { path = "../crates/rustrss-mcp" }
 tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"

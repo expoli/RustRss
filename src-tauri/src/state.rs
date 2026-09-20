@@ -14,6 +14,8 @@ pub struct AppState {
     store: Mutex<Store>,
     pub fetcher: Fetcher,
     pub db_path: PathBuf,
+    /// 应用内托管的 MCP HTTP 服务（用 Arc 以便跨任务共享）
+    pub mcp: std::sync::Arc<crate::mcp_server::McpRuntime>,
 }
 
 impl AppState {
@@ -33,6 +35,7 @@ impl AppState {
             store: Mutex::new(store),
             fetcher,
             db_path,
+            mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
         })
     }
 

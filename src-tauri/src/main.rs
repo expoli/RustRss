@@ -6,6 +6,7 @@
 
 mod ai;
 mod commands;
+mod mcp_server;
 mod state;
 
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -67,6 +68,29 @@ fn main() {
     };
     eprintln!("[rustrss] 数据库: {}", app_state.db_path.display());
 
+    // 启用了 MCP HTTP 服务就在启动时拉起（只绑回环）
+    if app_state
+        .with_store(|s| Ok(s.bool_setting(mcp_server::K_ENABLED, false).unwrap_or(false)))
+        .unwrap_or(false)
+    {
+        let db_path = app_state.db_path.clone();
+        let runtime = app_state.mcp.clone();
+        let (port, token) = app_state
+            .with_store(|s| {
+                Ok((
+                    mcp_server::port_from_store(s),
+                    mcp_server::token_from_store(s)?,
+                ))
+            })
+            .unwrap_or_else(|_| (mcp_server::DEFAULT_PORT, String::new()));
+        tauri::async_runtime::spawn(async move {
+            match runtime.start(&db_path, token, port).await {
+                Ok(addr) => eprintln!("[rustrss] MCP HTTP 服务: http://{addr}/mcp（仅回环，需 token）"),
+                Err(e) => eprintln!("[rustrss] MCP HTTP 服务启动失败: {e}"),
+            }
+        });
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
@@ -89,6 +113,10 @@ fn main() {
             commands::test_ai_connection,
             commands::ai_summarize,
             commands::ai_translate,
+            commands::get_mcp_settings,
+            commands::set_mcp_enabled,
+            commands::set_mcp_port,
+            commands::rotate_mcp_token,
             commands::add_feed,
             commands::remove_feed,
             commands::export_opml,
