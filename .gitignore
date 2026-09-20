@@ -1,0 +1,10 @@
+# 本地工具配置（含凭据，勿提交）
+.mcp.json
+
+# Chorus：只把 specs 纳入版本控制，其余本地状态不入库
+.chorus/*
+!.chorus/specs/
+
+# Rust / Tauri
+/target
+src-tauri/gen/schemas
