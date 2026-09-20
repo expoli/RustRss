@@ -690,7 +690,7 @@ function fillAiForm() {
   el('ai-base-url').value = ai.base_url;
   el('ai-target').value = ai.translate_target;
   el('ai-key').value = '';
-  el('ai-key').placeholder = ai.has_key
+  el('ai-key-hint').textContent = ai.has_key
     ? t('settings.ai.keySet', { source: ai.key_note || '' })
     : t('settings.ai.keyUnset');
   el('ai-status').textContent = t('settings.ai.status', {
@@ -716,11 +716,30 @@ function fillMcpForm() {
     : t('settings.mcp.statusStopped', { token: masked });
 }
 
+/** 切到某个设置分类（左栏可选，右栏只显示对应面板） */
+function showPane(name) {
+  for (const li of el('settings-nav-list').children) {
+    li.classList.toggle('active', li.dataset.pane === name);
+  }
+  for (const pane of document.querySelectorAll('.settings-body .pane')) {
+    pane.classList.toggle('hidden', pane.dataset.pane !== name);
+  }
+  document.querySelector('.settings-body').scrollTop = 0;
+}
+
+/// 记住上次看的是哪个分类（同一次运行内）
+let currentPane = 'general';
+
 function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
   el('set-language').value = state.settings.locale || 'auto';
+  const dbPath = state.db ? state.db.dbPath : '';
+  el('settings-db-path').textContent = dbPath;
+  el('settings-db-path').title = dbPath;
+  el('general-db-path').textContent = dbPath;
   fillAiForm();
   fillMcpForm();
+  showPane(currentPane);
   el('settings-overlay').classList.remove('hidden');
 }
 
@@ -800,6 +819,15 @@ async function boot() {
   };
 
   el('settings-close').onclick = () => el('settings-overlay').classList.add('hidden');
+
+  // 左栏分类切换（事件委派：以后加分类不用改这里）
+  el('settings-nav-list').addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-pane]');
+    if (!li) return;
+    currentPane = li.dataset.pane;
+    showPane(currentPane);
+    log(`settings pane=${currentPane}`);
+  });
 
   el('set-language').addEventListener('change', async (e) => {    try {
       state.settings = await invoke('set_ui_locale', { locale: e.target.value });

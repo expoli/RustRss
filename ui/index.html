@@ -81,109 +81,249 @@
   </main>
 
   <div id="settings-overlay" class="overlay hidden">
-    <div class="dialog">
-      <div class="dialog-head">
-        <span data-i18n="settings.title"></span>
-        <button id="settings-close" data-i18n="settings.close"></button>
-      </div>
+    <div class="settings-dialog">
+      <nav class="settings-nav">
+        <div class="settings-nav-title" data-i18n="settings.title"></div>
+        <ul id="settings-nav-list">
+          <li data-pane="general" class="active">
+            <span class="icon">⚙</span><span data-i18n="settings.nav.general"></span>
+          </li>
+          <li data-pane="reading">
+            <span class="icon">👁</span><span data-i18n="settings.nav.reading"></span>
+          </li>
+          <li data-pane="data">
+            <span class="icon">⇅</span><span data-i18n="settings.nav.data"></span>
+          </li>
+          <li data-pane="ai">
+            <span class="icon">✨</span><span data-i18n="settings.nav.ai"></span>
+          </li>
+          <li data-pane="mcp">
+            <span class="icon">🔌</span><span data-i18n="settings.nav.mcp"></span>
+          </li>
+          <li data-pane="about">
+            <span class="icon">ℹ</span><span data-i18n="settings.nav.about"></span>
+          </li>
+        </ul>
+        <div class="settings-nav-foot">
+          <span id="settings-db-path" class="dim" title=""></span>
+        </div>
+      </nav>
 
-      <div class="form-row">
-        <label for="set-language" data-i18n="settings.language"></label>
-        <select id="set-language">
-          <option value="auto" data-i18n="settings.languageAuto"></option>
-          <option value="zh-CN" data-i18n="settings.languageZh"></option>
-          <option value="en" data-i18n="settings.languageEn"></option>
-        </select>
-      </div>
+      <section class="settings-body">
+        <!-- 通用 -->
+        <div class="pane" data-pane="general">
+          <h3 data-i18n="settings.nav.general"></h3>
 
-      <label class="setting-row">
-        <input type="checkbox" id="set-mark-read" />
-        <span>
-          <b data-i18n="settings.markRead.title"></b>
-          <small data-i18n="settings.markRead.hint"></small>
-        </span>
-      </label>
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.appearance"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.language"></b>
+                <small data-i18n="settings.languageHint"></small>
+              </div>
+              <select id="set-language">
+                <option value="auto" data-i18n="settings.languageAuto"></option>
+                <option value="zh-CN" data-i18n="settings.languageZh"></option>
+                <option value="en" data-i18n="settings.languageEn"></option>
+              </select>
+            </div>
+          </div>
 
-      <div class="setting-actions">
-        <button id="act-mark-all-read" data-i18n="settings.markAllRead"></button>
-        <button id="act-mark-all-unread" data-i18n="settings.markAllUnread"></button>
-      </div>
-
-      <div class="setting-actions">
-        <button id="act-import-opml" data-i18n="settings.importOpml"></button>
-        <button id="act-export-opml" data-i18n="settings.exportOpml"></button>
-      </div>
-
-      <div class="dialog-section">
-        <h3 data-i18n="settings.ai.title"></h3>
-
-        <div class="form-row">
-          <label for="ai-provider" data-i18n="settings.ai.provider"></label>
-          <select id="ai-provider">
-            <option value="ollama" data-i18n="settings.ai.providerOllama"></option>
-            <option value="openai" data-i18n="settings.ai.providerOpenai"></option>
-            <option value="anthropic" data-i18n="settings.ai.providerAnthropic"></option>
-            <option value="gemini" data-i18n="settings.ai.providerGemini"></option>
-          </select>
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.storage"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.dbPath"></b>
+                <small id="general-db-path"></small>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.storageHintTitle"></b>
+                <small data-i18n="settings.storageHint"></small>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="form-row">
-          <label for="ai-model" data-i18n="settings.ai.model"></label>
-          <input id="ai-model" data-i18n-placeholder="settings.ai.modelPlaceholder" autocomplete="off" />
+        <!-- 阅读 -->
+        <div class="pane hidden" data-pane="reading">
+          <h3 data-i18n="settings.nav.reading"></h3>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.readBehaviour"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.markRead.title"></b>
+                <small data-i18n="settings.markRead.hint"></small>
+              </div>
+              <label class="switch"><input type="checkbox" id="set-mark-read" /><span></span></label>
+            </div>
+          </div>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.bulk"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.bulkTitle"></b>
+                <small data-i18n="settings.bulkHint"></small>
+              </div>
+            </div>
+            <div class="setting-actions">
+              <button id="act-mark-all-read" data-i18n="settings.markAllRead"></button>
+              <button id="act-mark-all-unread" data-i18n="settings.markAllUnread"></button>
+            </div>
+          </div>
         </div>
 
-        <div class="form-row">
-          <label for="ai-base-url" data-i18n="settings.ai.baseUrl"></label>
-          <input id="ai-base-url" data-i18n-placeholder="settings.ai.baseUrlPlaceholder" autocomplete="off" />
+        <!-- 数据 -->
+        <div class="pane hidden" data-pane="data">
+          <h3 data-i18n="settings.nav.data"></h3>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.opml"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.opmlTitle"></b>
+                <small data-i18n="settings.opmlHint"></small>
+              </div>
+            </div>
+            <div class="setting-actions">
+              <button id="act-import-opml" data-i18n="settings.importOpml"></button>
+              <button id="act-export-opml" data-i18n="settings.exportOpml"></button>
+            </div>
+          </div>
         </div>
 
-        <div class="form-row">
-          <label for="ai-target" data-i18n="settings.ai.target"></label>
-          <input id="ai-target" data-i18n-placeholder="settings.ai.targetPlaceholder" autocomplete="off" />
+        <!-- AI -->
+        <div class="pane hidden" data-pane="ai">
+          <h3 data-i18n="settings.nav.ai"></h3>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.provider"></h4>
+
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.ai.provider"></b>
+              </div>
+              <select id="ai-provider">
+                <option value="ollama" data-i18n="settings.ai.providerOllama"></option>
+                <option value="openai" data-i18n="settings.ai.providerOpenai"></option>
+                <option value="anthropic" data-i18n="settings.ai.providerAnthropic"></option>
+                <option value="gemini" data-i18n="settings.ai.providerGemini"></option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.ai.model"></b>
+                <small data-i18n="settings.ai.modelPlaceholder"></small>
+              </div>
+              <input id="ai-model" autocomplete="off" />
+            </div>
+
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.ai.baseUrl"></b>
+                <small data-i18n="settings.ai.baseUrlPlaceholder"></small>
+              </div>
+              <input id="ai-base-url" autocomplete="off" />
+            </div>
+
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.ai.target"></b>
+              </div>
+              <input id="ai-target" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.credentials"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.ai.key"></b>
+                <small id="ai-key-hint" data-i18n="settings.ai.keyPlaceholder"></small>
+              </div>
+              <input id="ai-key" type="password" autocomplete="off" />
+            </div>
+            <div class="setting-actions">
+              <button id="ai-save" data-i18n="settings.ai.save"></button>
+              <button id="ai-clear-key" data-i18n="settings.ai.clearKey"></button>
+              <button id="ai-test" data-i18n="settings.ai.test"></button>
+            </div>
+            <p id="ai-status" class="dim small">—</p>
+          </div>
         </div>
 
-        <div class="form-row">
-          <label for="ai-key" data-i18n="settings.ai.key"></label>
-          <input id="ai-key" type="password" data-i18n-placeholder="settings.ai.keyPlaceholder"
-            autocomplete="off" />
+        <!-- MCP -->
+        <div class="pane hidden" data-pane="mcp">
+          <h3 data-i18n="settings.nav.mcp"></h3>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.server"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.mcp.enabled"></b>
+                <small data-i18n="settings.mcp.hint"></small>
+              </div>
+              <label class="switch"><input type="checkbox" id="set-mcp-enabled" /><span></span></label>
+            </div>
+
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.mcp.port"></b>
+                <small data-i18n="settings.mcp.portHint"></small>
+              </div>
+              <input id="mcp-port" type="number" min="1024" max="65535" />
+            </div>
+
+            <p id="mcp-status" class="dim small">—</p>
+          </div>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.client"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.mcp.snippetTitle"></b>
+                <small data-i18n="settings.mcp.snippetHint"></small>
+              </div>
+            </div>
+            <div class="setting-actions">
+              <button id="mcp-copy-snippet" data-i18n="settings.mcp.copySnippet"></button>
+              <button id="mcp-rotate" data-i18n="settings.mcp.rotate"></button>
+            </div>
+            <textarea id="mcp-snippet" rows="8" readonly></textarea>
+          </div>
         </div>
 
-        <div class="setting-actions">
-          <button id="ai-save" data-i18n="settings.ai.save"></button>
-          <button id="ai-clear-key" data-i18n="settings.ai.clearKey"></button>
-          <button id="ai-test" data-i18n="settings.ai.test"></button>
+        <!-- 关于 -->
+        <div class="pane hidden" data-pane="about">
+          <h3 data-i18n="settings.nav.about"></h3>
+          <div class="setting-block">
+            <div class="setting-item">
+              <div class="text">
+                <b>RustRss</b>
+                <small data-i18n="settings.about.tagline"></small>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.about.license"></b>
+                <small>MIT OR Apache-2.0</small>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.about.privacy"></b>
+                <small data-i18n="settings.about.privacyHint"></small>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <p id="ai-status" class="dim small">—</p>
-      </div>
-
-      <div class="dialog-section">
-        <h3 data-i18n="settings.mcp.title"></h3>
-
-        <label class="setting-row">
-          <input type="checkbox" id="set-mcp-enabled" />
-          <span>
-            <b data-i18n="settings.mcp.enabled"></b>
-            <small data-i18n="settings.mcp.hint"></small>
-          </span>
-        </label>
-
-        <div class="form-row">
-          <label for="mcp-port" data-i18n="settings.mcp.port"></label>
-          <input id="mcp-port" type="number" min="1024" max="65535" />
-        </div>
-
-        <p id="mcp-status" class="dim small">—</p>
-
-        <div class="setting-actions">
-          <button id="mcp-copy-snippet" data-i18n="settings.mcp.copySnippet"></button>
-          <button id="mcp-rotate" data-i18n="settings.mcp.rotate"></button>
-        </div>
-
-        <textarea id="mcp-snippet" rows="7" readonly></textarea>
-      </div>
-
-      <p class="dim small" data-i18n="settings.storageHint"></p>
+      <button id="settings-close" class="settings-close" data-i18n-title="settings.close">✕</button>
     </div>
   </div>
 

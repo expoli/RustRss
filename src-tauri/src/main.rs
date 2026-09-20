@@ -83,9 +83,12 @@ fn main() {
                 ))
             })
             .unwrap_or_else(|_| (mcp_server::DEFAULT_PORT, String::new()));
+        let token_prefix: String = token.chars().take(8).collect();
         tauri::async_runtime::spawn(async move {
             match runtime.start(&db_path, token, port).await {
-                Ok(addr) => eprintln!("[rustrss] MCP HTTP 服务: http://{addr}/mcp（仅回环，需 token）"),
+                Ok(addr) => eprintln!(
+                    "[rustrss] MCP HTTP 服务: http://{addr}/mcp（仅回环，需 token，前缀 {token_prefix}…）"
+                ),
                 Err(e) => eprintln!("[rustrss] MCP HTTP 服务启动失败: {e}"),
             }
         });

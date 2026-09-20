@@ -529,6 +529,19 @@ impl Store {
         Ok(())
     }
 
+    /// 只在键不存在时写入；返回是否真的写入了。
+    ///
+    /// 用于「生成一次、以后永不覆盖」的值（如 MCP token）：结构上堵住
+    /// 「已有值被静默改写」这类事故。
+    pub fn insert_setting_if_absent(&self, key: &str, value: &str) -> Result<bool> {
+        let n = self.conn.execute(
+            "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
+             ON CONFLICT(key) DO NOTHING",
+            params![key, value, now()],
+        )?;
+        Ok(n > 0)
+    }
+
     pub fn all_settings(&self) -> Result<Vec<(String, String)>> {
         let mut stmt = self.conn.prepare("SELECT key, value FROM settings ORDER BY key")?;
         let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
