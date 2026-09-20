@@ -12,6 +12,9 @@ sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
+# 相对 href 按页面地址解析：用与浏览器同一套 WHATWG 语义（同 ui 侧 new URL(href, base)）。
+# 它本来就在依赖树里（reqwest 的传递依赖），不是新增的第三方包。
+url = "2"
 rusqlite = { version = "0.40", features = ["bundled"] }
 # 注意：reqwest 0.13 的 TLS feature 名与 0.12 不同（rustls 而非 rustls-tls）。
 # 关掉默认特性以避免引入 native-tls/OpenSSL；根证书用内置的 webpki-roots，

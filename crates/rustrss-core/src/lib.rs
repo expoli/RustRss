@@ -4,6 +4,7 @@
 //! 避免「两套查询逻辑漂移」（见 PRD §7 架构约束）。
 
 pub mod ai;
+pub mod discover;
 pub mod fetch;
 pub mod html;
 pub mod model;
@@ -13,6 +14,7 @@ pub mod paths;
 pub mod store;
 
 pub use ai::{AiClient, AiConfig, AiError, Provider, RequestPreview};
+pub use discover::{discover, DiscoverError, Discovery, DiscoveryVia};
 pub use fetch::{
     apply_results, bounded_map, collect_jobs, fetch_jobs, refresh, refresh_all, Fetcher,
     FetchResult, RefreshReport,
