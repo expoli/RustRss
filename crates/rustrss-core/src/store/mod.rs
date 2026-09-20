@@ -283,6 +283,22 @@ impl Store {
             .execute("DELETE FROM feeds WHERE id = ?1", params![feed_id])?)
     }
 
+    /// 抓取所需的元信息：地址 + 上次留下的条件请求凭据。
+    pub fn feed_endpoint(&self, feed_id: i64) -> Result<(String, Option<String>, Option<String>)> {
+        Ok(self.conn.query_row(
+            "SELECT url, etag, last_modified FROM feeds WHERE id = ?1",
+            params![feed_id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )?)
+    }
+
+    /// 全部订阅源 id（用于「刷新全部」）
+    pub fn all_feed_ids(&self) -> Result<Vec<i64>> {
+        let mut stmt = self.conn.prepare("SELECT id FROM feeds ORDER BY id")?;
+        let rows = stmt.query_map([], |r| r.get::<_, i64>(0))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     // ---------------------------------------------------------------- 条目入库
 
     /// 批量入库。已存在的条目按内容指纹决定「更新」还是「跳过」。

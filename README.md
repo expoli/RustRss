@@ -40,13 +40,19 @@ ui/                    桌面应用前端（当前为探针页面）
 - [x] HTML → 纯文本（去标签、剔除 script/style、实体解码、保留块级换行）
 - [x] SQLite 存储：schema 迁移、按 `stable_id` 去重 upsert、已读/星标、未读计数、文件夹、抓取状态与缓存头
 - [x] 全文检索：FTS5 + 中文预分词（拉丁出词、中文出 bigram；单字中文走 LIKE 兜底）
-- [ ] 抓取：条件请求（ETag / Last-Modified）、增量入库、有界并发
+- [x] 抓取：条件请求（ETag / Last-Modified）、有界并发、单源失败隔离、增量入库
+
+至此 `抓取 → 解析 → 入库 → 检索` 数据通路已闭合。
+
+**两层保护**（真实源实测：3 个源第二次刷新时，2 个返回 304 零写入，1 个不支持 304 但被内容指纹判为「未变」，条目数不变）：
+1. 条件请求能省则省；
+2. 源站不配合时，靠内容指纹保证不重复入库。
 
 两条不容退让的保证（均有测试）：
 1. **重复刷新不产生重复条目**——`UNIQUE(feed_id, stable_id)` + 内容指纹；内容没变则不解写库。
 2. **刷新不覆盖阅读状态**——`read` / `starred` 不在 upsert 的更新列里。
 
-单元测试：`cargo test -p rustrss-core`
+单元测试：`cargo test -p rustrss-core`（含 wiremock 本地服务，不依赖外网）
 
 用真实源手工验证：
 
@@ -57,6 +63,10 @@ cargo run -p rustrss-core --example parse_file -- /tmp/feed.xml
 
 # 解析 + 入库 + 检索（同一文件跑两次，第二次应全部计为「未变」）
 cargo run -p rustrss-core --example import_file -- /tmp/feed.xml /tmp/rustrss.sqlite "kernel"
+
+# 真实网络：抓取 → 解析 → 入库 → 再刷新（观察 304 与去重）
+cargo run -p rustrss-core --example refresh_real -- /tmp/rustrss.sqlite \
+  https://sspai.com/feed https://www.ruanyifeng.com/blog/atom.xml https://lwn.net/headlines/rss
 ```
 
 ### M0 技术探针（已完成，结论见 PRD §10）

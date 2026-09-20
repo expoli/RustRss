@@ -11,3 +11,12 @@ sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 rusqlite = { version = "0.40", features = ["bundled"] }
+# 注意：reqwest 0.13 的 TLS feature 名与 0.12 不同（rustls 而非 rustls-tls）。
+# 关掉默认特性以避免引入 native-tls/OpenSSL；根证书用内置的 webpki-roots，
+# 不依赖系统信任库，便于跨发行版打成 native 包。
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "gzip", "brotli", "http2"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
+
+[dev-dependencies]
+wiremock = "0.6"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
