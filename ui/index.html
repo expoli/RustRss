@@ -6,16 +6,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RustRss</title>
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // 内联诊断：内联脚本一解析就执行，用来区分「页面根本没被服务」与「外部 JS 没加载」。
+    // 平时留着无妨（一行、不过滤也不报错）。
+    const probe = (line) => {
+      try {
+        window.__TAURI__ && window.__TAURI__.core
+          ? window.__TAURI__.core.invoke('ui_log', { line })
+          : console.error('probe(no ipc): ' + line);
+      } catch (err) {
+        console.error('probe 失败', err);
+      }
+    };
+    probe('inline script ran');
+    // 外部脚本加载失败与未捕获异常都要上报，否则界面只“什么都不发生”而无任何线索。
+    // （这条探针已经拓出过一个真问题：i18n.js 的顶层函数与 app.js 的同名 const 冲突，
+    //  WebKit 下那是解析期 SyntaxError，不装这个监听器就只能看到“界面没反应”。）
+    window.addEventListener(
+      'error',
+      (e) => {
+        if (e.target && e.target.tagName === 'SCRIPT') {
+          probe(`script load error: ${e.target.src}`);
+        } else {
+          probe(`js error: ${e.message} @ ${e.filename}:${e.lineno}`);
+        }
+      },
+      true
+    );
+  </script>
 </head>
 
 <body>
   <header class="toolbar">
-    <span class="brand">RustRss</span>
-    <input id="search" type="search" placeholder="搜索标题与正文（按 / 聚焦）" autocomplete="off" />
+    <span class="brand" data-i18n="app.name">RustRss</span>
+    <input id="search" type="search" data-i18n-placeholder="search.placeholder" autocomplete="off" />
     <div class="grow"></div>
-    <button id="btn-refresh" title="刷新全部订阅（r）">刷新全部</button>
-    <button id="btn-add" title="添加订阅">添加订阅</button>
-    <button id="btn-settings" title="设置">设置</button>
+    <button id="btn-refresh" data-i18n="toolbar.refresh" data-i18n-title="toolbar.refreshTitle"></button>
+    <button id="btn-add" data-i18n="toolbar.addFeed" data-i18n-title="toolbar.addFeedTitle"></button>
+    <button id="btn-settings" data-i18n="toolbar.settings" data-i18n-title="toolbar.settingsTitle"></button>
     <span id="status" class="status" role="status"></span>
   </header>
 
@@ -23,22 +51,22 @@
     <aside class="sidebar">
       <nav id="views" class="views"></nav>
       <div class="section-title">
-        <span>订阅源</span>
+        <span data-i18n="sidebar.feeds"></span>
         <span id="feeds-meta" class="dim"></span>
       </div>
       <ul id="feeds" class="feeds"></ul>
       <div id="add-row" class="add-row hidden">
-        <input id="add-url" placeholder="https://example.com/feed.xml" autocomplete="off" />
-        <button id="add-ok">添加</button>
+        <input id="add-url" data-i18n-placeholder="sidebar.addPlaceholder" autocomplete="off" />
+        <button id="add-ok" data-i18n="sidebar.add"></button>
       </div>
       <div class="sidebar-foot">
-        <span id="db-info" class="dim" title="数据库位置"></span>
+        <span id="db-info" class="dim"></span>
       </div>
     </aside>
 
     <section class="list">
       <div class="list-head">
-        <span id="list-title">全部未读</span>
+        <span id="list-title"></span>
         <span id="list-count" class="dim"></span>
       </div>
       <ul id="entries" class="entries"></ul>
@@ -46,11 +74,8 @@
 
     <article id="reader" class="reader">
       <div class="reader-empty">
-        <p>从中间列表选一篇文章。</p>
-        <p class="dim">
-          快捷键：<b>j</b>/<b>k</b> 上下 · <b>Enter</b> 打开 · <b>u</b> 未读切换 · <b>s</b> 星标 ·
-          <b>r</b> 刷新 · <b>/</b> 搜索 · <b>Esc</b> 清除搜索
-        </p>
+        <p data-i18n="reader.empty"></p>
+        <p id="reader-shortcuts" class="dim"></p>
       </div>
     </article>
   </main>
@@ -58,77 +83,85 @@
   <div id="settings-overlay" class="overlay hidden">
     <div class="dialog">
       <div class="dialog-head">
-        <span>设置</span>
-        <button id="settings-close">关闭</button>
+        <span data-i18n="settings.title"></span>
+        <button id="settings-close" data-i18n="settings.close"></button>
+      </div>
+
+      <div class="form-row">
+        <label for="set-language" data-i18n="settings.language"></label>
+        <select id="set-language">
+          <option value="auto" data-i18n="settings.languageAuto"></option>
+          <option value="zh-CN" data-i18n="settings.languageZh"></option>
+          <option value="en" data-i18n="settings.languageEn"></option>
+        </select>
       </div>
 
       <label class="setting-row">
         <input type="checkbox" id="set-mark-read" />
         <span>
-          <b>j / k 浏览时顺便标记已读</b>
-          <small>
-            关闭后：j/k 只移动选中项并把文章显示在右栏，只有 <b>Enter</b>、鼠标点击或 <b>u</b>
-            才会改变已读状态。默认开启（键盘阅读器的主流做法：扫一遍即已读）。
-          </small>
+          <b data-i18n="settings.markRead.title"></b>
+          <small data-i18n="settings.markRead.hint"></small>
         </span>
       </label>
 
       <div class="setting-actions">
-        <button id="act-mark-all-read">当前视图全部已读</button>
-        <button id="act-mark-all-unread">当前视图全部未读（撤销）</button>
+        <button id="act-mark-all-read" data-i18n="settings.markAllRead"></button>
+        <button id="act-mark-all-unread" data-i18n="settings.markAllUnread"></button>
       </div>
 
       <div class="setting-actions">
-        <button id="act-import-opml">导入 OPML…</button>
-        <button id="act-export-opml">导出 OPML…</button>
+        <button id="act-import-opml" data-i18n="settings.importOpml"></button>
+        <button id="act-export-opml" data-i18n="settings.exportOpml"></button>
       </div>
 
       <div class="dialog-section">
-        <h3>AI（自带 API key）</h3>
+        <h3 data-i18n="settings.ai.title"></h3>
 
         <div class="form-row">
-          <label for="ai-provider">服务商</label>
+          <label for="ai-provider" data-i18n="settings.ai.provider"></label>
           <select id="ai-provider">
-            <option value="ollama">Ollama（本地，无需 key）</option>
-            <option value="openai">OpenAI 兼容（含自建网关）</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="gemini">Gemini</option>
+            <option value="ollama" data-i18n="settings.ai.providerOllama"></option>
+            <option value="openai" data-i18n="settings.ai.providerOpenai"></option>
+            <option value="anthropic" data-i18n="settings.ai.providerAnthropic"></option>
+            <option value="gemini" data-i18n="settings.ai.providerGemini"></option>
           </select>
         </div>
 
         <div class="form-row">
-          <label for="ai-model">模型</label>
-          <input id="ai-model" placeholder="例如 gpt-4o-mini / claude-sonnet-4 / llama3.2" autocomplete="off" />
+          <label for="ai-model" data-i18n="settings.ai.model"></label>
+          <input id="ai-model" data-i18n-placeholder="settings.ai.modelPlaceholder" autocomplete="off" />
         </div>
 
         <div class="form-row">
-          <label for="ai-base-url">端点</label>
-          <input id="ai-base-url" placeholder="留空用默认端点" autocomplete="off" />
+          <label for="ai-base-url" data-i18n="settings.ai.baseUrl"></label>
+          <input id="ai-base-url" data-i18n-placeholder="settings.ai.baseUrlPlaceholder" autocomplete="off" />
         </div>
 
         <div class="form-row">
-          <label for="ai-target">翻译目标</label>
-          <input id="ai-target" placeholder="中文" autocomplete="off" />
+          <label for="ai-target" data-i18n="settings.ai.target"></label>
+          <input id="ai-target" data-i18n-placeholder="settings.ai.targetPlaceholder" autocomplete="off" />
         </div>
 
         <div class="form-row">
-          <label for="ai-key">API key</label>
-          <input id="ai-key" type="password" placeholder="留空＝不修改；保存后写入系统凭据库" autocomplete="off" />
+          <label for="ai-key" data-i18n="settings.ai.key"></label>
+          <input id="ai-key" type="password" data-i18n-placeholder="settings.ai.keyPlaceholder"
+            autocomplete="off" />
         </div>
 
         <div class="setting-actions">
-          <button id="ai-save">保存 AI 设置</button>
-          <button id="ai-clear-key">清除 key</button>
-          <button id="ai-test">测试连接</button>
+          <button id="ai-save" data-i18n="settings.ai.save"></button>
+          <button id="ai-clear-key" data-i18n="settings.ai.clearKey"></button>
+          <button id="ai-test" data-i18n="settings.ai.test"></button>
         </div>
 
         <p id="ai-status" class="dim small">—</p>
       </div>
 
-      <p class="dim small">设置存在同一个数据库里，与订阅、已读状态一起备份。</p>
+      <p class="dim small" data-i18n="settings.storageHint"></p>
     </div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>
 

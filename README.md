@@ -82,7 +82,19 @@ RUSTSS_AI_PROVIDER=anthropic RUSTSS_AI_MODEL=claude-x RUSTSS_AI_KEY=... \
 2. **结果按「文章 + 任务 + 参数 + 模型 + prompt 版本」缓存**（`ai_cache` 表）：重复打开不重复请求；改 prompt 后旧缓存自动失效。
 3. **超长正文截断并显式标注**（当前上限 12000 字符），不静默失败；分块/映射-归并留待后续。
 
-尚未做（属设置/界面层，已列入待办）：**API key 存入操作系统凭据库**、设置界面、以及「发送前确认」的交互。
+尚未做：**「发送前确认要发什么」的交互**（`AiClient::preview()` 已具备，尚未接到界面上）。
+
+### AI 在界面里怎么用
+
+「设置 → AI」：选服务商（Ollama / OpenAI 兼容 / Anthropic / Gemini）、填模型与端点（留空用默认）、填 API key。
+
+- **API key 存操作系统凭据库**（`keyring`：Linux 走 Secret Service、macOS 走 Keychain、Windows 走凭据管理器），**不进数据库**——数据库会被导出、同步、复制给别人，key 一旦进去就会跟着跑。
+- 每个服务商一个凭据条目，切换服务商不会互相覆盖；界面只显示「已设置/未设置」，并如实告知来源（凭据库 / 环境变量）。
+- 凭据库不可用时返回明确错误（提示需要 Secret Service / KWallet），**不静默降级成明文文件**；临时可用环境变量 `RUSTSS_AI_KEY` 代替。
+- 「测试连接」会真的发一个最小请求——它比「检查 key 是否存在」有意义得多：同时验证了凭据、模型名与端点三件事。
+- 正文里点「AI 摘要 / AI 翻译」→ 结果面板会标出**来自缓存还是本次新请求**、以及正文是否因超长被截断；旁边有「重新生成」。
+
+本机实测：凭据库探针（`cargo run -p rustrss-desktop --example keyring_probe`）在本机 KDE 下完成写入/读回/清理完整往返——**API key 的存储方案不建立在「应该能行」的假设上**。
 
 ### 桌面界面（三栏）
 
@@ -98,7 +110,7 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 正文安全渲染：白名单清洗 + 相对地址图片/链接解析（详见下）
 - [x] OPML 导入 / 导出（嵌套文件夹压平成 `父/子`；按 `xmlUrl` 去重）
 - [x] Linux 打包：产出 `.deb`（**8.1MB，不打包 WebKit**，依赖声明 `libwebkit2gtk-4.1-0, libgtk-3-0`）
-- [ ] i18n（zh-CN / en）
+- [x] i18n：zh-CN / en（109 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
 - [ ] 便携模式（`portable.txt`）、CSP 收紧（当前 `csp: null`）、列表虚拟化（当前硬上限 200 条）
 - [ ] 发布构建开 `strip`（当前未开，`Installed-Size` 25MB 偏大）、rpm/Windows/macOS 打包
 
@@ -120,10 +132,12 @@ npx -y @tauri-apps/cli@latest build --bundles deb
 2. **正文经白名单清洗后才进 DOM**（详见下）。
 3. **设置存在数据库里**（`settings` 键值表，与订阅同一份数据）——默认值只在 Rust 侧定义一处，界面只负责显示与切换，避免两边各写一份而漂移。
 
-界面行为的两个细节（都是被实际使用抓出来的）：
+界面行为的三个细节（都是被实际使用或诊断抓出来的）：
 
 - **选中项会自动滚入可视区**（`scrollIntoView({block:'nearest'})`）。先前选中项变化走的是「全量重建列表」且从不滚动，于是按 `j` 往下走时高亮会跑到列表可视范围之外。现在选中项变化只改行高亮，不重建 DOM；只有数据集变化（比如未读视图里读完一篇）才重建，并保持阅读位置。
 - 列表列的高度用 `grid-template-rows: minmax(0, 1fr)` 显式约束，否则行的 auto 高度会被内容撑开、整列能滚过窗口底部。
+- **普通 `<script>` 的顶层函数声明会变成 window 属性**：`i18n.js` 导出 `applyStaticI18n` 这类名字后，`app.js` 再写同名的顶层 `const` 会在 WebKit 下报 `Can't create duplicate variable that shadows a global property`，而且是**解析期**错误——整份脚本一句都不执行，界面表现为「什么都不发生」。两个文件现在都包在 IIFE 里，只暴露 `window.I18N`。
+  页内保留了一个错误上报探针（捕获脚加载失败与未捕获异常，上报到日志）——装它之前，这类失败是“无信息”的；靠它才拿到上面那行报错。
 
 关于第 2 条：页面启动时会跑一次自检（构造带 `<script>`/`onerror`/`javascript:` 的脏 HTML，验证清洗结果与相对地址解析），结果上报到 stdout：日志里看到 `sanitizer selftest ok` 即通过。**这个自检不是形式，它已经抓出两个真 bug**：清洗时误删了 `body` 自身（启动直接失败），以及把相对地址当非法协议删除（导致 feed 里的图片全不显示）。
 

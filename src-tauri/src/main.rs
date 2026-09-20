@@ -83,6 +83,7 @@ fn main() {
             commands::mark_all_unread,
             commands::get_ui_settings,
             commands::set_mark_read_on_navigate,
+            commands::set_ui_locale,
             commands::get_ai_settings,
             commands::save_ai_settings,
             commands::test_ai_connection,

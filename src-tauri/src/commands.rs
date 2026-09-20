@@ -90,21 +90,31 @@ pub fn set_starred(state: State<'_, AppState>, ids: Vec<i64>, starred: bool) -> 
 /// 默认值只在 Rust 这一处定义，界面只负责显示与切换，避免两边各写一份而漂移。
 const KEY_MARK_READ_ON_NAVIGATE: &str = "ui.mark_read_on_navigate";
 const DEFAULT_MARK_READ_ON_NAVIGATE: bool = true;
+/// 界面语言：`auto`（跟随系统）/ `zh-CN` / `en`
+const KEY_LOCALE: &str = "ui.locale";
+const DEFAULT_LOCALE: &str = "auto";
 
 #[derive(Serialize)]
 pub struct UiSettings {
     pub mark_read_on_navigate: bool,
+    pub locale: String,
 }
 
-#[tauri::command]
-pub fn get_ui_settings(state: State<'_, AppState>) -> R<UiSettings> {
+fn ui_settings(state: &AppState) -> R<UiSettings> {
     state.with_store(|s| {
         Ok(UiSettings {
             mark_read_on_navigate: s
                 .bool_setting(KEY_MARK_READ_ON_NAVIGATE, DEFAULT_MARK_READ_ON_NAVIGATE)
                 .map_err(err)?,
+            locale: crate::ai::non_empty_setting(s, KEY_LOCALE)
+                .unwrap_or_else(|| DEFAULT_LOCALE.to_string()),
         })
     })
+}
+
+#[tauri::command]
+pub fn get_ui_settings(state: State<'_, AppState>) -> R<UiSettings> {
+    ui_settings(&state)
 }
 
 #[tauri::command]
@@ -112,10 +122,21 @@ pub fn set_mark_read_on_navigate(state: State<'_, AppState>, enabled: bool) -> R
     state.with_store(|s| {
         s.set_bool_setting(KEY_MARK_READ_ON_NAVIGATE, enabled)
             .map_err(err)?;
-        Ok(UiSettings {
-            mark_read_on_navigate: enabled,
-        })
-    })
+        Ok(())
+    })?;
+    ui_settings(&state)
+}
+
+/// 语言：`auto` / `zh-CN` / `en`。非法值一律归为 `auto`，不让拼错的设置把界面卡死。
+#[tauri::command]
+pub fn set_ui_locale(state: State<'_, AppState>, locale: String) -> R<UiSettings> {
+    let locale = match locale.trim() {
+        "zh-CN" => "zh-CN",
+        "en" => "en",
+        _ => DEFAULT_LOCALE,
+    };
+    state.with_store(|s| s.set_setting(KEY_LOCALE, locale).map_err(err))?;
+    ui_settings(&state)
 }
 
 fn scope_of(feed_id: Option<i64>) -> MarkScope {

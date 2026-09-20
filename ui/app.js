@@ -1,11 +1,36 @@
 // RustRss 界面逻辑。
 //
-// 两条刻意的设计选择：
-// 1. **只有用户主动打开文章才标记已读**（点击 / j / k / Enter）。切换视图或刷新只是
-//    加载列表，不会顺手把没看过的文章标成已读。
-// 2. 正文一律经白名单清洗后再插入 DOM。feed 是不可信输入，绝不能让它执行脚本。
+// 整个文件包在 IIFE 里：避免顶层声明变成 window 属性而与 i18n.js 的同名函数冲突
+// （WebKit 下这种冲突是解析期 SyntaxError，整份脚本都不会执行）。
+(function () {
 
 const el = (id) => document.getElementById(id);
+
+// 最早的诊断：先确认脚本真的被执行了。
+// 这样「脚本没跑」与「跑了一半报错」能被日志区分开——否则只能靠猜。
+try {
+  window.__TAURI__ && window.__TAURI__.core
+    ? window.__TAURI__.core.invoke('ui_log', { line: 'app.js start' })
+    : console.error('IPC 不可用');
+} catch (err) {
+  console.error('ui_log 不可用', err);
+}
+
+// i18n 缺失时不能静默：把问题报出来，界面退化为显示 key（不空白）
+const I18N_API = window.I18N || null;
+if (!I18N_API) {
+  try {
+    window.__TAURI__?.core?.invoke('ui_log', { line: 'FATAL: window.I18N 未定义（i18n.js 未加载？）' });
+  } catch {}
+  console.error('window.I18N 未定义');
+}
+const t = I18N_API ? I18N_API.t : (key) => key;
+const applyStaticI18n = I18N_API ? I18N_API.applyStaticI18n : () => {};
+const i18nSelfTest = I18N_API
+  ? I18N_API.selfTest
+  : () => ({ ok: false, keys: 0, problems: ['i18n.js 未加载'] });
+const setLocale = I18N_API ? I18N_API.setLocale : () => 'zh-CN';
+const currentLocale = () => (I18N_API ? I18N_API.locale() : 'zh-CN');
 
 async function invoke(cmd, args = {}) {
   if (!window.__TAURI__ || !window.__TAURI__.core) {
@@ -38,9 +63,9 @@ const state = {
 };
 
 const VIEWS = [
-  { kind: 'unread', label: '全部未读', icon: '●' },
-  { kind: 'starred', label: '星标', icon: '★' },
-  { kind: 'all', label: '全部', icon: '≡' },
+  { kind: 'unread', key: 'list.unread', icon: '●' },
+  { kind: 'starred', key: 'list.starred', icon: '★' },
+  { kind: 'all', key: 'list.all', icon: '≡' },
 ];
 
 // ---------------------------------------------------------------- 正文清洗
@@ -170,9 +195,10 @@ function fmtTime(ts) {
   const d = new Date(ts * 1000);
   const now = new Date();
   const sameDay = d.toDateString() === now.toDateString();
+  const loc = currentLocale();
   return sameDay
-    ? d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    ? d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString(loc, { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
 function setStatus(text, isError = false) {
@@ -192,7 +218,7 @@ function renderSidebar() {
   for (const v of VIEWS) {
     const li = document.createElement('li');
     li.className = state.view.kind === v.kind ? 'active' : '';
-    li.innerHTML = `<span class="icon">${v.icon}</span><span>${v.label}</span><span class="count">${counts[v.kind]}</span>`;
+    li.innerHTML = `<span class="icon">${v.icon}</span><span>${t(v.key)}</span><span class="count">${counts[v.kind]}</span>`;
     li.onclick = () => setView({ kind: v.kind });
     views.appendChild(li);
   }
@@ -204,14 +230,17 @@ function renderSidebar() {
     const failed = f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified';
     li.className = state.view.kind === 'feed' && state.feedId === f.id ? 'active' : '';
     li.title = failed
-      ? `上次抓取：${f.last_status}｜${f.last_error || ''}\n双击可重试`
-      : `${f.url}\n双击刷新此源`;
+      ? t('sidebar.feedTooltipFailed', {
+          status: f.last_status,
+          error: f.last_error || '',
+        })
+      : t('sidebar.feedTooltipOk', { url: f.url });
     li.innerHTML = `<span class="name">${escapeHtml(f.title)}</span>${failed ? '<span class="dot">●</span>' : ''}<span class="count">${f.unread}</span>`;
     li.onclick = () => setView({ kind: 'feed', feedId: f.id });
     li.ondblclick = () => refreshOne(f.id);
     feeds.appendChild(li);
   }
-  el('feeds-meta').textContent = `${state.feeds.length} 个`;
+  el('feeds-meta').textContent = t('sidebar.feedCount', { n: state.feeds.length });
   if (state.db) {
     const info = el('db-info');
     info.textContent = `${state.db.entries} 篇 · ${state.db.dbPath}`;
@@ -226,17 +255,18 @@ function escapeHtml(text) {
 }
 
 function viewTitle() {
-  if (state.view.kind === 'search') return `搜索：${state.query}`;
+  if (state.view.kind === 'search') return t('list.searchTitle', { q: state.query });
   if (state.view.kind === 'feed') {
     const feed = state.feeds.find((f) => f.id === state.feedId);
-    return feed ? feed.title : '订阅源';
+    return feed ? feed.title : t('list.feedFallback');
   }
-  return VIEWS.find((v) => v.kind === state.view.kind)?.label ?? '文章';
+  const view = VIEWS.find((v) => v.kind === state.view.kind);
+  return view ? t(view.key) : t('list.all');
 }
 
 function renderList() {
   el('list-title').textContent = viewTitle();
-  el('list-count').textContent = state.entries.length ? `${state.entries.length} 篇` : '';
+  el('list-count').textContent = state.entries.length ? t('list.count', { n: state.entries.length }) : '';
 
   const list = el('entries');
   list.innerHTML = '';
@@ -244,7 +274,7 @@ function renderList() {
     const li = document.createElement('li');
     li.className = 'dim';
     li.style.cursor = 'default';
-    li.textContent = state.view.kind === 'unread' ? '没有未读文章' : '这里还没有文章';
+    li.textContent = state.view.kind === 'unread' ? t('list.emptyUnread') : t('list.empty');
     list.appendChild(li);
     return;
   }
@@ -290,9 +320,8 @@ function markRowRead(id) {
 
 function renderReaderEmpty() {
   el('reader').innerHTML = `<div class="reader-empty">
-      <p>从中间列表选一篇文章。</p>
-      <p class="dim">快捷键：<b>j</b>/<b>k</b> 上下 · <b>Enter</b> 打开 · <b>u</b> 未读切换 ·
-      <b>s</b> 星标 · <b>r</b> 刷新 · <b>/</b> 搜索 · <b>Esc</b> 清除搜索</p>
+      <p>${t('reader.empty')}</p>
+      <p class="dim">${t('reader.shortcuts')}</p>
     </div>`;
 }
 
@@ -315,19 +344,19 @@ function renderReader(entry) {
       </div>
     </div>
     <div class="reader-actions">
-      <button id="act-read">${entry.read ? '标为未读' : '标为已读'}</button>
-      <button id="act-star">${entry.starred ? '取消星标' : '加星标'}</button>
-      ${entry.url ? '<button id="act-open">浏览器打开</button><button id="act-copy">复制链接</button>' : ''}
-      <button id="act-summarize" title="用配置的 AI 生成摘要（结果会缓存，不重复花钱）">AI 摘要</button>
-      <button id="act-translate" title="翻译成设置里的目标语言">AI 翻译</button>
+      <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
+      <button id="act-star">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</button>
+      ${entry.url ? `<button id="act-open">${t('reader.openInBrowser')}</button><button id="act-copy">${t('reader.copyLink')}</button>` : ''}
+      <button id="act-summarize" title="${t('reader.summarizeTitle')}">${t('reader.summarize')}</button>
+      <button id="act-translate" title="${t('reader.translateTitle')}">${t('reader.translate')}</button>
     </div>
     <div id="ai-panel" class="ai-panel hidden">
       <div class="ai-panel-head">
         <b id="ai-panel-title"></b>
         <span id="ai-panel-meta" class="dim"></span>
         <span class="grow"></span>
-        <button id="ai-regenerate">重新生成</button>
-        <button id="ai-close">关闭</button>
+        <button id="ai-regenerate">${t('ai.panel.regenerate')}</button>
+        <button id="ai-close">${t('ai.panel.close')}</button>
       </div>
       <div id="ai-panel-body" class="ai-panel-body"></div>
     </div>
@@ -343,8 +372,8 @@ function renderReader(entry) {
     el('act-open').onclick = () => invoke('open_external', { url: entry.url }).catch((e) => setStatus(e.message, true));
     el('act-copy').onclick = () =>
       invoke('clip_write', { text: entry.url })
-        .then(() => setStatus('链接已复制'))
-        .catch((e) => setStatus('复制失败：' + e.message, true));
+        .then(() => setStatus(t('reader.linkCopied')))
+        .catch((e) => setStatus(t('reader.copyFailed', { error: e.message }), true));
   }
 
   // 正文里的链接交给系统浏览器，避免在应用内导航走丢
@@ -370,6 +399,9 @@ async function loadAll() {
   state.feeds = feeds;
   state.settings = settings;
   state.ai = ai;
+  // 语言设置来自数据库；先应用再渲染，避免先闪一下默认语言
+  setLocale(settings.locale || 'auto');
+  applyStaticI18n();
   renderSidebar();
   await loadEntries();
   log(
@@ -515,16 +547,21 @@ async function toggleStar() {
 async function doRefresh() {
   const btn = el('btn-refresh');
   btn.disabled = true;
-  setStatus('正在刷新…');
+  setStatus(t('status.refreshing'));
   try {
     const r = await invoke('refresh_all', { concurrency: 6 });
-    const summary = `成功 ${r.fetched}｜未修改 ${r.not_modified}｜新增 ${r.inserted}｜失败 ${r.failures.length}`;
-    setStatus('刷新完成：' + summary);
+    const summary = t('status.refreshDone', {
+      fetched: r.fetched,
+      notModified: r.not_modified,
+      inserted: r.inserted,
+      failures: r.failures.length,
+    });
+    setStatus(summary);
     log(`refresh_all ${summary}`);
     for (const f of r.failures) log(`refresh failure feed=${f.feed_id} ${f.url} :: ${f.error}`);
     await loadAll();
   } catch (e) {
-    setStatus('刷新失败：' + e.message, true);
+    setStatus(t('status.refreshFailed', { error: e.message }), true);
     log(`refresh_all failed: ${e.message}`);
   } finally {
     btn.disabled = false;
@@ -532,13 +569,19 @@ async function doRefresh() {
 }
 
 async function refreshOne(feedId) {
-  setStatus('正在刷新该源…');
+  setStatus(t('status.refreshingOne'));
   try {
     const r = await invoke('refresh_feed', { feedId, concurrency: 1 });
-    setStatus(`该源刷新完成：新增 ${r.inserted}｜未修改 ${r.not_modified}｜失败 ${r.failures.length}`);
+    setStatus(
+      t('status.refreshOneDone', {
+        inserted: r.inserted,
+        notModified: r.not_modified,
+        failures: r.failures.length,
+      })
+    );
     await loadAll();
   } catch (e) {
-    setStatus('刷新失败：' + e.message, true);
+    setStatus(t('status.refreshFailed', { error: e.message }), true);
   }
 }
 
@@ -548,14 +591,14 @@ async function doAddFeed() {
   if (!url) return;
   try {
     const id = await invoke('add_feed', { url });
-    setStatus('已添加，正在抓取…');
+    setStatus(t('status.adding'));
     log(`add_feed id=${id} url=${url}`);
     const r = await invoke('refresh_feed', { feedId: id, concurrency: 1 });
-    setStatus(`已添加：新增 ${r.inserted} 篇`);
+    setStatus(t('status.added', { inserted: r.inserted }));
     input.value = '';
     await loadAll();
   } catch (e) {
-    setStatus('添加失败：' + e.message, true);
+    setStatus(t('status.addFailed', { error: e.message }), true);
     log(`add_feed failed: ${e.message}`);
   }
 }
@@ -597,12 +640,12 @@ async function markAll(read) {
   const cmd = read ? 'mark_all_read' : 'mark_all_unread';
   try {
     const n = await invoke(cmd, { feedId });
-    setStatus(`${read ? '已标为已读' : '已标为未读'} ${n} 篇`);
+    setStatus(t(read ? 'status.markedRead' : 'status.markedUnread', { n }));
     log(`${cmd} scope=${feedId ?? 'all'} changed=${n}`);
     el('settings-overlay').classList.add('hidden');
     await loadAll();
   } catch (e) {
-    setStatus('操作失败：' + e.message, true);
+    setStatus(t('status.markFailed', { error: e.message }), true);
   }
 }
 
@@ -614,22 +657,23 @@ async function runAi(kind, { refresh = false } = {}) {
   currentAiTask = kind === 'translate' ? 'translate' : 'summarize';
   const panel = el('ai-panel');
   panel.classList.remove('hidden');
-  el('ai-panel-title').textContent = currentAiTask === 'summarize' ? 'AI 摘要' : 'AI 翻译';
-  el('ai-panel-meta').textContent = '请求中…';
+  el('ai-panel-title').textContent =
+    currentAiTask === 'summarize' ? t('ai.panel.summary') : t('ai.panel.translate');
+  el('ai-panel-meta').textContent = t('ai.panel.requesting');
   el('ai-panel-body').textContent = '';
 
   try {
     const cmd = currentAiTask === 'summarize' ? 'ai_summarize' : 'ai_translate';
     const r = await invoke(cmd, { entryId: state.selectedId, refresh });
     el('ai-panel-meta').textContent = `${r.provider_model}｜${
-      r.from_cache ? '来自缓存（未重复请求）' : '本次新请求'
-    }${r.truncated ? '｜正文超长已截断' : ''}`;
+      r.from_cache ? t('ai.panel.fromCache') : t('ai.panel.fresh')
+    }${r.truncated ? '｜' + t('ai.panel.truncated') : ''}`;
     el('ai-panel-body').textContent = r.output;
     log(
       `ai ${currentAiTask} entry=${state.selectedId} from_cache=${r.from_cache} chars=${r.output.length} model=${r.provider_model}`
     );
   } catch (e) {
-    el('ai-panel-meta').textContent = '失败';
+    el('ai-panel-meta').textContent = t('ai.panel.failed');
     el('ai-panel-body').textContent = e.message;
     log(`ai ${currentAiTask} failed: ${e.message}`);
   }
@@ -644,23 +688,34 @@ function fillAiForm() {
   el('ai-target').value = ai.translate_target;
   el('ai-key').value = '';
   el('ai-key').placeholder = ai.has_key
-    ? `已设置（${ai.key_note || '来自凭据库'}）；留空＝不修改`
-    : '尚未设置；留空＝不修改';
-  el('ai-status').textContent = `默认端点：${ai.default_base_url}｜key：${ai.has_key ? '已设置' : '未设置'}`;
+    ? t('settings.ai.keySet', { source: ai.key_note || '' })
+    : t('settings.ai.keyUnset');
+  el('ai-status').textContent = t('settings.ai.status', {
+    base: ai.default_base_url,
+    key: ai.has_key ? t('settings.ai.statusSet') : t('settings.ai.statusUnset'),
+  });
 }
 
 function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
+  el('set-language').value = state.settings.locale || 'auto';
   fillAiForm();
   el('settings-overlay').classList.remove('hidden');
 }
 
 async function boot() {
+  applyStaticI18n();
+  const i18n = i18nSelfTest();
+  log(
+    i18n.ok
+      ? `i18n selftest ok (keys=${i18n.keys})`
+      : `i18n selftest FAILED: ${i18n.problems.join('; ')}`
+  );
   selfTestSanitizer();
   try {
     await loadAll();
   } catch (e) {
-    setStatus('初始化失败：' + e.message, true);
+    setStatus(t('status.bootFailed', { error: e.message }), true);
     log(`boot failed: ${e.message}`);
     return;
   }
@@ -685,11 +740,11 @@ async function boot() {
       });
       fillAiForm();
       el('ai-status').textContent = state.ai.has_key
-        ? '已保存，key 已写入系统凭据库'
-        : '已保存，但还没有 key';
+        ? t('settings.ai.savedWithKey')
+        : t('settings.ai.savedNoKey');
       log(`ai saved provider=${state.ai.provider} model=${state.ai.model} has_key=${state.ai.has_key}`);
     } catch (e) {
-      el('ai-status').textContent = '保存失败：' + e.message;
+      el('ai-status').textContent = t('settings.ai.saveFailed', { error: e.message });
       log(`ai save failed: ${e.message}`);
     }
   };
@@ -704,26 +759,47 @@ async function boot() {
         apiKey: '',
       });
       fillAiForm();
-      el('ai-status').textContent = '已清除该服务商的 key';
+      el('ai-status').textContent = t('settings.ai.keyCleared');
       log('ai key cleared');
     } catch (e) {
-      el('ai-status').textContent = '清除失败：' + e.message;
+      el('ai-status').textContent = t('settings.ai.clearFailed', { error: e.message });
     }
   };
 
   el('ai-test').onclick = async () => {
-    el('ai-status').textContent = '测试中…';
+    el('ai-status').textContent = t('settings.ai.testing');
     try {
       const reply = await invoke('test_ai_connection');
-      el('ai-status').textContent = `连接可用。模型回复：${reply}`;
+      el('ai-status').textContent = t('settings.ai.testOk', { reply });
       log(`ai test ok reply=${reply.slice(0, 40)}`);
     } catch (e) {
-      el('ai-status').textContent = '连接失败：' + e.message;
+      el('ai-status').textContent = t('settings.ai.testFailed', { error: e.message });
       log(`ai test failed: ${e.message}`);
     }
   };
 
   el('settings-close').onclick = () => el('settings-overlay').classList.add('hidden');
+
+  el('set-language').addEventListener('change', async (e) => {
+    try {
+      state.settings = await invoke('set_ui_locale', { locale: e.target.value });
+      setLocale(state.settings.locale || 'auto');
+      applyStaticI18n();
+      // 动态文案需要重渲染
+      renderSidebar();
+      renderList();
+      if (state.selectedId) {
+        const entry = await invoke('get_entry', { id: state.selectedId });
+        if (entry) renderReader(entry);
+      } else {
+        renderReaderEmpty();
+      }
+      fillAiForm();
+      log(`locale=${state.settings.locale} → ${currentLocale()}`);
+    } catch (err) {
+      setStatus(t('status.settingFailed', { error: err.message }), true);
+    }
+  });
   el('settings-overlay').addEventListener('click', (e) => {
     // 点击遮罩区域关闭（点对话框内部不关）
     if (e.target === el('settings-overlay')) el('settings-overlay').classList.add('hidden');
@@ -731,10 +807,10 @@ async function boot() {
   el('set-mark-read').addEventListener('change', async (e) => {
     try {
       state.settings = await invoke('set_mark_read_on_navigate', { enabled: e.target.checked });
-      setStatus(`已${e.target.checked ? '开启' : '关闭'}「j/k 浏览时标记已读」`);
+      setStatus(t(e.target.checked ? 'status.markReadOn' : 'status.markReadOff'));
       log(`setting mark_read_on_navigate=${e.target.checked}`);
     } catch (err) {
-      setStatus('保存设置失败：' + err.message, true);
+      setStatus(t('status.settingFailed', { error: err.message }), true);
     }
   });
   el('act-mark-all-read').onclick = () => markAll(true);
@@ -742,10 +818,10 @@ async function boot() {
 
   el('act-export-opml').onclick = async () => {    try {
       const path = await invoke('export_opml');
-      setStatus(path ? `已导出到 ${path}` : '已取消导出');
+      setStatus(path ? t('status.exported', { path }) : t('status.exportCancelled'));
       log(`export_opml ${path ?? 'cancelled'}`);
     } catch (err) {
-      setStatus('导出失败：' + err.message, true);
+      setStatus(t('status.exportFailed', { error: err.message }), true);
       log(`export_opml failed: ${err.message}`);
     }
   };
@@ -754,11 +830,16 @@ async function boot() {
     try {
       const r = await invoke('import_opml');
       if (!r) {
-        setStatus('已取消导入');
+        setStatus(t('status.importCancelled'));
         return;
       }
       setStatus(
-        `导入完成：新增 ${r.feeds_added}｜已存在跳过 ${r.feeds_skipped}｜新建文件夹 ${r.folders_created}｜忽略大纲 ${r.outlines_ignored}`
+        t('status.imported', {
+          added: r.feeds_added,
+          skipped: r.feeds_skipped,
+          folders: r.folders_created,
+          ignored: r.outlines_ignored,
+        })
       );
       log(
         `import_opml added=${r.feeds_added} skipped=${r.feeds_skipped} folders=${r.folders_created} ignored=${r.outlines_ignored}`
@@ -766,7 +847,7 @@ async function boot() {
       el('settings-overlay').classList.add('hidden');
       await loadAll();
     } catch (err) {
-      setStatus('导入失败：' + err.message, true);
+      setStatus(t('status.importFailed', { error: err.message }), true);
       log(`import_opml failed: ${err.message}`);
     }
   };
@@ -824,3 +905,5 @@ async function boot() {
 }
 
 window.addEventListener('DOMContentLoaded', boot);
+
+})();
