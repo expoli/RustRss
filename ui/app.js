@@ -98,7 +98,7 @@ const VIEWS = [
 
 const ALLOWED_TAGS = {
   p: [], br: [], hr: [], h1: [], h2: [], h3: [], h4: [], h5: [], h6: [],
-  ul: [], ol: [], li: [], blockquote: [], pre: [], code: [],
+  ul: [], ol: [], li: [], blockquote: [],
   table: [], thead: [], tbody: [], tfoot: [], tr: [], th: [], td: [],
   figure: [], figcaption: [], div: [], span: [],
   strong: [], em: [], b: [], i: [], u: [], s: [], del: [], ins: [], sup: [], sub: [], mark: [],
@@ -398,7 +398,7 @@ function renderReader(entry) {
       </div>
       <div id="ai-panel-body" class="ai-panel-body"></div>
     </div>
-    <div class="article">${body}</div>`;
+    <div class="article">${body}</div>`);
 
   // 高亮必须在正文插入 DOM 之后跑（hljs 需要真实节点）；
   // 输入是 sanitize 产物，hljs 输出不回灌 sanitize 流程。
