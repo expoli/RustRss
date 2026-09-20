@@ -94,11 +94,15 @@ const DEFAULT_MARK_READ_ON_NAVIGATE: bool = true;
 /// 界面语言：`auto`（跟随系统）/ `zh-CN` / `en`
 const KEY_LOCALE: &str = "ui.locale";
 const DEFAULT_LOCALE: &str = "auto";
+/// 主题：`system`（跟随系统）/ `light` / `dark`
+const KEY_THEME: &str = "ui.theme";
+const DEFAULT_THEME: &str = "system";
 
 #[derive(Serialize)]
 pub struct UiSettings {
     pub mark_read_on_navigate: bool,
     pub locale: String,
+    pub theme: String,
 }
 
 fn ui_settings(state: &AppState) -> R<UiSettings> {
@@ -109,6 +113,13 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
                 .map_err(err)?,
             locale: crate::ai::non_empty_setting(s, KEY_LOCALE)
                 .unwrap_or_else(|| DEFAULT_LOCALE.to_string()),
+            // 主题白名单在读取时也兜底：库里被写坏也不至于把界面弄没颜色
+            theme: crate::ai::non_empty_setting(s, KEY_THEME)
+                .map(|v| match v.as_str() {
+                    "light" | "dark" => v,
+                    _ => DEFAULT_THEME.to_string(),
+                })
+                .unwrap_or_else(|| DEFAULT_THEME.to_string()),
         })
     })
 }
@@ -137,6 +148,18 @@ pub fn set_ui_locale(state: State<'_, AppState>, locale: String) -> R<UiSettings
         _ => DEFAULT_LOCALE,
     };
     state.with_store(|s| s.set_setting(KEY_LOCALE, locale).map_err(err))?;
+    ui_settings(&state)
+}
+
+/// 主题：`system`（跟随系统）/ `light` / `dark`。非法值归为 `system`，同 locale 的白名单口径。
+#[tauri::command]
+pub fn set_ui_theme(state: State<'_, AppState>, theme: String) -> R<UiSettings> {
+    let theme = match theme.trim() {
+        "light" => "light",
+        "dark" => "dark",
+        _ => DEFAULT_THEME,
+    };
+    state.with_store(|s| s.set_setting(KEY_THEME, theme).map_err(err))?;
     ui_settings(&state)
 }
 

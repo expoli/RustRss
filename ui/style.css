@@ -14,7 +14,9 @@
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
+  /* 跟随系统：用户没手动固定（html 无 data-theme）且系统是浅色。
+     CSS 原生实时响应系统切换，无需 JS 监听。 */
+  html:not([data-theme]) {
     --bg: #f7f8fa;
     --bg-panel: #ffffff;
     --bg-hover: #eef1f5;
@@ -27,6 +29,21 @@
     --danger: #c0392b;
   }
 }
+
+/* 手动固定浅色：设置里选了「浅色」。两处浅色变量必须保持一致。 */
+html[data-theme="light"] {
+  --bg: #f7f8fa;
+  --bg-panel: #ffffff;
+  --bg-hover: #eef1f5;
+  --bg-active: #e2e8f4;
+  --line: #dde1e8;
+  --fg: #1c1f26;
+  --fg-dim: #6b7280;
+  --accent: #2563eb;
+  --star: #b8860b;
+  --danger: #c0392b;
+}
+/* 手动固定深色 = :root 默认值，无需额外规则；html[data-theme="dark"] 仅作语义标记。 */
 
 * { box-sizing: border-box; }
 

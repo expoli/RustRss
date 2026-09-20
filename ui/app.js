@@ -32,6 +32,17 @@ const i18nSelfTest = I18N_API
 const setLocale = I18N_API ? I18N_API.setLocale : () => 'zh-CN';
 const currentLocale = () => (I18N_API ? I18N_API.locale() : 'zh-CN');
 
+/// 应用主题三态：system 移除 data-theme（交给 CSS 媒体查询实时跟随），
+/// light/dark 固定属性。非法值一律按 system 处理（与 Rust 侧白名单双保险）。
+function applyTheme(pref) {
+  const root = document.documentElement;
+  if (pref === 'light' || pref === 'dark') {
+    root.dataset.theme = pref;
+  } else {
+    delete root.dataset.theme;
+  }
+}
+
 async function invoke(cmd, args = {}) {
   if (!window.__TAURI__ || !window.__TAURI__.core) {
     throw new Error('IPC 不可用（不在 Tauri 中运行？）');
@@ -404,6 +415,8 @@ async function loadAll() {
   state.mcp = mcp;
   // 语言设置来自数据库；先应用再渲染，避免先闪一下默认语言
   setLocale(settings.locale || 'auto');
+  // 主题同理：渲染前先设好 data-theme，避免启动时闪错色
+  applyTheme(settings.theme || 'system');
   applyStaticI18n();
   renderSidebar();
   await loadEntries();
@@ -860,6 +873,7 @@ let currentPane = 'general';
 function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
   el('set-language').value = state.settings.locale || 'auto';
+  el('set-theme').value = state.settings.theme || 'system';
   const dbPath = state.db ? state.db.dbPath : '';
   el('settings-db-path').textContent = dbPath;
   el('settings-db-path').title = dbPath;
@@ -971,6 +985,15 @@ async function boot() {
       }
       fillAiForm();
       log(`locale=${state.settings.locale} → ${currentLocale()}`);
+    } catch (err) {
+      setStatus(t('status.settingFailed', { error: err.message }), true);
+    }
+  });
+  el('set-theme').addEventListener('change', async (e) => {
+    try {
+      state.settings = await invoke('set_ui_theme', { theme: e.target.value });
+      applyTheme(state.settings.theme || 'system');
+      log(`theme=${state.settings.theme}`);
     } catch (err) {
       setStatus(t('status.settingFailed', { error: err.message }), true);
     }
