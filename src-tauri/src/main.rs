@@ -123,6 +123,7 @@ fn main() {
             commands::set_mcp_port,
             commands::rotate_mcp_token,
             commands::add_feed,
+            commands::discover_feed,
             commands::remove_feed,
             commands::export_opml,
             commands::import_opml,

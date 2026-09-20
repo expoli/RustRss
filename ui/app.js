@@ -590,12 +590,32 @@ async function refreshOne(feedId) {
 
 async function doAddFeed() {
   const input = el('add-url');
+  const btn = el('add-ok');
   const url = input.value.trim();
   if (!url) return;
+
+  // 第一步：发现。站点首页在这里换成真正的 feed 地址；输入本身就是 feed 则原样返回。
+  // 失败时输入原样留着、按钮恢复可用，改一下再点就是重试。
+  btn.disabled = true;
+  let found;
   try {
-    const id = await invoke('add_feed', { url });
+    setStatus(t('status.discovering'));
+    found = await invoke('discover_feed', { url });
+    log(
+      `discover_feed ${url} -> ${found.feed_url} via=${found.via} alternatives=${found.alternatives.length}`
+    );
+  } catch (e) {
+    setStatus(t('status.discoverFailed', { error: e.message }), true);
+    log(`discover_feed failed: ${e.message}`);
+    btn.disabled = false;
+    return;
+  }
+
+  // 第二步：订阅 + 首次抓取，沿用原有路径（订阅地址是发现出来的那个）
+  try {
+    const id = await invoke('add_feed', { url: found.feed_url });
     setStatus(t('status.adding'));
-    log(`add_feed id=${id} url=${url}`);
+    log(`add_feed id=${id} url=${found.feed_url}`);
     const r = await invoke('refresh_feed', { feedId: id, concurrency: 1 });
     setStatus(t('status.added', { inserted: r.inserted }));
     input.value = '';
@@ -603,6 +623,8 @@ async function doAddFeed() {
   } catch (e) {
     setStatus(t('status.addFailed', { error: e.message }), true);
     log(`add_feed failed: ${e.message}`);
+  } finally {
+    btn.disabled = false;
   }
 }
 
