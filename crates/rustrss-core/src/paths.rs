@@ -51,15 +51,29 @@ pub fn default_db_path() -> PathBuf {
 /// 解析库位置：`$RUSTSS_DB` → 第一个命令行参数 → 平台默认位置。
 ///
 /// 界面与 MCP 共用这个函数，因此两边永远指向同一个文件。
+///
+/// 注意：**只把“不像选项”的参数当作库路径**。曾经这里无条件取 `args[1]`，
+/// 结果 `rustrss-mcp --print-config` 把 `--print-config` 当成了库路径，
+/// 在当前目录凭空建了个同名数据库，token 也从那个空库里生成 ——
+/// 表现为「应用和 CLI 看同一个库却读到不同 token」。
 pub fn resolve_db_path() -> PathBuf {
-    if let Ok(p) = std::env::var("RUSTSS_DB") {
+    pick_db_path(
+        std::env::var("RUSTSS_DB").ok(),
+        std::env::args().nth(1),
+    )
+}
+
+/// 可测的纯函数版：决定库位置
+pub fn pick_db_path(env_value: Option<String>, first_arg: Option<String>) -> PathBuf {
+    if let Some(p) = env_value {
         if !p.trim().is_empty() {
             return PathBuf::from(p);
         }
     }
-    if let Some(p) = std::env::args().nth(1) {
-        if !p.trim().is_empty() {
-            return PathBuf::from(p);
+    if let Some(p) = first_arg {
+        let trimmed = p.trim();
+        if !trimmed.is_empty() && !trimmed.starts_with('-') {
+            return PathBuf::from(trimmed);
         }
     }
     default_db_path()
@@ -86,5 +100,28 @@ mod tests {
             Some(v) => std::env::set_var("RUSTSS_DB", v),
             None => std::env::remove_var("RUSTSS_DB"),
         }
+    }
+
+    #[test]
+    fn flags_are_not_mistaken_for_a_database_path() {
+        // 回归：`--print-config` 这类选项曾被当成库路径，
+        // 于是在 CWD 里建了个名为 `--print-config` 的数据库（应用与 CLI 因此读到不同 token）。
+        let from_flag = pick_db_path(None, Some("--print-config".into()));
+        assert_eq!(from_flag, default_db_path(), "选项不得被当作库路径");
+
+        let from_short = pick_db_path(None, Some("-h".into()));
+        assert_eq!(from_short, default_db_path());
+
+        // 真正的路径仍然生效
+        let explicit = pick_db_path(None, Some("/tmp/my.sqlite".into()));
+        assert_eq!(explicit, PathBuf::from("/tmp/my.sqlite"));
+
+        // 环境变量优先于参数
+        let both = pick_db_path(Some("/tmp/env.sqlite".into()), Some("/tmp/arg.sqlite".into()));
+        assert_eq!(both, PathBuf::from("/tmp/env.sqlite"));
+
+        // 空值/空白一律忽略
+        assert_eq!(pick_db_path(Some("   ".into()), None), default_db_path());
+        assert_eq!(pick_db_path(None, Some("  ".into())), default_db_path());
     }
 }
