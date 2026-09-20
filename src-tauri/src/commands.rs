@@ -9,6 +9,8 @@ use serde::Serialize;
 use tauri::State;
 use tauri_plugin_dialog::DialogExt;
 
+use rustrss_core::ai::prompt::{AiTask, SummaryLength};
+use rustrss_core::ai::{AiRequest, CachePolicy};
 use rustrss_core::fetch::RefreshReport;
 use rustrss_core::{EntryQuery, EntryRow, FeedRow, MarkScope};
 
@@ -248,4 +250,165 @@ pub fn open_external(url: String) -> R<()> {
 #[tauri::command]
 pub fn ui_log(line: String) {
     println!("[ui] {line}");
+}
+
+// ---------------------------------------------------------------- AI
+
+#[derive(Serialize)]
+pub struct AiSettingsView {
+    pub provider: String,
+    pub model: String,
+    pub base_url: String,
+    pub translate_target: String,
+    pub has_key: bool,
+    /// 凭据来源或不可用原因：如实告知，不让用户猜
+    pub key_note: Option<String>,
+    pub default_base_url: String,
+}
+
+fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
+    state.with_store(|s| {
+        let provider = crate::ai::provider_from_str(
+            &crate::ai::non_empty_setting(s, crate::ai::K_PROVIDER)
+                .unwrap_or_else(|| crate::ai::DEFAULT_PROVIDER.to_string()),
+        );
+        let (key, note) = crate::ai::load_key(crate::ai::provider_to_str(provider))?;
+        Ok(AiSettingsView {
+            provider: crate::ai::provider_to_str(provider).to_string(),
+            model: crate::ai::non_empty_setting(s, crate::ai::K_MODEL).unwrap_or_default(),
+            base_url: crate::ai::non_empty_setting(s, crate::ai::K_BASE_URL).unwrap_or_default(),
+            translate_target: crate::ai::translate_target(s),
+            has_key: key.is_some(),
+            key_note: note,
+            default_base_url: crate::ai::default_base_url(provider).to_string(),
+        })
+    })
+}
+
+#[tauri::command]
+pub fn get_ai_settings(state: State<'_, AppState>) -> R<AiSettingsView> {
+    ai_settings_view(&state)
+}
+
+/// 保存 AI 设置。`api_key` 为 `Some("")` 表示清除凭据，`None` 表示不动它。
+#[tauri::command]
+pub fn save_ai_settings(
+    state: State<'_, AppState>,
+    provider: String,
+    model: String,
+    base_url: String,
+    translate_target: String,
+    api_key: Option<String>,
+) -> R<AiSettingsView> {
+    let provider = provider.trim().to_string();
+    state.with_store(|s| {
+        s.set_setting(crate::ai::K_PROVIDER, &provider).map_err(err)?;
+        s.set_setting(crate::ai::K_MODEL, model.trim()).map_err(err)?;
+        s.set_setting(crate::ai::K_BASE_URL, base_url.trim())
+            .map_err(err)?;
+        s.set_setting(crate::ai::K_TRANSLATE_TARGET, translate_target.trim())
+            .map_err(err)?;
+        if let Some(key) = api_key {
+            if key.trim().is_empty() {
+                crate::ai::delete_key(&provider)?;
+            } else {
+                crate::ai::store_key(&provider, key.trim())?;
+            }
+        }
+        Ok(())
+    })?;
+    ai_settings_view(&state)
+}
+
+/// 测试连接：发一个最小请求。
+/// 比「只检查 key 是否存在」有意义得多：它同时验证了凭据、模型名与端点三件事。
+#[tauri::command]
+pub async fn test_ai_connection(state: State<'_, AppState>) -> R<String> {
+    let client = state.with_store(crate::ai::client_from_store)?;
+    let request = AiRequest {
+        system: Some("这是连通性测试。只回答两个字：可用".into()),
+        user: "请回复：可用".into(),
+    };
+    client.complete(request).await.map_err(|e| e.to_string())
+}
+
+#[derive(Serialize)]
+pub struct AiOutcomeView {
+    pub output: String,
+    pub from_cache: bool,
+    pub truncated: bool,
+    pub provider_model: String,
+}
+
+/// AI 任务三阶段：计划（持锁）→ 请求（不持锁）→ 落缓存（持锁）
+async fn run_ai(
+    state: State<'_, AppState>,
+    entry_id: i64,
+    task: AiTask,
+    refresh: bool,
+) -> R<AiOutcomeView> {
+    let policy = if refresh {
+        CachePolicy::Refresh
+    } else {
+        CachePolicy::UseCache
+    };
+
+    let (plan, client) = state.with_store(|s| {
+        let client = crate::ai::client_from_store(s)?;
+        let plan = rustrss_core::ai::plan_task(s, &client, entry_id, &task, policy)
+            .map_err(|e| e.to_string())?;
+        Ok((plan, client))
+    })?;
+
+    if let Some(hit) = plan.cached.clone() {
+        return Ok(AiOutcomeView {
+            output: hit,
+            from_cache: true,
+            truncated: plan.truncated,
+            provider_model: plan.provider_model,
+        });
+    }
+
+    let output = client
+        .complete(plan.request.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    state.with_store(|s| {
+        rustrss_core::ai::save_task_output(s, &plan, &output).map_err(|e| e.to_string())
+    })?;
+
+    Ok(AiOutcomeView {
+        output,
+        from_cache: false,
+        truncated: plan.truncated,
+        provider_model: plan.provider_model,
+    })
+}
+
+#[tauri::command]
+pub async fn ai_summarize(
+    state: State<'_, AppState>,
+    entry_id: i64,
+    refresh: Option<bool>,
+) -> R<AiOutcomeView> {
+    let language = state.with_store(|s| Ok(crate::ai::translate_target(s)))?;
+    let task = AiTask::Summarize {
+        length: SummaryLength::Medium,
+        language,
+    };
+    run_ai(state, entry_id, task, refresh.unwrap_or(false)).await
+}
+
+#[tauri::command]
+pub async fn ai_translate(
+    state: State<'_, AppState>,
+    entry_id: i64,
+    target: Option<String>,
+    refresh: Option<bool>,
+) -> R<AiOutcomeView> {
+    let target = match target.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()) {
+        Some(t) => t,
+        None => state.with_store(|s| Ok(crate::ai::translate_target(s)))?,
+    };
+    run_ai(state, entry_id, AiTask::Translate { target }, refresh.unwrap_or(false)).await
 }

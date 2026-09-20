@@ -83,6 +83,48 @@
         <button id="act-export-opml">导出 OPML…</button>
       </div>
 
+      <div class="dialog-section">
+        <h3>AI（自带 API key）</h3>
+
+        <div class="form-row">
+          <label for="ai-provider">服务商</label>
+          <select id="ai-provider">
+            <option value="ollama">Ollama（本地，无需 key）</option>
+            <option value="openai">OpenAI 兼容（含自建网关）</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="gemini">Gemini</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="ai-model">模型</label>
+          <input id="ai-model" placeholder="例如 gpt-4o-mini / claude-sonnet-4 / llama3.2" autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <label for="ai-base-url">端点</label>
+          <input id="ai-base-url" placeholder="留空用默认端点" autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <label for="ai-target">翻译目标</label>
+          <input id="ai-target" placeholder="中文" autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <label for="ai-key">API key</label>
+          <input id="ai-key" type="password" placeholder="留空＝不修改；保存后写入系统凭据库" autocomplete="off" />
+        </div>
+
+        <div class="setting-actions">
+          <button id="ai-save">保存 AI 设置</button>
+          <button id="ai-clear-key">清除 key</button>
+          <button id="ai-test">测试连接</button>
+        </div>
+
+        <p id="ai-status" class="dim small">—</p>
+      </div>
+
       <p class="dim small">设置存在同一个数据库里，与订阅、已读状态一起备份。</p>
     </div>
   </div>

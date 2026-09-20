@@ -12,8 +12,12 @@ rustrss-core = { path = "../crates/rustrss-core" }
 tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
+# API key 存操作系统凭据库：Linux 走 Secret Service（KWallet/GNOME Keyring），
+# macOS 走 Keychain，Windows 走凭据管理器。
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [features]
 default = []

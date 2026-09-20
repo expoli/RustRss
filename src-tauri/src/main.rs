@@ -4,6 +4,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod ai;
 mod commands;
 mod state;
 
@@ -82,6 +83,11 @@ fn main() {
             commands::mark_all_unread,
             commands::get_ui_settings,
             commands::set_mark_read_on_navigate,
+            commands::get_ai_settings,
+            commands::save_ai_settings,
+            commands::test_ai_connection,
+            commands::ai_summarize,
+            commands::ai_translate,
             commands::add_feed,
             commands::remove_feed,
             commands::export_opml,

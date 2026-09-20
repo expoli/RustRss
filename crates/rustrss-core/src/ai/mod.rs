@@ -14,7 +14,8 @@ pub mod prompt;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use prompt::AiRequest;
+// 把 prompt 层的类型重导出，让调用方只面对一个模块路径（AiRequest 也在内）
+pub use prompt::{AiRequest, AiTask, ArticleText, SummaryLength, PROMPT_VERSION};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -355,18 +356,52 @@ pub struct TaskOutcome {
     pub provider_model: String,
 }
 
-/// 跑一个 AI 任务：读库取正文 → （必要时）调模型 → 结果落库。
+/// 一次 AI 任务的「计划」：请求已构造、缓存键已算出，只等发请求。
 ///
-/// 正文优先用 `content_text`；若源只给了摘要，则退而用摘要（总比让模型凭空写好）。
-pub async fn run_task(
+/// 拆出这一步是为了在 Tauri 的 async 命令里能「取任务（持锁）→ 发请求（不持锁）→ 存结果（持锁）」，
+/// 与抓取层的三阶段同构：`!Sync` 的连接不跨越 await。
+pub struct AiTaskPlan {
+    pub request: prompt::AiRequest,
+    pub truncated: bool,
+    pub provider_model: String,
+    cache: OwnedCacheKey,
+    /// 缓存命中时的结果（此时不该再发请求）
+    pub cached: Option<String>,
+}
+
+impl AiTaskPlan {
+    pub fn cache_hit(&self) -> bool {
+        self.cached.is_some()
+    }
+}
+
+struct OwnedCacheKey {
+    entry_id: i64,
+    task: String,
+    params: String,
+    provider_model: String,
+}
+
+impl OwnedCacheKey {
+    fn borrowed(&self) -> crate::store::AiCacheKey<'_> {
+        crate::store::AiCacheKey {
+            entry_id: self.entry_id,
+            task: &self.task,
+            params: &self.params,
+            provider_model: &self.provider_model,
+            prompt_version: prompt::PROMPT_VERSION,
+        }
+    }
+}
+
+/// 读文章正文、构造 prompt、算缓存键（同步，可持锁调用）
+pub fn plan_task(
     store: &crate::store::Store,
     client: &AiClient,
     entry_id: i64,
     task: &prompt::AiTask,
     policy: CachePolicy,
-) -> Result<TaskOutcome, AiError> {
-    use crate::store::AiCacheKey;
-
+) -> Result<AiTaskPlan, AiError> {
     let entry = store
         .get_entry(entry_id)
         .map_err(|e| AiError::Store(e.to_string()))?
@@ -381,45 +416,70 @@ pub async fn run_task(
     let truncated = prompt::was_truncated(&body);
 
     let provider_model = client.config().cache_tag();
-    let key = AiCacheKey {
+    let cache = OwnedCacheKey {
         entry_id,
-        task: task.name(),
-        params: &task.cache_params(),
-        provider_model: &provider_model,
-        prompt_version: prompt::PROMPT_VERSION,
+        task: task.name().to_string(),
+        params: task.cache_params(),
+        provider_model: provider_model.clone(),
     };
 
-    if policy == CachePolicy::UseCache {
-        if let Some(hit) = store
-            .ai_cached(&key)
-            .map_err(|e| AiError::Store(e.to_string()))?
-        {
-            return Ok(TaskOutcome {
-                output: hit,
-                from_cache: true,
-                truncated,
-                provider_model,
-            });
-        }
-    }
+    let cached = match policy {
+        CachePolicy::UseCache => store
+            .ai_cached(&cache.borrowed())
+            .map_err(|e| AiError::Store(e.to_string()))?,
+        CachePolicy::Refresh => None,
+    };
 
-    let request = prompt::build(
-        task,
-        &prompt::ArticleText {
-            title: &entry.title,
-            body: &body,
-        },
-    );
-    let output = client.complete(request).await?;
+    Ok(AiTaskPlan {
+        request: prompt::build(
+            task,
+            &prompt::ArticleText {
+                title: &entry.title,
+                body: &body,
+            },
+        ),
+        truncated,
+        provider_model,
+        cache,
+        cached,
+    })
+}
+
+/// 把模型输出写进缓存（同步，可持锁调用）
+pub fn save_task_output(
+    store: &crate::store::Store,
+    plan: &AiTaskPlan,
+    output: &str,
+) -> Result<(), AiError> {
     store
-        .ai_store(&key, &output)
-        .map_err(|e| AiError::Store(e.to_string()))?;
+        .ai_store(&plan.cache.borrowed(), output)
+        .map_err(|e| AiError::Store(e.to_string()))
+}
 
+/// 跑一个 AI 任务（三阶段串起来；CLI 示例与测试用它）
+pub async fn run_task(
+    store: &crate::store::Store,
+    client: &AiClient,
+    entry_id: i64,
+    task: &prompt::AiTask,
+    policy: CachePolicy,
+) -> Result<TaskOutcome, AiError> {
+    let plan = plan_task(store, client, entry_id, task, policy)?;
+    if let Some(hit) = plan.cached.clone() {
+        return Ok(TaskOutcome {
+            output: hit,
+            from_cache: true,
+            truncated: plan.truncated,
+            provider_model: plan.provider_model,
+        });
+    }
+    let output = client.complete(plan.request.clone()).await?;
+    save_task_output(store, &plan, &output)?;
     Ok(TaskOutcome {
         output,
         from_cache: false,
-        truncated,
-        provider_model,
+        truncated: plan.truncated,
+        provider_model: plan.provider_model,
     })
 }
 

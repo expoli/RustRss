@@ -34,6 +34,7 @@ const state = {
   query: '',
   // 权威值在 Rust 侧（get_ui_settings），这里只是启动前的占位
   settings: { mark_read_on_navigate: true },
+  ai: null,
 };
 
 const VIEWS = [
@@ -317,11 +318,27 @@ function renderReader(entry) {
       <button id="act-read">${entry.read ? '标为未读' : '标为已读'}</button>
       <button id="act-star">${entry.starred ? '取消星标' : '加星标'}</button>
       ${entry.url ? '<button id="act-open">浏览器打开</button><button id="act-copy">复制链接</button>' : ''}
+      <button id="act-summarize" title="用配置的 AI 生成摘要（结果会缓存，不重复花钱）">AI 摘要</button>
+      <button id="act-translate" title="翻译成设置里的目标语言">AI 翻译</button>
+    </div>
+    <div id="ai-panel" class="ai-panel hidden">
+      <div class="ai-panel-head">
+        <b id="ai-panel-title"></b>
+        <span id="ai-panel-meta" class="dim"></span>
+        <span class="grow"></span>
+        <button id="ai-regenerate">重新生成</button>
+        <button id="ai-close">关闭</button>
+      </div>
+      <div id="ai-panel-body" class="ai-panel-body"></div>
     </div>
     <div class="article">${body}</div>`;
 
   el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
+  el('act-summarize').onclick = () => runAi('summarize');
+  el('act-translate').onclick = () => runAi('translate');
+  el('ai-regenerate').onclick = () => runAi(currentAiTask, { refresh: true });
+  el('ai-close').onclick = () => el('ai-panel').classList.add('hidden');
   if (entry.url) {
     el('act-open').onclick = () => invoke('open_external', { url: entry.url }).catch((e) => setStatus(e.message, true));
     el('act-copy').onclick = () =>
@@ -343,18 +360,20 @@ function renderReader(entry) {
 // ---------------------------------------------------------------- 数据流
 
 async function loadAll() {
-  const [db, feeds, settings] = await Promise.all([
+  const [db, feeds, settings, ai] = await Promise.all([
     invoke('db_info'),
     invoke('list_feeds'),
     invoke('get_ui_settings'),
+    invoke('get_ai_settings'),
   ]);
   state.db = db;
   state.feeds = feeds;
   state.settings = settings;
+  state.ai = ai;
   renderSidebar();
   await loadEntries();
   log(
-    `loaded feeds=${db.feeds} entries=${db.entries} unread=${db.unread} starred=${db.starred} markReadOnNavigate=${settings.mark_read_on_navigate}`
+    `loaded feeds=${db.feeds} entries=${db.entries} unread=${db.unread} starred=${db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key}`
   );
 }
 
@@ -587,8 +606,52 @@ async function markAll(read) {
   }
 }
 
+let currentAiTask = 'summarize';
+
+/** 跑一次 AI 任务并把结果放上面板。结果是否来自缓存会如实标出来。 */
+async function runAi(kind, { refresh = false } = {}) {
+  if (!state.selectedId) return;
+  currentAiTask = kind === 'translate' ? 'translate' : 'summarize';
+  const panel = el('ai-panel');
+  panel.classList.remove('hidden');
+  el('ai-panel-title').textContent = currentAiTask === 'summarize' ? 'AI 摘要' : 'AI 翻译';
+  el('ai-panel-meta').textContent = '请求中…';
+  el('ai-panel-body').textContent = '';
+
+  try {
+    const cmd = currentAiTask === 'summarize' ? 'ai_summarize' : 'ai_translate';
+    const r = await invoke(cmd, { entryId: state.selectedId, refresh });
+    el('ai-panel-meta').textContent = `${r.provider_model}｜${
+      r.from_cache ? '来自缓存（未重复请求）' : '本次新请求'
+    }${r.truncated ? '｜正文超长已截断' : ''}`;
+    el('ai-panel-body').textContent = r.output;
+    log(
+      `ai ${currentAiTask} entry=${state.selectedId} from_cache=${r.from_cache} chars=${r.output.length} model=${r.provider_model}`
+    );
+  } catch (e) {
+    el('ai-panel-meta').textContent = '失败';
+    el('ai-panel-body').textContent = e.message;
+    log(`ai ${currentAiTask} failed: ${e.message}`);
+  }
+}
+
+function fillAiForm() {
+  const ai = state.ai;
+  if (!ai) return;
+  el('ai-provider').value = ai.provider;
+  el('ai-model').value = ai.model;
+  el('ai-base-url').value = ai.base_url;
+  el('ai-target').value = ai.translate_target;
+  el('ai-key').value = '';
+  el('ai-key').placeholder = ai.has_key
+    ? `已设置（${ai.key_note || '来自凭据库'}）；留空＝不修改`
+    : '尚未设置；留空＝不修改';
+  el('ai-status').textContent = `默认端点：${ai.default_base_url}｜key：${ai.has_key ? '已设置' : '未设置'}`;
+}
+
 function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
+  fillAiForm();
   el('settings-overlay').classList.remove('hidden');
 }
 
@@ -609,6 +672,57 @@ async function boot() {
     if (!row.classList.contains('hidden')) el('add-url').focus();
   };
   el('btn-settings').onclick = openSettings;
+  el('ai-save').onclick = async () => {
+    const key = el('ai-key').value;
+    try {
+      state.ai = await invoke('save_ai_settings', {
+        provider: el('ai-provider').value,
+        model: el('ai-model').value,
+        baseUrl: el('ai-base-url').value,
+        translateTarget: el('ai-target').value,
+        // 留空表示「不修改 key」，要清除得点专门的按钮
+        apiKey: key.trim() === '' ? null : key,
+      });
+      fillAiForm();
+      el('ai-status').textContent = state.ai.has_key
+        ? '已保存，key 已写入系统凭据库'
+        : '已保存，但还没有 key';
+      log(`ai saved provider=${state.ai.provider} model=${state.ai.model} has_key=${state.ai.has_key}`);
+    } catch (e) {
+      el('ai-status').textContent = '保存失败：' + e.message;
+      log(`ai save failed: ${e.message}`);
+    }
+  };
+
+  el('ai-clear-key').onclick = async () => {
+    try {
+      state.ai = await invoke('save_ai_settings', {
+        provider: el('ai-provider').value,
+        model: el('ai-model').value,
+        baseUrl: el('ai-base-url').value,
+        translateTarget: el('ai-target').value,
+        apiKey: '',
+      });
+      fillAiForm();
+      el('ai-status').textContent = '已清除该服务商的 key';
+      log('ai key cleared');
+    } catch (e) {
+      el('ai-status').textContent = '清除失败：' + e.message;
+    }
+  };
+
+  el('ai-test').onclick = async () => {
+    el('ai-status').textContent = '测试中…';
+    try {
+      const reply = await invoke('test_ai_connection');
+      el('ai-status').textContent = `连接可用。模型回复：${reply}`;
+      log(`ai test ok reply=${reply.slice(0, 40)}`);
+    } catch (e) {
+      el('ai-status').textContent = '连接失败：' + e.message;
+      log(`ai test failed: ${e.message}`);
+    }
+  };
+
   el('settings-close').onclick = () => el('settings-overlay').classList.add('hidden');
   el('settings-overlay').addEventListener('click', (e) => {
     // 点击遮罩区域关闭（点对话框内部不关）
@@ -626,8 +740,7 @@ async function boot() {
   el('act-mark-all-read').onclick = () => markAll(true);
   el('act-mark-all-unread').onclick = () => markAll(false);
 
-  el('act-export-opml').onclick = async () => {
-    try {
+  el('act-export-opml').onclick = async () => {    try {
       const path = await invoke('export_opml');
       setStatus(path ? `已导出到 ${path}` : '已取消导出');
       log(`export_opml ${path ?? 'cancelled'}`);
