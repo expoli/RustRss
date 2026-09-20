@@ -22,7 +22,35 @@
 - **不打包 WebKit**，一律使用系统 WebKitGTK，按发行版出 native 包。
 - **不强制显示后端**（不继承 AppImage 那套 `GDK_BACKEND=x11`），X11 与 Wayland 都要原生可用。
 
-## 当前状态：M0 技术探针
+## 仓库结构
+
+```
+crates/rustrss-core/   核心库：解析 / 身份判定 /（待补）存储与抓取，与界面解耦
+crates/rustrss-mcp/    MCP 服务器（stdio；M0 原型接内嵌样例数据）
+src-tauri/             Tauri 2 桌面应用（当前为 M0 诊断探针）
+ui/                    桌面应用前端（当前为探针页面）
+```
+
+## 进度
+
+### M1 · core 数据层（进行中）
+
+- [x] 解析：RSS 0.x/1.0/2.0、Atom、JSON Feed → 统一领域模型（基于 feed-rs 2.4）
+- [x] 条目身份判定：源 id/guid 优先；退化场景（既无 id 也无链接）改用内容指纹，保证跨次抓取稳定
+- [x] HTML → 纯文本（去标签、剔除 script/style、实体解码、保留块级换行）
+- [ ] SQLite 存储 + FTS5 全文索引
+- [ ] 抓取：条件请求（ETag / Last-Modified）、增量入库、有界并发
+
+单元测试：`cargo test -p rustrss-core`
+
+用真实源手工验证（Rust Blog / LWN / 阮一峰 / 少数派 四个源已验过，含中文编码）：
+
+```bash
+curl -sL -A "RustRss/0.0" -o /tmp/feed.xml https://lwn.net/headlines/rss
+cargo run -p rustrss-core --example parse_file -- /tmp/feed.xml
+```
+
+### M0 技术探针（已完成，结论见 PRD §10）
 
 `src-tauri/` + `ui/` 是一个最小 Tauri 2 应用，唯一目的是验证四件事，不含业务逻辑：
 

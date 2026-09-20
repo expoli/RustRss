@@ -1,5 +1,5 @@
 [workspace]
-members = ["src-tauri", "crates/rustrss-mcp"]
+members = ["src-tauri", "crates/rustrss-core", "crates/rustrss-mcp"]
 resolver = "2"
 
 [workspace.package]
