@@ -32,6 +32,8 @@ const state = {
   feedId: null,
   selectedId: null,
   query: '',
+  // 权威值在 Rust 侧（get_ui_settings），这里只是启动前的占位
+  settings: { mark_read_on_navigate: true },
 };
 
 const VIEWS = [
@@ -258,6 +260,31 @@ function renderList() {
     li.onclick = () => openEntry(e.id, { markRead: true });
     list.appendChild(li);
   }
+  focusRow(state.selectedId, { follow: true });
+}
+
+/**
+ * 只更新「哪一行是当前行」 —— 不重建列表。
+ *
+ * 这件事必须和渲染分开：先前选中项变化走的是全量重建，而重建后从未把当前行
+ * 滚回可视区，于是按 j 往下走时高亮会跑到列表可视范围之外（用户看到的就是
+ * 「选中项越过第二栏底线」）。
+ */
+function focusRow(id, { follow = false } = {}) {
+  const list = el('entries');
+  for (const li of list.children) {
+    const isActive = id != null && li.dataset.id === String(id);
+    li.classList.toggle('active', isActive);
+    // block:'nearest' —— 已在视野内就不动，避免每次按键都把列表拽一下
+    if (isActive && follow) li.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+/** 单独把某行的「已读」样式更新掉（同样不重建列表） */
+function markRowRead(id) {
+  for (const li of el('entries').children) {
+    if (li.dataset.id === String(id)) li.classList.add('read');
+  }
 }
 
 function renderReaderEmpty() {
@@ -316,12 +343,19 @@ function renderReader(entry) {
 // ---------------------------------------------------------------- 数据流
 
 async function loadAll() {
-  const [db, feeds] = await Promise.all([invoke('db_info'), invoke('list_feeds')]);
+  const [db, feeds, settings] = await Promise.all([
+    invoke('db_info'),
+    invoke('list_feeds'),
+    invoke('get_ui_settings'),
+  ]);
   state.db = db;
   state.feeds = feeds;
+  state.settings = settings;
   renderSidebar();
   await loadEntries();
-  log(`loaded feeds=${db.feeds} entries=${db.entries} unread=${db.unread} starred=${db.starred}`);
+  log(
+    `loaded feeds=${db.feeds} entries=${db.entries} unread=${db.unread} starred=${db.starred} markReadOnNavigate=${settings.mark_read_on_navigate}`
+  );
 }
 
 async function loadEntries() {
@@ -346,6 +380,7 @@ async function loadEntries() {
     // 视图切换只加载，不标记已读
     const entry = await invoke('get_entry', { id: state.selectedId });
     if (entry) renderReader(entry);
+    focusRow(state.selectedId, { follow: false });
   } else {
     renderReaderEmpty();
   }
@@ -364,17 +399,35 @@ async function setView(view) {
 }
 
 /** 打开某篇文章；markRead=true 表示这是用户主动打开的动作 */
-async function openEntry(id, { markRead }) {
+async function openEntry(id, { markRead, follow = true } = {}) {
   const entry = await invoke('get_entry', { id });
   if (!entry) return;
+  const changed = state.selectedId !== id;
   state.selectedId = id;
-  renderList();
+  if (changed) focusRow(id, { follow });
   renderReader(entry);
+
   if (markRead && !entry.read) {
     await invoke('set_read', { ids: [id], read: true });
     const row = state.entries.find((e) => e.id === id);
     if (row) row.read = true;
-    renderList();
+
+    if (state.view.kind === 'unread') {
+      // 未读视图里读过的文章会离开列表 → 这时才需要重建，并保持阅读位置
+      const idx = state.entries.findIndex((e) => e.id === id);
+      state.entries = state.entries.filter((e) => e.id !== id);
+      const next = state.entries[Math.min(idx, state.entries.length - 1)];
+      state.selectedId = next ? next.id : null;
+      renderList();
+      if (next) {
+        const fresh = await invoke('get_entry', { id: next.id });
+        if (fresh) renderReader(fresh);
+      } else {
+        renderReaderEmpty();
+      }
+    } else {
+      markRowRead(id);
+    }
     await refreshCounts();
   }
   log(`open id=${id} markRead=${markRead} read=${entry.read}`);
@@ -391,13 +444,14 @@ function move(delta) {
   if (!state.entries.length) return;
   const idx = state.entries.findIndex((e) => e.id === state.selectedId);
   const next = Math.max(0, Math.min(state.entries.length - 1, (idx < 0 ? 0 : idx) + delta));
-  openEntry(state.entries[next].id, { markRead: true });
+  // j/k 是否顺便标已读完全取决于设置（默认开）
+  openEntry(state.entries[next].id, { markRead: state.settings.mark_read_on_navigate });
 }
 
 function jump(toEnd) {
   if (!state.entries.length) return;
   const target = toEnd ? state.entries[state.entries.length - 1] : state.entries[0];
-  openEntry(target.id, { markRead: true });
+  openEntry(target.id, { markRead: state.settings.mark_read_on_navigate });
 }
 
 async function toggleRead() {
@@ -408,15 +462,21 @@ async function toggleRead() {
   row.read = read;
   // 未读视图下标记已读后，该条应从列表消失
   if (state.view.kind === 'unread' && read) {
+    // 未读视图下标记已读 → 该条离开列表，保持阅读位置（选原位置的下一行，不跳回顶部）
+    const idx = state.entries.findIndex((e) => e.id === row.id);
     state.entries = state.entries.filter((e) => e.id !== row.id);
-    state.selectedId = state.entries.length ? state.entries[0].id : null;
+    const next = state.entries[Math.min(idx, state.entries.length - 1)];
+    state.selectedId = next ? next.id : null;
     renderList();
-    if (state.selectedId) await openEntry(state.selectedId, { markRead: false });
+    if (next) await openEntry(next.id, { markRead: false });
     else renderReaderEmpty();
   } else {
     const fresh = await invoke('get_entry', { id: row.id });
     if (fresh) renderReader(fresh);
-    renderList();
+    // 只改那一行的已读样式，不重建列表
+    for (const li of el('entries').children) {
+      if (li.dataset.id === String(row.id)) li.classList.toggle('read', read);
+    }
   }
   await refreshCounts();
 }
@@ -513,6 +573,25 @@ function selfTestSanitizer() {
   return failures.length === 0;
 }
 
+async function markAll(read) {
+  const feedId = state.view.kind === 'feed' ? state.feedId : null;
+  const cmd = read ? 'mark_all_read' : 'mark_all_unread';
+  try {
+    const n = await invoke(cmd, { feedId });
+    setStatus(`${read ? '已标为已读' : '已标为未读'} ${n} 篇`);
+    log(`${cmd} scope=${feedId ?? 'all'} changed=${n}`);
+    el('settings-overlay').classList.add('hidden');
+    await loadAll();
+  } catch (e) {
+    setStatus('操作失败：' + e.message, true);
+  }
+}
+
+function openSettings() {
+  el('set-mark-read').checked = state.settings.mark_read_on_navigate;
+  el('settings-overlay').classList.remove('hidden');
+}
+
 async function boot() {
   selfTestSanitizer();
   try {
@@ -529,6 +608,23 @@ async function boot() {
     row.classList.toggle('hidden');
     if (!row.classList.contains('hidden')) el('add-url').focus();
   };
+  el('btn-settings').onclick = openSettings;
+  el('settings-close').onclick = () => el('settings-overlay').classList.add('hidden');
+  el('settings-overlay').addEventListener('click', (e) => {
+    // 点击遮罩区域关闭（点对话框内部不关）
+    if (e.target === el('settings-overlay')) el('settings-overlay').classList.add('hidden');
+  });
+  el('set-mark-read').addEventListener('change', async (e) => {
+    try {
+      state.settings = await invoke('set_mark_read_on_navigate', { enabled: e.target.checked });
+      setStatus(`已${e.target.checked ? '开启' : '关闭'}「j/k 浏览时标记已读」`);
+      log(`setting mark_read_on_navigate=${e.target.checked}`);
+    } catch (err) {
+      setStatus('保存设置失败：' + err.message, true);
+    }
+  });
+  el('act-mark-all-read').onclick = () => markAll(true);
+  el('act-mark-all-unread').onclick = () => markAll(false);
   el('add-ok').onclick = doAddFeed;
   el('add-url').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doAddFeed();
@@ -559,6 +655,7 @@ async function boot() {
       return;
     }
     if (e.key === 'Escape') {
+      el('settings-overlay').classList.add('hidden');
       el('search').value = '';
       el('search').blur();
       el('add-row').classList.add('hidden');

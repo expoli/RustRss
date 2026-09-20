@@ -83,13 +83,54 @@ pub fn set_starred(state: State<'_, AppState>, ids: Vec<i64>, starred: bool) -> 
     state.with_store(|s| s.set_starred(&ids, starred).map_err(err))
 }
 
+/// 设置键：`j`/`k` 浏览时是否顺便标记已读。
+/// 默认值只在 Rust 这一处定义，界面只负责显示与切换，避免两边各写一份而漂移。
+const KEY_MARK_READ_ON_NAVIGATE: &str = "ui.mark_read_on_navigate";
+const DEFAULT_MARK_READ_ON_NAVIGATE: bool = true;
+
+#[derive(Serialize)]
+pub struct UiSettings {
+    pub mark_read_on_navigate: bool,
+}
+
 #[tauri::command]
-pub fn mark_all_read(state: State<'_, AppState>, feed_id: Option<i64>) -> R<usize> {
-    let scope = match feed_id {
+pub fn get_ui_settings(state: State<'_, AppState>) -> R<UiSettings> {
+    state.with_store(|s| {
+        Ok(UiSettings {
+            mark_read_on_navigate: s
+                .bool_setting(KEY_MARK_READ_ON_NAVIGATE, DEFAULT_MARK_READ_ON_NAVIGATE)
+                .map_err(err)?,
+        })
+    })
+}
+
+#[tauri::command]
+pub fn set_mark_read_on_navigate(state: State<'_, AppState>, enabled: bool) -> R<UiSettings> {
+    state.with_store(|s| {
+        s.set_bool_setting(KEY_MARK_READ_ON_NAVIGATE, enabled)
+            .map_err(err)?;
+        Ok(UiSettings {
+            mark_read_on_navigate: enabled,
+        })
+    })
+}
+
+fn scope_of(feed_id: Option<i64>) -> MarkScope {
+    match feed_id {
         Some(id) => MarkScope::Feed(id),
         None => MarkScope::All,
-    };
-    state.with_store(|s| s.mark_all_read(scope).map_err(err))
+    }
+}
+
+#[tauri::command]
+pub fn mark_all_read(state: State<'_, AppState>, feed_id: Option<i64>) -> R<usize> {
+    state.with_store(|s| s.mark_all(scope_of(feed_id), true).map_err(err))
+}
+
+/// 全标已读的撤销（也用于误扫一遍之后的恢复）
+#[tauri::command]
+pub fn mark_all_unread(state: State<'_, AppState>, feed_id: Option<i64>) -> R<usize> {
+    state.with_store(|s| s.mark_all(scope_of(feed_id), false).map_err(err))
 }
 
 #[tauri::command]

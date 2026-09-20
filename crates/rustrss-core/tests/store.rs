@@ -129,9 +129,39 @@ fn unread_counts_track_state() {
         .unwrap();
     assert_eq!(unread.len(), 2);
 
-    let marked = store.mark_all_read(MarkScope::Feed(feed_id)).unwrap();
+    let marked = store.mark_all(MarkScope::Feed(feed_id), true).unwrap();
     assert_eq!(marked, 2);
     assert_eq!(store.unread_total().unwrap(), 0);
+
+    // 反向（撤销）：全部未读
+    let unmarked = store.mark_all(MarkScope::Feed(feed_id), false).unwrap();
+    assert_eq!(unmarked, 3, "含之前手动改过的那条也应被改回");
+    assert_eq!(store.unread_total().unwrap(), 3);
+}
+
+#[test]
+fn settings_roundtrip_and_defaults() {
+    let store = Store::open_in_memory().unwrap();
+
+    // 缺失 → 用默认值
+    assert!(store.bool_setting("ui.mark_read_on_navigate", true).unwrap());
+    assert!(store.setting("ui.mark_read_on_navigate").unwrap().is_none());
+
+    store.set_bool_setting("ui.mark_read_on_navigate", false).unwrap();
+    assert!(!store.bool_setting("ui.mark_read_on_navigate", true).unwrap());
+
+    // 重复写入是覆盖而不是报错
+    store.set_bool_setting("ui.mark_read_on_navigate", true).unwrap();
+    assert!(store.bool_setting("ui.mark_read_on_navigate", false).unwrap());
+
+    // 值不合法时回退到默认值，而不是把功能卡死
+    store.set_setting("ui.mark_read_on_navigate", "yes-please").unwrap();
+    assert!(store.bool_setting("ui.mark_read_on_navigate", true).unwrap());
+    assert!(!store.bool_setting("ui.mark_read_on_navigate", false).unwrap());
+
+    let all = store.all_settings().unwrap();
+    assert_eq!(all.len(), 1);
+    assert_eq!(all[0].0, "ui.mark_read_on_navigate");
 }
 
 #[test]

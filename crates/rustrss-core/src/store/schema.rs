@@ -97,4 +97,12 @@ pub const MIGRATIONS: &[&str] = &[
 
     CREATE INDEX idx_ai_cache_entry ON ai_cache(entry_id);
     "#,
+    // v3：设置（键值对）。后续 AI provider、凭据引用、并发数等都挂在这里。
+    r#"
+    CREATE TABLE settings (
+        key        TEXT PRIMARY KEY,
+        value      TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+    );
+    "#,
 ];

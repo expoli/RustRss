@@ -479,17 +479,61 @@ impl Store {
         Ok(self.conn.execute(&sql, params_from_iter(values))?)
     }
 
-    pub fn mark_all_read(&self, scope: MarkScope) -> Result<usize> {
+    /// 双向的全部标记：`read = true` 即「全部已读」，`false` 即「全部未读」（撤销用）
+    pub fn mark_all(&self, scope: MarkScope, read: bool) -> Result<usize> {
+        let target = i64::from(read);
         let n = match scope {
-            MarkScope::All => self
-                .conn
-                .execute("UPDATE entries SET read = 1 WHERE read = 0", [])?,
+            MarkScope::All => self.conn.execute(
+                "UPDATE entries SET read = ?1 WHERE read <> ?1",
+                params![target],
+            )?,
             MarkScope::Feed(feed_id) => self.conn.execute(
-                "UPDATE entries SET read = 1 WHERE read = 0 AND feed_id = ?1",
-                params![feed_id],
+                "UPDATE entries SET read = ?1 WHERE read <> ?1 AND feed_id = ?2",
+                params![target, feed_id],
             )?,
         };
         Ok(n)
+    }
+
+    // ---------------------------------------------------------------- 设置
+
+    pub fn setting(&self, key: &str) -> Result<Option<String>> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                params![key],
+                |r| r.get::<_, String>(0),
+            )
+            .ok())
+    }
+
+    pub fn set_setting(&self, key: &str, value: &str) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+            params![key, value, now()],
+        )?;
+        Ok(())
+    }
+
+    pub fn all_settings(&self) -> Result<Vec<(String, String)>> {
+        let mut stmt = self.conn.prepare("SELECT key, value FROM settings ORDER BY key")?;
+        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// 布尔设置的读取：**缺失或值不合法都回退到默认值**（不让拼错的值把功能卡死）
+    pub fn bool_setting(&self, key: &str, default: bool) -> Result<bool> {
+        Ok(match self.setting(key)?.as_deref() {
+            Some("true") | Some("1") => true,
+            Some("false") | Some("0") => false,
+            _ => default,
+        })
+    }
+
+    pub fn set_bool_setting(&self, key: &str, value: bool) -> Result<()> {
+        self.set_setting(key, if value { "true" } else { "false" })
     }
 
     /// 每个源的未读数

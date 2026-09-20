@@ -15,6 +15,7 @@
     <div class="grow"></div>
     <button id="btn-refresh" title="刷新全部订阅（r）">刷新全部</button>
     <button id="btn-add" title="添加订阅">添加订阅</button>
+    <button id="btn-settings" title="设置">设置</button>
     <span id="status" class="status" role="status"></span>
   </header>
 
@@ -53,6 +54,33 @@
       </div>
     </article>
   </main>
+
+  <div id="settings-overlay" class="overlay hidden">
+    <div class="dialog">
+      <div class="dialog-head">
+        <span>设置</span>
+        <button id="settings-close">关闭</button>
+      </div>
+
+      <label class="setting-row">
+        <input type="checkbox" id="set-mark-read" />
+        <span>
+          <b>j / k 浏览时顺便标记已读</b>
+          <small>
+            关闭后：j/k 只移动选中项并把文章显示在右栏，只有 <b>Enter</b>、鼠标点击或 <b>u</b>
+            才会改变已读状态。默认开启（键盘阅读器的主流做法：扫一遍即已读）。
+          </small>
+        </span>
+      </label>
+
+      <div class="setting-actions">
+        <button id="act-mark-all-read">当前视图全部已读</button>
+        <button id="act-mark-all-unread">当前视图全部未读（撤销）</button>
+      </div>
+
+      <p class="dim small">设置存在同一个数据库里，与订阅、已读状态一起备份。</p>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
