@@ -92,7 +92,7 @@ pub fn set_starred(state: State<'_, AppState>, ids: Vec<i64>, starred: bool) -> 
 const KEY_MARK_READ_ON_NAVIGATE: &str = "ui.mark_read_on_navigate";
 const DEFAULT_MARK_READ_ON_NAVIGATE: bool = true;
 /// 界面语言：`auto`（跟随系统）/ `zh-CN` / `en`
-const KEY_LOCALE: &str = "ui.locale";
+pub(crate) const KEY_LOCALE: &str = "ui.locale";
 const DEFAULT_LOCALE: &str = "auto";
 /// 主题：`system`（跟随系统）/ `light` / `dark`
 const KEY_THEME: &str = "ui.theme";

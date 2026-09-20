@@ -10,7 +10,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 rustrss-core = { path = "../crates/rustrss-core" }
 rustrss-mcp = { path = "../crates/rustrss-mcp" }
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
 # API key 存操作系统凭据库：Linux 走 Secret Service（KWallet/GNOME Keyring），
