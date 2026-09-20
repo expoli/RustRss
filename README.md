@@ -60,6 +60,30 @@ claude -p "用 rustrss 工具告诉我订阅源与未读数" \
 
 已用 Claude Code 做过真实客户端验证：它能正确报出源数/未读数、列出条目，并会主动提醒「抓取状态非 ok 的源数据可能不是最新」（`list_feeds` 里的 `status` 字段）——该字段就是为此保留的。
 
+### 内置 AI（自带 key）
+
+已适配四类端点：**OpenAI 兼容 / Anthropic 原生 / Gemini 原生 / Ollama**；任务：**摘要**（短/中/长）、**翻译**。
+
+```bash
+# 只看将要发送的请求（不打模型、零花费；凭据已打码）—— UI 上「发送前确认」拿的就是这个
+RUSTSS_AI_PROVIDER=openai RUSTSS_AI_MODEL=gpt-x RUSTSS_AI_KEY=sk-xxx \
+  cargo run -p rustrss-core --example ai_demo -- /tmp/rustrss.sqlite preview summarize
+
+# 真正调用（结果落库缓存，重复打开不再请求）
+RUSTSS_AI_PROVIDER=anthropic RUSTSS_AI_MODEL=claude-x RUSTSS_AI_KEY=... \
+  cargo run -p rustrss-core --example ai_demo -- /tmp/rustrss.sqlite run translate
+```
+
+环境变量：`RUSTSS_AI_PROVIDER` / `RUSTSS_AI_MODEL` / `RUSTSS_AI_BASE_URL` / `RUSTSS_AI_KEY`（缺省回退 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY`、`GEMINI_API_KEY`）/ `RUSTSS_AI_TARGET` / `RUSTSS_AI_ENTRY`。
+
+三条约定（均有测试钉住）：
+
+1. **key 只进请求头**；错误信息、请求预览、日志三处统一打码。注意 Gemini 原生协议把 key 放在 URL 查询串里——曾经是个真实泄露点，被 `preview_hides_credentials_for_every_provider` 拓出来。
+2. **结果按「文章 + 任务 + 参数 + 模型 + prompt 版本」缓存**（`ai_cache` 表）：重复打开不重复请求；改 prompt 后旧缓存自动失效。
+3. **超长正文截断并显式标注**（当前上限 12000 字符），不静默失败；分块/映射-归并留待后续。
+
+尚未做（属设置/界面层，已列入待办）：**API key 存入操作系统凭据库**、设置界面、以及「发送前确认」的交互。
+
 ## 进度
 
 ### M1 · core 数据层（进行中）

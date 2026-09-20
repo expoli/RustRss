@@ -504,6 +504,71 @@ impl Store {
             .conn
             .query_row("SELECT COUNT(*) FROM entries", [], |r| r.get(0))?)
     }
+
+    // ---------------------------------------------------------------- AI 缓存
+
+    /// 读缓存：命中则不必再请求模型
+    pub fn ai_cached(&self, key: &AiCacheKey<'_>) -> Result<Option<String>> {
+        let row = self
+            .conn
+            .query_row(
+                "SELECT output FROM ai_cache
+                 WHERE entry_id = ?1 AND task = ?2 AND params = ?3
+                   AND provider_model = ?4 AND prompt_version = ?5",
+                params![
+                    key.entry_id,
+                    key.task,
+                    key.params,
+                    key.provider_model,
+                    key.prompt_version
+                ],
+                |r| r.get::<_, String>(0),
+            )
+            .ok();
+        Ok(row)
+    }
+
+    /// 写缓存（同键则覆盖并刷新时间）
+    pub fn ai_store(&self, key: &AiCacheKey<'_>, output: &str) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO ai_cache
+                (entry_id, task, params, provider_model, prompt_version, output, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             ON CONFLICT(entry_id, task, params, provider_model, prompt_version)
+             DO UPDATE SET output = excluded.output, created_at = excluded.created_at",
+            params![
+                key.entry_id,
+                key.task,
+                key.params,
+                key.provider_model,
+                key.prompt_version,
+                output,
+                now()
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// 清缓存：`Some(entry_id)` 只清该条，`None` 清全部（用于「重新生成」）
+    pub fn ai_cache_clear(&self, entry_id: Option<i64>) -> Result<usize> {
+        let n = match entry_id {
+            Some(id) => self
+                .conn
+                .execute("DELETE FROM ai_cache WHERE entry_id = ?1", params![id])?,
+            None => self.conn.execute("DELETE FROM ai_cache", [])?,
+        };
+        Ok(n)
+    }
+}
+
+/// AI 缓存键：身份由「文章 + 任务 + 参数 + 模型 + prompt 版本」共同决定
+#[derive(Debug, Clone, Copy)]
+pub struct AiCacheKey<'a> {
+    pub entry_id: i64,
+    pub task: &'a str,
+    pub params: &'a str,
+    pub provider_model: &'a str,
+    pub prompt_version: &'a str,
 }
 
 const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,

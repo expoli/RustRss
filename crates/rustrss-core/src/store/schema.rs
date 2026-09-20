@@ -81,4 +81,20 @@ pub const MIGRATIONS: &[&str] = &[
         VALUES (new.id, new.title, new.search_tokens);
     END;
     "#,
+    // v2：AI 结果缓存（同一文章 + 同一任务 + 同一参数 + 同一模型 + 同一 prompt 版本才复用）
+    r#"
+    CREATE TABLE ai_cache (
+        id             INTEGER PRIMARY KEY,
+        entry_id       INTEGER NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+        task           TEXT NOT NULL,
+        params         TEXT NOT NULL,
+        provider_model TEXT NOT NULL,
+        prompt_version TEXT NOT NULL,
+        output         TEXT NOT NULL,
+        created_at     INTEGER NOT NULL,
+        UNIQUE (entry_id, task, params, provider_model, prompt_version)
+    );
+
+    CREATE INDEX idx_ai_cache_entry ON ai_cache(entry_id);
+    "#,
 ];
