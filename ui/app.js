@@ -654,9 +654,88 @@ async function markAll(read) {
 
 let currentAiTask = 'summarize';
 
+/// 弹「发送前确认要发什么」：resolve(true)=发送，resolve(false)=取消
+function confirmAiSend(p) {
+  return new Promise((resolve) => {
+    const overlay = el('ai-confirm-overlay');
+    el('ai-confirm-summary').textContent = t('ai.confirm.summary', {
+      model: p.provider_model,
+      chars: String(p.body_chars),
+    });
+    el('ai-confirm-url').textContent = p.url;
+    el('ai-confirm-headers').textContent = p.headers.map(([k, v]) => `${k}: ${v}`).join('\n');
+    el('ai-confirm-body').textContent = p.body;
+    el('ai-confirm-meta').textContent = p.body_clipped
+      ? t('ai.confirm.clipped', {
+          // 用码点计数：跟后端 chars().count() 同口径，否则含 emoji 时会出现 shown > total
+          shown: String([...p.body].length),
+          total: String(p.body_chars),
+        })
+      : '';
+    el('ai-confirm-note').textContent = p.truncated ? t('ai.confirm.truncated') : '';
+    el('ai-confirm-dont-ask').checked = false;
+    overlay.classList.remove('hidden');
+    el('ai-confirm-send').focus();
+
+    const finish = (ok) => {
+      overlay.classList.add('hidden');
+      el('ai-confirm-send').onclick = null;
+      el('ai-confirm-cancel').onclick = null;
+      document.removeEventListener('keydown', onKey, true);
+      resolve(ok);
+    };
+
+    el('ai-confirm-send').onclick = () => {
+      if (el('ai-confirm-dont-ask').checked) {
+        invoke('set_ai_confirm_before_send', { enabled: false })
+          .then((view) => {
+            state.ai = view;
+            log('ai confirm_before_send=false（不再询问）');
+          })
+          .catch((err) => log(`set confirm_before_send failed: ${err.message || err}`));
+      }
+      finish(true);
+    };
+    el('ai-confirm-cancel').onclick = () => finish(false);
+
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        // 捕获阶段就阻断：否则同一事件冒泡到全局 Escape 处理器时，
+        // 弹窗已经隐藏、它的 guard 失效，会顺手清空搜索框/切换视图
+        e.stopPropagation();
+        finish(false);
+      } else if (e.key === 'Tab') {
+        // 简易焦点圈：不让 Tab 把焦点移到弹窗背后（那里 Enter 会改选中项）
+        const focusable = overlay.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!overlay.contains(document.activeElement)) {
+          e.preventDefault();
+          first.focus();
+        } else if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+      // Enter 交给按钮原生行为：焦点在哪个按钮就触发哪个。
+      // 自己抢 Enter 会出现「Tab 到取消键按回车却发送」这种反向行为。
+    }
+
+    // 用 document 捕获阶段监听：焦点可能落到背板（body），挂 overlay 会漏掉 Esc
+    document.addEventListener('keydown', onKey, true);
+  });
+}
+
 /** 跑一次 AI 任务并把结果放上面板。结果是否来自缓存会如实标出来。 */
 async function runAi(kind, { refresh = false } = {}) {
   if (!state.selectedId) return;
+  // 快照：确认框开着的时候选中项可能变（Tab 逃逸/鼠标），但用户确认的是这一篇
+  const entryId = state.selectedId;
   currentAiTask = kind === 'translate' ? 'translate' : 'summarize';
   const panel = el('ai-panel');
   panel.classList.remove('hidden');
@@ -666,14 +745,39 @@ async function runAi(kind, { refresh = false } = {}) {
   el('ai-panel-body').textContent = '';
 
   try {
+    // 「发送前确认要发什么」：先问后端即将发出的请求长什么样（凭据已打码）
+    if (state.ai && state.ai.confirm_before_send) {
+      let preview = null;
+      try {
+        // refresh 要传给预览：重新生成会忽略缓存，预览必须用同一策略
+        preview = await invoke('ai_preview', { entryId, task: currentAiTask, refresh });
+      } catch (err) {
+        // 预览失败不拦路（如尚未配 key），交给真实调用报错：那个理由更具体
+        log(`ai preview failed: ${err.message || err}`);
+      }
+      if (preview) {
+        log(
+          `ai preview send=${preview.will_send} cache=${preview.from_cache} body=${preview.body_chars} truncated=${preview.truncated}`
+        );
+        if (!preview.will_send) {
+          // 命中缓存 → 根本不会外发，不需要问（仅 refresh=false 时会出现）
+          setStatus(t('status.aiCachedNoSend'));
+        } else if (!(await confirmAiSend(preview))) {
+          panel.classList.add('hidden');
+          setStatus(t('status.aiCancelled'));
+          log('ai send cancelled by user');
+          return;
+        }
+      }
+    }
     const cmd = currentAiTask === 'summarize' ? 'ai_summarize' : 'ai_translate';
-    const r = await invoke(cmd, { entryId: state.selectedId, refresh });
+    const r = await invoke(cmd, { entryId, refresh });
     el('ai-panel-meta').textContent = `${r.provider_model}｜${
       r.from_cache ? t('ai.panel.fromCache') : t('ai.panel.fresh')
     }${r.truncated ? '｜' + t('ai.panel.truncated') : ''}`;
     el('ai-panel-body').textContent = r.output;
     log(
-      `ai ${currentAiTask} entry=${state.selectedId} from_cache=${r.from_cache} chars=${r.output.length} model=${r.provider_model}`
+      `ai ${currentAiTask} entry=${entryId} from_cache=${r.from_cache} chars=${r.output.length} model=${r.provider_model}`
     );
   } catch (e) {
     el('ai-panel-meta').textContent = t('ai.panel.failed');
@@ -697,6 +801,7 @@ function fillAiForm() {
     base: ai.default_base_url,
     key: ai.has_key ? t('settings.ai.statusSet') : t('settings.ai.statusUnset'),
   });
+  el('set-ai-confirm').checked = !!ai.confirm_before_send;
 }
 
 function fillMcpForm() {
@@ -920,6 +1025,19 @@ async function boot() {
     }
   });
 
+  // 「发送前确认要发什么」开关：不需要重传整张 AI 表单，单独存
+  el('set-ai-confirm').addEventListener('change', async (e) => {
+    try {
+      state.ai = await invoke('set_ai_confirm_before_send', { enabled: e.target.checked });
+      fillAiForm();
+      log(`ai confirm_before_send=${state.ai.confirm_before_send}`);
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      el('ai-status').textContent = err.message;
+      log(`ai confirm_before_send failed: ${err.message}`);
+    }
+  });
+
   el('mcp-port').addEventListener('change', async (e) => {
     const port = Number(e.target.value);
     try {
@@ -972,6 +1090,8 @@ async function boot() {
 
   document.addEventListener('keydown', (e) => {
     const inField = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+    // 确认框自己处理 Esc/Enter，其它全局快捷键先让位
+    if (!el('ai-confirm-overlay').classList.contains('hidden')) return;
     if (e.key === '/' && !inField) {
       e.preventDefault();
       el('search').focus();
@@ -986,6 +1106,8 @@ async function boot() {
       return;
     }
     if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
+    // 设置面板开着时，导航类快捷键同样让位（否则 j/k 会在面板背后换文章）
+    if (!el('settings-overlay').classList.contains('hidden')) return;
 
     switch (e.key) {
       case 'j': case 'ArrowDown': e.preventDefault(); move(1); break;

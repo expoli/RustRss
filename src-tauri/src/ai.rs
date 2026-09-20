@@ -15,6 +15,7 @@ pub const K_PROVIDER: &str = "ai.provider";
 pub const K_MODEL: &str = "ai.model";
 pub const K_BASE_URL: &str = "ai.base_url";
 pub const K_TRANSLATE_TARGET: &str = "ai.translate_target";
+pub const K_CONFIRM_BEFORE_SEND: &str = "ai.confirm_before_send";
 
 pub const DEFAULT_PROVIDER: &str = "ollama";
 pub const DEFAULT_MODEL: &str = "llama3.2";
@@ -133,4 +134,36 @@ pub fn client_from_store(store: &Store) -> Result<AiClient, String> {
 
 pub fn translate_target(store: &Store) -> String {
     non_empty_setting(store, K_TRANSLATE_TARGET).unwrap_or_else(|| DEFAULT_TRANSLATE_TARGET.into())
+}
+
+/// 「发送前确认要发什么」：默认开启。
+/// 投喂给 AI 的是正文，默认让用户先看一眼比默认静默外发更合适。
+pub fn confirm_before_send(store: &Store) -> bool {
+    match non_empty_setting(store, K_CONFIRM_BEFORE_SEND) {
+        Some(v) => !matches!(v.trim().to_ascii_lowercase().as_str(), "false" | "0" | "off" | "no"),
+        None => true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn confirm_before_send_defaults_to_on_and_only_accepts_explicit_off() {
+        let store = Store::open_in_memory().unwrap();
+        // 没设置过 → 问（把正文发出去前让用户看一眼是安全侧默认）
+        assert!(confirm_before_send(&store));
+
+        for value in ["false", "FALSE", " false ", "0", "off", "no"] {
+            store.set_setting(K_CONFIRM_BEFORE_SEND, value).unwrap();
+            assert!(!confirm_before_send(&store), "{value:?} 应当解析为关闭");
+        }
+
+        for value in ["true", "on", "", "   ", "随便写的"] {
+            store.set_setting(K_CONFIRM_BEFORE_SEND, value).unwrap();
+            // 空值等同未设置；无法识别的值不该静默变成「不问了」
+            assert!(confirm_before_send(&store), "{value:?} 应当回到默认开启");
+        }
+    }
 }

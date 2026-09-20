@@ -150,22 +150,31 @@ impl AiClient {
     /// 查询串里，只处理 header 会泄露（这个 bug 就是被测试抓出来的）。
     pub fn preview(&self, req: &AiRequest) -> Result<RequestPreview, AiError> {
         let planned = self.plan(req)?;
+        let mut headers: Vec<(String, String)> = planned
+            .headers
+            .iter()
+            .map(|(k, v)| {
+                let sensitive = k.eq_ignore_ascii_case("authorization")
+                    || k.eq_ignore_ascii_case("x-api-key");
+                let value = if sensitive {
+                    "***已隐藏***".to_string()
+                } else {
+                    self.scrub(v)
+                };
+                (k.clone(), value)
+            })
+            .collect();
+        // `complete()` 用 `.json()` 发请求，reqwest 会补上 Content-Type。
+        // 预览里如实补一行，否则「看到的请求头」比实际发出的少一条。
+        if !headers
+            .iter()
+            .any(|(k, _)| k.eq_ignore_ascii_case("content-type"))
+        {
+            headers.push(("Content-Type".to_string(), "application/json".to_string()));
+        }
         Ok(RequestPreview {
             url: self.scrub(&planned.url),
-            headers: planned
-                .headers
-                .iter()
-                .map(|(k, v)| {
-                    let sensitive = k.eq_ignore_ascii_case("authorization")
-                        || k.eq_ignore_ascii_case("x-api-key");
-                    let value = if sensitive {
-                        "***已隐藏***".to_string()
-                    } else {
-                        self.scrub(v)
-                    };
-                    (k.clone(), value)
-                })
-                .collect(),
+            headers,
             body: self.scrub_value(&planned.body),
         })
     }
@@ -510,6 +519,8 @@ mod tests {
             AiConfig::openai_compatible("https://api.example.com/v1", "gpt-x", key),
             AiConfig::anthropic("claude-x", key),
             AiConfig::gemini("gemini-x", key),
+            // ollama 无 key，但也必须走同一条 JSON 发送路径
+            AiConfig::ollama("llama-x"),
         ];
         for config in cases {
             let client = AiClient::new(config).unwrap();
@@ -519,6 +530,16 @@ mod tests {
                 preview.url, preview.headers, preview.body
             );
             assert!(!dumped.contains(key), "预览里泄露了 key: {dumped}");
+            // 实际发送时 reqwest 会补 Content-Type，预览必须说全
+            assert!(
+                preview
+                    .headers
+                    .iter()
+                    .any(|(k, v)| k.eq_ignore_ascii_case("content-type")
+                        && v == "application/json"),
+                "预览缺少 Content-Type: {:?}",
+                preview.headers
+            );
         }
     }
 

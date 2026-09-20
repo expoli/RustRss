@@ -116,6 +116,8 @@ fn main() {
             commands::test_ai_connection,
             commands::ai_summarize,
             commands::ai_translate,
+            commands::ai_preview,
+            commands::set_ai_confirm_before_send,
             commands::get_mcp_settings,
             commands::set_mcp_enabled,
             commands::set_mcp_port,

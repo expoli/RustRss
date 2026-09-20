@@ -370,6 +370,43 @@ main {
   resize: vertical;
 }
 
+/* ---------------- 「发送前确认要发什么」弹窗 ---------------- */
+
+.confirm-sheet {
+  /* 与设置面板同一套自适应思路：不写死高度，长内容在内部滚 */
+  width: min(780px, 92vw);
+  max-height: min(84vh, 760px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .4);
+}
+.confirm-sheet h3 { margin: 0; font-size: 16px; }
+.confirm-sheet h4 { margin: 0 0 4px; font-size: 12px; color: var(--fg-dim); }
+.confirm-section { display: flex; flex-direction: column; min-height: 0; }
+.confirm-section.grow { flex: 1; }
+.confirm-section pre,
+.confirm-section code {
+  margin: 0;
+  font: 12px/1.5 ui-monospace, monospace;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+#ai-confirm-body { max-height: 34vh; }
+#ai-confirm-meta { margin-left: 8px; font-weight: 400; }
+.confirm-actions { display: flex; align-items: center; gap: 10px; }
+.confirm-actions .spacer { flex: 1; }
+.confirm-skip { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-dim); cursor: pointer; }
+
 /* ---------------- AI 结果面板 ---------------- */
 
 .ai-panel {

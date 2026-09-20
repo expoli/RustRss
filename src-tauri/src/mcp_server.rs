@@ -24,7 +24,7 @@ pub const K_ENABLED: &str = "mcp.enabled";
 
 // 供 commands 层使用，实现只有一份
 pub use rustrss_mcp::config::{
-    client_snippet, is_loopback_url, port_from_store, set_token, token_from_store, DEFAULT_PORT,
+    client_snippet, is_loopback_url, port_from_store, token_from_store, DEFAULT_PORT,
     K_PORT, K_TOKEN,
 };
 

@@ -10,7 +10,7 @@ use tauri::State;
 use tauri_plugin_dialog::DialogExt;
 
 use rustrss_core::ai::prompt::{AiTask, SummaryLength};
-use rustrss_core::ai::{AiRequest, CachePolicy};
+use rustrss_core::ai::{AiClient, AiRequest, AiTaskPlan, CachePolicy};
 use rustrss_core::fetch::RefreshReport;
 use rustrss_core::{EntryQuery, EntryRow, FeedRow, MarkScope};
 
@@ -396,6 +396,8 @@ pub struct AiSettingsView {
     /// 凭据来源或不可用原因：如实告知，不让用户猜
     pub key_note: Option<String>,
     pub default_base_url: String,
+    /// 「发送前确认要发什么」是否开启
+    pub confirm_before_send: bool,
 }
 
 fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
@@ -413,12 +415,26 @@ fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
             has_key: key.is_some(),
             key_note: note,
             default_base_url: crate::ai::default_base_url(provider).to_string(),
+            confirm_before_send: crate::ai::confirm_before_send(s),
         })
     })
 }
 
 #[tauri::command]
 pub fn get_ai_settings(state: State<'_, AppState>) -> R<AiSettingsView> {
+    ai_settings_view(&state)
+}
+
+/// 「发送前确认要发什么」开关。单独一个命令：开关不需要重传整张表单。
+#[tauri::command]
+pub fn set_ai_confirm_before_send(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> R<AiSettingsView> {
+    state.with_store(|s| {
+        s.set_setting(crate::ai::K_CONFIRM_BEFORE_SEND, if enabled { "true" } else { "false" })
+            .map_err(err)
+    })?;
     ai_settings_view(&state)
 }
 
@@ -464,6 +480,117 @@ pub async fn test_ai_connection(state: State<'_, AppState>) -> R<String> {
     client.complete(request).await.map_err(|e| e.to_string())
 }
 
+/// 计划阶段：持锁读库 + 取凭据 + 拼请求（请求本身不在锁内发）。
+/// 预览与真实发送共用这一步——否则「预览看到的」和「实际发出的」会漂移。
+fn build_ai_plan(
+    state: &State<'_, AppState>,
+    entry_id: i64,
+    task: AiTask,
+    policy: CachePolicy,
+) -> R<(AiTaskPlan, AiClient)> {
+    state.with_store(|s| {
+        let client = crate::ai::client_from_store(s)?;
+        let plan = rustrss_core::ai::plan_task(s, &client, entry_id, &task, policy)
+            .map_err(|e| e.to_string())?;
+        Ok((plan, client))
+    })
+}
+
+/// 界面传来的任务名 → 任务。
+/// 目标语言解析与 `ai_translate` **完全一致**（显式 target 优先，否则用设置）：
+/// 两处一旦不一致，预览就会与实发漂移。
+fn task_from_str(
+    state: &State<'_, AppState>,
+    task: &str,
+    target: Option<String>,
+) -> R<AiTask> {
+    match task {
+        "translate" => {
+            let explicit = target
+                .map(|t| t.trim().to_string())
+                .filter(|t| !t.is_empty());
+            let target = match explicit {
+                Some(t) => t,
+                None => state.with_store(|s| Ok(crate::ai::translate_target(s)))?,
+            };
+            Ok(AiTask::Translate { target })
+        }
+        "summarize" => {
+            let language = state.with_store(|s| Ok(crate::ai::translate_target(s)))?;
+            Ok(AiTask::Summarize {
+                length: SummaryLength::Medium,
+                language,
+            })
+        }
+        other => Err(format!("未知的 AI 任务: {other}")),
+    }
+}
+
+/// 预览里最多展示多少字符的请求体（只是显示需要，不影响真正发出的内容）。
+const PREVIEW_BODY_CHARS: usize = 4000;
+
+#[derive(Serialize)]
+pub struct AiPreviewView {
+    pub provider_model: String,
+    /// 将要请求的地址
+    pub url: String,
+    /// 请求头，凭据已打码
+    pub headers: Vec<(String, String)>,
+    /// 将要发送的请求体（JSON，已格式化）
+    pub body: String,
+    /// 请求体总字符数
+    pub body_chars: usize,
+    /// 请求体仅为展示而被截断（不代表真正发送的内容被截断）
+    pub body_clipped: bool,
+    /// 提示词因正文过长被截断（真正发送的内容确实不完整）
+    pub truncated: bool,
+    /// 命中缓存：不会外发任何请求
+    pub from_cache: bool,
+    /// 是否真的会发出网络请求
+    pub will_send: bool,
+}
+
+/// 「发送前确认要发什么」：返回即将发出的请求（凭据打码）。
+///
+/// `refresh` 会决定缓存策略，必须与真实发送一致：曾因为这里固定用缓存计划，
+/// 「重新生成」时预览说“不会发送”，实际却重新发了请求（且没经过确认）。
+#[tauri::command]
+pub async fn ai_preview(
+    state: State<'_, AppState>,
+    entry_id: i64,
+    task: String,
+    target: Option<String>,
+    refresh: Option<bool>,
+) -> R<AiPreviewView> {
+    let task = task_from_str(&state, &task, target)?;
+    let policy = if refresh.unwrap_or(false) {
+        CachePolicy::Refresh
+    } else {
+        CachePolicy::UseCache
+    };
+    let (plan, client) = build_ai_plan(&state, entry_id, task, policy)?;
+    let preview = client
+        .preview(&plan.request)
+        .map_err(|e| e.to_string())?;
+    // 展示串与计数用同一个来源，否则会出现「仅展示前 4000 / 3800 字符」这种自相矛盾
+    let pretty = serde_json::to_string_pretty(&preview.body).unwrap_or_else(|_| "{}".into());
+    let body_chars = pretty.chars().count();
+    let body_clipped = body_chars > PREVIEW_BODY_CHARS;
+    let body: String = pretty.chars().take(PREVIEW_BODY_CHARS).collect();
+
+    Ok(AiPreviewView {
+        provider_model: plan.provider_model.clone(),
+        url: preview.url.clone(),
+        headers: preview.headers.clone(),
+        body,
+        body_chars,
+        body_clipped,
+        truncated: plan.truncated,
+        from_cache: plan.cached.is_some(),
+        will_send: plan.cached.is_none(),
+    })
+}
+
 #[derive(Serialize)]
 pub struct AiOutcomeView {
     pub output: String,
@@ -485,12 +612,7 @@ async fn run_ai(
         CachePolicy::UseCache
     };
 
-    let (plan, client) = state.with_store(|s| {
-        let client = crate::ai::client_from_store(s)?;
-        let plan = rustrss_core::ai::plan_task(s, &client, entry_id, &task, policy)
-            .map_err(|e| e.to_string())?;
-        Ok((plan, client))
-    })?;
+    let (plan, client) = build_ai_plan(&state, entry_id, task, policy)?;
 
     if let Some(hit) = plan.cached.clone() {
         return Ok(AiOutcomeView {
@@ -523,11 +645,8 @@ pub async fn ai_summarize(
     entry_id: i64,
     refresh: Option<bool>,
 ) -> R<AiOutcomeView> {
-    let language = state.with_store(|s| Ok(crate::ai::translate_target(s)))?;
-    let task = AiTask::Summarize {
-        length: SummaryLength::Medium,
-        language,
-    };
+    // 与预览走同一份任务构造，避免两处各自拼任务时静默漂移
+    let task = task_from_str(&state, "summarize", None)?;
     run_ai(state, entry_id, task, refresh.unwrap_or(false)).await
 }
 
@@ -538,9 +657,6 @@ pub async fn ai_translate(
     target: Option<String>,
     refresh: Option<bool>,
 ) -> R<AiOutcomeView> {
-    let target = match target.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()) {
-        Some(t) => t,
-        None => state.with_store(|s| Ok(crate::ai::translate_target(s)))?,
-    };
-    run_ai(state, entry_id, AiTask::Translate { target }, refresh.unwrap_or(false)).await
+    let task = task_from_str(&state, "translate", target)?;
+    run_ai(state, entry_id, task, refresh.unwrap_or(false)).await
 }

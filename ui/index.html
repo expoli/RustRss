@@ -80,7 +80,7 @@
     </article>
   </main>
 
-  <div id="settings-overlay" class="overlay hidden">
+  <div id="settings-overlay" class="overlay hidden" role="dialog" aria-modal="true">
     <div class="settings-dialog">
       <nav class="settings-nav">
         <div class="settings-nav-title" data-i18n="settings.title"></div>
@@ -254,6 +254,17 @@
             </div>
             <p id="ai-status" class="dim small">—</p>
           </div>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.sending"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.ai.confirmBeforeSend"></b>
+                <small data-i18n="settings.ai.confirmBeforeSendHint"></small>
+              </div>
+              <label class="switch"><input type="checkbox" id="set-ai-confirm" /><span></span></label>
+            </div>
+          </div>
         </div>
 
         <!-- MCP -->
@@ -324,6 +335,40 @@
       </section>
 
       <button id="settings-close" class="settings-close" data-i18n-title="settings.close">✕</button>
+    </div>
+  </div>
+
+  <div id="ai-confirm-overlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-sheet">
+      <h3 data-i18n="ai.confirm.title"></h3>
+      <p id="ai-confirm-summary" class="dim small"></p>
+
+      <div class="confirm-section">
+        <h4 data-i18n="ai.confirm.target"></h4>
+        <code id="ai-confirm-url"></code>
+      </div>
+
+      <div class="confirm-section">
+        <h4 data-i18n="ai.confirm.headers"></h4>
+        <pre id="ai-confirm-headers"></pre>
+      </div>
+
+      <div class="confirm-section grow">
+        <h4><span data-i18n="ai.confirm.body"></span><span id="ai-confirm-meta" class="dim"></span></h4>
+        <pre id="ai-confirm-body"></pre>
+      </div>
+
+      <p id="ai-confirm-note" class="dim small"></p>
+
+      <div class="confirm-actions">
+        <label class="confirm-skip">
+          <input type="checkbox" id="ai-confirm-dont-ask" />
+          <span data-i18n="ai.confirm.dontAsk"></span>
+        </label>
+        <span class="spacer"></span>
+        <button id="ai-confirm-cancel" data-i18n="ai.confirm.cancel"></button>
+        <button id="ai-confirm-send" class="primary" data-i18n="ai.confirm.send"></button>
+      </div>
     </div>
   </div>
 

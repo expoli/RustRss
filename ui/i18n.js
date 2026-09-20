@@ -82,6 +82,9 @@ const DICTS = {
     'settings.section.opml': '订阅导入导出',
     'settings.section.provider': '服务商与模型',
     'settings.section.credentials': '凭据',
+    'settings.section.sending': '发送行为',
+    'settings.ai.confirmBeforeSend': '发送前确认要发什么',
+    'settings.ai.confirmBeforeSendHint': '发出请求前先展示目标地址与内容（凭据已打码）；命中缓存时不会询问',
     'settings.section.server': '服务',
     'settings.section.client': '客户端接入',
 
@@ -99,6 +102,20 @@ const DICTS = {
     'settings.about.license': '许可证',
     'settings.about.privacy': '隐私',
     'settings.about.privacyHint': '除订阅源与你配置的 AI 端点外，不产生其他外呼；无账号、无遥测',
+
+    'ai.confirm.title': '这一步会把以下内容发出去',
+    'ai.confirm.summary': '模型 {model}｜请求体 {chars} 字符',
+    'ai.confirm.target': '目标地址',
+    'ai.confirm.headers': '请求头（凭据已打码）',
+    'ai.confirm.body': '请求体',
+    'ai.confirm.clipped': '（仅展示前 {shown} / {total} 字符）',
+    'ai.confirm.truncated': '⚠ 正文过长，提示词已被截断：发出去的内容不完整',
+    'ai.confirm.dontAsk': '以后不再询问',
+    'ai.confirm.cancel': '取消',
+    'ai.confirm.send': '发送',
+
+    'status.aiCancelled': '已取消发送',
+    'status.aiCachedNoSend': '命中缓存：本次不会发送请求',
     'settings.markRead.title': 'j / k 浏览时顺便标记已读',
     'settings.markRead.hint':
       '关闭后：j/k 只移动选中项并把文章显示在右栏，只有 Enter、鼠标点击或 u 才会改变已读状态。默认开启（键盘阅读器的主流做法：扫一遍即已读）。',
@@ -252,6 +269,9 @@ const DICTS = {
     'settings.section.opml': 'Import and export',
     'settings.section.provider': 'Provider and model',
     'settings.section.credentials': 'Credentials',
+    'settings.section.sending': 'Sending',
+    'settings.ai.confirmBeforeSend': 'Confirm what gets sent',
+    'settings.ai.confirmBeforeSendHint': 'Shows the destination and payload before sending (credentials masked); skipped when the answer is already cached',
     'settings.section.server': 'Server',
     'settings.section.client': 'Client setup',
 
@@ -269,6 +289,20 @@ const DICTS = {
     'settings.about.license': 'License',
     'settings.about.privacy': 'Privacy',
     'settings.about.privacyHint': 'No traffic beyond your feeds and the AI endpoint you configure; no account, no telemetry',
+
+    'ai.confirm.title': 'This step sends the following',
+    'ai.confirm.summary': 'Model {model}｜request body {chars} characters',
+    'ai.confirm.target': 'Destination',
+    'ai.confirm.headers': 'Headers (credentials masked)',
+    'ai.confirm.body': 'Request body',
+    'ai.confirm.clipped': '(showing the first {shown} of {total} characters)',
+    'ai.confirm.truncated': 'Warning: the article is too long, so the prompt was cut short. The outgoing content is incomplete.',
+    'ai.confirm.dontAsk': 'Do not ask again',
+    'ai.confirm.cancel': 'Cancel',
+    'ai.confirm.send': 'Send',
+
+    'status.aiCancelled': 'Send cancelled',
+    'status.aiCachedNoSend': 'Cached answer: nothing will be sent this time',
     'settings.markRead.title': 'Mark as read while browsing with j / k',
     'settings.markRead.hint':
       'When off, j/k only move the selection and show the article; only Enter, a mouse click or u change the read state. On by default (the usual behaviour of keyboard readers: sweep and it is read).',
