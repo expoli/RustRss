@@ -31,6 +31,35 @@ src-tauri/             Tauri 2 桌面应用（当前为 M0 诊断探针）
 ui/                    桌面应用前端（当前为探针页面）
 ```
 
+### MCP 服务器（已接真实库）
+
+工具集（**只读**，写入类属 P1）：`list_feeds` / `list_articles` / `get_article` / `search_articles` / `db_stats`。
+
+口径：**列表只回元数据 + 短摘要（≤140 字），正文必须用 `get_article` 单独取**；所有列表有上限（默认 10、上限 50）。这是为了不让单次响应撑爆 agent 上下文（见 PRD §6 风险 3）。
+
+```bash
+# 直接跑（stdio；库路径：$RUSTSS_DB → 第一个参数 → ~/.local/share/rustrss/rustrss.sqlite）
+cargo build -p rustrss-mcp
+./target/debug/rustrss-mcp /tmp/rustrss.sqlite
+
+# 接到 Claude Code（一次性，不动全局配置）
+cat > /tmp/rustrss-mcp.json <<'JSON'
+{
+  "mcpServers": {
+    "rustrss": {
+      "command": "/绝对路径/target/debug/rustrss-mcp",
+      "args": [],
+      "env": { "RUSTSS_DB": "/tmp/rustrss.sqlite" }
+    }
+  }
+}
+JSON
+claude -p "用 rustrss 工具告诉我订阅源与未读数" \
+  --mcp-config /tmp/rustrss-mcp.json --allowedTools "mcp__rustrss"
+```
+
+已用 Claude Code 做过真实客户端验证：它能正确报出源数/未读数、列出条目，并会主动提醒「抓取状态非 ok 的源数据可能不是最新」（`list_feeds` 里的 `status` 字段）——该字段就是为此保留的。
+
 ## 进度
 
 ### M1 · core 数据层（进行中）
