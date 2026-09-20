@@ -155,7 +155,7 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     use tauri::Manager;
 
     // 菜单文案跟随设置里的界面语言；`auto`/读不到时按 zh-CN 处理
-    //（不为此引入 sys-locale 依赖，见 PRD 非目标）。
+    //（精确跟随系统语言需引入 sys-locale 依赖，v1 不做）。
     let locale = app
         .try_state::<AppState>()
         .map(|s| {
