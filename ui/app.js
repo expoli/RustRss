@@ -32,6 +32,20 @@ const i18nSelfTest = I18N_API
 const setLocale = I18N_API ? I18N_API.setLocale : () => 'zh-CN';
 const currentLocale = () => (I18N_API ? I18N_API.locale() : 'zh-CN');
 
+/// 对正文里的代码块做语法高亮：有 language-* class（sanitize 白名单放行的）
+/// 按指定语言，否则 hljs auto-detect；任何失败都让代码块保持原样纯文本。
+/// hljs 未加载（如 vendor 文件缺失）时静默跳过，不影响正文阅读。
+function highlightCode(root) {
+  if (!window.hljs) return;
+  for (const block of root.querySelectorAll('pre code')) {
+    try {
+      window.hljs.highlightElement(block);
+    } catch {
+      /* 检测失败/未知语言：原样显示 */
+    }
+  }
+}
+
 /// 应用主题三态：system 移除 data-theme（交给 CSS 媒体查询实时跟随），
 /// light/dark 固定属性。非法值一律按 system 处理（与 Rust 侧白名单双保险）。
 function applyTheme(pref) {
@@ -90,6 +104,9 @@ const ALLOWED_TAGS = {
   strong: [], em: [], b: [], i: [], u: [], s: [], del: [], ins: [], sup: [], sub: [], mark: [],
   img: ['src', 'alt', 'title', 'width', 'height'],
   a: ['href', 'title'],
+  // class 仅放行 language-* token（语法高亮检测用），其余类名在属性循环里逐 token 剥除
+  pre: ['class'],
+  code: ['class'],
 };
 
 const DROP_ENTIRELY = new Set([
@@ -140,6 +157,14 @@ function sanitize(html, baseUrl) {
         continue;
       }
       const value = attr.value.trim();
+      // class 值逐 token 过滤：只保留 language-* 前缀，其余全部剥除；
+      // 过滤后为空则整个移除（防任意类名注入）
+      if (name === 'class') {
+        const kept = value.split(/\s+/).filter((c) => /^language-[\w+#.-]+$/.test(c));
+        if (kept.length) node.setAttribute('class', kept.join(' '));
+        else node.removeAttribute('class');
+        continue;
+      }
       // 只拦危险协议，**不要**在这里判相对地址：相对地址是正常的，
       // 会在下面被解析成绝对地址。（先前就是在这里把相对图片直接删了，
       // 导致 feed 里的图片全不显示 —— 自检把它拓了出来。）
@@ -354,7 +379,8 @@ function renderReader(entry) {
         <span>${fmtTime(entry.published_at)}</span>
         ${entry.author ? `<span>${escapeHtml(entry.author)}</span>` : ''}
       </div>
-    </div>
+    </div>`;
+  reader.insertAdjacentHTML('beforeend', `
     <div class="reader-actions">
       <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
       <button id="act-star">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</button>
@@ -373,6 +399,10 @@ function renderReader(entry) {
       <div id="ai-panel-body" class="ai-panel-body"></div>
     </div>
     <div class="article">${body}</div>`;
+
+  // 高亮必须在正文插入 DOM 之后跑（hljs 需要真实节点）；
+  // 输入是 sanitize 产物，hljs 输出不回灌 sanitize 流程。
+  highlightCode(reader);
 
   el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
@@ -655,7 +685,10 @@ function selfTestSanitizer() {
     <img src="img/a.png" onerror="window.__pwned=2">
     <a href="javascript:window.__pwned=3">js链接</a>
     <a href="/about">相对链接</a>
-    <iframe src="https://evil.example"></iframe></div>`;
+    <iframe src="https://evil.example"></iframe>
+    <pre><code class="language-rust">fn main() {}</code></pre>
+    <code class="evil-class another">rm -rf</code>
+    <code class="language-py evil-x">print(1)</code></div>`;
   const clean = sanitize(dirty, base);
 
   const failures = [];
@@ -667,6 +700,12 @@ function selfTestSanitizer() {
   if (!clean.includes('正常段落')) failures.push('正常内容被误删');
   if (!clean.includes('https://example.com/posts/img/a.png')) failures.push('相对图片未解析为绝对地址');
   if (!clean.includes('https://example.com/about')) failures.push('相对链接未解析为绝对地址');
+  if (window.__pwned) failures.push('脚本被实际执行了');
+  // class 白名单：language-* 保留，任意类名剥除，混合时逐 token 过滤
+  if (!/class="language-rust"/.test(clean)) failures.push('code 的 language-* class 被误剥');
+  if (/evil-class|another/.test(clean)) failures.push('非 language-* 类名残留');
+  if (/class="[^"]*evil-x/.test(clean)) failures.push('混合 class 中非 language-* token 未剥除');
+  if (!/class="language-py"/.test(clean)) failures.push('混合 class 中 language-* token 未保留');
   if (window.__pwned) failures.push('脚本被实际执行了');
 
   log(failures.length ? `sanitizer selftest FAILED: ${failures.join('; ')}` : 'sanitizer selftest ok');

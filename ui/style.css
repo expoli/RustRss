@@ -11,6 +11,14 @@
   --accent: #4c9aff;
   --star: #e5b567;
   --danger: #e06c75;
+  /* 代码高亮 token（深色，One Dark 风） */
+  --code-kw: #c678dd;
+  --code-str: #98c379;
+  --code-num: #d19a66;
+  --code-com: #7f848e;
+  --code-fn: #61afef;
+  --code-type: #e5c07b;
+  --code-var: #e06c75;
 }
 
 @media (prefers-color-scheme: light) {
@@ -27,6 +35,13 @@
     --accent: #2563eb;
     --star: #b8860b;
     --danger: #c0392b;
+    --code-kw: #d73a49;
+    --code-str: #032f62;
+    --code-num: #005cc5;
+    --code-com: #6a737d;
+    --code-fn: #6f42c1;
+    --code-type: #22863a;
+    --code-var: #e36209;
   }
 }
 
@@ -42,6 +57,13 @@ html[data-theme="light"] {
   --accent: #2563eb;
   --star: #b8860b;
   --danger: #c0392b;
+  --code-kw: #d73a49;
+  --code-str: #032f62;
+  --code-num: #005cc5;
+  --code-com: #6a737d;
+  --code-fn: #6f42c1;
+  --code-type: #22863a;
+  --code-var: #e36209;
 }
 /* 手动固定深色 = :root 默认值，无需额外规则；html[data-theme="dark"] 仅作语义标记。 */
 
@@ -473,3 +495,19 @@ main {
 .article table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 13px; }
 .article th, .article td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
 .article hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
+
+/* ---------------- 代码高亮（highlight.js，vendor） ---------------- */
+/* token 色走上方 CSS 变量，随主题三态自动切换；未标 token 的文本用 --fg */
+.hljs {
+  color: var(--fg);
+  background: transparent;
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-literal { color: var(--code-kw); }
+.hljs-string, .hljs-attr, .hljs-attribute, .hljs-regexp { color: var(--code-str); }
+.hljs-number, .hljs-symbol, .hljs-bullet, .hljs-link { color: var(--code-num); }
+.hljs-comment, .hljs-quote, .hljs-deletion { color: var(--code-com); font-style: italic; }
+.hljs-title, .hljs-function .hljs-title, .hljs-title.function_ { color: var(--code-fn); }
+.hljs-type, .hljs-class .hljs-title, .hljs-title.class_, .hljs-tag { color: var(--code-type); }
+.hljs-variable, .hljs-template-variable, .hljs-name, .hljs-addition { color: var(--code-var); }
+.hljs-section, .hljs-emphasis { font-style: italic; color: var(--code-fn); }
+.hljs-strong { font-weight: 600; color: var(--code-str); }
