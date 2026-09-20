@@ -1,0 +1,130 @@
+//! OPML 导入导出的测试。
+//!
+//! 重点是三件事：导出能带标题里的特殊字符、导入能去重、往返不丢源。
+
+use rustrss_core::opml::{self, ImportReport};
+use rustrss_core::Store;
+
+/// 一份贴近真实阅读器导出的 OPML：嵌套文件夹 + htmlUrl + 纯文字大纲 + 特殊字符
+const REAL_WORLD_OPML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>subscriptions</title></head>
+  <body>
+    <outline text="技术" title="技术">
+      <outline type="rss" text="Rust Blog" title="Rust Blog"
+               xmlUrl="https://blog.rust-lang.org/feed.xml" htmlUrl="https://blog.rust-lang.org/"/>
+      <outline text="资讯" title="资讯">
+        <outline type="rss" text="LWN &amp; friends" title="LWN &amp; friends"
+                 xmlUrl="https://lwn.net/headlines/rss"/>
+      </outline>
+    </outline>
+    <outline text="随手写的一段话（没有订阅也没有子节点）"/>
+    <outline type="rss" text="少数派" title="少数派" xmlUrl="https://sspai.com/feed"/>
+  </body>
+</opml>"#;
+
+#[test]
+fn import_adds_feeds_folders_and_counts() {
+    let store = Store::open_in_memory().unwrap();
+    let report = opml::import(&store, REAL_WORLD_OPML).unwrap();
+
+    assert_eq!(
+        report,
+        ImportReport {
+            feeds_added: 3,
+            feeds_skipped: 0,
+            // 「技术」与「技术/资讯」两个文件夹
+            folders_created: 2,
+            outlines_ignored: 1,
+        }
+    );
+
+    let feeds = store.list_feeds().unwrap();
+    assert_eq!(feeds.len(), 3);
+
+    // 嵌套文件夹压平成 父/子
+    let folders = store.list_folders().unwrap();
+    let names: Vec<&str> = folders.iter().map(|(_, n)| n.as_str()).collect();
+    assert!(names.contains(&"技术"), "{names:?}");
+    assert!(names.contains(&"技术/资讯"), "{names:?}");
+
+    // 实体的标题被正确解码（&amp; → &）
+    let lwn = feeds.iter().find(|f| f.url.contains("lwn.net")).expect("LWN 应存在");
+    assert_eq!(lwn.title, "LWN & friends");
+    // htmlUrl 被记成 site_url
+    let rust = feeds
+        .iter()
+        .find(|f| f.url.contains("rust-lang"))
+        .expect("Rust Blog 应存在");
+    assert_eq!(rust.site_url.as_deref(), Some("https://blog.rust-lang.org/"));
+    // 未归类的源
+    let sspai = feeds.iter().find(|f| f.url.contains("sspai")).expect("少数派应存在");
+    assert!(sspai.folder_id.is_none());
+}
+
+#[test]
+fn import_is_idempotent_by_url() {
+    let store = Store::open_in_memory().unwrap();
+    let first = opml::import(&store, REAL_WORLD_OPML).unwrap();
+    assert_eq!(first.feeds_added, 3);
+
+    let second = opml::import(&store, REAL_WORLD_OPML).unwrap();
+    assert_eq!(second.feeds_added, 0);
+    assert_eq!(second.feeds_skipped, 3, "同一份 OPML 再导入一次应全部跳过");
+    assert_eq!(store.list_feeds().unwrap().len(), 3, "不得出现重复源");
+    assert_eq!(second.folders_created, 0, "文件夹也不应重复创建");
+}
+
+#[test]
+fn export_escapes_special_characters_and_survives_roundtrip() {
+    let store = Store::open_in_memory().unwrap();
+    let folder = store.add_folder("技术/资讯").unwrap();
+    let tricky = store
+        .add_feed(
+            "https://example.com/feed?a=1&b=2",
+            Some("A & B \"quoted\" <tag>"),
+        )
+        .unwrap();
+    store.assign_folder(tricky, Some(folder)).unwrap();
+    store.add_feed("https://example.com/plain.xml", Some("普通源")).unwrap();
+
+    let xml = opml::export(&store).unwrap();
+    assert!(xml.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
+    assert!(xml.contains("version=\"2.0\""));
+    // 属性里的特殊字符必须转义，否则生成的 OPML 是非法的
+    assert!(xml.contains("A &amp; B &quot;quoted&quot; &lt;tag&gt;"), "{xml}");
+    assert!(
+        xml.contains("xmlUrl=\"https://example.com/feed?a=1&amp;b=2\""),
+        "{xml}"
+    );
+
+    // 往干净的库里往返一次，源数量应一致
+    let fresh = Store::open_in_memory().unwrap();
+    let report = opml::import(&fresh, &xml).unwrap();
+    assert_eq!(report.feeds_added, 2);
+    assert_eq!(report.feeds_skipped, 0);
+    assert_eq!(fresh.list_feeds().unwrap().len(), 2);
+    assert_eq!(fresh.list_folders().unwrap().len(), 1);
+}
+
+#[test]
+fn malformed_input_is_reported_not_silently_empty() {
+    let store = Store::open_in_memory().unwrap();
+
+    let err = opml::import(&store, "<html><body>这不是 OPML</body></html>").unwrap_err();
+    assert!(err.to_string().contains("没有 <opml>"), "{err}");
+
+    let err = opml::import(&store, "<opml><body><outline").unwrap_err();
+    assert!(err.to_string().contains("解析失败"), "{err}");
+
+    // 出错时不应留下半截数据
+    assert_eq!(store.list_feeds().unwrap().len(), 0);
+}
+
+#[test]
+fn empty_opml_is_not_an_error() {
+    let store = Store::open_in_memory().unwrap();
+    let xml = r#"<?xml version="1.0"?><opml version="2.0"><head/><body/></opml>"#;
+    let report = opml::import(&store, xml).unwrap();
+    assert_eq!(report, ImportReport::default());
+}

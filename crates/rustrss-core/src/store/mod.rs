@@ -311,6 +311,18 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
+    /// 按地址查源 id（OPML 导入去重用；地址按 trim 后比较，与 add_feed 一致）
+    pub fn feed_id_by_url(&self, url: &str) -> Result<Option<i64>> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT id FROM feeds WHERE url = ?1",
+                params![url.trim()],
+                |r| r.get::<_, i64>(0),
+            )
+            .ok())
+    }
+
     // ---------------------------------------------------------------- 条目入库
 
     /// 批量入库。已存在的条目按内容指纹决定「更新」还是「跳过」。

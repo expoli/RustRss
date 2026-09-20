@@ -625,6 +625,38 @@ async function boot() {
   });
   el('act-mark-all-read').onclick = () => markAll(true);
   el('act-mark-all-unread').onclick = () => markAll(false);
+
+  el('act-export-opml').onclick = async () => {
+    try {
+      const path = await invoke('export_opml');
+      setStatus(path ? `已导出到 ${path}` : '已取消导出');
+      log(`export_opml ${path ?? 'cancelled'}`);
+    } catch (err) {
+      setStatus('导出失败：' + err.message, true);
+      log(`export_opml failed: ${err.message}`);
+    }
+  };
+
+  el('act-import-opml').onclick = async () => {
+    try {
+      const r = await invoke('import_opml');
+      if (!r) {
+        setStatus('已取消导入');
+        return;
+      }
+      setStatus(
+        `导入完成：新增 ${r.feeds_added}｜已存在跳过 ${r.feeds_skipped}｜新建文件夹 ${r.folders_created}｜忽略大纲 ${r.outlines_ignored}`
+      );
+      log(
+        `import_opml added=${r.feeds_added} skipped=${r.feeds_skipped} folders=${r.folders_created} ignored=${r.outlines_ignored}`
+      );
+      el('settings-overlay').classList.add('hidden');
+      await loadAll();
+    } catch (err) {
+      setStatus('导入失败：' + err.message, true);
+      log(`import_opml failed: ${err.message}`);
+    }
+  };
   el('add-ok').onclick = doAddFeed;
   el('add-url').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doAddFeed();

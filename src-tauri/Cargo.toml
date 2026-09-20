@@ -11,6 +11,7 @@ tauri-build = { version = "2", features = [] }
 rustrss-core = { path = "../crates/rustrss-core" }
 tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
+tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

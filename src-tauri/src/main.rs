@@ -68,6 +68,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             commands::db_info,
@@ -83,6 +84,8 @@ fn main() {
             commands::set_mark_read_on_navigate,
             commands::add_feed,
             commands::remove_feed,
+            commands::export_opml,
+            commands::import_opml,
             commands::refresh_all,
             commands::refresh_feed,
             commands::open_external,

@@ -7,6 +7,7 @@
 
 use serde::Serialize;
 use tauri::State;
+use tauri_plugin_dialog::DialogExt;
 
 use rustrss_core::fetch::RefreshReport;
 use rustrss_core::{EntryQuery, EntryRow, FeedRow, MarkScope};
@@ -173,6 +174,47 @@ pub async fn refresh_feed(
     let fetcher = state.fetcher.clone();
     let results = rustrss_core::fetch_jobs(&fetcher, jobs, concurrency.unwrap_or(1)).await;
     state.with_store(|s| rustrss_core::apply_results(s, results).map_err(err))
+}
+
+/// 导出 OPML：弹原生保存对话框 → 写文件。返回实际写入路径（用户取消则 None）。
+/// 只需过滤与文件名，路径由对话框给出；阻塞式调用在非主线程的 async 命令里是安全的。
+#[tauri::command]
+pub async fn export_opml(app: tauri::AppHandle, state: State<'_, AppState>) -> R<Option<String>> {
+    let content = state.with_store(|s| rustrss_core::opml::export(s).map_err(err))?;
+    let picked = app
+        .dialog()
+        .file()
+        .add_filter("OPML", &["opml", "xml"])
+        .set_file_name("rustrss.opml")
+        .blocking_save_file();
+    let Some(file_path) = picked else {
+        return Ok(None);
+    };
+    let path = file_path.into_path().map_err(|e| format!("路径无效: {e}"))?;
+    std::fs::write(&path, content).map_err(|e| format!("写入 {} 失败: {e}", path.display()))?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// 导入 OPML：弹原生打开对话框 → 读文件 → 导入。返回统计（用户取消则 None）。
+#[tauri::command]
+pub async fn import_opml(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> R<Option<rustrss_core::opml::ImportReport>> {
+    let picked = app
+        .dialog()
+        .file()
+        .add_filter("OPML", &["opml", "xml"])
+        .blocking_pick_file();
+    let Some(file_path) = picked else {
+        return Ok(None);
+    };
+    let path = file_path.into_path().map_err(|e| format!("路径无效: {e}"))?;
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("读取 {} 失败: {e}", path.display()))?;
+    state
+        .with_store(|s| rustrss_core::opml::import(s, &content).map_err(err))
+        .map(Some)
 }
 
 /// 用系统默认浏览器打开链接。

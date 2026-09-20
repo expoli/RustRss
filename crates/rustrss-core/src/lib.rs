@@ -7,6 +7,7 @@ pub mod ai;
 pub mod fetch;
 pub mod html;
 pub mod model;
+pub mod opml;
 pub mod parse;
 pub mod paths;
 pub mod store;

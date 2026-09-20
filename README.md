@@ -96,10 +96,23 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 设置面板：「`j`/`k` 浏览时标记已读」开关（默认开）+ 当前视图全部已读 / 全部未读（撤销）
 - [x] 全文搜索（接 FTS5，中文可用）、刷新全部、单源双击重试、添加订阅、浏览器打开、复制链接
 - [x] 正文安全渲染：白名单清洗 + 相对地址图片/链接解析（详见下）
-- [ ] OPML 导入导出
+- [x] OPML 导入 / 导出（嵌套文件夹压平成 `父/子`；按 `xmlUrl` 去重）
+- [x] Linux 打包：产出 `.deb`（**8.1MB，不打包 WebKit**，依赖声明 `libwebkit2gtk-4.1-0, libgtk-3-0`）
 - [ ] i18n（zh-CN / en）
 - [ ] 便携模式（`portable.txt`）、CSP 收紧（当前 `csp: null`）、列表虚拟化（当前硬上限 200 条）
-- [ ] 三平台打包（deb / rpm 优先）
+- [ ] 发布构建开 `strip`（当前未开，`Installed-Size` 25MB 偏大）、rpm/Windows/macOS 打包
+
+安装（deb）：
+
+```bash
+sudo apt install ./target/release/bundle/deb/RustRss_0.0.0_amd64.deb
+```
+
+打包命令（需要 Node，CLI 经由 npx 调用，不装全局）：
+
+```bash
+npx -y @tauri-apps/cli@latest build --bundles deb
+```
 
 三条刻意的设计选择：
 
@@ -112,7 +125,7 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - **选中项会自动滚入可视区**（`scrollIntoView({block:'nearest'})`）。先前选中项变化走的是「全量重建列表」且从不滚动，于是按 `j` 往下走时高亮会跑到列表可视范围之外。现在选中项变化只改行高亮，不重建 DOM；只有数据集变化（比如未读视图里读完一篇）才重建，并保持阅读位置。
 - 列表列的高度用 `grid-template-rows: minmax(0, 1fr)` 显式约束，否则行的 auto 高度会被内容撑开、整列能滚过窗口底部。
 
-关于第 2 条—：页面启动时会跑一次自检（构造带 `<script>`/`onerror`/`javascript:` 的脏 HTML，验证清洗结果与相对地址解析），结果上报到 stdout：日志里看到 `sanitizer selftest ok` 即通过。**这个自检不是形式，它已经抓出两个真 bug**：清洗时误删了 `body` 自身（启动直接失败），以及把相对地址当非法协议删除（导致 feed 里的图片全不显示）。
+关于第 2 条：页面启动时会跑一次自检（构造带 `<script>`/`onerror`/`javascript:` 的脏 HTML，验证清洗结果与相对地址解析），结果上报到 stdout：日志里看到 `sanitizer selftest ok` 即通过。**这个自检不是形式，它已经抓出两个真 bug**：清洗时误删了 `body` 自身（启动直接失败），以及把相对地址当非法协议删除（导致 feed 里的图片全不显示）。
 
 ## 进度
 
