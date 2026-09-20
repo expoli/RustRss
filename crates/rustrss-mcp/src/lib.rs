@@ -13,6 +13,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+pub mod config;
 pub mod http;
 
 use rmcp::{

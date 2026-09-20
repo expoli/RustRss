@@ -8,20 +8,25 @@
 //! 这里为 MCP 单独开一个数据库连接：界面与 MCP 共用同一个库文件，
 //! SQLite 的 WAL 支持多连接读、写由 busy_timeout 排队，代价与复杂度都低于
 //! 让 `!Sync` 的连接跨线程共享。
+//!
+//! 端口 / token / 客户端配置片段的下沉在 `rustrss_mcp::config`（那一层可测、
+//! 也能被 CLI 复用），本模块只负责“应用内怎么跑这个服务”。
 
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Mutex;
 
-use rustrss_core::Store;
-use rustrss_mcp::http::{generate_token, serve, HttpConfig, HttpHandle};
+use rustrss_mcp::http::{serve, HttpConfig, HttpHandle};
 use rustrss_mcp::RustRssMcp;
 
+/// 是否由应用托管 MCP 服务（与“服务本身的配置”分开：这是应用侧开关）
 pub const K_ENABLED: &str = "mcp.enabled";
-pub const K_PORT: &str = "mcp.port";
-pub const K_TOKEN: &str = "mcp.token";
-/// 默认端口：避开 quick-rss（8745）等常见占用
-pub const DEFAULT_PORT: u16 = 8817;
+
+// 供 commands 层使用，实现只有一份
+pub use rustrss_mcp::config::{
+    client_snippet, is_loopback_url, port_from_store, set_token, token_from_store, DEFAULT_PORT,
+    K_PORT, K_TOKEN,
+};
 
 pub struct McpRuntime {
     handle: Mutex<Option<HttpHandle>>,
@@ -83,36 +88,3 @@ impl McpRuntime {
     }
 }
 
-/// 读取或初始化 token（首次启用时生成并落库）
-pub fn token_from_store(store: &Store) -> Result<String, String> {
-    if let Some(existing) = crate::ai::non_empty_setting(store, K_TOKEN) {
-        return Ok(existing);
-    }
-    let fresh = generate_token();
-    store
-        .set_setting(K_TOKEN, &fresh)
-        .map_err(|e| e.to_string())?;
-    Ok(fresh)
-}
-
-pub fn port_from_store(store: &Store) -> u16 {
-    crate::ai::non_empty_setting(store, K_PORT)
-        .and_then(|v| v.parse::<u16>().ok())
-        .filter(|p| *p >= 1024)
-        .unwrap_or(DEFAULT_PORT)
-}
-
-/// 生成可直接粘贴给 MCP 客户端的配置片段。
-///
-/// 同时给出 JSON 片段（Claude Code / Cursor 的 mcpServers 格式）与一行命令，
-/// 因为「让用户自己去猜格式」是最容易劝退的一步。
-pub fn client_snippet(url: &str, token: &str) -> String {
-    format!(
-        "{{\n  \"mcpServers\": {{\n    \"rustrss\": {{\n      \"type\": \"http\",\n      \"url\": \"{url}\",\n      \"headers\": {{ \"Authorization\": \"Bearer {token}\" }}\n    }}\n  }}\n}}\n\n# 或者一行命令（Claude Code）：\nclaude mcp add --transport http rustrss {url} --header \"Authorization: Bearer {token}\"\n"
-    )
-}
-
-/// 判断是否为回环 URL（供界面显示与自检使用）
-pub fn is_loopback_url(url: &str) -> bool {
-    url.contains("127.0.0.1") || url.contains("localhost") || url.contains("[::1]")
-}
