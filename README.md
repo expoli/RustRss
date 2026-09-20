@@ -38,16 +38,25 @@ ui/                    桌面应用前端（当前为探针页面）
 - [x] 解析：RSS 0.x/1.0/2.0、Atom、JSON Feed → 统一领域模型（基于 feed-rs 2.4）
 - [x] 条目身份判定：源 id/guid 优先；退化场景（既无 id 也无链接）改用内容指纹，保证跨次抓取稳定
 - [x] HTML → 纯文本（去标签、剔除 script/style、实体解码、保留块级换行）
-- [ ] SQLite 存储 + FTS5 全文索引
+- [x] SQLite 存储：schema 迁移、按 `stable_id` 去重 upsert、已读/星标、未读计数、文件夹、抓取状态与缓存头
+- [x] 全文检索：FTS5 + 中文预分词（拉丁出词、中文出 bigram；单字中文走 LIKE 兜底）
 - [ ] 抓取：条件请求（ETag / Last-Modified）、增量入库、有界并发
+
+两条不容退让的保证（均有测试）：
+1. **重复刷新不产生重复条目**——`UNIQUE(feed_id, stable_id)` + 内容指纹；内容没变则不解写库。
+2. **刷新不覆盖阅读状态**——`read` / `starred` 不在 upsert 的更新列里。
 
 单元测试：`cargo test -p rustrss-core`
 
-用真实源手工验证（Rust Blog / LWN / 阮一峰 / 少数派 四个源已验过，含中文编码）：
+用真实源手工验证：
 
 ```bash
+# 只看解析结果
 curl -sL -A "RustRss/0.0" -o /tmp/feed.xml https://lwn.net/headlines/rss
 cargo run -p rustrss-core --example parse_file -- /tmp/feed.xml
+
+# 解析 + 入库 + 检索（同一文件跑两次，第二次应全部计为「未变」）
+cargo run -p rustrss-core --example import_file -- /tmp/feed.xml /tmp/rustrss.sqlite "kernel"
 ```
 
 ### M0 技术探针（已完成，结论见 PRD §10）

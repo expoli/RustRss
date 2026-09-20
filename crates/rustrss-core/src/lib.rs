@@ -6,6 +6,8 @@
 pub mod html;
 pub mod model;
 pub mod parse;
+pub mod store;
 
 pub use model::{Entry, Feed, IdOrigin};
 pub use parse::{parse, ParseError};
+pub use store::{EntryQuery, EntryRow, FeedRow, InsertStats, MarkScope, Store, StoreError};
