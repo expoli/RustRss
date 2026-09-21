@@ -16,7 +16,7 @@ documentUuid: e37f8795-76aa-4108-88b8-5e638b48c6d5
 
 | 决策点 | 选择 | 理由 |
 | --- | --- | --- |
-| 选型 | vendor highlight.js 单文件到 `ui/vendor/`（BSD-3-Clause，保留原 license 头） | AGENTS.md 约束 4 无构建链；CDN 违背本地优先且离线不可用；自写正则覆盖差 |
+| 选型 | vendor highlight.js 单文件到 `ui/vendor/`（BSD-3-Clause，保留原 license 头；已与 cdnjs 官方 11.9.0 产物 SHA-512 比对一致） | AGENTS.md 约束 4 无构建链；CDN 违背本地优先且离线不可用；自写正则覆盖差 |
 | 语言检测 | `code` 的 `language-*` class 优先，无 class 则 auto-detect，失败原样显示 | feed 正文常无 class；auto-detect 失败无害 |
 | 触发时机 | 仅打开的文章正文渲染时 | 开销只在阅读时付出；列表摘要不渲染 code 块 |
 | 配色 | 自定义 token 色值挂入现有 CSS 变量体系，适配应用深浅双主题（与功能②的 data-theme 兼容） | 官方单主题与界面割裂 |
