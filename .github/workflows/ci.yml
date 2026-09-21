@@ -1,0 +1,41 @@
+# 基础 CI：每次 push(master) / PR 跑测试、编译与 clippy。
+# 只做廉价的正确性检查；重构建产物在 nightly.yml / release.yml。
+# 已知现状：仓库存在少量既有 fmt diff 与 3 个 clippy 警告（见 README/提交记录），
+# 因此 fmt 不设门槛、clippy 不用 -D warnings，等清零后再收紧。
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
+
+      - name: Test
+        run: cargo test --workspace --locked
+
+      - name: Build (debug)
+        run: cargo build --workspace --locked
+
+      - name: Clippy (report-only，既有 3 个警告待清零)
+        run: cargo clippy --workspace --locked

@@ -238,6 +238,14 @@ sudo apt install -y libdbus-1-dev libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-
 
 说明：`libdbus-1-dev` 容易被漏掉——缺它时 `cargo build` 会先在 `libdbus-sys` 的构建脚本上失败（`Package dbus-1 was not found`），根本走不到 GTK/WebKit 那一步（实测 2026-09-20，exit=101）。
 
+### CI/CD（GitHub Actions）
+
+三个工作流（`.github/workflows/`）：
+
+- `ci.yml`：push(master) / PR → `cargo test` + debug 构建 + clippy（report-only，既有警告待清零后再收紧门槛）
+- `nightly.yml`：push(master) / 手动 → Linux deb（ubuntu-22.04 基线）+ Windows NSIS，挂到滚动 pre-release 标签 `nightly`（整删整传，始终对应当前 master；macOS 因私有仓库 10 倍计费不在 nightly）
+- `release.yml`：推 `v*` 标签 → Linux deb + Windows NSIS + macOS dmg（arm64，未签名）+ GitHub Release（自动变更说明）；发版前先 bump `workspace.package` 与 `tauri.conf.json` 的版本号再打 tag
+
 ### 运行（三种会话各跑一遍）
 
 ```bash
