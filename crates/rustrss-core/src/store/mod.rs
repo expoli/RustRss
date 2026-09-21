@@ -542,7 +542,7 @@ impl Store {
     // ---------------------------------------------------------------- 条目查询
 
     pub fn list_entries(&self, q: &EntryQuery) -> Result<Vec<EntryRow>> {
-        let mut sql = String::from(ENTRY_SELECT);
+        let mut sql = String::from(ENTRY_SELECT_LIST);
         let mut values: Vec<Value> = Vec::new();
         sql.push_str(" WHERE 1=1");
         if let Some(feed_id) = q.feed_id {
@@ -573,7 +573,7 @@ impl Store {
     pub fn search(&self, query: &str, limit: u32) -> Result<Vec<EntryRow>> {
         let plan = plan_query(query);
         let mut values: Vec<Value> = Vec::new();
-        let mut sql = String::from(ENTRY_SELECT);
+        let mut sql = String::from(ENTRY_SELECT_LIST);
         let has_fts = !plan.fts.is_empty();
 
         if has_fts {
@@ -835,6 +835,13 @@ pub struct AiCacheKey<'a> {
 
 const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, e.content_html, e.content_text,
+        e.read, e.starred, e.read_later
+    FROM entries e JOIN feeds f ON f.id = e.feed_id";
+
+/// 列表/搜索专用：不带正文全文（content 列以 NULL 占位，列序与完整版一致）。
+/// 8k 条库上单次查询从 ~12MB 传输降到几百 KB——正文一律 get_entry 单取。
+const ENTRY_SELECT_LIST: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
+        e.url, e.author, e.published_at, e.summary, NULL, NULL,
         e.read, e.starred, e.read_later
     FROM entries e JOIN feeds f ON f.id = e.feed_id";
 
