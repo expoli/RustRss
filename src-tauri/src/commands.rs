@@ -315,27 +315,48 @@ pub fn preview_rsshub_migration(state: State<'_, AppState>) -> R<i64> {
     })
 }
 
-/// 执行迁移：把 rsshub:// 与官方域的存量订阅改写为实例地址。返回迁移条数。
+/// 迁移结果：migrated=已改写；skipped=目标地址冲突跳过；errors=其它失败明细。
+#[derive(serde::Serialize)]
+pub struct MigrationOutcome {
+    pub migrated: i64,
+    pub skipped: i64,
+    pub errors: Vec<String>,
+}
+
+/// 执行迁移：把 rsshub:// 与官方域的存量订阅改写为实例地址。
+/// 冲突（目标地址已被其它订阅占用）计 skipped；其它错误收集后整体返回。
 #[tauri::command]
-pub fn migrate_rsshub_feeds(state: State<'_, AppState>) -> R<i64> {
+pub fn migrate_rsshub_feeds(state: State<'_, AppState>) -> R<MigrationOutcome> {
     state.with_store(|s| {
         let mirror = crate::ai::non_empty_setting(s, rustrss_core::rsshub::MIRROR_KEY)
             .map(|v| rustrss_core::rsshub::clean_base(&v))
             .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string());
         let candidates = s.list_rsshub_migration_candidates().map_err(err)?;
-        let mut migrated = 0i64;
+        let mut outcome = MigrationOutcome {
+            migrated: 0,
+            skipped: 0,
+            errors: Vec::new(),
+        };
         for (feed_id, url) in candidates {
             let target = rustrss_core::rsshub::normalize_rsshub_url(&url, &mirror);
             if target == url {
                 continue; // 已是实例地址（幂等）
             }
+            // 目标地址冲突预检：被其它订阅占用则计 skipped
+            let conflict = s
+                .feed_id_by_url(&target)
+                .map_err(err)?
+                .is_some();
+            if conflict {
+                outcome.skipped += 1;
+                continue;
+            }
             match s.update_feed_url(feed_id, &target) {
-                Ok(()) => migrated += 1,
-                // 目标地址与其它订阅冲突（重复源）：跳过，不影响其余迁移
-                Err(_) => continue,
+                Ok(()) => outcome.migrated += 1,
+                Err(e) => outcome.errors.push(format!("feed #{feed_id}: {e}")),
             }
         }
-        Ok(migrated)
+        Ok(outcome)
     })
 }
 
@@ -353,7 +374,16 @@ pub fn rename_folder(state: State<'_, AppState>, folder_id: i64, name: String) -
 
 #[tauri::command]
 pub fn delete_folder(state: State<'_, AppState>, folder_id: i64) -> R<()> {
-    state.with_store(|s| s.delete_folder(folder_id).map_err(err))
+    state.with_store(|s| {
+        s.delete_folder(folder_id).map_err(err)?;
+        // 清理折叠状态里的孤儿 id（避免残留）
+        let remaining: Vec<i64> = s
+            .collapsed_folders()
+            .into_iter()
+            .filter(|id| *id != folder_id)
+            .collect();
+        s.set_collapsed_folders(&remaining).map_err(err)
+    })
 }
 
 #[tauri::command]

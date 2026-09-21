@@ -24,13 +24,13 @@ pub fn normalize_rsshub_url(url: &str, base: &str) -> String {
     let url = url.trim();
     let base = clean_base(base);
 
-    // 形态 1：自定义 scheme（rsshub://path / rsshub:///path）
-    if let Some(path) = url
-        .strip_prefix("rsshub://")
-        .map(|p| p.trim_start_matches('/'))
-        .filter(|p| !p.is_empty())
-    {
-        return format!("{base}/{path}");
+    // 形态 1：自定义 scheme（rsshub://path / rsshub:///path）；
+    // scheme 大小写不敏感（RSSHUB:// 也识别），path 保持原样
+    if url.len() >= 9 && url[..9].to_ascii_lowercase() == "rsshub://" {
+        let path = url[9..].trim_start_matches('/');
+        if !path.is_empty() {
+            return format!("{base}/{path}");
+        }
     }
 
     // 形态 2：官方 https 形态 → 替换为实例 base（base 即官方时原样）
@@ -80,7 +80,7 @@ pub async fn probe_url(
     use crate::fetch::{CacheHeaders, FetchResult};
     match fetcher.fetch(url, CacheHeaders::default()).await {
         FetchResult::Fetched { .. } | FetchResult::NotModified { .. } => Ok(true),
-        FetchResult::Failed { status: Some(_), error } => Ok(false),
+        FetchResult::Failed { status: Some(_), error: _ } => Ok(false),
         FetchResult::Failed { status: None, error } => Err(error),
     }
 }
@@ -99,6 +99,11 @@ mod tests {
         assert_eq!(
             normalize_rsshub_url("rsshub:///gofans", ""),
             "https://rsshub.app/gofans"
+        );
+        // 大写 scheme
+        assert_eq!(
+            normalize_rsshub_url("RSSHUB://v2ex/topics/hot", ""),
+            "https://rsshub.app/v2ex/topics/hot"
         );
         // 自建实例
         assert_eq!(
