@@ -102,13 +102,16 @@ pub async fn list_entries(
 #[tauri::command]
 pub async fn get_entry(state: State<'_, AppState>, id: i64) -> R<Option<EntryRow>> {
     let t = std::time::Instant::now();
-    let mut r = state.with_store(|s| s.get_entry(id).map_err(err));
+    let r = state.with_store(|s| s.get_entry(id).map_err(err));
     // 阅读页只渲染 content_html；有 HTML 时不再传纯文本副本（大文章可省近一半 IPC 体积）
-    if let Some(entry) = &mut r {
-        if entry.content_html.is_some() {
-            entry.content_text = None;
-        }
-    }
+    let r = r.map(|opt| {
+        opt.map(|mut entry| {
+            if entry.content_html.is_some() {
+                entry.content_text = None;
+            }
+            entry
+        })
+    });
     log_slow("get_entry", t);
     r
 }
