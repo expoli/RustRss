@@ -281,3 +281,76 @@ fn fetch_status_and_cache_headers_roundtrip() {
     assert_eq!(feeds[0].last_status.as_deref(), Some("http_404"));
     assert_eq!(feeds[0].last_error.as_deref(), Some("Not Found"));
 }
+
+#[test]
+fn read_later_is_independent_and_queryable() {
+    let (store, feed_id) = setup();
+    store
+        .upsert_entries(feed_id, &[mk_entry("a1", "第一篇", "内容")])
+        .unwrap();
+    store
+        .upsert_entries(feed_id, &[mk_entry("a2", "第二篇", "内容")])
+        .unwrap();
+
+    // 标记稍后读不影响已读/星标
+    let all = store.list_entries(&EntryQuery::default()).unwrap();
+    let ids: Vec<i64> = all.iter().map(|e| e.id).collect();
+    store.set_read_later(&[ids[0]], true).unwrap();
+    store.set_read(&[ids[0]], true).unwrap();
+
+    let row = store.get_entry(ids[0]).unwrap().unwrap();
+    assert!(row.read_later, "应已标记稍后读");
+    assert!(row.read, "稍后读不应改变已读状态");
+    assert!(!row.starred, "稍后读不应改变星标状态");
+
+    // 视图：含已读条目，取消后退出视图
+    let later = store
+        .list_entries(&EntryQuery {
+            read_later_only: true,
+            ..Default::default()
+        })
+        .unwrap();
+    assert_eq!(later.len(), 1);
+    assert_eq!(store.read_later_total().unwrap(), 1);
+
+    store.set_read_later(&[ids[0]], false).unwrap();
+    assert_eq!(store.read_later_total().unwrap(), 0);
+    let later = store
+        .list_entries(&EntryQuery {
+            read_later_only: true,
+            ..Default::default()
+        })
+        .unwrap();
+    assert!(later.is_empty());
+    let _ = feed_id;
+}
+
+#[test]
+fn migration_preserves_existing_rows_on_upgrade() {
+    // 模拟旧库升级：文件库写入一条 + 标记，重开同一文件后 read_later 状态仍在
+    // （Store::open 会按 user_version 自动补跑迁移）。不引 tempfile 依赖，用临时目录唯一名。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-migration-test-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let id = {
+        let store = Store::open(&db_path).expect("首开应成功");
+        let feed_id = store
+            .add_feed("https://example.com/f.xml", Some("源"))
+            .unwrap();
+        store
+            .upsert_entries(feed_id, &[mk_entry("m1", "迁移保留", "内容")])
+            .unwrap();
+        let id = store.list_entries(&EntryQuery::default()).unwrap()[0].id;
+        store.set_read_later(&[id], true).unwrap();
+        id
+    };
+    let store = Store::open(&db_path).expect("二次打开应自动迁移");
+    let row = store.get_entry(id).unwrap().unwrap();
+    assert!(row.read_later, "重开库后稍后读标记应保留");
+    let _ = std::fs::remove_file(&db_path);
+}

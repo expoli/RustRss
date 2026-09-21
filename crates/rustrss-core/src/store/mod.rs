@@ -66,6 +66,7 @@ pub struct EntryRow {
     pub content_text: Option<String>,
     pub read: bool,
     pub starred: bool,
+    pub read_later: bool,
 }
 
 /// 一次入库的统计：用于验证「重复刷新不产生重复条目」
@@ -82,6 +83,7 @@ pub struct EntryQuery {
     pub feed_id: Option<i64>,
     pub unread_only: bool,
     pub starred_only: bool,
+    pub read_later_only: bool,
     pub limit: Option<u32>,
 }
 
@@ -420,6 +422,9 @@ impl Store {
         if q.starred_only {
             sql.push_str(" AND e.starred = 1");
         }
+        if q.read_later_only {
+            sql.push_str(" AND e.read_later = 1");
+        }
         sql.push_str(" ORDER BY COALESCE(e.published_at, e.fetched_at) DESC, e.id DESC LIMIT ?");
         values.push(Value::Integer(q.limit.unwrap_or(50).min(500) as i64));
         self.query_entries(&sql, values)
@@ -477,6 +482,18 @@ impl Store {
 
     pub fn set_starred(&self, ids: &[i64], starred: bool) -> Result<usize> {
         self.set_flag("starred", ids, starred)
+    }
+
+    /// 稍后读标记：与已读/星标相互独立。
+    pub fn set_read_later(&self, ids: &[i64], read_later: bool) -> Result<usize> {
+        self.set_flag("read_later", ids, read_later)
+    }
+
+    /// 稍后读总数（智能视图计数用）。
+    pub fn read_later_total(&self) -> Result<i64> {
+        self.conn
+            .query_row("SELECT COUNT(*) FROM entries WHERE read_later = 1", [], |r| r.get(0))
+            .map_err(Into::into)
     }
 
     fn set_flag(&self, column: &str, ids: &[i64], value: bool) -> Result<usize> {
@@ -663,7 +680,7 @@ pub struct AiCacheKey<'a> {
 
 const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, e.content_html, e.content_text,
-        e.read, e.starred
+        e.read, e.starred, e.read_later
     FROM entries e JOIN feeds f ON f.id = e.feed_id";
 
 fn map_entry_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
@@ -682,6 +699,7 @@ fn map_entry_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
         content_text: r.get(11)?,
         read: r.get::<_, i64>(12)? != 0,
         starred: r.get::<_, i64>(13)? != 0,
+        read_later: r.get::<_, i64>(14)? != 0,
     })
 }
 

@@ -91,6 +91,7 @@ const state = {
 const VIEWS = [
   { kind: 'unread', key: 'list.unread', icon: '●' },
   { kind: 'starred', key: 'list.starred', icon: '★' },
+  { kind: 'later', key: 'list.later', icon: '⏱' },
   { kind: 'all', key: 'list.all', icon: '≡' },
 ];
 
@@ -250,6 +251,7 @@ function renderSidebar() {
   const counts = {
     unread: state.db ? state.db.unread : 0,
     starred: state.db ? state.db.starred : 0,
+    later: state.db ? state.db.later : 0,
     all: state.db ? state.db.entries : 0,
   };
   for (const v of VIEWS) {
@@ -321,11 +323,20 @@ function renderList() {
     li.className = `${e.id === state.selectedId ? 'active' : ''} ${e.read ? 'read' : ''}`;
     li.dataset.id = String(e.id);
     const star = e.starred ? '<span class="star">★</span>' : '';
+    const laterMark = `<span class="later-mark ${e.read_later ? 'on' : ''}" data-later-id="${e.id}" title="${t('list.later')}">⚑</span>`;
     li.innerHTML = `
       <span class="title">${escapeHtml(e.title)}</span>
-      <span class="meta"><span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}</span>
+      <span class="meta"><span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}</span>
       ${e.summary ? `<span class="summary">${escapeHtml(e.summary)}</span>` : ''}`;
     li.onclick = () => openEntry(e.id, { markRead: true });
+    const mark = li.querySelector('.later-mark');
+    if (mark) {
+      mark.onclick = (ev) => {
+        ev.stopPropagation();
+        state.selectedId = e.id;
+        toggleReadLater().catch((err) => setStatus(err.message, true));
+      };
+    }
     list.appendChild(li);
   }
   focusRow(state.selectedId, { follow: true });
@@ -384,6 +395,7 @@ function renderReader(entry) {
     <div class="reader-actions">
       <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
       <button id="act-star">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</button>
+      <button id="act-later" class="${entry.read_later ? 'later-active' : ''}">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</button>
       ${entry.url ? `<button id="act-open">${t('reader.openInBrowser')}</button><button id="act-copy">${t('reader.copyLink')}</button>` : ''}
       <button id="act-summarize" title="${t('reader.summarizeTitle')}">${t('reader.summarize')}</button>
       <button id="act-translate" title="${t('reader.translateTitle')}">${t('reader.translate')}</button>
@@ -406,6 +418,7 @@ function renderReader(entry) {
 
   el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
+  el('act-later').onclick = () => toggleReadLater();
   el('act-summarize').onclick = () => runAi('summarize');
   el('act-translate').onclick = () => runAi('translate');
   el('ai-regenerate').onclick = () => runAi(currentAiTask, { refresh: true });
@@ -465,6 +478,7 @@ async function loadEntries() {
       feedId: kind === 'feed' ? state.feedId : null,
       unreadOnly: kind === 'unread',
       starredOnly: kind === 'starred',
+      readLaterOnly: kind === 'later',
       limit: 200,
     });
   }
@@ -588,6 +602,23 @@ async function toggleStar() {
   if (fresh) renderReader(fresh);
   renderList();
   await refreshCounts();
+}
+
+/// 稍后读：与已读/星标独立；当前视图是稍后读时，取消标记要从列表移除该行
+async function toggleReadLater() {
+  const row = state.entries.find((e) => e.id === state.selectedId);
+  if (!row) return;
+  const readLater = !row.read_later;
+  await invoke('set_read_later', { ids: [row.id], readLater });
+  row.read_later = readLater;
+  const fresh = await invoke('get_entry', { id: row.id });
+  if (fresh) renderReader(fresh);
+  if (state.view.kind === 'later' && !readLater) {
+    await loadAll();
+  } else {
+    renderList();
+    await refreshCounts();
+  }
 }
 
 async function doRefresh() {
@@ -1217,6 +1248,7 @@ async function boot() {
       case 'Enter': e.preventDefault(); if (state.selectedId) openEntry(state.selectedId, { markRead: true }); break;
       case 'u': e.preventDefault(); toggleRead().catch((err) => setStatus(err.message, true)); break;
       case 's': e.preventDefault(); toggleStar().catch((err) => setStatus(err.message, true)); break;
+      case 'l': e.preventDefault(); toggleReadLater().catch((err) => setStatus(err.message, true)); break;
       case 'r': e.preventDefault(); doRefresh(); break;
       case 'g': e.preventDefault(); jump(false); break;
       case 'G': e.preventDefault(); jump(true); break;

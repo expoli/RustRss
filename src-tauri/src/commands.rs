@@ -31,6 +31,7 @@ pub struct DbInfo {
     pub entries: i64,
     pub unread: i64,
     pub starred: i64,
+    pub later: i64,
 }
 
 #[tauri::command]
@@ -42,6 +43,7 @@ pub fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
             entries: s.entry_count().map_err(err)?,
             unread: s.unread_total().map_err(err)?,
             starred: s.starred_total().map_err(err)?,
+            later: s.read_later_total().map_err(err)?,
         })
     })
 }
@@ -57,12 +59,14 @@ pub fn list_entries(
     feed_id: Option<i64>,
     unread_only: Option<bool>,
     starred_only: Option<bool>,
+    read_later_only: Option<bool>,
     limit: Option<u32>,
 ) -> R<Vec<EntryRow>> {
     let query = EntryQuery {
         feed_id,
         unread_only: unread_only.unwrap_or(false),
         starred_only: starred_only.unwrap_or(false),
+        read_later_only: read_later_only.unwrap_or(false),
         limit: Some(limit.unwrap_or(200)),
     };
     state.with_store(|s| s.list_entries(&query).map_err(err))
@@ -81,6 +85,12 @@ pub fn search(state: State<'_, AppState>, query: String, limit: Option<u32>) -> 
 #[tauri::command]
 pub fn set_read(state: State<'_, AppState>, ids: Vec<i64>, read: bool) -> R<usize> {
     state.with_store(|s| s.set_read(&ids, read).map_err(err))
+}
+
+/// 稍后读标记：与已读/星标独立。
+#[tauri::command]
+pub fn set_read_later(state: State<'_, AppState>, ids: Vec<i64>, read_later: bool) -> R<usize> {
+    state.with_store(|s| s.set_read_later(&ids, read_later).map_err(err))
 }
 
 #[tauri::command]

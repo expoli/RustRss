@@ -136,6 +136,7 @@ impl RustRssMcp {
             unread_only: p.unread_only,
             starred_only: p.starred_only,
             limit: Some(clamp_limit(p.limit)),
+            read_later_only: false
         };
         self.with_store(|store| match store.list_entries(&query) {
             Ok(rows) => {

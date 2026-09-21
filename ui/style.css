@@ -259,6 +259,11 @@ main {
   overflow: hidden;
 }
 .entries .star { color: var(--star); }
+/* 列表条目的稍后读标记：未标记时淡显，悬停/已标记时实色；可点击切换 */
+.entries .later-mark { color: var(--fg-dim); opacity: .45; cursor: pointer; padding: 0 2px; }
+.entries .later-mark:hover { opacity: 1; }
+.entries .later-mark.on { color: var(--accent); opacity: 1; font-weight: 600; }
+.reader-actions #act-later.later-active { border-color: var(--accent); color: var(--accent); }
 
 /* ---------------- 右栏：正文 ---------------- */
 

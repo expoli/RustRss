@@ -105,4 +105,9 @@ pub const MIGRATIONS: &[&str] = &[
         updated_at INTEGER NOT NULL
     );
     "#,
+    // v4：稍后读标记 + 部分索引（只索引已标记行，体积与查询都最优）
+    r#"
+    ALTER TABLE entries ADD COLUMN read_later INTEGER NOT NULL DEFAULT 0;
+    CREATE INDEX idx_entries_read_later ON entries(read_later) WHERE read_later = 1;
+    "#,
 ];

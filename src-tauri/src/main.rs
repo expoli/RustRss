@@ -135,6 +135,7 @@ fn main() {
             commands::search,
             commands::set_read,
             commands::set_starred,
+            commands::set_read_later,
             commands::mark_all_read,
             commands::mark_all_unread,
             commands::get_ui_settings,
