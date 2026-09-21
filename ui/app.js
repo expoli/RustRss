@@ -77,6 +77,8 @@ function log(line) {
 const state = {
   db: null,
   feeds: [],
+  folders: [],
+  collapsedFolders: [],
   entries: [],
   view: { kind: 'unread' },
   feedId: null,
@@ -264,10 +266,12 @@ function renderSidebar() {
 
   const feeds = el('feeds');
   feeds.innerHTML = '';
-  for (const f of state.feeds) {
-    const li = document.createElement('li');
+  const folders = state.folders || [];
+  const feedOf = (f) => {
     const failed = f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified';
-    li.className = state.view.kind === 'feed' && state.feedId === f.id ? 'active' : '';
+    const li = document.createElement('li');
+    li.className = `${state.view.kind === 'feed' && state.feedId === f.id ? 'active' : ''} folder-feed`;
+    li.dataset.feedId = String(f.id);
     li.title = failed
       ? t('sidebar.feedTooltipFailed', {
           status: f.last_status,
@@ -277,7 +281,36 @@ function renderSidebar() {
     li.innerHTML = `<span class="name">${escapeHtml(f.title)}</span>${failed ? '<span class="dot">●</span>' : ''}<span class="count">${f.unread}</span>`;
     li.onclick = () => setView({ kind: 'feed', feedId: f.id });
     li.ondblclick = () => refreshOne(f.id);
-    feeds.appendChild(li);
+    li.oncontextmenu = (ev) => {
+      ev.preventDefault();
+      openFeedMenu(ev, f);
+    };
+    return li;
+  };
+
+  // 分组在前（position 序），未分组垫底；组头含聚合未读数，点击折叠/展开
+  for (const folder of folders) {
+    const members = state.feeds.filter((f) => f.folder_id === folder.id);
+    const unreadSum = members.reduce((acc, f) => acc + f.unread, 0);
+    const collapsed = state.collapsedFolders.includes(folder.id);
+    const head = document.createElement('li');
+    head.className = 'folder-head';
+    head.innerHTML = `
+      <span class="folder-arrow">${collapsed ? '▸' : '▾'}</span>
+      <span class="name">${escapeHtml(folder.name)}</span>
+      <span class="count">${unreadSum || ''}</span>`;
+    head.onclick = () => toggleFolderCollapse(folder.id);
+    head.oncontextmenu = (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      openFolderMenu(ev, folder);
+    };
+    feeds.appendChild(head);
+    if (collapsed) continue;
+    for (const f of members) feeds.appendChild(feedOf(f));
+  }
+  for (const f of state.feeds.filter((f) => f.folder_id == null)) {
+    feeds.appendChild(feedOf(f));
   }
   el('feeds-meta').textContent = t('sidebar.feedCount', { n: state.feeds.length });
   if (state.db) {
@@ -444,7 +477,7 @@ function renderReader(entry) {
 // ---------------------------------------------------------------- 数据流
 
 async function loadAll() {
-  const [db, feeds, settings, ai, mcp] = await Promise.all([
+  const [db, feeds, settings, ai, mcp, folders, collapsed] = await Promise.all([
     invoke('db_info'),
     invoke('list_feeds'),
     invoke('get_ui_settings'),
@@ -453,6 +486,8 @@ async function loadAll() {
   ]);
   state.db = db;
   state.feeds = feeds;
+  state.folders = folders;
+  state.collapsedFolders = collapsed;
   state.settings = settings;
   state.ai = ai;
   state.mcp = mcp;
@@ -545,10 +580,153 @@ async function openEntry(id, { markRead, follow = true } = {}) {
 }
 
 async function refreshCounts() {
-  const [db, feeds] = await Promise.all([invoke('db_info'), invoke('list_feeds')]);
+  const [db, feeds, folders] = await Promise.all([
+    invoke('db_info'),
+    invoke('list_feeds'),
+    invoke('list_folders'),
+  ]);
   state.db = db;
   state.feeds = feeds;
+  state.folders = folders;
   renderSidebar();
+}
+
+// ---------------- 侧栏文件夹：折叠与右键管理 ----------------
+
+function toggleFolderCollapse(folderId) {
+  const idx = state.collapsedFolders.indexOf(folderId);
+  if (idx >= 0) state.collapsedFolders.splice(idx, 1);
+  else state.collapsedFolders.push(folderId);
+  invoke('set_collapsed_folders', { ids: [...state.collapsedFolders] }).catch(() => {});
+  renderSidebar();
+}
+
+function closeContextMenu() {
+  el('ctx-menu')?.remove();
+}
+
+/// 通用右键菜单：items = [{label, danger?, action}]
+function openContextMenu(ev, items) {
+  closeContextMenu();
+  const menu = document.createElement('div');
+  menu.id = 'ctx-menu';
+  for (const item of items) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = item.label;
+    if (item.danger) btn.classList.add('danger');
+    btn.onclick = () => {
+      closeContextMenu();
+      item.action();
+    };
+    menu.appendChild(btn);
+  }
+  document.body.appendChild(menu);
+  const pad = 8;
+  menu.style.left = Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - pad) + 'px';
+  menu.style.top = Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - pad) + 'px';
+}
+
+function openFeedMenu(ev, feed) {
+  const items = [];
+  for (const folder of state.folders) {
+    if (folder.id === feed.folder_id) continue;
+    items.push({
+      label: `${t('menu.moveTo')}：${folder.name}`,
+      action: () => reassignFeed(feed.id, folder.id),
+    });
+  }
+  if (feed.folder_id != null) {
+    items.push({ label: t('menu.moveToUngrouped'), action: () => reassignFeed(feed.id, null) });
+  }
+  if (!items.length) return;
+  openContextMenu(ev, items);
+}
+
+function openFolderMenu(ev, folder) {
+  openContextMenu(ev, [
+    { label: t('menu.rename'), action: () => renameFolder(folder) },
+    { label: t('menu.delete'), danger: true, action: () => deleteFolder(folder) },
+  ]);
+}
+
+function reassignFeed(feedId, folderId) {
+  invoke('assign_feed_folder', { feedId, folderId })
+    .then(() => refreshCounts())
+    .catch((err) => setStatus(err.message, true));
+}
+
+/// 内联文本输入对话框（Tauri 禁用 window.prompt）：resolve(null)=取消
+function promptText(title, initial) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'prompt-overlay';
+    overlay.innerHTML = `
+      <div class="prompt-box">
+        <div class="prompt-title">${escapeHtml(title)}</div>
+        <input type="text" autocomplete="off" />
+        <div class="prompt-actions">
+          <button type="button" data-act="cancel"></button>
+          <button type="button" data-act="ok" class="primary"></button>
+        </div>
+      </div>`;
+    const input = overlay.querySelector('input');
+    const cancelBtn = overlay.querySelector('[data-act="cancel"]');
+    const okBtn = overlay.querySelector('[data-act="ok"]');
+    cancelBtn.textContent = t('prompt.cancel');
+    okBtn.textContent = t('prompt.ok');
+    const done = (value) => {
+      overlay.remove();
+      document.removeEventListener('keydown', onKey, true);
+      resolve(value);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') done(null);
+      if (e.key === 'Enter') done(input.value.trim() || null);
+    };
+    document.addEventListener('keydown', onKey, true);
+    okBtn.onclick = () => done(input.value.trim() || null);
+    cancelBtn.onclick = () => done(null);
+    overlay.onclick = (e) => { if (e.target === overlay) done(null); };
+    document.body.appendChild(overlay);
+    input.value = initial || '';
+    input.focus();
+    input.select();
+  });
+}
+
+/// 新建分组入口（侧栏「订阅源」标题旁的 + 按钮）
+async function createFolder() {
+  const name = await promptText(t('folder.newTitle'), '');
+  if (!name) return;
+  try {
+    await invoke('add_folder', { name });
+    await refreshCounts();
+    log(`folder added: ${name}`);
+  } catch (err) {
+    setStatus(err.message, true);
+  }
+}
+
+async function renameFolder(folder) {
+  const name = await promptText(t('folder.renameTitle'), folder.name);
+  if (!name || name === folder.name) return;
+  try {
+    await invoke('rename_folder', { folderId: folder.id, name });
+    await refreshCounts();
+  } catch (err) {
+    setStatus(err.message, true);
+  }
+}
+
+async function deleteFolder(folder) {
+  try {
+    await invoke('delete_folder', { folderId: folder.id });
+    await refreshCounts();
+    log(`folder deleted: ${folder.name}`);
+  } catch (err) {
+    setStatus(err.message, true);
+  }
 }
 
 function move(delta) {
@@ -955,6 +1133,10 @@ function openSettings() {
 }
 
 async function boot() {
+  // 点击右键菜单以外的区域时关闭菜单（菜单内部点击不受影响）
+  document.addEventListener('click', (e) => {
+    if (el('ctx-menu') && !e.target.closest('#ctx-menu')) closeContextMenu();
+  });
   applyStaticI18n();
   const i18n = i18nSelfTest();
   log(
@@ -1081,6 +1263,7 @@ async function boot() {
     }
   });
   // 自绘标题栏三键（窗口无系统装饰）
+  el('btn-new-folder').onclick = () => createFolder();
   el('btn-win-min').onclick = () => invoke('window_minimize').catch(() => {});
   el('btn-win-max').onclick = () => invoke('window_toggle_maximize').catch(() => {});
   el('btn-win-close').onclick = () => invoke('window_close').catch((e) => {

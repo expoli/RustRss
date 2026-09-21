@@ -145,6 +145,7 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 稍后读：阅读器按钮 / 列表条目 ⚑ 标记 / `l` 快捷键，与已读、星标独立；侧栏「稍后读」智能视图
 - [x] 正文安全渲染：白名单清洗 + 相对地址图片/链接解析（详见下）；代码块语法高亮（vendor highlight.js，`language-*` class 优先 + 自动检测，深浅双主题 token 配色；桌面像素效果需人工核验）
 - [x] OPML 导入 / 导出（嵌套文件夹压平成 `父/子`；按 `xmlUrl` 去重）
+- [x] 侧栏文件夹分组：可折叠组头 + 组内未读合计；右键新建 / 重命名 / 删除 / 移动订阅到文件夹（删除组不删订阅；折叠状态跨会话保持；拖拽归组待后续）
 - [x] 系统托盘：显示/隐藏窗口 + 退出（菜单文案跟随界面语言设置，`auto` 时固定中文；托盘文案在 Rust 侧维护、不经 `ui/i18n.js` 的 key-set 自测——这是已知例外；托盘不可用时自动降级为无托盘并日志说明，不崩溃。注意：托盘在真实桌面会话下的行为需人工验证，headless 环境仅验证了代码路径与降级逻辑）
 - [x] Linux 打包：产出 `.deb`（**8.1MB，不打包 WebKit**，依赖声明 `libwebkit2gtk-4.1-0, libgtk-3-0, libayatana-appindicator3-1`）
 - [x] i18n：zh-CN / en（169 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
