@@ -110,4 +110,8 @@ pub const MIGRATIONS: &[&str] = &[
     ALTER TABLE entries ADD COLUMN read_later INTEGER NOT NULL DEFAULT 0;
     CREATE INDEX idx_entries_read_later ON entries(read_later) WHERE read_later = 1;
     "#,
+    // v5：侧栏未读聚合索引（feeds JOIN entries 按 feed 聚合未读时走索引扫描）
+    r#"
+    CREATE INDEX idx_entries_feed_read ON entries(feed_id, read);
+    "#,
 ];

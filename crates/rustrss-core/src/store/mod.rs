@@ -623,6 +623,28 @@ impl Store {
             .map_err(Into::into)
     }
 
+    /// 一次扫描取全部计数（entry/unread/starred/read_later），避免 4 次分别全表扫。
+    pub fn counts(&self) -> Result<(i64, i64, i64, i64)> {
+        self.conn
+            .query_row(
+                "SELECT COUNT(*),
+                        COALESCE(SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END), 0),
+                        COALESCE(SUM(CASE WHEN starred = 1 THEN 1 ELSE 0 END), 0),
+                        COALESCE(SUM(CASE WHEN read_later = 1 THEN 1 ELSE 0 END), 0)
+                 FROM entries",
+                [],
+                |r| {
+                    Ok((
+                        r.get::<_, i64>(0)?,
+                        r.get::<_, i64>(1)?,
+                        r.get::<_, i64>(2)?,
+                        r.get::<_, i64>(3)?,
+                    ))
+                },
+            )
+            .map_err(Into::into)
+    }
+
     fn set_flag(&self, column: &str, ids: &[i64], value: bool) -> Result<usize> {
         if ids.is_empty() {
             return Ok(0);

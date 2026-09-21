@@ -54,13 +54,15 @@ fn log_slow(name: &str, started: std::time::Instant) {
 pub async fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
     let t = std::time::Instant::now();
     let r = state.with_store(|s| {
+        let (entries, unread, starred, later) = s.counts().map_err(err)?;
+        let feeds = s.list_feeds().map_err(err)?;
         Ok(DbInfo {
             db_path: state.db_path.display().to_string(),
-            feeds: s.list_feeds().map_err(err)?.len() as i64,
-            entries: s.entry_count().map_err(err)?,
-            unread: s.unread_total().map_err(err)?,
-            starred: s.starred_total().map_err(err)?,
-            later: s.read_later_total().map_err(err)?,
+            feeds: feeds.len() as i64,
+            entries,
+            unread,
+            starred,
+            later,
         })
     });
     log_slow("db_info", t);
@@ -178,16 +180,19 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
 pub async fn sidebar_data(state: State<'_, AppState>) -> R<SidebarData> {
     let t = std::time::Instant::now();
     let r = state.with_store(|s| {
+        // COUNT×4 合并为一次扫描
+        let (entries, unread, starred, later) = s.counts().map_err(err)?;
+        let feeds = s.list_feeds().map_err(err)?;
         Ok(SidebarData {
             db: DbInfo {
                 db_path: state.db_path.display().to_string(),
-                feeds: s.list_feeds().map_err(err)?.len() as i64,
-                entries: s.entry_count().map_err(err)?,
-                unread: s.unread_total().map_err(err)?,
-                starred: s.starred_total().map_err(err)?,
-                later: s.read_later_total().map_err(err)?,
+                feeds: feeds.len() as i64,
+                entries,
+                unread,
+                starred,
+                later,
             },
-            feeds: s.list_feeds().map_err(err)?,
+            feeds,
             folders: s.list_folders_ordered().map_err(err)?,
         })
     });
