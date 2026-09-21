@@ -24,6 +24,7 @@ fn err<E: std::fmt::Display>(e: E) -> String {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DbInfo {
     pub db_path: String,
     pub feeds: i64,
