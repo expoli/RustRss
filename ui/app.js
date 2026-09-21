@@ -250,79 +250,169 @@ function setStatus(text, isError = false) {
   node.classList.toggle('error', isError);
 }
 
-function renderSidebar() {
-  const __st = performance.now();
-  const views = el('views');
-  views.innerHTML = '';
+// ---------------- 侧栏渲染：单一 keyed reconcile 路径 ----------------
+// 所有触发方（阅读后的计数刷新/视图切换/文件夹管理/语言切换/搜索态）都只调
+// renderSidebar() 这一个入口；入口内部按 key 复用已有行、只更新变化字段、
+// 按期望顺序归位、清掉消失的行。不存在「全量重建」与「增量补丁」两条路径，
+// 也就没有两套逻辑互相漂移的问题（这是选统一架构而非窄版补丁的原因）。
+// #feeds 内的行不挂逐行监听器：点击/双击/右键由容器统一代理（initSidebarEvents），
+// 事件发生时从 state 现查数据对象，行复用永远拿不到过期闭包。
+// （#views 的行保留 onclick：绑定的是常量 VIEWS 项，无过期闭包风险。）
+
+function setText(node, text) {
+  // 文本没变就不写 DOM：阅读场景下每次刷新只有一两个数字在变
+  if (node.textContent !== text) node.textContent = text;
+}
+
+/** 把容器子节点归位成 desired 的顺序：错位就移动，多余的删掉 */
+function reconcileChildren(container, desired) {
+  let cursor = container.firstChild;
+  for (const node of desired) {
+    if (node === cursor) {
+      cursor = cursor.nextSibling;
+      continue;
+    }
+    container.insertBefore(node, cursor || null);
+  }
+  while (cursor) {
+    const next = cursor.nextSibling;
+    cursor.remove();
+    cursor = next;
+  }
+}
+
+function reconcileViews(existing) {
   const counts = {
     unread: state.db ? state.db.unread : 0,
     starred: state.db ? state.db.starred : 0,
     later: state.db ? state.db.later : 0,
     all: state.db ? state.db.entries : 0,
   };
-  for (const v of VIEWS) {
-    const li = document.createElement('li');
+  const desired = VIEWS.map((v) => {
+    const key = `v:${v.kind}`;
+    let li = existing.get(key);
+    if (!li) {
+      li = document.createElement('li');
+      li.dataset.key = key;
+      li.dataset.kind = v.kind;
+      li.innerHTML = `<span class="icon">${v.icon}</span><span class="vlabel"></span><span class="count"></span>`;
+      li.onclick = () => setView({ kind: v.kind });
+    }
     li.className = state.view.kind === v.kind ? 'active' : '';
-    li.innerHTML = `<span class="icon">${v.icon}</span><span>${t(v.key)}</span><span class="count">${counts[v.kind]}</span>`;
-    li.onclick = () => setView({ kind: v.kind });
-    views.appendChild(li);
-  }
-
-  const feeds = el('feeds');
-  feeds.innerHTML = '';
-  const folders = state.folders || [];
-  const feedOf = (f) => {
-    const failed = f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified';
-    const li = document.createElement('li');
-    li.className = `${state.view.kind === 'feed' && state.feedId === f.id ? 'active' : ''} folder-feed`;
-    li.dataset.feedId = String(f.id);
-    li.title = failed
-      ? t('sidebar.feedTooltipFailed', {
-          status: f.last_status,
-          error: f.last_error || '',
-        })
-      : t('sidebar.feedTooltipOk', { url: f.url });
-    li.innerHTML = `<span class="name">${escapeHtml(f.title)}</span>${failed ? '<span class="dot">●</span>' : ''}<span class="count">${f.unread}</span>`;
-    li.onclick = () => setView({ kind: 'feed', feedId: f.id });
-    li.ondblclick = () => refreshOne(f.id);
-    li.oncontextmenu = (ev) => {
-      ev.preventDefault();
-      openFeedMenu(ev, f);
-    };
+    setText(li.querySelector('.vlabel'), t(v.key));
+    setText(li.querySelector('.count'), String(counts[v.kind] ?? 0));
     return li;
-  };
+  });
+  reconcileChildren(el('views'), desired);
+}
 
+function feedRow(f, existing) {
+  const key = `f:${f.id}`;
+  let li = existing.get(key);
+  if (!li) {
+    li = document.createElement('li');
+    li.dataset.key = key;
+    li.dataset.feedId = String(f.id);
+    li.innerHTML = '<span class="name"></span><span class="dot" hidden>●</span><span class="count"></span>';
+  }
+  const failed = !!(f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified');
+  li.className = `${state.view.kind === 'feed' && state.feedId === f.id ? 'active' : ''} folder-feed`;
+  li.title = failed
+    ? t('sidebar.feedTooltipFailed', {
+        status: f.last_status,
+        error: f.last_error || '',
+      })
+    : t('sidebar.feedTooltipOk', { url: f.url });
+  setText(li.querySelector('.name'), f.title);
+  li.querySelector('.dot').hidden = !failed;
+  setText(li.querySelector('.count'), String(f.unread));
+  return li;
+}
+
+function folderHead(folder, unreadSum, collapsed, existing) {
+  const key = `h:${folder.id}`;
+  let li = existing.get(key);
+  if (!li) {
+    li = document.createElement('li');
+    li.dataset.key = key;
+    li.dataset.folderId = String(folder.id);
+    li.className = 'folder-head';
+    li.innerHTML = '<span class="folder-arrow"></span><span class="name"></span><span class="count"></span>';
+  }
+  setText(li.querySelector('.folder-arrow'), collapsed ? '▸' : '▾');
+  setText(li.querySelector('.name'), folder.name);
+  setText(li.querySelector('.count'), unreadSum ? String(unreadSum) : '');
+  return li;
+}
+
+function reconcileFeeds(existing) {
   // 分组在前（position 序），未分组垫底；组头含聚合未读数，点击折叠/展开
-  for (const folder of folders) {
+  const desired = [];
+  for (const folder of state.folders || []) {
     const members = state.feeds.filter((f) => f.folder_id === folder.id);
-    const unreadSum = members.reduce((acc, f) => acc + f.unread, 0);
     const collapsed = state.collapsedFolders.includes(folder.id);
-    const head = document.createElement('li');
-    head.className = 'folder-head';
-    head.innerHTML = `
-      <span class="folder-arrow">${collapsed ? '▸' : '▾'}</span>
-      <span class="name">${escapeHtml(folder.name)}</span>
-      <span class="count">${unreadSum || ''}</span>`;
-    head.onclick = () => toggleFolderCollapse(folder.id);
-    head.oncontextmenu = (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      openFolderMenu(ev, folder);
-    };
-    feeds.appendChild(head);
+    desired.push(folderHead(folder, members.reduce((acc, f) => acc + f.unread, 0), collapsed, existing));
     if (collapsed) continue;
-    for (const f of members) feeds.appendChild(feedOf(f));
+    for (const f of members) desired.push(feedRow(f, existing));
   }
-  for (const f of state.feeds.filter((f) => f.folder_id == null)) {
-    feeds.appendChild(feedOf(f));
-  }
-  el('feeds-meta').textContent = t('sidebar.feedCount', { n: state.feeds.length });
+  for (const f of state.feeds.filter((f) => f.folder_id == null)) desired.push(feedRow(f, existing));
+  reconcileChildren(el('feeds'), desired);
+}
+
+function renderSidebar() {
+  const __st = performance.now();
+  // key→既有行，一次性收集；后续 get-or-create 全靠它
+  const collectRows = (id) => {
+    const map = new Map();
+    for (const li of el(id).children) {
+      if (li.dataset.key) map.set(li.dataset.key, li);
+    }
+    return map;
+  };
+  reconcileViews(collectRows('views'));
+  reconcileFeeds(collectRows('feeds'));
+  setText(el('feeds-meta'), t('sidebar.feedCount', { n: state.feeds.length }));
   if (state.db) {
     const info = el('db-info');
-    info.textContent = `${state.db.entries} 篇 · ${state.db.dbPath}`;
+    setText(info, `${state.db.entries} 篇 · ${state.db.dbPath}`);
     info.title = state.db.dbPath;
   }
   window.__SIDEBAR_MS = +(performance.now() - __st).toFixed(1);
+  log(`renderSidebar feeds=${state.feeds.length} ${window.__SIDEBAR_MS}ms`);
+}
+
+/** #feeds 容器级事件代理：行复用不重挂监听，数据在事件时刻现查 */
+function initSidebarEvents() {
+  const feeds = el('feeds');
+  feeds.addEventListener('click', (ev) => {
+    const li = ev.target.closest('li');
+    if (!li) return;
+    if (li.classList.contains('folder-head')) {
+      toggleFolderCollapse(Number(li.dataset.folderId));
+      return;
+    }
+    if (li.dataset.feedId != null) setView({ kind: 'feed', feedId: Number(li.dataset.feedId) });
+  });
+  feeds.addEventListener('dblclick', (ev) => {
+    const li = ev.target.closest('li[data-feed-id]');
+    if (li) refreshOne(Number(li.dataset.feedId));
+  });
+  feeds.addEventListener('contextmenu', (ev) => {
+    const head = ev.target.closest('li.folder-head');
+    if (head) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const folder = (state.folders || []).find((fo) => fo.id === Number(head.dataset.folderId));
+      if (folder) openFolderMenu(ev, folder);
+      return;
+    }
+    const li = ev.target.closest('li[data-feed-id]');
+    if (li) {
+      ev.preventDefault();
+      const f = state.feeds.find((row) => row.id === Number(li.dataset.feedId));
+      if (f) openFeedMenu(ev, f);
+    }
+  });
 }
 
 function escapeHtml(text) {
@@ -1240,6 +1330,7 @@ async function boot() {
   }
 
   el('btn-refresh').onclick = doRefresh;
+  initSidebarEvents();
   el('btn-add').onclick = () => {
     const row = el('add-row');
     row.classList.toggle('hidden');
