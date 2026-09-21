@@ -155,6 +155,7 @@ fn main() {
             commands::list_feeds,
             commands::list_entries,
             commands::get_entry,
+            commands::fetch_fulltext,
             commands::search,
             commands::set_read,
             commands::set_starred,

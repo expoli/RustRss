@@ -120,4 +120,10 @@ pub const MIGRATIONS: &[&str] = &[
     r#"
     CREATE INDEX idx_entries_sortkey ON entries(COALESCE(published_at, fetched_at) DESC, id DESC);
     "#,
+    // v7：全文抓取标记位（摘要型条目一旦抓到原文正文，就以此为准）。
+    // 这一位同时支撑两条已定行为：刷新 upsert 不再覆盖已抓正文（只更新元数据）、
+    // 重开同一篇文章零网络（`needs_fulltext` 直接为假）。
+    r#"
+    ALTER TABLE entries ADD COLUMN fulltext_fetched INTEGER NOT NULL DEFAULT 0;
+    "#,
 ];

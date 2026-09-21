@@ -21,6 +21,8 @@ rusqlite = { version = "0.40", features = ["bundled"] }
 # 不依赖系统信任库，便于跨发行版打成 native 包。
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "gzip", "brotli", "http2", "json"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
+# 正文提取（readability.js 移植）。选型理由与传递依赖清单见 src/fulltext.rs 顶部注释。
+dom_smoothie = "0.18.2"
 
 [dev-dependencies]
 wiremock = "0.6"

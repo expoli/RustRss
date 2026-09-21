@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>深入理解 RFC 9421：HTTP 消息签名 —— 示例博客</title>
+  <meta name="description" content="HTTP 消息签名把完整性保证带进了应用层。">
+  <link rel="canonical" href="https://blog.example.com/posts/http-message-signatures">
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="/">示例博客</a>
+    <nav>
+      <ul>
+        <li><a href="/archive">归档</a></li>
+        <li><a href="/tags">标签</a></li>
+        <li><a href="/about">关于</a></li>
+        <li><a href="/subscribe">订阅本站</a></li>
+      </ul>
+    </nav>
+    <p class="promo">订阅我们的邮件列表，第一时间读到新文章，绝不错过任何更新。</p>
+  </header>
+
+  <main>
+    <article>
+      <h1>深入理解 RFC 9421：HTTP 消息签名</h1>
+      <p class="byline">作者：林一 · 发布于 2026 年 3 月 4 日</p>
+
+      <p>HTTP 消息签名把完整性保证带进了应用层：请求方对一组已声明覆盖的字段做签名，
+      接收方按同一份签名基（signature base）重建字节序列再验签，两端不需要共享传输层。</p>
+
+      <p>签名基的构造是这个协议里最容易写错的地方。每个被覆盖的字段都要先转成规范形式：
+      字段名小写，值按顺序用 ASCII 空格连接，行尾统一成 LF，然后再拼接成一行一行的
+      <code>key: value</code> 结构。任何一步偏差都会让签名在另一端对不上，而错误信息
+      通常只有一句“签名校验失败”。</p>
+
+      <h2>为什么不用 HMAC 就够了</h2>
+
+      <p>HMAC 需要双方共享密钥，在第三方可验证的场景里说不通：内容分发网络必须能独立
+      验证签名，而不能持有你的私钥。RFC 9421 用公钥签名解决了这一点，同时把算法与密钥
+      标识都放进 <code>Signature-Input</code> 头，接收方据此选择公钥。</p>
+
+      <blockquote>
+        <p>签名保护的是消息，不是时间。时间窗只负责把重放攻击的成本抬高。</p>
+      </blockquote>
+
+      <h2>实现清单</h2>
+
+      <ol>
+        <li>把参与签名的字段固定成白名单，不要把整张头表都签进去——中间代理会改写无关字段。</li>
+        <li>覆盖 <code>@method</code>、<code>@target-uri</code> 与 <code>content-digest</code>，否则请求可以被改写到另一个端点。</li>
+        <li>验签失败时统一返回 401，并在日志里记下失败原因与请求标识，便于对账排查。</li>
+      </ol>
+
+      <p>最后一点经验：把签名基的构造做成一个纯函数，并为它写覆盖字节级细节的测试。
+      协议实现里的绝大多数事故都发生在“看起来等价的字符串拼接”上。</p>
+    </article>
+
+    <aside class="related">
+      <h3>相关阅读</h3>
+      <ul>
+        <li><a href="/posts/tls-1-3">TLS 1.3 握手速览</a></li>
+        <li><a href="/posts/content-digest">Content-Digest 头怎么用</a></li>
+      </ul>
+      <p class="sidebar-cta">加入会员解锁全部历史文章与每周邮件摘要。</p>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2026 示例博客 · <a href="/privacy">隐私政策</a> · <a href="/rss.xml">RSS</a></p>
+    <p class="footer-ad">本页由赞助商提供带宽支持，广告位请联系我们。</p>
+  </footer>
+</body>
+</html>

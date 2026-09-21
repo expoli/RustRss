@@ -12,7 +12,8 @@ use tauri_plugin_dialog::DialogExt;
 use rustrss_core::ai::prompt::{AiTask, SummaryLength};
 use rustrss_core::ai::{AiClient, AiRequest, AiTaskPlan, CachePolicy};
 use rustrss_core::discover::{discover, Discovery};
-use rustrss_core::fetch::RefreshReport;
+use rustrss_core::fetch::{CacheHeaders, FetchResult, RefreshReport};
+use rustrss_core::fulltext;
 use rustrss_core::{EntryQuery, EntryRow, FeedRow, MarkScope};
 
 use crate::state::AppState;
@@ -108,17 +109,70 @@ pub async fn list_entries(
 pub async fn get_entry(state: State<'_, AppState>, id: i64) -> R<Option<EntryRow>> {
     let t = std::time::Instant::now();
     let r = state.with_store(|s| s.get_entry(id).map_err(err));
-    // 阅读页只渲染 content_html；有 HTML 时不再传纯文本副本（大文章可省近一半 IPC 体积）
-    let r = r.map(|opt| {
-        opt.map(|mut entry| {
-            if entry.content_html.is_some() {
-                entry.content_text = None;
-            }
-            entry
-        })
-    });
+    let r = r.map(|opt| opt.map(slim_entry));
     log_slow("get_entry", t);
     r
+}
+
+/// 阅读页只渲染 content_html；有 HTML 时不再传纯文本副本（大文章可省近一半 IPC 体积）
+fn slim_entry(mut entry: EntryRow) -> EntryRow {
+    if entry.content_html.is_some() {
+        entry.content_text = None;
+    }
+    entry
+}
+
+/// 获取全文：抓原文页 → 提取正文 → 写回库（摘要型条目的「获取全文」）。
+///
+/// 三段结构，与刷新同一条纪律：
+/// ① 锁内读条目 + 幂等判定 → ② **锁外**抓取（网络永不持锁）→ ③ 锁内写回并回读。
+/// 失败路径只返回一句可直接显示的错误：库里正文不动，界面继续显示原有摘要。
+#[tauri::command]
+pub async fn fetch_fulltext(state: State<'_, AppState>, entry_id: i64) -> R<EntryRow> {
+    fetch_fulltext_core(&state, entry_id).await
+}
+
+/// `fetch_fulltext` 的本体：不依赖 Tauri 才能单测（幂等与降级两条路径都有断言）。
+///
+/// 不打 `log_slow`：这段耗时以网络为主，而那个打点是给「重查询拖慢界面」用的
+/// —— 把 1s 的网络等待也记成慢查询只会淹没真信号。
+pub(crate) async fn fetch_fulltext_core(state: &AppState, entry_id: i64) -> R<EntryRow> {
+    // ① 幂等：已抓过（或本来就是全文型）直接回当前内容，不发任何请求
+    let entry = state
+        .with_store(|s| s.get_entry(entry_id).map_err(err))?
+        .ok_or_else(|| format!("条目 #{entry_id} 不存在"))?;
+    let url = entry
+        .url
+        .clone()
+        .filter(|u| !u.trim().is_empty())
+        .ok_or_else(|| "该条目没有原文地址，无法获取全文".to_string())?;
+    if !entry.needs_fulltext {
+        return Ok(slim_entry(entry));
+    }
+
+    // ② 抓取：网络阶段不持库锁（与 refresh_core 同一口径）
+    let body = match state.fetcher.fetch(&url, CacheHeaders::default()).await {
+        FetchResult::Fetched { body, .. } => body,
+        FetchResult::NotModified { .. } => {
+            return Err("原文页返回 304（内容未变），无需写回".to_string())
+        }
+        FetchResult::Failed { status, error } => {
+            return Err(match status {
+                Some(code) => format!("获取原文失败（HTTP {code}）: {error}"),
+                None => format!("获取原文失败: {error}"),
+            })
+        }
+    };
+
+    // ③ 提取（体积闸门/非 HTML/空正文都在 core 里把关）后写回，写回只在锁内做
+    let extracted = fulltext::extract_bytes(&body, &url).map_err(err)?;
+    let row = state.with_store(|s| {
+        s.set_fulltext(entry_id, &extracted.content_html, &extracted.content_text)
+            .map_err(err)?;
+        s.get_entry(entry_id).map_err(err)
+    })?;
+    row.map(slim_entry)
+        .ok_or_else(|| "写回后条目不见了（数据异常）".to_string())
 }
 
 #[tauri::command]
@@ -720,6 +774,179 @@ mod tests {
         assert_eq!(normalize_theme("system"), "system");
         assert_eq!(normalize_theme("blue"), "system");
         assert_eq!(normalize_theme(""), "system");
+    }
+
+    // ------------------------------------------------------------ 获取全文
+
+    fn fulltext_entry(stable_id: &str, url: &str, content: Option<&str>) -> rustrss_core::Entry {
+        rustrss_core::Entry {
+            stable_id: stable_id.to_string(),
+            id_origin: rustrss_core::IdOrigin::SourceData,
+            source_id: stable_id.to_string(),
+            title: format!("标题 {stable_id}"),
+            url: Some(url.to_string()),
+            author: None,
+            published: None,
+            updated: None,
+            summary: Some("源给的一句摘要".to_string()),
+            content_html: content.map(|c| format!("<p>{c}</p>")),
+            // 解析层在源没给正文时会用摘要兜底，这里照那个形状造数据
+            content_text: Some(content.unwrap_or("源给的一句摘要").to_string()),
+            categories: Vec::new(),
+        }
+    }
+
+    /// 内存库 + 一条条目，返回它的行 id
+    fn state_with_entry(entry: rustrss_core::Entry) -> (AppState, i64) {
+        let state = AppState::for_test();
+        let id = state
+            .with_store(|s| {
+                let feed_id = s
+                    .add_feed("https://example.com/feed.xml", Some("源"))
+                    .map_err(err)?;
+                s.upsert_entries(feed_id, std::slice::from_ref(&entry))
+                    .map_err(err)?;
+                s.list_entries(&rustrss_core::EntryQuery::default())
+                    .map_err(err)
+                    .map(|rows| rows[0].id)
+            })
+            .expect("预置数据应成功");
+        (state, id)
+    }
+
+    #[tokio::test]
+    async fn fetch_fulltext_is_idempotent_and_touches_no_network() {
+        // 全文型条目（源自带长正文）本来就不该抓。地址故意用保证解析不出的 .invalid：
+        // 一旦真发了请求，这条断言就会拿到 Err 而不是 Ok，「零网络」不是靠自觉而是靠断言。
+        let long = "文".repeat(600);
+        let (state, id) = state_with_entry(fulltext_entry(
+            "e-full",
+            "https://nonexistent.invalid/post",
+            Some(&long),
+        ));
+
+        let row = fetch_fulltext_core(&state, id)
+            .await
+            .expect("正文已够长：应直接回当前内容");
+        assert!(!row.needs_fulltext, "已抓/全文型不该再提示获取全文");
+        assert!(row.content_html.is_some(), "回读的应是库里的正文");
+    }
+
+    #[tokio::test]
+    async fn fetch_fulltext_degrades_and_keeps_the_summary() {
+        // 摘要型 + 连不上的地址（127.0.0.1:1 立即拒绝）：必须给可显示的错误，
+        // 且库里状态原样（摘要还在、仍待抓 → 用户可重试）。
+        let (state, id) =
+            state_with_entry(fulltext_entry("e-sum", "http://127.0.0.1:1/post", None));
+
+        let message = fetch_fulltext_core(&state, id)
+            .await
+            .expect_err("连不上应报错");
+        assert!(
+            message.contains("获取原文失败"),
+            "错误要能直接显示给用户: {message}"
+        );
+
+        let row = state
+            .with_store(|s| s.get_entry(id).map_err(err))
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            row.content_text.as_deref(),
+            Some("源给的一句摘要"),
+            "失败不该动库里的摘要"
+        );
+        assert!(row.needs_fulltext, "失败后仍待抓，可重试");
+    }
+
+    #[tokio::test]
+    async fn fetch_fulltext_second_call_is_offline_after_write_back() {
+        // 「重开零网络」：正文已在库里（第一次抓取成功的形状）+ 地址指向不可达主机。
+        // 第二次调用若还发请求就必然报错，「直接读库」因此是被断言的行为。
+        let (state, id) = state_with_entry(fulltext_entry(
+            "e-done",
+            "https://nonexistent.invalid/post",
+            None,
+        ));
+        state
+            .with_store(|s| s.set_fulltext(id, "<p>抓到的正文</p>", "抓到的正文").map_err(err))
+            .unwrap();
+
+        let row = fetch_fulltext_core(&state, id)
+            .await
+            .expect("已抓过：应零网络直接回库");
+        assert_eq!(row.content_html.as_deref(), Some("<p>抓到的正文</p>"));
+        assert!(!row.needs_fulltext);
+    }
+
+    /// 起一个只服务一次请求的最小 HTTP 服务器（回环地址，不碰外部网络），返回可抓取的 URL。
+    async fn serve_once(body: String) -> String {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("应能绑定回环端口");
+        let addr = listener.local_addr().unwrap();
+        std::thread::spawn(move || {
+            if let Ok((mut socket, _)) = listener.accept() {
+                let mut buf = [0u8; 2048];
+                let _ = socket.read(&mut buf);
+                let resp = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\
+                     Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                let _ = socket.write_all(resp.as_bytes());
+            }
+        });
+        format!("http://{addr}/post")
+    }
+
+    /// 一篇真实形状的页面：正文够长（写回后 needs_fulltext 才会转假）+ 页脚装饰
+    fn article_page() -> String {
+        let paragraph = "正文段落：HTTP 消息签名把完整性保证带进了应用层，签名基的构造是最容易写错的地方。"
+            .repeat(24);
+        format!(
+            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>示例文章</title></head>\
+             <body><nav><a href=\"/a\">导航一</a></nav>\
+             <article><p>{paragraph}</p><p>收尾段落。</p></article>\
+             <footer>页脚广告位</footer></body></html>"
+        )
+    }
+
+    #[tokio::test]
+    async fn fetch_fulltext_end_to_end_fetches_extracts_and_writes_back() {
+        // 真跑一遍命令本体：抓取（回环 HTTP 服务器）→ 提取 → 写回 → 回读。
+        let url = serve_once(article_page()).await;
+        let (state, id) = state_with_entry(fulltext_entry("e-e2e", &url, None));
+
+        let row = fetch_fulltext_core(&state, id)
+            .await
+            .expect("应抓到页面并写回正文");
+        assert!(!row.needs_fulltext, "抓到后不该再提示获取全文");
+        let html = row.content_html.expect("回读应带正文 HTML");
+        assert!(html.contains("签名基的构造"), "正文应来自页面: {html}");
+        assert!(!html.contains("页脚广告位"), "页脚装饰不该进正文");
+
+        // 库里也真的写上了，并且新正文马上可搜（重开这篇文章只读库）
+        let stored = state
+            .with_store(|s| s.get_entry(id).map_err(err))
+            .unwrap()
+            .unwrap();
+        assert!(
+            stored.content_text.as_deref().unwrap().contains("消息签名"),
+            "纯文本正文应已入库"
+        );
+        let hits = state
+            .with_store(|s| s.search("签名基", 10).map_err(err))
+            .unwrap();
+        assert_eq!(hits.len(), 1, "写回后应能搜到新正文");
+    }
+
+    #[tokio::test]
+    async fn fetch_fulltext_reports_missing_url() {
+        let (state, id) = state_with_entry(fulltext_entry("e-nourl", "", None));
+        let message = fetch_fulltext_core(&state, id)
+            .await
+            .expect_err("没有原文地址应报错");
+        assert!(message.contains("没有原文地址"), "实际: {message}");
     }
 }
 

@@ -387,6 +387,66 @@ fn migration_preserves_existing_rows_on_upgrade() {
 }
 
 #[test]
+fn migration_v6_to_v7_adds_fulltext_flag_on_real_file() {
+    // 真实走一次 v6→v7：用迁移 1..6 **原样**建一个 user_version=6 的真文件库
+    // （v6 形状不手抄，避免抄错而漂移），预置一条已读的摘要型条目，再让 Store::open
+    // 只跑第 7 条迁移。断言：既有行与状态保留、新列默认 0（摘要型条目因此能显示
+    // 「获取全文」）、写回可用且可搜、二次打开不重复执行。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-v7-migration-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let conn = rusqlite::Connection::open(&db_path).expect("应能建 v6 库");
+        for sql in &MIGRATIONS[..6] {
+            conn.execute_batch(sql).expect("应能跑 v1..v6 迁移");
+        }
+        conn.pragma_update(None, "user_version", 6).unwrap();
+        conn.execute_batch(
+            r#"
+            INSERT INTO feeds (id, url, title, created_at)
+            VALUES (1, 'https://example.com/feed.xml', '源', 0);
+            INSERT INTO entries (id, feed_id, stable_id, id_origin, title, url, summary,
+                                 search_tokens, content_hash, read, starred, fetched_at, read_later)
+            VALUES (1, 1, 'm1', 'source_data', '迁移保留', 'https://example.com/p1', '一句摘要',
+                    '迁移保留', 'h', 1, 0, 0, 0);
+            "#,
+        )
+        .expect("预置数据应成功");
+    }
+
+    let store = Store::open(&db_path).expect("打开应自动跑 v7 迁移");
+    assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
+    let row = store.get_entry(1).unwrap().expect("既有条目应保留");
+    assert_eq!(row.title, "迁移保留");
+    assert!(row.read, "既有 read=1 应保留");
+    assert!(row.needs_fulltext, "新列默认 0 + 正文缺失 → 摘要型待抓");
+
+    // 新列随即可写：写回正文后标记生效，检索索引也跟着更新
+    store
+        .set_fulltext(1, "<p>抓到的正文</p>", "抓到的正文")
+        .unwrap();
+    let row = store.get_entry(1).unwrap().unwrap();
+    assert!(!row.needs_fulltext);
+    assert_eq!(row.content_text.as_deref(), Some("抓到的正文"));
+    assert_eq!(store.search("抓到的", 10).unwrap().len(), 1, "写回后应可搜");
+
+    // 幂等：二次打开不重复执行迁移，数据原样
+    drop(store);
+    let store = Store::open(&db_path).expect("二次打开应成功");
+    assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
+    assert_eq!(
+        store.get_entry(1).unwrap().unwrap().content_text.as_deref(),
+        Some("抓到的正文")
+    );
+    let _ = std::fs::remove_file(&db_path);
+}
+
+#[test]
 fn folder_rename_delete_and_reassign() {
     let (store, feed_id) = setup();
     let f1 = store.add_folder("开发").unwrap();

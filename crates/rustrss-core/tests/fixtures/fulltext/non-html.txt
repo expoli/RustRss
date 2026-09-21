@@ -1,0 +1,5 @@
+这是一段纯文本接口返回，不是 HTML 页面。
+
+某些站点会把 /api/articles/1 这类地址直接回一段 JSON 或 Markdown，
+正文提取器看到这种响应必须停下来，而不是硬按 HTML 解析一遍。
+{"id":1,"title":"接口响应","body":"plain text, not html"}

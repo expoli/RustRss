@@ -74,6 +74,12 @@ pub struct EntryRow {
     pub summary: Option<String>,
     pub content_html: Option<String>,
     pub content_text: Option<String>,
+    /// 是否值得显示「获取全文」：摘要型条目（正文缺失或明显偏短）且未抓过、有原文地址。
+    ///
+    /// 只由阅读页路径（`get_entry`）真判定；列表/搜索的行不带正文，恒为 false
+    /// ——所以**不要**用列表行去驱动这个按钮。内部标记位 `fulltext_fetched` 不出库，
+    /// 判定结论代替它出库（见 `crate::fulltext::is_summary_entry`）。
+    pub needs_fulltext: bool,
     pub read: bool,
     pub starred: bool,
     pub read_later: bool,
@@ -490,12 +496,17 @@ impl Store {
                     let _ = id;
                 }
                 Some((id, _)) => {
+                    // 已抓过全文的条目：正文三列以「库里现有的值」为准（CASE 里引用旧值，
+                    // 等于不动），元数据照常更新。理由是显式决策：RSS 源给的永远是摘要，
+                    // 刷新把它覆盖回去就等于用户抓来的正文被静默丢弃（PRD R3）。
                     tx.execute(
                         "UPDATE entries SET
                             id_origin = ?2, title = ?3, url = ?4, author = ?5,
                             published_at = ?6, updated_at = ?7, summary = ?8,
-                            content_html = ?9, content_text = ?10,
-                            search_tokens = ?11, content_hash = ?12, fetched_at = ?13
+                            content_html = CASE WHEN fulltext_fetched = 1 THEN content_html ELSE ?9 END,
+                            content_text = CASE WHEN fulltext_fetched = 1 THEN content_text ELSE ?10 END,
+                            search_tokens = CASE WHEN fulltext_fetched = 1 THEN search_tokens ELSE ?11 END,
+                            content_hash = ?12, fetched_at = ?13
                          WHERE id = ?1",
                         params![
                             id,
@@ -547,11 +558,43 @@ impl Store {
         Ok(stats)
     }
 
+    // ---------------------------------------------------------------- 全文写回
+
+    /// 写回抓取到的全文正文（摘要型条目的「获取全文」）。
+    ///
+    /// 一处调用要做完三件事，否则后续拼接会不一致：正文两列 + **重算检索 token**
+    /// （新正文要马上可搜）+ 置 `fulltext_fetched`（刷新不覆盖、重开零网络都靠它）。
+    pub fn set_fulltext(&self, entry_id: i64, content_html: &str, content_text: &str) -> Result<()> {
+        let existing: Option<(String, Option<String>)> = self
+            .conn
+            .query_row(
+                "SELECT title, summary FROM entries WHERE id = ?1",
+                params![entry_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .ok();
+        let Some((title, summary)) = existing else {
+            return Err(StoreError::Invalid(format!("条目 #{entry_id} 不存在")));
+        };
+        let tokens = search_tokens_of(&[
+            Some(title.as_str()),
+            summary.as_deref(),
+            Some(content_text),
+        ]);
+        self.conn.execute(
+            "UPDATE entries SET content_html = ?2, content_text = ?3,
+                search_tokens = ?4, fulltext_fetched = 1
+             WHERE id = ?1",
+            params![entry_id, content_html, content_text, tokens],
+        )?;
+        Ok(())
+    }
+
     // ---------------------------------------------------------------- 条目查询
 
     pub fn list_entries(&self, q: &EntryQuery) -> Result<Vec<EntryRow>> {
         let (sql, values) = list_entries_sql(q);
-        self.query_entries(&sql, values)
+        self.query_entries(&sql, values, map_entry_row_list)
     }
 
     /// 诊断/测试用：`list_entries` 实际 SQL 的 EXPLAIN QUERY PLAN。
@@ -569,7 +612,7 @@ impl Store {
 
     pub fn get_entry(&self, id: i64) -> Result<Option<EntryRow>> {
         let sql = format!("{ENTRY_SELECT} WHERE e.id = ?");
-        let mut rows = self.query_entries(&sql, vec![Value::Integer(id)])?;
+        let mut rows = self.query_entries(&sql, vec![Value::Integer(id)], map_entry_row)?;
         Ok(rows.pop())
     }
 
@@ -602,12 +645,20 @@ impl Store {
         sql.push_str(" LIMIT ?");
         values.push(Value::Integer(limit.min(500) as i64));
 
-        self.query_entries(&sql, values)
+        self.query_entries(&sql, values, map_entry_row_list)
     }
 
-    fn query_entries(&self, sql: &str, values: Vec<Value>) -> Result<Vec<EntryRow>> {
+    /// 列表/搜索/阅读页共用一个查询主体，但**映射函数不同**：只有阅读页的完整行
+    /// 才有正文与 `fulltext_fetched`，列表行用 `map_entry_row_list`（不做全文判定，
+    /// 免得拿 NULL 正文把每条都判成摘要型）。
+    fn query_entries(
+        &self,
+        sql: &str,
+        values: Vec<Value>,
+        map: fn(&rusqlite::Row<'_>) -> rusqlite::Result<EntryRow>,
+    ) -> Result<Vec<EntryRow>> {
         let mut stmt = self.conn.prepare(sql)?;
-        let rows = stmt.query_map(params_from_iter(values), map_entry_row)?;
+        let rows = stmt.query_map(params_from_iter(values), map)?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
@@ -839,11 +890,14 @@ pub struct AiCacheKey<'a> {
 
 const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, e.content_html, e.content_text,
-        e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey
+        e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey,
+        e.fulltext_fetched
     FROM entries e JOIN feeds f ON f.id = e.feed_id";
 
 /// 列表/搜索专用列（不含 FROM）：不带正文全文（content 列以 NULL 占位，列序与
-/// 完整版一致）。8k 条库上单次查询从 ~12MB 传输降到几百 KB——正文一律 get_entry 单取。
+/// 完整版前 16 列一致）。8k 条库上单次查询从 ~12MB 传输降到几百 KB——正文一律
+/// get_entry 单取。正文列为 NULL，因此这些行不做全文判定（`map_entry_row_list`），
+/// 也不带 `fulltext_fetched` 列（只有 `ENTRY_SELECT` 有第 17 列）。
 ///
 /// （原本是一整条 `ENTRY_SELECT_LIST`，拆成「列 + `entry_list_sql` 拼 FROM」是为了
 /// 续扫时能在 FROM 上带索引提示，而列只保留一份。）
@@ -911,6 +965,25 @@ fn list_entries_sql(q: &EntryQuery) -> (String, Vec<Value>) {
 }
 
 fn map_entry_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
+    let mut row = map_entry_columns(r)?;
+    // 内部标记位（列序在最后）只用于判定结论，不进 EntryRow
+    let fetched = r.get::<_, i64>(16)? != 0;
+    row.needs_fulltext = crate::fulltext::is_summary_entry(
+        row.url.as_deref(),
+        row.content_html.as_deref(),
+        row.content_text.as_deref(),
+        fetched,
+    );
+    Ok(row)
+}
+
+/// 列表/搜索行：不带正文，也不做全文判定（`needs_fulltext` 恒 false）。
+fn map_entry_row_list(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
+    map_entry_columns(r)
+}
+
+/// 两个映射函数共用的列序（与 `ENTRY_SELECT` / `ENTRY_LIST_COLUMNS` 前 16 列逐列对应）。
+fn map_entry_columns(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
     Ok(EntryRow {
         id: r.get(0)?,
         feed_id: r.get(1)?,
@@ -924,6 +997,7 @@ fn map_entry_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
         summary: r.get(9)?,
         content_html: r.get(10)?,
         content_text: r.get(11)?,
+        needs_fulltext: false,
         read: r.get::<_, i64>(12)? != 0,
         starred: r.get::<_, i64>(13)? != 0,
         read_later: r.get::<_, i64>(14)? != 0,
@@ -957,15 +1031,22 @@ fn fingerprint(e: &Entry) -> String {
 }
 
 fn search_tokens_for(e: &Entry) -> String {
+    search_tokens_of(&[
+        Some(e.title.as_str()),
+        e.summary.as_deref(),
+        e.content_text.as_deref(),
+    ])
+}
+
+/// 检索字段的拼接口径：标题 + 摘要 + 正文纯文本（入库与全文写回共用一处，
+/// 免得两条写入路径各拼一套而漂移）。
+fn search_tokens_of(parts: &[Option<&str>]) -> String {
     let mut text = String::new();
-    text.push_str(&e.title);
-    text.push(' ');
-    if let Some(s) = e.summary.as_deref() {
-        text.push_str(s);
-        text.push(' ');
-    }
-    if let Some(c) = e.content_text.as_deref() {
-        text.push_str(c);
+    for part in parts.iter().flatten() {
+        if !text.is_empty() {
+            text.push(' ');
+        }
+        text.push_str(part);
     }
     to_tokens(&text)
 }
