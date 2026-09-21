@@ -101,6 +101,20 @@ fn main() {
             if let Err(e) = setup_tray(app) {
                 eprintln!("[rustrss] 托盘不可用，已降级为无托盘模式：{e}");
             }
+            // 兜底：窗口以隐藏方式创建，正常由前端在主题/数据就绪后调
+            // show_main_window 显示；若前端 5s 仍未就绪（脚本异常等），
+            // 强制显示，避免用户面对一个永不出现的窗口。
+            let handle = app.handle().clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(5));
+                use tauri::Manager;
+                if let Some(win) = handle.get_webview_window("main") {
+                    if !win.is_visible().unwrap_or(true) {
+                        eprintln!("[rustrss] 前端 5s 未就绪，强制显示主窗口");
+                        let _ = win.show();
+                    }
+                }
+            });
             Ok(())
         })
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -120,6 +134,7 @@ fn main() {
             commands::set_mark_read_on_navigate,
             commands::set_ui_locale,
             commands::set_ui_theme,
+            commands::show_main_window,
             commands::get_ai_settings,
             commands::save_ai_settings,
             commands::test_ai_connection,

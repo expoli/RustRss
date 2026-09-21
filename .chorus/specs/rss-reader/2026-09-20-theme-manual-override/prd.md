@@ -48,4 +48,12 @@ documentUuid: 33b808ae-4979-49c0-bef6-6351f4f636d9
 
 ## 6. 评审记录
 
+- Round 1：PASS WITH NOTES（0 BLOCKER）。
+
+## 7. 后续修复
+
+- 启动 FOUC（评审 NOTE）：主窗口改为 `visible: false` 创建，前端主题/数据就绪后调 `show_main_window` 显示，Rust 侧 5s 兜底强制显示；已同步 README 主题条目。
+
+## 6. 评审记录
+
 - Round 1 待审。

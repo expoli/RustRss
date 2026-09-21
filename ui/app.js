@@ -936,7 +936,11 @@ async function boot() {
   } catch (e) {
     setStatus(t('status.bootFailed', { error: e.message }), true);
     log(`boot failed: ${e.message}`);
-    return;
+    return; // finally 仍会执行：初始化失败也要把窗口亮出来（错误状态 UI）
+  } finally {
+    // 窗口以 hidden 创建（防主题闪变）：主题/首屏就绪后显示；
+    // 真正的显示动作在 Rust 侧，失败时由 5s 兑底定时器接管。
+    invoke('show_main_window').catch(() => {});
   }
 
   el('btn-refresh').onclick = doRefresh;

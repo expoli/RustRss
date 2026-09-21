@@ -169,6 +169,17 @@ pub fn set_ui_theme(state: State<'_, AppState>, theme: String) -> R<UiSettings> 
     ui_settings(&state)
 }
 
+/// 显示主窗口：窗口以 `visible: false` 创建，前端完成主题/数据初始化后调用，
+/// 保证首帧即正确主题（防主题闪变 FOUC）。兜底定时器见 main.rs 的 setup。
+#[tauri::command]
+pub fn show_main_window(app: tauri::AppHandle) -> R<()> {
+    use tauri::Manager;
+    if let Some(win) = app.get_webview_window("main") {
+        win.show().map_err(err)?;
+    }
+    Ok(())
+}
+
 fn scope_of(feed_id: Option<i64>) -> MarkScope {
     match feed_id {
         Some(id) => MarkScope::Feed(id),
