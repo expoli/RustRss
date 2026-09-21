@@ -360,6 +360,28 @@ main {
   background: var(--bg);
   color: var(--fg);
   font: inherit;
+  /* 放弃原生绘制：WebKitGTK 对这些控件的部分区域按系统主题画，
+     不认下方变量；自绘后三态完全可控 */
+  appearance: none;
+  -webkit-appearance: none;
+}
+.setting-item select {
+  padding-right: 30px;
+  /* 自绘下拉箭头（appearance:none 后原生箭头消失） */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--fg-dim) 50%),
+    linear-gradient(135deg, var(--fg-dim) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) calc(50% - 1px),
+    calc(100% - 12px) calc(50% - 1px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+/* 弹出的选项列表：引擎支持时跟随主题（WebKitGTK 若仍用系统色则属平台限制） */
+.setting-item select option,
+.setting-item select optgroup {
+  background: var(--bg-panel);
+  color: var(--fg);
 }
 .setting-item input:focus, .setting-item select:focus { outline: 2px solid var(--accent); }
 
@@ -372,6 +394,8 @@ main {
   border-radius: 7px;
   background: var(--bg);
   color: var(--fg);
+  appearance: none;
+  -webkit-appearance: none;
   font: 12px/1.5 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
   resize: vertical;
 }
