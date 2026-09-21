@@ -348,6 +348,7 @@ main {
 .setting-item .text small { color: var(--fg-dim); line-height: 1.5; }
 
 .setting-item input[type="text"],
+.setting-item input:not([type]),
 .setting-item input[type="password"],
 .setting-item input[type="number"],
 .setting-item select {
@@ -361,6 +362,19 @@ main {
   font: inherit;
 }
 .setting-item input:focus, .setting-item select:focus { outline: 2px solid var(--accent); }
+
+/* MCP 客户端配置片段等只读文本域：同主题配色（此前完全无样式，深色下白底） */
+.setting-item textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 12px/1.5 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  resize: vertical;
+}
 
 .setting-actions { display: flex; gap: 8px; margin: 12px 0 8px; flex-wrap: wrap; }
 
