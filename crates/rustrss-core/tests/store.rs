@@ -384,3 +384,29 @@ fn migration_preserves_existing_rows_on_upgrade() {
     assert!(row.read_later, "迁移后新列应可写读");
     let _ = std::fs::remove_file(&db_path);
 }
+
+#[test]
+fn folder_rename_delete_and_reassign() {
+    let (store, feed_id) = setup();
+    let f1 = store.add_folder("开发").unwrap();
+    let f2 = store.add_folder("论坛").unwrap();
+    store.assign_folder(feed_id, Some(f1)).unwrap();
+
+    // 重命名 + 冲突检测
+    store.rename_folder(f1, "AI 资讯").unwrap();
+    assert_eq!(store.list_folders().unwrap()[0].1, "AI 资讯");
+    let err = store.rename_folder(f1, "论坛").unwrap_err();
+    assert!(err.to_string().contains("已存在"), "重名应给可读错误: {err}");
+
+    // position 排序
+    store.set_folder_position(f2, -1).unwrap();
+    assert_eq!(store.list_folders().unwrap()[0].0, f2, "position 小的排前面");
+
+    // 删除文件夹：订阅回到未分组，不删订阅
+    store.assign_folder(feed_id, Some(f1)).unwrap();
+    store.delete_folder(f1).unwrap();
+    let feeds = store.list_feeds().unwrap();
+    assert_eq!(feeds.len(), 1, "订阅不应被删除");
+    assert_eq!(feeds[0].folder_id, None, "订阅应回到未分组");
+    assert!(store.list_folders().unwrap().iter().all(|(id, _)| *id != f1));
+}

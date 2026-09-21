@@ -240,6 +240,41 @@ pub fn window_close(app: tauri::AppHandle, state: State<'_, AppState>) -> R<()> 
     Ok(())
 }
 
+// ---------------- 文件夹管理（侧栏分组） ----------------
+
+#[tauri::command]
+pub fn add_folder(state: State<'_, AppState>, name: String) -> R<i64> {
+    state.with_store(|s| s.add_folder(&name).map_err(err))
+}
+
+#[tauri::command]
+pub fn rename_folder(state: State<'_, AppState>, folder_id: i64, name: String) -> R<()> {
+    state.with_store(|s| s.rename_folder(folder_id, &name).map_err(err))
+}
+
+#[tauri::command]
+pub fn delete_folder(state: State<'_, AppState>, folder_id: i64) -> R<()> {
+    state.with_store(|s| s.delete_folder(folder_id).map_err(err))
+}
+
+#[tauri::command]
+pub fn assign_feed_folder(state: State<'_, AppState>, feed_id: i64, folder_id: Option<i64>) -> R<()> {
+    state.with_store(|s| s.assign_folder(feed_id, folder_id).map_err(err))
+}
+
+/// 侧栏分组折叠状态（哪些组被折叠），JSON 序列化后存 settings，跨会话保持。
+#[tauri::command]
+pub fn set_collapsed_folders(state: State<'_, AppState>, ids: Vec<i64>) -> R<()> {
+    let json = serde_json::to_string(&ids).map_err(err)?;
+    state.with_store(|s| s.set_setting("ui.folders_collapsed", &json).map_err(err))
+}
+
+fn collapsed_folders_setting(store: &rustrss_core::Store) -> Vec<i64> {
+    crate::ai::non_empty_setting(store, "ui.folders_collapsed")
+        .and_then(|v| serde_json::from_str(&v).ok())
+        .unwrap_or_default()
+}
+
 /// 显示主窗口：窗口以 `visible: false` 创建，前端完成主题/数据初始化后调用，
 /// 保证首帧即正确主题（防主题闪变 FOUC）。兜底定时器见 main.rs 的 setup。
 #[tauri::command]

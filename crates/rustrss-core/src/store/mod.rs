@@ -184,6 +184,50 @@ impl Store {
         Ok(())
     }
 
+    /// 重命名文件夹。名字撞唯一约束时给可读错误（而不是裸 sqlite 错误）。
+    pub fn rename_folder(&self, folder_id: i64, name: &str) -> Result<()> {
+        let name = name.trim();
+        if name.is_empty() {
+            return Err(StoreError::Invalid("文件夹名不能为空".into()));
+        }
+        let dup: Option<i64> = self
+            .conn
+            .query_row(
+                "SELECT id FROM folders WHERE name = ?1 AND id != ?2",
+                params![name, folder_id],
+                |r| r.get::<_, i64>(0),
+            )
+            .ok();
+        if dup.is_some() {
+            return Err(StoreError::Invalid(format!("文件夹「{name}」已存在")));
+        }
+        self.conn.execute(
+            "UPDATE folders SET name = ?1 WHERE id = ?2",
+            params![name, folder_id],
+        )?;
+        Ok(())
+    }
+
+    /// 删除文件夹：不删订阅，具内订阅移出到未分组（folder_id 置 NULL）。
+    pub fn delete_folder(&self, folder_id: i64) -> Result<()> {
+        self.conn.execute(
+            "UPDATE feeds SET folder_id = NULL WHERE folder_id = ?1",
+            params![folder_id],
+        )?;
+        self.conn
+            .execute("DELETE FROM folders WHERE id = ?1", params![folder_id])?;
+        Ok(())
+    }
+
+    /// 分组排序（侧栏组顺序）。
+    pub fn set_folder_position(&self, folder_id: i64, position: i64) -> Result<()> {
+        self.conn.execute(
+            "UPDATE folders SET position = ?1 WHERE id = ?2",
+            params![position, folder_id],
+        )?;
+        Ok(())
+    }
+
     // ---------------------------------------------------------------- 订阅源
 
     /// 添加订阅源；同一 URL 重复添加返回既有 id（幂等）。
