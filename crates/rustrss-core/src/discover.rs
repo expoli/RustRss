@@ -238,11 +238,60 @@ fn attr(tag: &str, name: &str) -> Option<String> {
             _ => &rest[..rest.find(char::is_whitespace).unwrap_or(rest.len())],
         };
 
-        // 链接里的 `&` 常写成实体（如 WordPress 的 `?feed=rss2&amp;cat=3`）
-        return Some(value.replace("&amp;", "&"));
+        // 链接里的 `&` 常写成实体（如 WordPress 的 `?feed=rss2&amp;cat=3`），
+        // 另有部分站点用数字实体（如 `&#x3D;` 代 `=`、`&#38;` 代 `&`）。
+        return Some(decode_entities(value));
     }
 
     None
+}
+
+/// 解码属性值里的常见 HTML 实体：命名实体（&amp;/&lt;/&gt;/&quot;/&apos;/&nbsp;）
+/// + 十进制/十六进制数字实体。未知实体原样保留（宽容处理，不做严格校验）。
+fn decode_entities(value: &str) -> String {
+    if !value.contains('&') {
+        return value.to_string();
+    }
+    let mut out = String::with_capacity(value.len());
+    let mut rest = value;
+    while let Some(pos) = rest.find('&') {
+        out.push_str(&rest[..pos]);
+        let after = &rest[pos..];
+        // 找实体终点：`;`（规范）或最多 10 字符内的非实体字符边界
+        let semicolon = after.find(';').filter(|&i| i <= 10);
+        let (decoded, consumed) = match semicolon {
+            Some(i) => {
+                let name = &after[1..i];
+                let decoded: String = match name {
+                    "amp" => "&".to_string(),
+                    "lt" => "<".to_string(),
+                    "gt" => ">".to_string(),
+                    "quot" => "\"".to_string(),
+                    "apos" => "'".to_string(),
+                    "nbsp" => "\u{a0}".to_string(),
+                    _ if let Some(hex) = name
+                        .strip_prefix("#x")
+                        .or_else(|| name.strip_prefix("#X"))
+                        .and_then(|h| u32::from_str_radix(h, 16).ok()) =>
+                    {
+                        char::from_u32(hex).map(String::from).unwrap_or_default()
+                    }
+                    _ if let Some(dec) =
+                        name.strip_prefix('#').and_then(|d| d.parse::<u32>().ok()) =>
+                    {
+                        char::from_u32(dec).map(String::from).unwrap_or_default()
+                    }
+                    _ => after[..i + 1].to_string(), // 未知实体：原样保留（含 & 和 ;）
+                };
+                (decoded, i + 1)
+            }
+            None => ("&".to_string(), 1), // 孤立 &：原样保留
+        };
+        out.push_str(&decoded);
+        rest = &rest[pos + consumed..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// 粗判形状，只为把错误写得更贴切（不做安全清洗，同 `html.rs` 的取舍）
@@ -253,6 +302,18 @@ fn looks_like_html(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn decode_entities_covers_named_numeric_and_unknown() {
+        assert_eq!(decode_entities("a&amp;b"), "a&b");
+        assert_eq!(decode_entities("&#x3D;"), "=");
+        assert_eq!(decode_entities("&#61;"), "=");
+        assert_eq!(decode_entities("a&lt;b&quot;c"), "a<b\"c");
+        assert_eq!(decode_entities("&unknown;"), "&unknown;"); // 未知实体原样
+        assert_eq!(decode_entities("a & b"), "a & b"); // 孤立 & 原样
+        assert_eq!(decode_entities("plain"), "plain");
+        assert_eq!(decode_entities("&#xzz;"), "&#xzz;"); // 非法数字原样
+    }
 
     fn base() -> Url {
         Url::parse("https://example.com/blog/index.html").expect("测试基址应能解析")
