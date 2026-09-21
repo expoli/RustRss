@@ -7,6 +7,7 @@
 mod ai;
 mod commands;
 mod mcp_server;
+mod scheduler;
 mod state;
 
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -108,6 +109,9 @@ fn main() {
                     eprintln!("[rustrss] 托盘不可用，已降级为无托盘模式：{e}");
                 }
             }
+            // 自动刷新调度器：定时（间隔可配）+ 启动后延迟 10s 一次。
+            // 与手动刷新共用同一条管线（commands::refresh_core），各自受单 flight 保护。
+            crate::scheduler::spawn(app.handle().clone());
             // 兜底：窗口以隐藏方式创建，正常由前端在主题/数据就绪后调
             // show_main_window 显示；若前端 5s 仍未就绪（脚本异常等），
             // 强制显示，避免用户面对一个永不出现的窗口。
@@ -141,6 +145,8 @@ fn main() {
             commands::mark_all_unread,
             commands::get_ui_settings,
             commands::set_mark_read_on_navigate,
+            commands::set_refresh_interval,
+            commands::set_refresh_on_start,
             commands::set_ui_locale,
             commands::set_ui_theme,
             commands::set_ui_close_action,
@@ -178,6 +184,7 @@ fn main() {
             commands::export_opml,
             commands::import_opml,
             commands::refresh_all,
+            commands::refresh_feeds,
             commands::refresh_feed,
             commands::open_external,
             commands::ui_log,

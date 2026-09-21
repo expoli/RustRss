@@ -15,6 +15,9 @@ pub struct ImportReport {
     pub folders_created: usize,
     /// 忽略的 outline（既没有 xmlUrl 也没有子节点，例如纯文字大纲）
     pub outlines_ignored: usize,
+    /// 本次真正新增的 feed id（按 OPML 里的出现顺序）。
+    /// 调用方据此只抓新导入的源，而不是导入后立刻全量再刷一遍。
+    pub added_feed_ids: Vec<i64>,
 }
 
 /// 导出全部订阅为 OPML 2.0
@@ -118,6 +121,7 @@ pub fn import(store: &Store, xml: &str) -> Result<ImportReport, ImportError> {
                             .map_err(|e| ImportError::Store(e.to_string()))?;
                     }
                     report.feeds_added += 1;
+                    report.added_feed_ids.push(feed_id);
                 }
                 None => {
                     if node.children.is_empty() {

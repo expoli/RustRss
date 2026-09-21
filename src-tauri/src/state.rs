@@ -20,6 +20,8 @@ pub struct AppState {
     /// 托盘是否构建成功（决定「关闭到托盘」策略是否可用：
     /// 托盘没了还把窗口藏起来，用户就永远找不回应用了）
     tray_available: AtomicBool,
+    /// 单 flight：是否有刷新（手动/定时/启动）正在进行中
+    refreshing: AtomicBool,
 }
 
 impl AppState {
@@ -41,7 +43,35 @@ impl AppState {
             db_path,
             mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
             tray_available: AtomicBool::new(false),
+            refreshing: AtomicBool::new(false),
         })
+    }
+
+    /// 尝试开始一次刷新（CAS）：已经有一次在跑时返回 Err。
+    ///
+    /// 手动刷新（按钮/`r`）与定时/启动刷新共用这一个标记——两条路径都在跑的话，
+    /// 同一批源会被抓两遍、重复抢库写锁，所以「进行中就跳过」是全局口径。
+    /// 返回的守卫在 Drop 时释放标记，`?` 早退或任务被取消都不会把标记卡死。
+    pub fn try_begin_refresh(&self) -> Result<RefreshFlight<'_>, String> {
+        self.refreshing
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map_err(|_| "刷新已在进行中（手动或自动），本次已跳过".to_string())?;
+        Ok(RefreshFlight {
+            flag: &self.refreshing,
+        })
+    }
+
+    /// 测试用状态：内存库 + 不发声的默认 HTTP 客户端，不碰真实数据目录。
+    #[cfg(test)]
+    pub fn for_test() -> Self {
+        Self {
+            store: Mutex::new(Store::open_in_memory().unwrap()),
+            fetcher: Fetcher::new(DEFAULT_USER_AGENT).unwrap(),
+            db_path: PathBuf::from(":memory:"),
+            mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
+            tray_available: AtomicBool::new(false),
+            refreshing: AtomicBool::new(false),
+        }
     }
 
     /// 托盘构建成功后置位（setup 阶段调用一次）。
@@ -60,5 +90,61 @@ impl AppState {
             .lock()
             .map_err(|_| "数据库锁被污染（此前有操作 panic）".to_string())?;
         f(&guard)
+    }
+}
+
+/// 单 flight 守卫：活着就代表「有刷新在跑」，Drop 释放。
+pub struct RefreshFlight<'a> {
+    flag: &'a AtomicBool,
+}
+
+impl Drop for RefreshFlight<'_> {
+    fn drop(&mut self) {
+        self.flag.store(false, Ordering::Release);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 不碰真实数据目录：内存库 + 默认 HTTP 客户端（不发请求）
+    fn test_state() -> AppState {
+        AppState::for_test()
+    }
+
+    #[test]
+    fn refresh_flight_is_single_and_released_on_drop() {
+        let state = test_state();
+
+        let first = state.try_begin_refresh().expect("空闲时应能拿到单 flight");
+        match state.try_begin_refresh() {
+            Ok(_) => panic!("进行中时的第二次必须被拒绝"),
+            Err(msg) => assert!(
+                msg.contains("刷新已在进行中"),
+                "错误信息要能直接展示给用户，实际: {msg}"
+            ),
+        }
+
+        drop(first);
+        assert!(
+            state.try_begin_refresh().is_ok(),
+            "守卫 Drop 后应恢复空闲（否则刷新就永久卡死了）"
+        );
+    }
+
+    #[test]
+    fn refresh_flight_released_on_early_return() {
+        let state = test_state();
+        // 模拟 `?` 早退：守卫在作用域结束时释放，不会把标记永久卡在 true
+        let outcome: Result<(), String> = (|| -> Result<(), String> {
+            let _flight = state.try_begin_refresh()?;
+            Err("刷新中途失败".into())
+        })();
+        assert!(outcome.is_err());
+        assert!(
+            state.try_begin_refresh().is_ok(),
+            "失败路径也必须释放单 flight"
+        );
     }
 }

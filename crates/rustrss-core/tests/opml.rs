@@ -28,19 +28,41 @@ fn import_adds_feeds_folders_and_counts() {
     let store = Store::open_in_memory().unwrap();
     let report = opml::import(&store, REAL_WORLD_OPML).unwrap();
 
-    assert_eq!(
-        report,
-        ImportReport {
-            feeds_added: 3,
-            feeds_skipped: 0,
-            // 「技术」与「技术/资讯」两个文件夹
-            folders_created: 2,
-            outlines_ignored: 1,
-        }
-    );
+    assert_eq!(report.feeds_added, 3);
+    assert_eq!(report.feeds_skipped, 0);
+    // 「技术」与「技术/资讯」两个文件夹
+    assert_eq!(report.folders_created, 2);
+    assert_eq!(report.outlines_ignored, 1);
 
     let feeds = store.list_feeds().unwrap();
     assert_eq!(feeds.len(), 3);
+
+    // 新增 id 列表是导入后增量抓取的依据：数量对得上，且每个 id 都能查到源
+    assert_eq!(report.added_feed_ids.len(), 3, "{report:?}");
+    let added_urls: Vec<&str> = report
+        .added_feed_ids
+        .iter()
+        .map(|id| {
+            feeds
+                .iter()
+                .find(|f| f.id == *id)
+                .expect("新增 id 应能在库里查到")
+                .url
+                .as_str()
+        })
+        .collect();
+    assert!(
+        added_urls.iter().any(|u| u.contains("rust-lang")),
+        "{added_urls:?}"
+    );
+    assert!(
+        added_urls.iter().any(|u| u.contains("lwn.net")),
+        "{added_urls:?}"
+    );
+    assert!(
+        added_urls.iter().any(|u| u.contains("sspai")),
+        "{added_urls:?}"
+    );
 
     // 嵌套文件夹压平成 父/子
     let folders = store.list_folders().unwrap();
@@ -71,6 +93,10 @@ fn import_is_idempotent_by_url() {
     let second = opml::import(&store, REAL_WORLD_OPML).unwrap();
     assert_eq!(second.feeds_added, 0);
     assert_eq!(second.feeds_skipped, 3, "同一份 OPML 再导入一次应全部跳过");
+    assert!(
+        second.added_feed_ids.is_empty(),
+        "全部跳过时不应有新增 id（否则会被重复抓一遍）: {second:?}"
+    );
     assert_eq!(store.list_feeds().unwrap().len(), 3, "不得出现重复源");
     assert_eq!(second.folders_created, 0, "文件夹也不应重复创建");
 }

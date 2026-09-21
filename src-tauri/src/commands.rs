@@ -151,6 +151,21 @@ const DEFAULT_THEME: &str = "system";
 pub(crate) const KEY_CLOSE_ACTION: &str = "ui.close_action";
 const DEFAULT_CLOSE_ACTION: &str = "exit";
 
+/// 自动刷新间隔：`off`（关）或分钟档位，默认 30 分钟。
+/// 白名单表是唯一来源（归一化与时长解析都从它读，避免两处各写一份而漂移）。
+const KEY_REFRESH_INTERVAL: &str = "refresh.interval_minutes";
+const REFRESH_INTERVAL_CHOICES: [(&str, u64); 5] = [
+    ("15", 15),
+    ("30", 30),
+    ("60", 60),
+    ("120", 120),
+    ("360", 360),
+];
+const DEFAULT_REFRESH_INTERVAL: &str = "30";
+/// 启动时自动刷新（默认开）
+const KEY_REFRESH_ON_START: &str = "refresh.on_start";
+const DEFAULT_REFRESH_ON_START: bool = true;
+
 #[derive(Serialize)]
 pub struct UiSettings {
     pub mark_read_on_navigate: bool,
@@ -158,6 +173,37 @@ pub struct UiSettings {
     pub theme: String,
     pub close_action: String,
     pub rsshub_mirror: String,
+    /// 回显给界面的是归一化后的值（`off` 或 `15/30/60/120/360`），前端直接当 select 的值用
+    pub refresh_interval_minutes: String,
+    pub refresh_on_start: bool,
+}
+
+/// 间隔白名单归一化：`off` 或 `15/30/60/120/360`；其余（含拼错值、负数、空串）一律归默认 30。
+pub(crate) fn normalize_refresh_interval(value: &str) -> &'static str {
+    let trimmed = value.trim();
+    if trimmed == "off" {
+        return "off";
+    }
+    REFRESH_INTERVAL_CHOICES
+        .iter()
+        .find(|(label, _)| *label == trimmed)
+        .map(|(label, _)| *label)
+        .unwrap_or(DEFAULT_REFRESH_INTERVAL)
+}
+
+/// 间隔档位 → 调度时长；`off` 返回 `None`（不调度）。
+pub(crate) fn refresh_interval_duration(value: &str) -> Option<std::time::Duration> {
+    REFRESH_INTERVAL_CHOICES
+        .iter()
+        .find(|(label, _)| *label == normalize_refresh_interval(value))
+        .map(|(_, minutes)| std::time::Duration::from_secs(minutes * 60))
+}
+
+/// 库里的间隔设置 → 归一化后的档位串（界面与调度器共用这一条读取路径）。
+fn refresh_interval_from_store(store: &rustrss_core::Store) -> String {
+    crate::ai::non_empty_setting(store, KEY_REFRESH_INTERVAL)
+        .map(|v| normalize_refresh_interval(&v).to_string())
+        .unwrap_or_else(|| DEFAULT_REFRESH_INTERVAL.to_string())
 }
 
 fn ui_settings(state: &AppState) -> R<UiSettings> {
@@ -179,6 +225,11 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
             rsshub_mirror: crate::ai::non_empty_setting(s, rustrss_core::rsshub::MIRROR_KEY)
                 .map(|v| rustrss_core::rsshub::clean_base(&v))
                 .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string()),
+            refresh_interval_minutes: refresh_interval_from_store(s),
+            // 布尔设置的非法值在 bool_setting 里已回退默认（与 mark_read_on_navigate 同口径）
+            refresh_on_start: s
+                .bool_setting(KEY_REFRESH_ON_START, DEFAULT_REFRESH_ON_START)
+                .map_err(err)?,
         })
     })
 }
@@ -222,6 +273,39 @@ pub fn set_mark_read_on_navigate(state: State<'_, AppState>, enabled: bool) -> R
         Ok(())
     })?;
     ui_settings(&state)
+}
+
+/// 自动刷新间隔：`off` 或分钟档位。非法值归一化后再落库（库里不存拼错的值）。
+#[tauri::command]
+pub fn set_refresh_interval(state: State<'_, AppState>, minutes: String) -> R<UiSettings> {
+    state.with_store(|s| {
+        s.set_setting(KEY_REFRESH_INTERVAL, normalize_refresh_interval(&minutes))
+            .map_err(err)
+    })?;
+    ui_settings(&state)
+}
+
+/// 启动时是否自动刷新一次。调度器在启动首 tick 时读这个值。
+#[tauri::command]
+pub fn set_refresh_on_start(state: State<'_, AppState>, enabled: bool) -> R<UiSettings> {
+    state.with_store(|s| {
+        s.set_bool_setting(KEY_REFRESH_ON_START, enabled)
+            .map_err(err)
+    })?;
+    ui_settings(&state)
+}
+
+/// 读自动刷新间隔（归一化后的档位字符串）。
+pub(crate) fn refresh_interval_setting(state: &AppState) -> R<String> {
+    state.with_store(|s| Ok(refresh_interval_from_store(s)))
+}
+
+/// 读「启动时自动刷新」开关（缺失/非法回退默认 true）。
+pub(crate) fn refresh_on_start_setting(state: &AppState) -> R<bool> {
+    state.with_store(|s| {
+        s.bool_setting(KEY_REFRESH_ON_START, DEFAULT_REFRESH_ON_START)
+            .map_err(err)
+    })
 }
 
 /// 语言白名单：仅 `zh-CN` / `en`，其余（含 `auto` 与拼错值）一律归 `auto`。
@@ -524,6 +608,91 @@ mod tests {
     }
 
     #[test]
+    fn refresh_interval_whitelist() {
+        for value in ["15", "30", "60", "120", "360"] {
+            assert_eq!(normalize_refresh_interval(value), value);
+        }
+        assert_eq!(normalize_refresh_interval("off"), "off");
+        assert_eq!(normalize_refresh_interval(" 15 "), "15", "前后空白应被容忍");
+        // 非法值（含拼错、零、负数、空串）一律归默认 30
+        for garbage in ["", "  ", "7", "0", "-15", "15m", "daily", "OFF", "3600"] {
+            assert_eq!(
+                normalize_refresh_interval(garbage),
+                DEFAULT_REFRESH_INTERVAL,
+                "{garbage:?} 应归默认"
+            );
+        }
+    }
+
+    #[test]
+    fn refresh_interval_duration_tiers_and_off() {
+        use std::time::Duration;
+        assert_eq!(refresh_interval_duration("off"), None, "关 → 不调度");
+        assert_eq!(
+            refresh_interval_duration("15"),
+            Some(Duration::from_secs(15 * 60))
+        );
+        assert_eq!(
+            refresh_interval_duration("30"),
+            Some(Duration::from_secs(30 * 60))
+        );
+        assert_eq!(
+            refresh_interval_duration("60"),
+            Some(Duration::from_secs(60 * 60))
+        );
+        assert_eq!(
+            refresh_interval_duration("120"),
+            Some(Duration::from_secs(120 * 60))
+        );
+        assert_eq!(
+            refresh_interval_duration("360"),
+            Some(Duration::from_secs(360 * 60))
+        );
+        // 非法值走默认档，而不是无声地关掉自动刷新
+        assert_eq!(
+            refresh_interval_duration("bogus"),
+            Some(Duration::from_secs(30 * 60))
+        );
+        assert_eq!(
+            refresh_interval_duration(""),
+            Some(Duration::from_secs(30 * 60))
+        );
+    }
+
+    #[test]
+    fn ui_settings_normalizes_refresh_values() {
+        let state = AppState::for_test();
+
+        // 两个 key 都没写过：间隔走默认 30，启动刷新默认开
+        let fresh = ui_settings(&state).unwrap();
+        assert_eq!(fresh.refresh_interval_minutes, "30");
+        assert!(fresh.refresh_on_start);
+
+        // 库里被写坏（拼错的值）：读出来必须是默认，而不是把调度器搞成静默关闭
+        state
+            .with_store(|s| {
+                s.set_setting(KEY_REFRESH_INTERVAL, "every-30-min")
+                    .map_err(err)?;
+                s.set_setting(KEY_REFRESH_ON_START, "maybe").map_err(err)
+            })
+            .unwrap();
+        let broken = ui_settings(&state).unwrap();
+        assert_eq!(broken.refresh_interval_minutes, DEFAULT_REFRESH_INTERVAL);
+        assert!(broken.refresh_on_start, "非法布尔值应回退默认 true");
+
+        // 合法值原样回显，前端 select 直接拿它当 value
+        state
+            .with_store(|s| {
+                s.set_setting(KEY_REFRESH_INTERVAL, "off").map_err(err)?;
+                s.set_bool_setting(KEY_REFRESH_ON_START, false).map_err(err)
+            })
+            .unwrap();
+        let saved = ui_settings(&state).unwrap();
+        assert_eq!(saved.refresh_interval_minutes, "off");
+        assert!(!saved.refresh_on_start);
+    }
+
+    #[test]
     fn theme_whitelist() {
         assert_eq!(normalize_theme("light"), "light");
         assert_eq!(normalize_theme(" dark "), "dark");
@@ -568,41 +737,75 @@ pub fn remove_feed(state: State<'_, AppState>, feed_id: i64) -> R<()> {
     })
 }
 
-/// 刷新全部订阅源。
-/// 注意分成三段：① 锁内取任务 → ② 无锁并发抓取 → ③ 锁内串行写库。
-#[tauri::command]
-pub async fn refresh_all(
-    state: State<'_, AppState>,
-    concurrency: Option<usize>,
+/// 刷新核心（手动 refresh_all / refresh_feeds 与定时/启动刷新共用）：
+/// ① 锁内取任务 → ② 无锁并发抓取 → ③ 锁内串行写库 + WAL 收尾。
+///
+/// 单 flight 不在这里判定：调用方先拿 `try_begin_refresh` 的守卫，这样手动与自动
+/// 走的一定是同一条管线，不会出现「两套路径各改一半」的漂移。
+/// `feed_ids = None` 表示全量。
+pub(crate) async fn refresh_core(
+    state: &AppState,
+    feed_ids: Option<Vec<i64>>,
+    concurrency: usize,
 ) -> R<RefreshReport> {
-    let jobs = state.with_store(|s| {
-        let ids = s.all_feed_ids().map_err(err)?;
-        rustrss_core::collect_jobs(s, &ids).map_err(err)
-    })?;
+    // 阶段一：锁内取任务（全量时读 id 列表与取任务在同一个锁窗口里做完）
+    let jobs = match feed_ids {
+        Some(ids) => state.with_store(|s| rustrss_core::collect_jobs(s, &ids).map_err(err))?,
+        None => state.with_store(|s| {
+            let ids = s.all_feed_ids().map_err(err)?;
+            rustrss_core::collect_jobs(s, &ids).map_err(err)
+        })?,
+    };
+    if jobs.is_empty() {
+        return Ok(RefreshReport::default());
+    }
+    // 阶段二：无锁并发抓取
     let fetcher = state.fetcher.clone();
-    let results = rustrss_core::fetch_jobs(&fetcher, jobs, concurrency.unwrap_or(6)).await;
-    let report = state.with_store(|s| {
+    let results = rustrss_core::fetch_jobs(&fetcher, jobs, concurrency).await;
+    // 阶段三：锁内串行写库
+    state.with_store(|s| {
         let r = rustrss_core::apply_results(s, results).map_err(err);
         // 大批量写入后收尾 WAL（同一连接、此刻无读者竞争，TRUNCATE 立即归零）
         if let Err(e) = s.checkpoint_wal() {
             eprintln!("[rustrss] WAL checkpoint 失败（不影响数据）: {e}");
         }
         r
-    });
-    report
+    })
 }
 
-/// 刷新单个订阅源（失败源上的「重试」用它）
+/// 刷新全部订阅源（界面按钮 / `r` 键）。
+/// 尊重单 flight：已有刷新（定时或上一轮手动）在跑时直接返回可读错误，不叠加第二条管线。
+#[tauri::command]
+pub async fn refresh_all(
+    state: State<'_, AppState>,
+    concurrency: Option<usize>,
+) -> R<RefreshReport> {
+    let _flight = state.try_begin_refresh()?;
+    refresh_core(&state, None, concurrency.unwrap_or(6)).await
+}
+
+/// 刷新指定一批订阅源（OPML 导入后只抓新增的那些）。
+/// 与 refresh_all 共享单 flight 与管线，只差「抓哪些源」。
+#[tauri::command]
+pub async fn refresh_feeds(
+    state: State<'_, AppState>,
+    feed_ids: Vec<i64>,
+    concurrency: Option<usize>,
+) -> R<RefreshReport> {
+    let _flight = state.try_begin_refresh()?;
+    refresh_core(&state, Some(feed_ids), concurrency.unwrap_or(6)).await
+}
+
+/// 刷新单个订阅源（失败源上的「重试」用它，新增订阅后的首抓也用它）。
+/// 有意不占单 flight：这是「用户针对某个源」的小管线（concurrency 1），
+/// 被后台全量刷新挡掉反而会把「新增订阅 → 首抓」这条主流程变成错误提示。
 #[tauri::command]
 pub async fn refresh_feed(
     state: State<'_, AppState>,
     feed_id: i64,
     concurrency: Option<usize>,
 ) -> R<RefreshReport> {
-    let jobs = state.with_store(|s| rustrss_core::collect_jobs(s, &[feed_id]).map_err(err))?;
-    let fetcher = state.fetcher.clone();
-    let results = rustrss_core::fetch_jobs(&fetcher, jobs, concurrency.unwrap_or(1)).await;
-    state.with_store(|s| rustrss_core::apply_results(s, results).map_err(err))
+    refresh_core(&state, Some(vec![feed_id]), concurrency.unwrap_or(1)).await
 }
 
 /// 导出 OPML：弹原生保存对话框 → 写文件。返回实际写入路径（用户取消则 None）。
