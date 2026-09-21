@@ -6,6 +6,7 @@
 
 use rustrss_core::store::schema::MIGRATIONS;
 use rustrss_core::{Entry, EntryQuery, IdOrigin, MarkScope, Store};
+use rustrss_core::rsshub;
 
 fn mk_entry(stable_id: &str, title: &str, text: &str) -> Entry {
     Entry {
@@ -409,4 +410,89 @@ fn folder_rename_delete_and_reassign() {
     assert_eq!(feeds.len(), 1, "订阅不应被删除");
     assert_eq!(feeds[0].folder_id, None, "订阅应回到未分组");
     assert!(store.list_folders().unwrap().iter().all(|(id, _)| *id != f1));
+}
+
+#[test]
+fn add_feed_rewrites_rsshub_urls_via_mirror_setting() {
+    let dir = std::env::temp_dir().join(format!(
+        "rustrss-mirror-add-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let store = Store::open(&dir).expect("打开应成功");
+    // 未配置镜像：rsshub:// 落库为官方实例
+    let id1 = store.add_feed("rsshub://telegram/channel/x", None).unwrap();
+    let feeds = store.list_feeds().unwrap();
+    assert_eq!(feeds[0].url, "https://rsshub.app/telegram/channel/x");
+    // 配置自建镜像：rsshub:// 与官方 https 都落库为镜像地址
+    store.set_setting(rsshub::MIRROR_KEY, "https://rsshub.example.com").unwrap();
+    let id2 = store.add_feed("rsshub://v2ex/topics/hot", None).unwrap();
+    let id3 = store.add_feed("https://rsshub.app/36kr/newsflashes", None).unwrap();
+    let feeds = store.list_feeds().unwrap();
+    let url_of = |id: i64| feeds.iter().find(|f| f.id == id).map(|f| f.url.clone()).unwrap();
+    assert_eq!(url_of(id2), "https://rsshub.example.com/v2ex/topics/hot");
+    assert_eq!(url_of(id3), "https://rsshub.example.com/36kr/newsflashes");
+    // 非 RSSHub 域不受影响；去重幂等（同 URL 再加返回既有 id）
+    let id4 = store.add_feed("https://example.com/feed.xml", None).unwrap();
+    let feeds = store.list_feeds().unwrap(); // 重新拉取，url_of 才能看到 id4
+    assert_eq!(url_of(id4), "https://example.com/feed.xml");
+    assert_eq!(store.add_feed("rsshub://v2ex/topics/hot", None).unwrap(), id2);
+    let _ = std::fs::remove_file(&dir);
+}
+
+#[test]
+fn migration_covers_both_legacy_forms_and_is_idempotent() {
+    let dir = std::env::temp_dir().join(format!(
+        "rustrss-mirror-migrate-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let store = Store::open(&dir).expect("打开应成功");
+    // 旧库存量形态：镜像未配置时，rsshub:// 无法被 add_feed 实例化吗？
+    // —— add_feed 收口在无镜像时会实例化为官方 URL；因此 rsshub:// 存量
+    // 实际落库为官方地址，官方地址是候选；纯 rsshub:// 残留只在直接改库时出现。
+    // 为覆盖"两种存量"，直接用 update_feed_url 构造 rsshub:// 存量。
+    let scheme = store.add_feed("rsshub://telegram/channel/x", None).unwrap();
+    let official = store.add_feed("https://rsshub.app/36kr/newsflashes", None).unwrap();
+    let plain = store.add_feed("https://example.com/feed.xml", None).unwrap();
+    // 构造一条真正的 rsshub:// 存量（模拟直接改库/外部写入）
+    store.update_feed_url(scheme, "rsshub://telegram/channel/x").unwrap();
+    store.set_setting(rsshub::MIRROR_KEY, "https://rsshub.example.com").unwrap();
+
+    // 候选：rsshub:// 存量 + 官方域（普通源不算）
+    let candidates = store.list_rsshub_migration_candidates().unwrap();
+    assert_eq!(candidates.len(), 2, "rsshub:// 与官方域应为候选");
+
+    // 迁移：store 层只有方法，组合逻辑在命令层——这里直接模拟命令行为
+    let mirror = "https://rsshub.example.com";
+    let mut migrated = 0;
+    for (feed_id, url) in store.list_rsshub_migration_candidates().unwrap() {
+        let target = rustrss_core::rsshub::normalize_rsshub_url(&url, mirror);
+        if target != url {
+            store.update_feed_url(feed_id, &target).unwrap();
+            migrated += 1;
+        }
+    }
+    assert_eq!(migrated, 2);
+
+    // 幂等：再跑一遍无变化
+    let again: usize = store
+        .list_rsshub_migration_candidates()
+        .unwrap()
+        .into_iter()
+        .filter(|(_, url)| rustrss_core::rsshub::normalize_rsshub_url(url, mirror) != *url)
+        .count();
+    assert_eq!(again, 0);
+
+    let feeds = store.list_feeds().unwrap();
+    assert_eq!(feeds.iter().find(|f| f.id == scheme).unwrap().url, "https://rsshub.example.com/telegram/channel/x");
+    assert_eq!(feeds.iter().find(|f| f.id == official).unwrap().url, "https://rsshub.example.com/36kr/newsflashes");
+    assert_eq!(feeds.iter().find(|f| f.id == plain).unwrap().url, "https://example.com/feed.xml");
+    let _ = std::fs::remove_file(&dir);
 }

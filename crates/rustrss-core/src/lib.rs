@@ -11,6 +11,7 @@ pub mod model;
 pub mod opml;
 pub mod parse;
 pub mod paths;
+pub mod rsshub;
 pub mod store;
 
 pub use ai::{AiClient, AiConfig, AiError, Provider, RequestPreview};

@@ -240,6 +240,100 @@ pub fn window_close(app: tauri::AppHandle, state: State<'_, AppState>) -> R<()> 
     Ok(())
 }
 
+// ---------------- RSSHub 实例（镜像） ----------------
+
+/// 当前 RSSHub 实例地址（默认官方 https://rsshub.app）。
+#[tauri::command]
+pub fn get_rsshub_mirror(state: State<'_, AppState>) -> R<String> {
+    state.with_store(|s| {
+        Ok(crate::ai::non_empty_setting(s, rustrss_core::rsshub::MIRROR_KEY)
+            .map(|v| rustrss_core::rsshub::clean_base(&v))
+            .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string()))
+    })
+}
+
+/// 设置 RSSHub 实例地址。空值 = 恢复官方默认；非法形态报可读错误。
+#[tauri::command]
+pub fn set_rsshub_mirror(state: State<'_, AppState>, mirror: String) -> R<String> {
+    let trimmed = mirror.trim();
+    if !trimmed.is_empty()
+        && !trimmed.starts_with("http://")
+        && !trimmed.starts_with("https://")
+    {
+        return Err("镜像地址需以 http:// 或 https:// 开头".into());
+    }
+    state.with_store(|s| {
+        s.set_setting(rustrss_core::rsshub::MIRROR_KEY, trimmed).map_err(err)?;
+        Ok(rustrss_core::rsshub::clean_base(trimmed))
+    })
+}
+
+/// 测试实例可达性：依次尝试 /rsshub/rss 与 /feed/rsshub/rss 两个已知路由，
+/// 任一返回 2xx 即可达（实例路由覆盖有差异，两个都试避免误报）。
+#[tauri::command]
+pub async fn test_rsshub_mirror(
+    state: State<'_, AppState>,
+    mirror: Option<String>,
+) -> R<String> {
+    use rustrss_core::rsshub::clean_base;
+    let base = clean_base(&mirror.unwrap_or_default());
+    let fetcher = state.fetcher.clone();
+    for path in ["/rsshub/rss", "/feed/rsshub/rss"] {
+        let url = format!("{base}{path}");
+        match rustrss_core::rsshub::probe_url(&fetcher, &url).await {
+            Ok(true) => return Ok(format!("可达：{url}")),
+            Ok(false) => continue,
+            Err(e) => {
+                // 网络层错误（超时/DNS）直接报告，不再尝试下一个路径
+                return Err(format!("{url} :: {e}"));
+            }
+        }
+    }
+    Ok("两个探测路由均未返回 2xx（实例可达但路由未覆盖，或被拦截）".into())
+}
+
+/// 迁移预览：命中 rsshub:// 与官方域的存量订阅数。
+#[tauri::command]
+pub fn preview_rsshub_migration(state: State<'_, AppState>) -> R<i64> {
+    state.with_store(|s| {
+        let mirror = crate::ai::non_empty_setting(s, rustrss_core::rsshub::MIRROR_KEY)
+            .map(|v| rustrss_core::rsshub::clean_base(&v))
+            .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string());
+        let candidates = s.list_rsshub_migration_candidates().map_err(err)?;
+        let count = candidates
+            .into_iter()
+            .filter(|(_, url)| {
+                rustrss_core::rsshub::normalize_rsshub_url(url, &mirror) != *url
+            })
+            .count() as i64;
+        Ok(count)
+    })
+}
+
+/// 执行迁移：把 rsshub:// 与官方域的存量订阅改写为实例地址。返回迁移条数。
+#[tauri::command]
+pub fn migrate_rsshub_feeds(state: State<'_, AppState>) -> R<i64> {
+    state.with_store(|s| {
+        let mirror = crate::ai::non_empty_setting(s, rustrss_core::rsshub::MIRROR_KEY)
+            .map(|v| rustrss_core::rsshub::clean_base(&v))
+            .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string());
+        let candidates = s.list_rsshub_migration_candidates().map_err(err)?;
+        let mut migrated = 0i64;
+        for (feed_id, url) in candidates {
+            let target = rustrss_core::rsshub::normalize_rsshub_url(&url, &mirror);
+            if target == url {
+                continue; // 已是实例地址（幂等）
+            }
+            match s.update_feed_url(feed_id, &target) {
+                Ok(()) => migrated += 1,
+                // 目标地址与其它订阅冲突（重复源）：跳过，不影响其余迁移
+                Err(_) => continue,
+            }
+        }
+        Ok(migrated)
+    })
+}
+
 // ---------------- 文件夹管理（侧栏分组） ----------------
 
 #[tauri::command]

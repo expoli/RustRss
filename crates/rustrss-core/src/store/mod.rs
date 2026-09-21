@@ -251,6 +251,41 @@ impl Store {
         Ok(())
     }
 
+    /// RSSHub 迁移候选：rsshub:// scheme 与官方域两种存量。
+    pub fn list_rsshub_migration_candidates(&self) -> Result<Vec<(i64, String)>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, url FROM feeds
+              WHERE url LIKE 'rsshub://%'
+                 OR url LIKE 'https://rsshub.app/%'
+                 OR url LIKE 'https://www.rsshub.app/%'
+              ORDER BY id",
+        )?;
+        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// 更新订阅抓取地址（迁移用）。目标 URL 已被其它订阅占用时报可读错误。
+    pub fn update_feed_url(&self, feed_id: i64, new_url: &str) -> Result<()> {
+        let dup: Option<i64> = self
+            .conn
+            .query_row(
+                "SELECT id FROM feeds WHERE url = ?1 AND id != ?2",
+                params![new_url, feed_id],
+                |r| r.get::<_, i64>(0),
+            )
+            .ok();
+        if dup.is_some() {
+            return Err(StoreError::Invalid(format!(
+                "目标地址已存在于其它订阅（feed #{dup:?}），已跳过"
+            )));
+        }
+        self.conn.execute(
+            "UPDATE feeds SET url = ?1 WHERE id = ?2",
+            params![new_url, feed_id],
+        )?;
+        Ok(())
+    }
+
     // ---------------------------------------------------------------- 订阅源
 
     /// 添加订阅源；同一 URL 重复添加返回既有 id（幂等）。
@@ -259,6 +294,14 @@ impl Store {
         if url.is_empty() {
             return Err(StoreError::Invalid("订阅地址不能为空".into()));
         }
+        // RSSHub 归一化收口：rsshub:// 与官方域统一实例化为实际抓取地址，
+        // 库内 URL 永远等于真实抓取地址（OPML 导入与手动添加都走这里）。
+        let mirror = self
+            .setting(crate::rsshub::MIRROR_KEY)
+            .unwrap_or_default()
+            .unwrap_or_default();
+        let url = crate::rsshub::normalize_rsshub_url(url, &mirror);
+        let url = url.trim();
         if let Some(id) = self
             .conn
             .query_row("SELECT id FROM feeds WHERE url = ?1", params![url], |r| {
