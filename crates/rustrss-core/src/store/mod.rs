@@ -270,9 +270,7 @@ impl Store {
 
     /// WAL 收尾：把 WAL 合并回主库并截断（大批量写入后调用，防 WAL 无限增长拖慢读取）。
     pub fn checkpoint_wal(&self) -> Result<()> {
-        self.conn
-            .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))
-            .map_err(Into::into)?;
+        self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)", [])?;
         Ok(())
     }
 
