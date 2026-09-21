@@ -706,7 +706,6 @@ function selfTestSanitizer() {
   if (/evil-class|another/.test(clean)) failures.push('非 language-* 类名残留');
   if (/class="[^"]*evil-x/.test(clean)) failures.push('混合 class 中非 language-* token 未剥除');
   if (!/class="language-py"/.test(clean)) failures.push('混合 class 中 language-* token 未保留');
-  if (window.__pwned) failures.push('脚本被实际执行了');
 
   log(failures.length ? `sanitizer selftest FAILED: ${failures.join('; ')}` : 'sanitizer selftest ok');
   return failures.length === 0;

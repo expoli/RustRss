@@ -115,10 +115,7 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
                 .unwrap_or_else(|| DEFAULT_LOCALE.to_string()),
             // 主题白名单在读取时也兜底：库里被写坏也不至于把界面弄没颜色
             theme: crate::ai::non_empty_setting(s, KEY_THEME)
-                .map(|v| match v.as_str() {
-                    "light" | "dark" => v,
-                    _ => DEFAULT_THEME.to_string(),
-                })
+                .map(|v| normalize_theme(&v).to_string())
                 .unwrap_or_else(|| DEFAULT_THEME.to_string()),
         })
     })
@@ -139,27 +136,36 @@ pub fn set_mark_read_on_navigate(state: State<'_, AppState>, enabled: bool) -> R
     ui_settings(&state)
 }
 
-/// 语言：`auto` / `zh-CN` / `en`。非法值一律归为 `auto`，不让拼错的设置把界面卡死。
-#[tauri::command]
-pub fn set_ui_locale(state: State<'_, AppState>, locale: String) -> R<UiSettings> {
-    let locale = match locale.trim() {
+/// 语言白名单：仅 `zh-CN` / `en`，其余（含 `auto` 与拼错值）一律归 `auto`。
+fn normalize_locale(value: &str) -> &str {
+    match value.trim() {
         "zh-CN" => "zh-CN",
         "en" => "en",
         _ => DEFAULT_LOCALE,
-    };
-    state.with_store(|s| s.set_setting(KEY_LOCALE, locale).map_err(err))?;
+    }
+}
+
+/// 主题白名单：仅 `light` / `dark`，其余（含 `system` 与拼错值）一律归 `system`。
+fn normalize_theme(value: &str) -> &str {
+    match value.trim() {
+        "light" => "light",
+        "dark" => "dark",
+        _ => DEFAULT_THEME,
+    }
+}
+
+/// 语言：`auto` / `zh-CN` / `en`。非法值一律归为 `auto`，不让拼错的设置把界面卡死。
+#[tauri::command]
+pub fn set_ui_locale(state: State<'_, AppState>, locale: String) -> R<UiSettings> {
+    state
+        .with_store(|s| s.set_setting(KEY_LOCALE, normalize_locale(&locale)).map_err(err))?;
     ui_settings(&state)
 }
 
 /// 主题：`system`（跟随系统）/ `light` / `dark`。非法值归为 `system`，同 locale 的白名单口径。
 #[tauri::command]
 pub fn set_ui_theme(state: State<'_, AppState>, theme: String) -> R<UiSettings> {
-    let theme = match theme.trim() {
-        "light" => "light",
-        "dark" => "dark",
-        _ => DEFAULT_THEME,
-    };
-    state.with_store(|s| s.set_setting(KEY_THEME, theme).map_err(err))?;
+    state.with_store(|s| s.set_setting(KEY_THEME, normalize_theme(&theme)).map_err(err))?;
     ui_settings(&state)
 }
 
@@ -167,6 +173,29 @@ fn scope_of(feed_id: Option<i64>) -> MarkScope {
     match feed_id {
         Some(id) => MarkScope::Feed(id),
         None => MarkScope::All,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn locale_whitelist() {
+        assert_eq!(normalize_locale("zh-CN"), "zh-CN");
+        assert_eq!(normalize_locale(" en "), "en");
+        assert_eq!(normalize_locale("auto"), "auto");
+        assert_eq!(normalize_locale("fr"), "auto");
+        assert_eq!(normalize_locale(""), "auto");
+    }
+
+    #[test]
+    fn theme_whitelist() {
+        assert_eq!(normalize_theme("light"), "light");
+        assert_eq!(normalize_theme(" dark "), "dark");
+        assert_eq!(normalize_theme("system"), "system");
+        assert_eq!(normalize_theme("blue"), "system");
+        assert_eq!(normalize_theme(""), "system");
     }
 }
 
