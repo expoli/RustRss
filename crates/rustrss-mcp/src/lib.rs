@@ -136,7 +136,9 @@ impl RustRssMcp {
             unread_only: p.unread_only,
             starred_only: p.starred_only,
             limit: Some(clamp_limit(p.limit)),
-            read_later_only: false
+            read_later_only: false,
+            // MCP 列表工具不做游标分页（响应口径：默认 10 条 / 上限 50）
+            cursor: None,
         };
         self.with_store(|store| match store.list_entries(&query) {
             Ok(rows) => {

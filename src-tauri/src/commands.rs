@@ -78,6 +78,8 @@ pub async fn list_feeds(state: State<'_, AppState>) -> R<Vec<FeedRow>> {
 }
 
 #[tauri::command]
+// Tauri command 的参数就是 IPC 的键名，只能平铺；拆结构体会改变前端调用契约。
+#[allow(clippy::too_many_arguments)]
 pub async fn list_entries(
     state: State<'_, AppState>,
     feed_id: Option<i64>,
@@ -85,6 +87,8 @@ pub async fn list_entries(
     starred_only: Option<bool>,
     read_later_only: Option<bool>,
     limit: Option<u32>,
+    cursor_sortkey: Option<i64>,
+    cursor_id: Option<i64>,
 ) -> R<Vec<EntryRow>> {
     let query = EntryQuery {
         feed_id,
@@ -92,6 +96,7 @@ pub async fn list_entries(
         starred_only: starred_only.unwrap_or(false),
         read_later_only: read_later_only.unwrap_or(false),
         limit: Some(limit.unwrap_or(200)),
+        cursor: cursor_pair(cursor_sortkey, cursor_id),
     };
     let t = std::time::Instant::now();
     let rows = state.with_store(|s| s.list_entries(&query).map_err(err));
@@ -594,9 +599,25 @@ fn scope_of(feed_id: Option<i64>) -> MarkScope {
     }
 }
 
+/// keyset 续扫游标：取自上一页末行直出的 `(sortkey, id)`。
+///
+/// 两值必须同时出现：只给一半（例如前端手滑传错）就当作无游标从首页取，
+/// 不让半截游标静默翻到错误的页。
+fn cursor_pair(cursor_sortkey: Option<i64>, cursor_id: Option<i64>) -> Option<(i64, i64)> {
+    cursor_sortkey.zip(cursor_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cursor_pair_needs_both_halves() {
+        assert_eq!(cursor_pair(Some(1_700_000_000), Some(42)), Some((1_700_000_000, 42)));
+        assert_eq!(cursor_pair(Some(1_700_000_000), None), None, "只给 sortkey 不成游标");
+        assert_eq!(cursor_pair(None, Some(42)), None, "只给 id 不成游标");
+        assert_eq!(cursor_pair(None, None), None, "无游标 = 首页");
+    }
 
     #[test]
     fn locale_whitelist() {

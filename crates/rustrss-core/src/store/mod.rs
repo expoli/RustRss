@@ -77,6 +77,10 @@ pub struct EntryRow {
     pub read: bool,
     pub starred: bool,
     pub read_later: bool,
+    /// 列表排序键 `COALESCE(published_at, fetched_at)`，与 ORDER BY 同一个值直出。
+    /// 分页游标由 (sortkey, id) 组成——前端直接取末行，不自己重算表达式（重算
+    /// 会与 SQL 侧漂移，且前端根本看不到 fetched_at）。
+    pub sortkey: i64,
 }
 
 /// 一次入库的统计：用于验证「重复刷新不产生重复条目」
@@ -95,6 +99,10 @@ pub struct EntryQuery {
     pub starred_only: bool,
     pub read_later_only: bool,
     pub limit: Option<u32>,
+    /// keyset 续扫游标：上一页末行的 `(sortkey, id)`（`EntryRow::sortkey` 直出）。
+    /// `None` = 取首页；只返回排在游标之后的行，因此与 `limit` 一起构成稳定分页
+    /// ——期间新增条目不会让下一页重复或跳条。
+    pub cursor: Option<(i64, i64)>,
 }
 
 /// 「全部标记已读」的作用域
@@ -542,25 +550,21 @@ impl Store {
     // ---------------------------------------------------------------- 条目查询
 
     pub fn list_entries(&self, q: &EntryQuery) -> Result<Vec<EntryRow>> {
-        let mut sql = String::from(ENTRY_SELECT_LIST);
-        let mut values: Vec<Value> = Vec::new();
-        sql.push_str(" WHERE 1=1");
-        if let Some(feed_id) = q.feed_id {
-            sql.push_str(" AND e.feed_id = ?");
-            values.push(Value::Integer(feed_id));
-        }
-        if q.unread_only {
-            sql.push_str(" AND e.read = 0");
-        }
-        if q.starred_only {
-            sql.push_str(" AND e.starred = 1");
-        }
-        if q.read_later_only {
-            sql.push_str(" AND e.read_later = 1");
-        }
-        sql.push_str(" ORDER BY COALESCE(e.published_at, e.fetched_at) DESC, e.id DESC LIMIT ?");
-        values.push(Value::Integer(q.limit.unwrap_or(50).min(500) as i64));
+        let (sql, values) = list_entries_sql(q);
         self.query_entries(&sql, values)
+    }
+
+    /// 诊断/测试用：`list_entries` 实际 SQL 的 EXPLAIN QUERY PLAN。
+    ///
+    /// 存在的意义是让「续扫必须走 idx_entries_sortkey 且不做临时排序」这条性能
+    /// 契约能被断言，而断言跑在与线上逐字相同的 SQL 上——测试另抄一份 SQL 会在
+    /// 实现改动后静默漂移。
+    #[doc(hidden)]
+    pub fn explain_list_entries(&self, q: &EntryQuery) -> Result<Vec<String>> {
+        let (sql, values) = list_entries_sql(q);
+        let mut stmt = self.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
+        let rows = stmt.query_map(params_from_iter(values), |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
     pub fn get_entry(&self, id: i64) -> Result<Option<EntryRow>> {
@@ -573,7 +577,7 @@ impl Store {
     pub fn search(&self, query: &str, limit: u32) -> Result<Vec<EntryRow>> {
         let plan = plan_query(query);
         let mut values: Vec<Value> = Vec::new();
-        let mut sql = String::from(ENTRY_SELECT_LIST);
+        let mut sql = entry_list_sql(false);
         let has_fts = !plan.fts.is_empty();
 
         if has_fts {
@@ -835,15 +839,76 @@ pub struct AiCacheKey<'a> {
 
 const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, e.content_html, e.content_text,
-        e.read, e.starred, e.read_later
+        e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey
     FROM entries e JOIN feeds f ON f.id = e.feed_id";
 
-/// 列表/搜索专用：不带正文全文（content 列以 NULL 占位，列序与完整版一致）。
-/// 8k 条库上单次查询从 ~12MB 传输降到几百 KB——正文一律 get_entry 单取。
-const ENTRY_SELECT_LIST: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
+/// 列表/搜索专用列（不含 FROM）：不带正文全文（content 列以 NULL 占位，列序与
+/// 完整版一致）。8k 条库上单次查询从 ~12MB 传输降到几百 KB——正文一律 get_entry 单取。
+///
+/// （原本是一整条 `ENTRY_SELECT_LIST`，拆成「列 + `entry_list_sql` 拼 FROM」是为了
+/// 续扫时能在 FROM 上带索引提示，而列只保留一份。）
+const ENTRY_LIST_COLUMNS: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, NULL, NULL,
-        e.read, e.starred, e.read_later
-    FROM entries e JOIN feeds f ON f.id = e.feed_id";
+        e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey";
+
+/// 列表/搜索查询的公共主体（列 + 条目 JOIN 订阅源，列表要源标题）。
+///
+/// `indexed_by_sortkey`（仅 keyset 续扫用）在 FROM 上钉死表达式索引，理由见
+/// `list_entries_sql` 里那段注释。
+fn entry_list_sql(indexed_by_sortkey: bool) -> String {
+    let hint = if indexed_by_sortkey { " INDEXED BY idx_entries_sortkey" } else { "" };
+    format!("{ENTRY_LIST_COLUMNS} FROM entries e{hint} JOIN feeds f ON f.id = e.feed_id")
+}
+
+/// `list_entries` 的 SQL 与参数（游标续扫条件在这里拼接）。
+///
+/// 抽成独立函数是为了让 EXPLAIN 断言与线上 SQL 逐字同源（见 `explain_list_entries`）。
+fn list_entries_sql(q: &EntryQuery) -> (String, Vec<Value>) {
+    let mut sql = entry_list_sql(q.cursor.is_some());
+    let mut values: Vec<Value> = Vec::new();
+    sql.push_str(" WHERE 1=1");
+    if let Some(feed_id) = q.feed_id {
+        sql.push_str(" AND e.feed_id = ?");
+        values.push(Value::Integer(feed_id));
+    }
+    if q.unread_only {
+        sql.push_str(" AND e.read = 0");
+    }
+    if q.starred_only {
+        sql.push_str(" AND e.starred = 1");
+    }
+    if q.read_later_only {
+        sql.push_str(" AND e.read_later = 1");
+    }
+    if let Some((sortkey, id)) = q.cursor {
+        // keyset 续扫：语义就是行值比较 `(sortkey, id) < (?, ?)`。
+        //
+        // 实测（sqlite 3.53.2，8000 条库，带/不带 ANALYZE 统计都验过）：
+        // 1. 行值比较不会被当成 idx_entries_sortkey 上的范围约束——计划退化成
+        //    `SCAN ... USING INDEX`，续页得从索引头部扫到游标位置，逐页变慢；
+        // 2. 只写展开式（下面的 OR）又会走 MULTI-INDEX OR + `USE TEMP B-TREE FOR ORDER BY`。
+        // 因此这里多带一条冗余的前导范围约束 `sortkey <= ?`：它给表达式索引一个
+        // 真正可用的 SEARCH 起点；括号内的 OR 把语义收回到严格小于（同值按 id 续扫）。
+        //
+        // 另外 FROM 上带 INDEXED BY（经 entry_list_sql）：不过滤时靠统计就能选中
+        // idx_entries_sortkey，但 read/feed_id 这类有等值索引的筛选形态，在没有
+        // sqlite_stat1 的新库里 planner 会改选等值索引 + 临时排序（本程序从不 ANALYZE）。
+        // 续扫是逐页路径，计划不能看统计的脸色——钉住索引后各筛选形态实测均为
+        // `SEARCH e USING INDEX idx_entries_sortkey (<expr><? )`，无 TEMP B-TREE。
+        sql.push_str(
+            " AND COALESCE(e.published_at, e.fetched_at) <= ?
+                 AND (COALESCE(e.published_at, e.fetched_at) < ?
+                      OR (COALESCE(e.published_at, e.fetched_at) = ? AND e.id < ?))",
+        );
+        values.push(Value::Integer(sortkey));
+        values.push(Value::Integer(sortkey));
+        values.push(Value::Integer(sortkey));
+        values.push(Value::Integer(id));
+    }
+    sql.push_str(" ORDER BY COALESCE(e.published_at, e.fetched_at) DESC, e.id DESC LIMIT ?");
+    values.push(Value::Integer(q.limit.unwrap_or(50).min(500) as i64));
+    (sql, values)
+}
 
 fn map_entry_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
     Ok(EntryRow {
@@ -862,6 +927,7 @@ fn map_entry_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
         read: r.get::<_, i64>(12)? != 0,
         starred: r.get::<_, i64>(13)? != 0,
         read_later: r.get::<_, i64>(14)? != 0,
+        sortkey: r.get(15)?,
     })
 }
 

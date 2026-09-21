@@ -545,3 +545,207 @@ fn list_entries_order_by_uses_sortkey_index() {
     );
     let _ = std::fs::remove_file(&db_path);
 }
+
+// -------------------------------------------------------- keyset 续扫（无限滚动）
+
+/// 造一条 published_at 可控的条目：`None` = 让 `fetched_at` 补位（列表 sortkey 的第二来源）。
+fn mk_entry_published(stable_id: &str, title: &str, published: Option<i64>) -> Entry {
+    let mut e = mk_entry(stable_id, title, "正文");
+    e.published = published.and_then(|t| chrono::DateTime::from_timestamp(t, 0));
+    e
+}
+
+/// 从 `base.cursor`（没有就从首页）开始逐页续扫，返回拼接后的 id 序列。
+fn page_through(store: &Store, base: &EntryQuery, page_size: u32) -> Vec<i64> {
+    let mut ids = Vec::new();
+    let mut cursor = base.cursor;
+    // 页数兜底：游标条件写错（例如没排除游标行本身）会死循环，测试必须失败而不是挂住。
+    for _ in 0..200 {
+        let page = store
+            .list_entries(&EntryQuery {
+                limit: Some(page_size),
+                cursor,
+                ..base.clone()
+            })
+            .unwrap();
+        if page.is_empty() {
+            return ids;
+        }
+        assert!(page.len() <= page_size as usize, "单页不应超过 limit");
+        cursor = page.last().map(|r| (r.sortkey, r.id));
+        ids.extend(page.iter().map(|r| r.id));
+    }
+    panic!("续扫 200 页仍未取空：游标条件可能写错");
+}
+
+#[test]
+fn keyset_cursor_pages_through_tied_and_null_published_rows() {
+    let (store, feed_id) = setup();
+    let base = 1_700_000_000_i64;
+    let mut entries = Vec::new();
+    // 并列 sortkey：8 条同一 published_at，只能靠 id 兜底排序
+    for i in 0..8 {
+        entries.push(mk_entry_published(&format!("tie{i}"), &format!("并列{i}"), Some(base)));
+    }
+    // published_at 缺失：sortkey 由 fetched_at 补位（同一次 upsert 内 fetched_at 相同）
+    for i in 0..8 {
+        entries.push(mk_entry_published(&format!("null{i}"), &format!("无时间{i}"), None));
+    }
+    // 各自独立时间戳
+    for i in 0..6 {
+        entries.push(mk_entry_published(&format!("uniq{i}"), &format!("独立{i}"), Some(base - 100 + i)));
+    }
+    store.upsert_entries(feed_id, &entries).unwrap();
+
+    let full = store
+        .list_entries(&EntryQuery {
+            limit: Some(500),
+            ..Default::default()
+        })
+        .unwrap();
+    assert_eq!(full.len(), 22, "三组条目都应入库");
+    assert!(
+        full.windows(2).all(|w| (w[0].sortkey, w[0].id) > (w[1].sortkey, w[1].id)),
+        "列表必须按 (sortkey, id) 严格降序"
+    );
+    // sortkey 是直出列：有 published_at 就必须等于它，缺失时由 fetched_at 补位
+    for r in &full {
+        match r.published_at {
+            Some(t) => assert_eq!(r.sortkey, t, "有 published_at 时 sortkey 应等于它"),
+            None => assert!(r.sortkey > base, "published_at 缺失时 sortkey 应由 fetched_at 补位"),
+        }
+    }
+    assert_eq!(
+        full.iter().filter(|r| r.sortkey == base).count(),
+        8,
+        "并列 sortkey 组应原样保留（不是被合并或丢掉）"
+    );
+
+    let paged = page_through(&store, &EntryQuery::default(), 5);
+    assert_eq!(
+        paged,
+        full.iter().map(|r| r.id).collect::<Vec<_>>(),
+        "续扫序列应与一次取全完全一致：无重复、无跳条、顺序相同"
+    );
+
+    // keyset 语义：翻页期间新入库的条目排在游标之前（更新），续页不重放它
+    let first_page = store
+        .list_entries(&EntryQuery {
+            limit: Some(5),
+            ..Default::default()
+        })
+        .unwrap();
+    assert_eq!(first_page.len(), 5);
+    let cursor = first_page.last().map(|r| (r.sortkey, r.id));
+    store
+        .upsert_entries(
+            feed_id,
+            // 未来时间戳：确保新条目排在游标之前（列表最新处），而不是插到中间
+            &[mk_entry_published("late", "翻页期间的新条目", Some(2_000_000_000))],
+        )
+        .unwrap();
+    let rest = page_through(&store, &EntryQuery { cursor, ..Default::default() }, 5);
+    assert_eq!(rest.len(), 22 - 5, "续页应只含游标之后的旧条目，不含新插入的那条");
+    assert_eq!(
+        rest,
+        full.iter().skip(5).map(|r| r.id).collect::<Vec<_>>(),
+        "续页内容应与首页之后的原序列一致"
+    );
+}
+
+#[test]
+fn keyset_cursor_supports_every_filter_shape() {
+    let (store, f1) = setup();
+    let f2 = store.add_feed("https://example.com/feed2.xml", Some("源二")).unwrap();
+    let entries: Vec<Entry> = (0..20)
+        .map(|i| mk_entry_published(&format!("e{i}"), &format!("标题{i}"), Some(1_700_000_000 + i)))
+        .collect();
+    store.upsert_entries(f1, &entries[..12]).unwrap();
+    store.upsert_entries(f2, &entries[12..]).unwrap();
+
+    let ids: Vec<i64> = store
+        .list_entries(&EntryQuery {
+            limit: Some(500),
+            ..Default::default()
+        })
+        .unwrap()
+        .iter()
+        .map(|r| r.id)
+        .collect();
+    assert_eq!(ids.len(), 20);
+    // 让四种筛选各有差异：前 10 条已读、每 3 条一个星标、星标里 2 条稍后读
+    store.set_read(&ids[..10], true).unwrap();
+    let starred: Vec<i64> = ids.iter().copied().step_by(3).collect();
+    store.set_starred(&starred, true).unwrap();
+    store.set_read_later(&starred[..2], true).unwrap();
+
+    let shapes = [
+        ("全部", EntryQuery::default()),
+        ("未读", EntryQuery { unread_only: true, ..Default::default() }),
+        ("单源", EntryQuery { feed_id: Some(f1), ..Default::default() }),
+        ("星标", EntryQuery { starred_only: true, ..Default::default() }),
+        ("稍后读", EntryQuery { read_later_only: true, ..Default::default() }),
+        ("单源+未读", EntryQuery { feed_id: Some(f1), unread_only: true, ..Default::default() }),
+    ];
+    for (label, base) in shapes {
+        let full = store
+            .list_entries(&EntryQuery {
+                limit: Some(500),
+                ..base.clone()
+            })
+            .unwrap();
+        assert!(!full.is_empty(), "{label} 视图应有数据，否则本用例对该形态没有约束力");
+        let paged = page_through(&store, &base, 4);
+        assert_eq!(
+            paged,
+            full.iter().map(|r| r.id).collect::<Vec<_>>(),
+            "{label} 视图续扫应与一次取全完全一致"
+        );
+    }
+}
+
+#[test]
+fn keyset_cursor_plans_use_sortkey_index() {
+    // 续扫是逐页高频路径，计划不能打成「等值索引 + 临时排序」：那会每页重排一遍
+    // 整个筛选集合。这里断言的是 list_entries 真实生成的 SQL（explain_list_entries
+    // 复用同一个 SQL 构造函数，不存在测试里另抄一份而漂移的问题）。
+    //
+    // 用内存库（等于从未 ANALYZE 的新库）：本程序不跑 ANALYZE，所以 read/feed_id
+    // 这类带等值索引的形态若只靠 planner 自选，实测会退化成 idx_entries_read_published
+    // / idx_entries_feed_read + TEMP B-TREE——续扫 SQL 因此显式 INDEXED BY。
+    let (store, feed_id) = setup();
+    let entries: Vec<Entry> = (0..20)
+        .map(|i| mk_entry_published(&format!("p{i}"), &format!("标题{i}"), Some(1_700_000_000 + i)))
+        .collect();
+    store.upsert_entries(feed_id, &entries).unwrap();
+    let first = store
+        .list_entries(&EntryQuery {
+            limit: Some(5),
+            ..Default::default()
+        })
+        .unwrap();
+    store.set_read(&first[..2].iter().map(|r| r.id).collect::<Vec<_>>(), true).unwrap();
+    let cursor = Some((1_700_000_010_i64, first[2].id));
+
+    let cases = [
+        (
+            "read=0 + cursor",
+            EntryQuery { unread_only: true, limit: Some(50), cursor, ..Default::default() },
+        ),
+        (
+            "feed_id + cursor",
+            EntryQuery { feed_id: Some(feed_id), limit: Some(50), cursor, ..Default::default() },
+        ),
+    ];
+    for (label, q) in cases {
+        let plan = store.explain_list_entries(&q).unwrap().join(" | ");
+        assert!(
+            plan.contains("SEARCH e USING INDEX idx_entries_sortkey"),
+            "{label} 续扫应按 idx_entries_sortkey 定位游标（seek），实际计划: {plan}"
+        );
+        assert!(
+            !plan.to_lowercase().contains("temp b-tree"),
+            "{label} 续扫不应临时排序，实际计划: {plan}"
+        );
+    }
+}
