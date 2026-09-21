@@ -38,6 +38,7 @@ created: 2026-09-20
 ### 订阅与抓取
 
 - [x] 输入网站首页 URL 时能自动发现 feed（解析 `<link rel="alternate">`）；输入 feed URL 直接订阅成功
+- [x] RSSHub 订阅支持自定义实例：`rsshub://` 与 `https://rsshub.app` 形态在落库时实例化为所配地址；存量订阅可在设置中批量迁移
 - [ ] 支持 RSS 2.0 / Atom / JSON Feed 三种格式解析，含 CDATA、命名空间、多 `enclosure`、缺 `guid` 的条目
 - [ ] 单源与全源刷新可用；刷新使用 ETag / Last-Modified 条件请求，服务端返回 304 时不重复入库
 - [ ] 同一源重复刷新不产生重复条目；条目身份判定在 guid 缺失、link 缺失的退化场景下仍稳定

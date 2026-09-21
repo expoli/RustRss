@@ -697,6 +697,41 @@ function promptText(title, initial) {
   });
 }
 
+/// 内联确认对话框：resolve(true)=确定，resolve(false)=取消
+function confirmBox(message) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'prompt-overlay';
+    overlay.innerHTML = `
+      <div class="prompt-box">
+        <div class="prompt-title">${escapeHtml(message)}</div>
+        <div class="prompt-actions">
+          <button type="button" data-act="cancel"></button>
+          <button type="button" data-act="ok" class="primary"></button>
+        </div>
+      </div>`;
+    const cancelBtn = overlay.querySelector('[data-act="cancel"]');
+    const okBtn = overlay.querySelector('[data-act="ok"]');
+    cancelBtn.textContent = t('prompt.cancel');
+    okBtn.textContent = t('prompt.ok');
+    const done = (value) => {
+      overlay.remove();
+      document.removeEventListener('keydown', onKey, true);
+      resolve(value);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') done(false);
+      if (e.key === 'Enter') done(true);
+    };
+    document.addEventListener('keydown', onKey, true);
+    okBtn.onclick = () => done(true);
+    cancelBtn.onclick = () => done(false);
+    overlay.onclick = (e) => { if (e.target === overlay) done(false); };
+    document.body.appendChild(overlay);
+    okBtn.focus();
+  });
+}
+
 /// 新建分组入口（侧栏「订阅源」标题旁的 + 按钮）
 async function createFolder() {
   const name = await promptText(t('folder.newTitle'), '');
@@ -1124,6 +1159,7 @@ function openSettings() {
   el('set-language').value = state.settings.locale || 'auto';
   el('set-theme').value = state.settings.theme || 'system';
   el('set-close-action').value = state.settings.close_action || 'exit';
+  el('set-rsshub-mirror').value = state.settings.rsshub_mirror || '';
   const dbPath = state.db ? state.db.dbPath : '';
   el('settings-db-path').textContent = dbPath;
   el('settings-db-path').title = dbPath;
@@ -1271,6 +1307,44 @@ async function boot() {
   el('btn-win-close').onclick = () => invoke('window_close').catch((e) => {
     setStatus(t('status.settingFailed', { error: e.message }), true);
   });
+  // RSSHub 设置
+  el('btn-rsshub-save').onclick = async () => {
+    try {
+      const mirror = await invoke('set_rsshub_mirror', { mirror: el('set-rsshub-mirror').value });
+      state.settings.rsshub_mirror = mirror;
+      el('rsshub-status').textContent = t('settings.rsshub.saved', { url: mirror });
+      log(`rsshub mirror=${mirror}`);
+    } catch (err) {
+      el('rsshub-status').textContent = err.message;
+    }
+  };
+  el('btn-rsshub-test').onclick = async () => {
+    el('rsshub-status').textContent = t('settings.rsshub.testing');
+    try {
+      el('rsshub-status').textContent = await invoke('test_rsshub_mirror', {
+        mirror: el('set-rsshub-mirror').value,
+      });
+    } catch (err) {
+      el('rsshub-status').textContent = err.message;
+    }
+  };
+  el('btn-rsshub-migrate').onclick = async () => {
+    try {
+      const hit = await invoke('preview_rsshub_migration');
+      if (!hit) {
+        el('rsshub-status').textContent = t('settings.rsshub.migrateNone');
+        return;
+      }
+      const okToGo = await confirmBox(t('settings.rsshub.migrateConfirm', { n: String(hit) }));
+      if (!okToGo) return;
+      const migrated = await invoke('migrate_rsshub_feeds');
+      el('rsshub-status').textContent = t('settings.rsshub.migrateDone', { n: String(migrated) });
+      log(`rsshub migration: ${migrated} feeds rewritten`);
+      await refreshCounts();
+    } catch (err) {
+      el('rsshub-status').textContent = err.message;
+    }
+  };
   el('settings-overlay').addEventListener('click', (e) => {
     // 点击遮罩区域关闭（点对话框内部不关）
     if (e.target === el('settings-overlay')) el('settings-overlay').classList.add('hidden');

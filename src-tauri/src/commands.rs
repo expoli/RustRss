@@ -118,6 +118,7 @@ pub struct UiSettings {
     pub locale: String,
     pub theme: String,
     pub close_action: String,
+    pub rsshub_mirror: String,
 }
 
 fn ui_settings(state: &AppState) -> R<UiSettings> {
@@ -135,6 +136,10 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
             close_action: crate::ai::non_empty_setting(s, KEY_CLOSE_ACTION)
                 .map(|v| normalize_close_action(&v).to_string())
                 .unwrap_or_else(|| DEFAULT_CLOSE_ACTION.to_string()),
+            // 镜像 base 走统一 clean：空/非法回退官方默认
+            rsshub_mirror: crate::ai::non_empty_setting(s, rustrss_core::rsshub::MIRROR_KEY)
+                .map(|v| rustrss_core::rsshub::clean_base(&v))
+                .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string()),
         })
     })
 }

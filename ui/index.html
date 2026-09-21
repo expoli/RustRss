@@ -106,6 +106,9 @@
           <li data-pane="mcp">
             <span class="icon">🔌</span><span data-i18n="settings.nav.mcp"></span>
           </li>
+          <li data-pane="rsshub">
+            <span class="icon">🛰</span><span data-i18n="settings.nav.rsshub"></span>
+          </li>
           <li data-pane="about">
             <span class="icon">ℹ</span><span data-i18n="settings.nav.about"></span>
           </li>
@@ -332,6 +335,36 @@
               <button id="mcp-rotate" data-i18n="settings.mcp.rotate"></button>
             </div>
             <textarea id="mcp-snippet" rows="8" readonly></textarea>
+          </div>
+        </div>
+
+        <!-- RSSHub -->
+        <div class="pane hidden" data-pane="rsshub">
+          <h3 data-i18n="settings.nav.rsshub"></h3>
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.rsshubInstance"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.rsshub.mirror"></b>
+                <small data-i18n="settings.rsshub.mirrorHint"></small>
+              </div>
+              <input id="set-rsshub-mirror" autocomplete="off" />
+            </div>
+            <div class="setting-actions">
+              <button id="btn-rsshub-save" data-i18n="settings.rsshub.save"></button>
+              <button id="btn-rsshub-test" data-i18n="settings.rsshub.test"></button>
+            </div>
+            <p id="rsshub-status" class="dim small">—</p>
+          </div>
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.migration"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.rsshub.migrate"></b>
+                <small data-i18n="settings.rsshub.migrateHint"></small>
+              </div>
+              <button id="btn-rsshub-migrate" data-i18n="settings.rsshub.migrate"></button>
+            </div>
           </div>
         </div>
 
