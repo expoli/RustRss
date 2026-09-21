@@ -595,7 +595,10 @@ function renderReader(entry) {
 
 // ---------------------------------------------------------------- 数据流
 
-async function loadAll() {
+/// 全量读数据并渲染。
+/// `reader: false` 是后台刷新用的静默模式：只重读侧栏与列表，不重渲染正文——
+/// 阅读焦点与滚动位置保持原位（定时刷新到点时用户可能正在读一篇长文）。
+async function loadAll({ reader = true } = {}) {
   const [sidebar, settings, ai, mcp, collapsed] = await Promise.all([
     invoke('sidebar_data'),
     invoke('get_ui_settings'),
@@ -616,13 +619,13 @@ async function loadAll() {
   applyTheme(settings.theme || 'system');
   applyStaticI18n();
   renderSidebar();
-  await loadEntries();
+  await loadEntries({ reader });
   log(
-    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}`
+    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}${reader ? '' : ' silent（正文未重渲染）'}`
   );
 }
 
-async function loadEntries() {
+async function loadEntries({ reader = true } = {}) {
   const kind = state.view.kind;
   let rows;
   if (kind === 'search') {
@@ -641,6 +644,8 @@ async function loadEntries() {
     state.selectedId = rows.length ? rows[0].id : null;
   }
   renderList();
+  // 静默模式到此为止：正文区一个 DOM 都不动
+  if (!reader) return;
   if (state.selectedId) {
     // 视图切换只加载，不标记已读
     const entry = await invoke('get_entry', { id: state.selectedId });
@@ -1011,6 +1016,74 @@ async function refreshOne(feedId) {
   }
 }
 
+/// OPML 导入后只抓新导入的那批源（后端 refresh_feeds 与手动刷新共用同一条管线）。
+/// 单 flight 挡下时给出可读提示，不静默吞掉。
+async function fetchImportedFeeds(feedIds) {
+  setStatus(t('status.importFetching', { n: feedIds.length }));
+  log(`refresh_feeds imported=${feedIds.length}`);
+  try {
+    const r = await invoke('refresh_feeds', { feedIds, concurrency: 6 });
+    setStatus(
+      t('status.refreshDone', {
+        fetched: r.fetched,
+        notModified: r.not_modified,
+        inserted: r.inserted,
+        failures: r.failures.length,
+      })
+    );
+    for (const f of r.failures) log(`import refresh failure feed=${f.feed_id} ${f.url} :: ${f.error}`);
+  } catch (e) {
+    setStatus(t('status.refreshFailed', { error: e.message }), true);
+    log(`refresh_feeds failed: ${e.message}`);
+  }
+  await loadAll();
+}
+
+/// 后台刷新提示的原文（null = 没在显示）。只在状态栏还写着这句提示时才清除，
+/// 避免把用户这一瞬间刚触发的文案（例如手动刷新被单 flight 拒绝的错误）抹掉。
+let backgroundRefreshHint = null;
+
+/// 后台刷新（定时 / 启动首刷）由 Rust 侧 emit `refresh:start` / `refresh:done`。
+/// 手动刷新是同步等待且不发事件，所以这里只会收到后台刷新，不会出现双提示。
+/// done 走静默 loadAll：侧栏与列表刷新，正文不重渲染，阅读焦点与滚动位置保持原位。
+function initRefreshEvents() {
+  const events = window.__TAURI__ && window.__TAURI__.event;
+  if (!events || !events.listen) {
+    // 事件 API 拿不到时不静默：后台刷新照旧跑，只是界面不会自动更新
+    log('refresh 事件不可用（window.__TAURI__.event 缺失）：后台刷新不会自动更新界面');
+    return;
+  }
+  events
+    .listen('refresh:start', () => {
+      log('refresh:start');
+      backgroundRefreshHint = t('status.autoRefreshing');
+      setStatus(backgroundRefreshHint);
+    })
+    .catch((e) => log(`listen refresh:start failed: ${e.message}`));
+  events
+    .listen('refresh:done', async () => {
+      log('refresh:done');
+      const hint = backgroundRefreshHint;
+      backgroundRefreshHint = null;
+      if (hint && el('status').textContent === hint) setStatus('');
+      // 「静默」的定义就是正文 DOM 与阅读滚动位置一个字节都不动：把这条不变量打进日志，
+      // 无人值守时也能核对（不用只能盯着屏幕看）
+      const reader = el('reader');
+      const idBefore = state.selectedId;
+      const scrollBefore = reader.scrollTop;
+      const htmlBefore = reader.innerHTML.length;
+      try {
+        await loadAll({ reader: false });
+      } catch (e) {
+        log(`refresh:done reload failed: ${e.message}`);
+      }
+      log(
+        `refresh:done 静默完成 selected=${idBefore}→${state.selectedId} 正文=${htmlBefore}→${reader.innerHTML.length}字 scrollTop=${scrollBefore}→${reader.scrollTop}`
+      );
+    })
+    .catch((e) => log(`listen refresh:done failed: ${e.message}`));
+}
+
 async function doAddFeed() {
   const input = el('add-url');
   const btn = el('add-ok');
@@ -1293,6 +1366,8 @@ function openSettings() {
   el('set-language').value = state.settings.locale || 'auto';
   el('set-theme').value = state.settings.theme || 'system';
   el('set-close-action').value = state.settings.close_action || 'exit';
+  el('set-refresh-interval').value = state.settings.refresh_interval_minutes || '30';
+  el('set-refresh-on-start').checked = !!state.settings.refresh_on_start;
   el('set-rsshub-mirror').value = state.settings.rsshub_mirror || '';
   const dbPath = state.db ? state.db.dbPath : '';
   el('settings-db-path').textContent = dbPath;
@@ -1330,6 +1405,7 @@ async function boot() {
   }
 
   el('btn-refresh').onclick = doRefresh;
+  initRefreshEvents();
   initSidebarEvents();
   el('btn-add').onclick = () => {
     const row = el('add-row');
@@ -1505,6 +1581,36 @@ async function boot() {
       setStatus(t('status.settingFailed', { error: err.message }), true);
     }
   });
+  el('set-refresh-interval').addEventListener('change', async (e) => {
+    try {
+      state.settings = await invoke('set_refresh_interval', { minutes: e.target.value });
+      // 后端是白名单唯一来源：把归一化后的值回显到控件，界面与库里不会各说一套
+      const minutes = state.settings.refresh_interval_minutes;
+      e.target.value = minutes;
+      setStatus(
+        minutes === 'off'
+          ? t('status.refreshIntervalOff')
+          : t('status.refreshIntervalSet', { minutes })
+      );
+      log(`refreshInterval=${minutes}`);
+    } catch (err) {
+      setStatus(t('status.settingFailed', { error: err.message }), true);
+      log(`set_refresh_interval failed: ${err.message}`);
+    }
+  });
+  el('set-refresh-on-start').addEventListener('change', async (e) => {
+    try {
+      state.settings = await invoke('set_refresh_on_start', { enabled: e.target.checked });
+      e.target.checked = state.settings.refresh_on_start;
+      setStatus(
+        t(state.settings.refresh_on_start ? 'status.refreshOnStartOn' : 'status.refreshOnStartOff')
+      );
+      log(`refreshOnStart=${state.settings.refresh_on_start}`);
+    } catch (err) {
+      setStatus(t('status.settingFailed', { error: err.message }), true);
+      log(`set_refresh_on_start failed: ${err.message}`);
+    }
+  });
   el('act-mark-all-read').onclick = () => markAll(true);
   el('act-mark-all-unread').onclick = () => markAll(false);
 
@@ -1538,6 +1644,10 @@ async function boot() {
       );
       el('settings-overlay').classList.add('hidden');
       await loadAll();
+      // 新导入的源在库里是 0 条目：立刻只抓这一批，省掉「导入完再手动刷一次」的断层。
+      // 重复导入（新增 0）时不会白刷一遍全量。
+      const newIds = r.added_feed_ids || [];
+      if (r.feeds_added > 0 && newIds.length) await fetchImportedFeeds(newIds);
     } catch (err) {
       setStatus(t('status.importFailed', { error: err.message }), true);
       log(`import_opml failed: ${err.message}`);

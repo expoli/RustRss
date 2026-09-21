@@ -160,6 +160,31 @@
           </div>
 
           <div class="setting-block">
+            <h4 data-i18n="settings.section.refresh"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.refreshInterval"></b>
+                <small data-i18n="settings.refreshIntervalHint"></small>
+              </div>
+              <select id="set-refresh-interval">
+                <option value="off" data-i18n="settings.refreshOff"></option>
+                <option value="15" data-i18n="settings.refreshMin15"></option>
+                <option value="30" data-i18n="settings.refreshMin30"></option>
+                <option value="60" data-i18n="settings.refreshMin60"></option>
+                <option value="120" data-i18n="settings.refreshMin120"></option>
+                <option value="360" data-i18n="settings.refreshMin360"></option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.refreshOnStart"></b>
+                <small data-i18n="settings.refreshOnStartHint"></small>
+              </div>
+              <label class="switch"><input type="checkbox" id="set-refresh-on-start" /><span></span></label>
+            </div>
+          </div>
+
+          <div class="setting-block">
             <h4 data-i18n="settings.section.storage"></h4>
             <div class="setting-item">
               <div class="text">
