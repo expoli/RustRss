@@ -114,4 +114,10 @@ pub const MIGRATIONS: &[&str] = &[
     r#"
     CREATE INDEX idx_entries_feed_read ON entries(feed_id, read);
     "#,
+    // v6：列表排序键表达式索引。list_entries 的 ORDER BY COALESCE(published_at,
+    // fetched_at) DESC, id DESC 是函数列，此前用不了任何索引 → 每次视图切换
+    // 全表扫 + 排序（8k 条库实测 15-19ms）；走本索引后按序取前 N（~1-2ms）。
+    r#"
+    CREATE INDEX idx_entries_sortkey ON entries(COALESCE(published_at, fetched_at) DESC, id DESC);
+    "#,
 ];

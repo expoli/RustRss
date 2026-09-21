@@ -499,3 +499,49 @@ fn migration_covers_both_legacy_forms_and_is_idempotent() {
     assert_eq!(feeds.iter().find(|f| f.id == plain).unwrap().url, "https://example.com/feed.xml");
     let _ = std::fs::remove_file(&dir);
 }
+
+#[test]
+fn list_entries_order_by_uses_sortkey_index() {
+    // v6 表达式索引的验收：视图切换高频走的 ORDER BY COALESCE(...) 必须命中
+    // idx_entries_sortkey，而不是全表扫 + 临时 B-tree 排序（8k 条库上后者实测
+    // 15-19ms，是界面卡顿的组成部分）。用真实文件库验，方便第二连接读执行计划。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-sortkey-test-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let store = Store::open(&db_path).unwrap();
+        let feed_id = store
+            .add_feed("https://example.com/feed.xml", Some("示例源"))
+            .unwrap();
+        let entries: Vec<Entry> = (0..30)
+            .map(|i| mk_entry(&format!("s{i}"), &format!("标题{i}"), &format!("正文{i}")))
+            .collect();
+        store.upsert_entries(feed_id, &entries).unwrap();
+    }
+    let conn = rusqlite::Connection::open(&db_path).unwrap();
+    let plan: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "EXPLAIN QUERY PLAN SELECT id FROM entries
+                 ORDER BY COALESCE(published_at, fetched_at) DESC, id DESC LIMIT 200",
+            )
+            .unwrap();
+        let rows = stmt.query_map([], |r| r.get::<_, String>(3)).unwrap();
+        rows.collect::<Result<_, _>>().unwrap()
+    };
+    let joined = plan.join(" | ");
+    assert!(
+        joined.contains("idx_entries_sortkey"),
+        "列表排序应走 v6 表达式索引，实际计划: {joined}"
+    );
+    assert!(
+        !joined.to_lowercase().contains("temp b-tree"),
+        "不应再出现临时排序树，实际计划: {joined}"
+    );
+    let _ = std::fs::remove_file(&db_path);
+}
