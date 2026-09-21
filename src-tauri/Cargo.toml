@@ -13,6 +13,9 @@ rustrss-mcp = { path = "../crates/rustrss-mcp" }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
+# 单实例锁（只在默认库下注册）。平台实现：Linux 是 D-Bus 名（`{identifier}.SingleInstance`）、
+# macOS 是 unix socket、Windows 是命名 mutex + WM_COPYDATA。
+tauri-plugin-single-instance = "2"
 # API key 存操作系统凭据库：Linux 走 Secret Service（KWallet/GNOME Keyring），
 # macOS 走 Keychain，Windows 走凭据管理器。
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }

@@ -95,7 +95,25 @@ fn main() {
         });
     }
 
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+    // 单实例锁：只在默认库下注册。
+    // 第二个实例启动时插件在本进程（已有实例）里跑回调——把主窗口唤出来
+    // （可能正藏在托盘里），然后让新进程自己退出；否则两个进程会抢同一个
+    // MCP 端口、双写同一个 SQLite。
+    // `RUSTSS_DB`/参数指向其他库时不注册：多开诊断副本是合法用法。
+    // 必须放在 builder 链最前：插件按注册顺序执行，放后面新进程会先跑完
+    // 其他插件与应用 setup 才退出（上游 README 明确要求 first）。
+    if rustrss_core::paths::is_default_db(&app_state.db_path) {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            use tauri::Manager;
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.show();
+                let _ = win.set_focus();
+            }
+        }));
+    }
+
+    builder
         .setup(|app| {
             // 托盘不可用是预期内情况（Wayland 无 StatusNotifierItem / 缺
             // libappindicator 等）：显式降级，日志说明，主流程照常。

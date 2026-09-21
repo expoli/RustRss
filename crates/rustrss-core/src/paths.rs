@@ -3,7 +3,7 @@
 //! 界面与 MCP 服务器**必须用同一套规则**：否则 agent 读的库和用户界面看的库
 //! 可能不是同一个文件，表现为「agent 说没订阅但我明明订阅了」这类怪事。
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub const APP_DIR: &str = "rustrss";
 pub const DB_FILE: &str = "rustrss.sqlite";
@@ -61,6 +61,21 @@ pub fn resolve_db_path() -> PathBuf {
         std::env::var("RUSTSS_DB").ok(),
         std::env::args().nth(1),
     )
+}
+
+/// 这个路径是否就是默认库位置。
+///
+/// 给单实例锁用：默认库下要挡住第二个实例（否则两个进程抢同一个 MCP 端口、
+/// 双写同一个 SQLite），而 `$RUSTSS_DB` / 参数把库指到别处属于开发者跑诊断
+/// 副本的合法用法，不该被锁住。
+///
+/// 只与 [`default_db_path()`] 比较，因此判定与当前工作目录无关。
+///
+/// 是**字面路径**比较：不做 canonicalize，也不碰文件系统（保持纯函数、可在
+/// 测试里直接跑）。所以 `RUSTSS_DB` 写相对路径、而它恰好又指向默认库时会被
+/// 当成「非默认库」——那时退化成今天的行为（不锁），不会是「误锁」。
+pub fn is_default_db(db_path: &Path) -> bool {
+    db_path == default_db_path()
 }
 
 /// 可测的纯函数版：决定库位置
@@ -123,5 +138,26 @@ mod tests {
         // 空值/空白一律忽略
         assert_eq!(pick_db_path(Some("   ".into()), None), default_db_path());
         assert_eq!(pick_db_path(None, Some("  ".into())), default_db_path());
+    }
+
+    #[test]
+    fn only_the_default_path_counts_as_the_default_db() {
+        // 默认库（含「被忽略的选项参数」这类输入）→ 认为是默认库，单实例锁生效
+        assert!(is_default_db(&default_db_path()));
+        assert!(is_default_db(&pick_db_path(None, Some("--print-config".into()))));
+
+        // $RUSTSS_DB / 参数指向他处 → 不是默认库，锁要让开（可多开诊断副本）
+        assert!(!is_default_db(&pick_db_path(
+            Some("/tmp/other.sqlite".into()),
+            None
+        )));
+        assert!(!is_default_db(&pick_db_path(
+            None,
+            Some("/tmp/other.sqlite".into())
+        )));
+
+        // 与 cwd 无关：只跟 default_db_path() 比，
+        // 裸相对文件名（站在数据目录里跑时最容易被误判成默认库）不认
+        assert!(!is_default_db(Path::new(DB_FILE)));
     }
 }
