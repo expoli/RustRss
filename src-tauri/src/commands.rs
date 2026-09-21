@@ -23,6 +23,14 @@ fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
 }
 
+/// 侧栏聚合数据：一次锁获取返回全部，消除三命令并发抢锁。
+#[derive(Serialize)]
+pub struct SidebarData {
+    pub db: DbInfo,
+    pub feeds: Vec<FeedRow>,
+    pub folders: Vec<rustrss_core::store::FolderRow>,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DbInfo {
@@ -45,7 +53,7 @@ fn log_slow(name: &str, started: std::time::Instant) {
 #[tauri::command]
 pub async fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
     let t = std::time::Instant::now();
-    state.with_store(|s| {
+    let r = state.with_store(|s| {
         Ok(DbInfo {
             db_path: state.db_path.display().to_string(),
             feeds: s.list_feeds().map_err(err)?.len() as i64,
@@ -54,7 +62,9 @@ pub async fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
             starred: s.starred_total().map_err(err)?,
             later: s.read_later_total().map_err(err)?,
         })
-    })
+    });
+    log_slow("db_info", t);
+    r
 }
 
 #[tauri::command]
@@ -160,6 +170,29 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
                 .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string()),
         })
     })
+}
+
+/// 侧栏一次拉全：db 计数 + 订阅（含未读聚合）+ 文件夹，单次锁获取。
+/// 供 refreshCounts 使用，避免三个并发命令互相抢 Mutex 排队。
+#[tauri::command]
+pub async fn sidebar_data(state: State<'_, AppState>) -> R<SidebarData> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| {
+        Ok(SidebarData {
+            db: DbInfo {
+                db_path: state.db_path.display().to_string(),
+                feeds: s.list_feeds().map_err(err)?.len() as i64,
+                entries: s.entry_count().map_err(err)?,
+                unread: s.unread_total().map_err(err)?,
+                starred: s.starred_total().map_err(err)?,
+                later: s.read_later_total().map_err(err)?,
+            },
+            feeds: s.list_feeds().map_err(err)?,
+            folders: s.list_folders_ordered().map_err(err)?,
+        })
+    });
+    log_slow("sidebar_data", t);
+    r
 }
 
 #[tauri::command]

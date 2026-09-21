@@ -129,6 +129,7 @@ fn main() {
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             commands::db_info,
+            commands::sidebar_data,
             commands::list_feeds,
             commands::list_entries,
             commands::get_entry,

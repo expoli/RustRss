@@ -487,18 +487,16 @@ function renderReader(entry) {
 // ---------------------------------------------------------------- 数据流
 
 async function loadAll() {
-  const [db, feeds, settings, ai, mcp, folders, collapsed] = await Promise.all([
-    invoke('db_info'),
-    invoke('list_feeds'),
+  const [sidebar, settings, ai, mcp, collapsed] = await Promise.all([
+    invoke('sidebar_data'),
     invoke('get_ui_settings'),
     invoke('get_ai_settings'),
     invoke('get_mcp_settings'),
-    invoke('list_folders'),
     invoke('get_collapsed_folders'),
   ]);
-  state.db = db;
-  state.feeds = feeds;
-  state.folders = folders;
+  state.db = sidebar.db;
+  state.feeds = sidebar.feeds;
+  state.folders = sidebar.folders;
   state.collapsedFolders = collapsed;
   state.settings = settings;
   state.ai = ai;
@@ -605,14 +603,11 @@ function refreshCountsSoon() {
 }
 
 async function refreshCounts() {
-  const [db, feeds, folders] = await Promise.all([
-    invoke('db_info'),
-    invoke('list_feeds'),
-    invoke('list_folders'),
-  ]);
-  state.db = db;
-  state.feeds = feeds;
-  state.folders = folders;
+  // 单命令单次锁：避免 db_info/list_feeds/list_folders 三命令并发抢 Mutex 排队
+  const data = await invoke('sidebar_data');
+  state.db = data.db;
+  state.feeds = data.feeds;
+  state.folders = data.folders;
   renderSidebar();
 }
 
