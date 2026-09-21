@@ -602,15 +602,35 @@ li.folder-head {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: var(--fg-dim);
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg-panel);
+  background: color-mix(in srgb, var(--bg-panel) 55%, transparent);
+  color: var(--fg);
   font-size: 12px;
-  padding: 5px 10px;
-  border-left: 3px solid transparent;
+  font-weight: 600;
+  letter-spacing: .3px;
+  border-radius: 0 6px 6px 0;
 }
-li.folder-head:hover { background: var(--bg-hover); color: var(--fg); }
-li.folder-head .folder-arrow { width: 1em; text-align: center; font-size: 10px; }
+li.folder-head:hover { background: var(--bg-hover); }
+li.folder-head .folder-arrow {
+  width: 1em;
+  text-align: center;
+  font-size: 10px;
+  color: var(--fg-dim);
+  transition: transform .15s ease;
+}
 li.folder-head .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-li.folder-head .count { margin-left: auto; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
+li.folder-head .count {
+  margin-left: auto;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+/* 组内订阅缩进，体现从属层级 */
+li.folder-feed { padding-left: 28px; }
+li.folder-feed .name { font-size: 13px; }
 
 #ctx-menu {
   position: fixed;
