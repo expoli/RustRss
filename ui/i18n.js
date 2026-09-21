@@ -39,6 +39,7 @@ const DICTS = {
     'list.empty': '这里还没有文章',
     'list.searchTitle': '搜索：{q}',
     'list.feedFallback': '订阅源',
+    'list.loadingMore': '加载中…',
 
     'reader.empty': '从中间列表选一篇文章。',
     'reader.shortcuts': '快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · r 刷新 · / 搜索 · Esc 清除',
@@ -230,6 +231,7 @@ const DICTS = {
     'status.refreshing': '正在刷新…',
     'status.refreshDone': '刷新完成：成功 {fetched}｜未修改 {notModified}｜新增 {inserted}｜失败 {failures}',
     'status.refreshFailed': '刷新失败：{error}',
+    'status.loadMoreFailed': '加载更多失败：{error}',
     'status.refreshingOne': '正在刷新该源…',
     'status.refreshOneDone': '该源刷新完成：新增 {inserted}｜未修改 {notModified}｜失败 {failures}',
     'status.adding': '已添加，正在抓取…',
@@ -284,6 +286,7 @@ const DICTS = {
     'list.empty': 'No articles here yet',
     'list.searchTitle': 'Search: {q}',
     'list.feedFallback': 'Feed',
+    'list.loadingMore': 'Loading…',
 
     'reader.empty': 'Pick an article from the list.',
     'reader.shortcuts':
@@ -479,6 +482,7 @@ const DICTS = {
     'status.refreshDone':
       'Refreshed: {fetched} fetched | {notModified} not modified | {inserted} new | {failures} failed',
     'status.refreshFailed': 'Refresh failed: {error}',
+    'status.loadMoreFailed': 'Could not load more: {error}',
     'status.refreshingOne': 'Refreshing this feed…',
     'status.refreshOneDone':
       'Feed refreshed: {inserted} new | {notModified} not modified | {failures} failed',

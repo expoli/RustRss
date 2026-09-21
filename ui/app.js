@@ -431,6 +431,29 @@ function viewTitle() {
   return view ? t(view.key) : t('list.all');
 }
 
+/// 单行构造：首屏与续页共用（续页只 append 新行，已有的行一个都不重建）。
+function buildEntryRow(e) {
+  const li = document.createElement('li');
+  li.className = `${e.id === state.selectedId ? 'active' : ''} ${e.read ? 'read' : ''}`;
+  li.dataset.id = String(e.id);
+  const star = e.starred ? '<span class="star">★</span>' : '';
+  const laterMark = `<span class="later-mark ${e.read_later ? 'on' : ''}" data-later-id="${e.id}" title="${t('list.later')}">⚑</span>`;
+  li.innerHTML = `
+      <span class="title">${escapeHtml(e.title)}</span>
+      <span class="meta"><span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}</span>
+      ${e.summary ? `<span class="summary">${escapeHtml(e.summary)}</span>` : ''}`;
+  li.onclick = () => openEntry(e.id, { markRead: true });
+  const mark = li.querySelector('.later-mark');
+  if (mark) {
+    mark.onclick = (ev) => {
+      ev.stopPropagation();
+      state.selectedId = e.id;
+      toggleReadLater().catch((err) => setStatus(err.message, true));
+    };
+  }
+  return li;
+}
+
 function renderList() {
   const __t0 = performance.now();
   el('list-title').textContent = viewTitle();
@@ -444,30 +467,12 @@ function renderList() {
     li.style.cursor = 'default';
     li.textContent = state.view.kind === 'unread' ? t('list.emptyUnread') : t('list.empty');
     list.appendChild(li);
+    installSentinel();
     return;
   }
 
-  for (const e of state.entries) {
-    const li = document.createElement('li');
-    li.className = `${e.id === state.selectedId ? 'active' : ''} ${e.read ? 'read' : ''}`;
-    li.dataset.id = String(e.id);
-    const star = e.starred ? '<span class="star">★</span>' : '';
-    const laterMark = `<span class="later-mark ${e.read_later ? 'on' : ''}" data-later-id="${e.id}" title="${t('list.later')}">⚑</span>`;
-    li.innerHTML = `
-      <span class="title">${escapeHtml(e.title)}</span>
-      <span class="meta"><span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}</span>
-      ${e.summary ? `<span class="summary">${escapeHtml(e.summary)}</span>` : ''}`;
-    li.onclick = () => openEntry(e.id, { markRead: true });
-    const mark = li.querySelector('.later-mark');
-    if (mark) {
-      mark.onclick = (ev) => {
-        ev.stopPropagation();
-        state.selectedId = e.id;
-        toggleReadLater().catch((err) => setStatus(err.message, true));
-      };
-    }
-    list.appendChild(li);
-  }
+  for (const e of state.entries) list.appendChild(buildEntryRow(e));
+  installSentinel();
   window.__LIST_MS = +(performance.now() - __t0).toFixed(1);
   log(`renderList rows=${state.entries.length} ${window.__LIST_MS}ms`);
   focusRow(state.selectedId, { follow: true });
@@ -503,6 +508,37 @@ function markRowRead(id) {
 function removeListRow(id) {
   const li = el('entries').querySelector(`li[data-id="${id}"]`);
   if (li) li.remove();
+}
+
+// ------------------------------------------- 列表续页（尾部哨兵 + IntersectionObserver）
+
+/// 尾部哨兵：滚到接近底部（rootMargin 600px）就自动续下一页。
+/// 每次 renderList/续页之后都换一个新哨兵节点再 observe——IntersectionObserver 只在
+/// 「相交状态变化」时回调，哨兵一直留在可视区内（这批行不够填满一屏、或列表被读空
+/// 变短）时不会再有通知、续页就卡住了；重新 observe 必然先给一次初始通知，正好把
+/// 「还没填满就接着拉」接上。
+let sentinel = null;
+let listObserver = null;
+
+function installSentinel() {
+  const list = el('entries');
+  if (listObserver && sentinel) listObserver.unobserve(sentinel);
+  if (sentinel) sentinel.remove();
+  sentinel = null;
+  // 没有下一页（已到末尾、搜索本版不分页、续页刚失败）就不留哨兵
+  if (paging.exhausted || paging.error || state.view.kind === 'search') return;
+  if (!listObserver) {
+    listObserver = new IntersectionObserver(onSentinel, { root: list, rootMargin: '600px' });
+  }
+  sentinel = document.createElement('li');
+  sentinel.className = 'load-sentinel dim';
+  sentinel.style.cursor = 'default';
+  list.appendChild(sentinel);
+  listObserver.observe(sentinel);
+}
+
+function onSentinel(records) {
+  if (records.some((r) => r.isIntersecting)) loadMore();
 }
 
 function renderReaderEmpty() {
@@ -625,36 +661,133 @@ async function loadAll({ reader = true } = {}) {
   );
 }
 
-async function loadEntries({ reader = true } = {}) {
+/// 每批条数：与后端 list_entries 的默认值一致，也是「有没有下一页」的判据。
+const PAGE_SIZE = 200;
+
+/// 列表分页状态（keyset 复合游标）。
+/// cursor 记的是「已取到的最后一行」而不是「当前列表最后一行」：未读视图里读完一篇
+/// 会把它从列表里移除，若拿剩下的末行当游标，读空一整批之后就再也取不到后面的未读
+/// 条目——游标是结果流里的位置，不随某行被移出列表而后退。
+const paging = { cursor: null, exhausted: false, loading: false, error: false };
+
+/// 取一页并记下游标与「有没有下一页」。判据是「返回不足一批」：满批也可能是最后一页，
+/// 多请求一次空页的代价可以接受，换来的是不必猜。
+async function loadPage(cursor) {
   const kind = state.view.kind;
-  let rows;
+  const rows = await invoke('list_entries', {
+    feedId: kind === 'feed' ? state.feedId : null,
+    unreadOnly: kind === 'unread',
+    starredOnly: kind === 'starred',
+    readLaterOnly: kind === 'later',
+    limit: PAGE_SIZE,
+    // 游标 = 上一页末行的 (sortkey, id)；sortkey 由后端直出，前端不按
+    // published_at/fetched_at 自己算（前端也拿不到 fetched_at）
+    cursorSortkey: cursor ? cursor.sortkey : null,
+    cursorId: cursor ? cursor.id : null,
+  });
+  const last = rows[rows.length - 1];
+  if (last) paging.cursor = { sortkey: last.sortkey, id: last.id };
+  paging.exhausted = rows.length < PAGE_SIZE;
+  return rows;
+}
+
+/// 选中项不在新列表里时回退到首行（视图切换/首屏加载）
+function selectFallback() {
+  if (!state.entries.some((e) => e.id === state.selectedId)) {
+    state.selectedId = state.entries.length ? state.entries[0].id : null;
+  }
+}
+
+/// 列表加载完后重渲染右侧正文（视图切换只加载，不标记已读）
+async function renderSelectedEntry() {
+  if (!state.selectedId) {
+    renderReaderEmpty();
+    return;
+  }
+  const entry = await invoke('get_entry', { id: state.selectedId });
+  if (entry) renderReader(entry);
+  focusRow(state.selectedId, { follow: false });
+}
+
+/// 读数据并渲染列表。
+/// - `reset: true`（默认）重建列表：换视图/换筛选/刷新走这条，分页状态一并重置；
+/// - `reset: false` 续页：只把新一页 append 到列表尾部，已有 DOM 一个都不重建，
+///   选中项与正文也都不动；
+/// - `reader: false` 静默模式（后台刷新用）：只重读列表，正文与滚动位置保持原位。
+async function loadEntries({ reader = true, reset = true } = {}) {
+  const kind = state.view.kind;
+
+  // 搜索本版仍是一次性 200（PRD R3）：不装哨兵、不参与续页
   if (kind === 'search') {
-    rows = state.query ? await invoke('search', { query: state.query, limit: 200 }) : [];
-  } else {
-    rows = await invoke('list_entries', {
-      feedId: kind === 'feed' ? state.feedId : null,
-      unreadOnly: kind === 'unread',
-      starredOnly: kind === 'starred',
-      readLaterOnly: kind === 'later',
-      limit: 200,
-    });
+    paging.cursor = null;
+    paging.exhausted = true;
+    paging.error = false;
+    state.entries = state.query ? await invoke('search', { query: state.query, limit: PAGE_SIZE }) : [];
+    selectFallback();
+    renderList();
+    if (reader) await renderSelectedEntry();
+    log(`view=${kind} count=${state.entries.length} exhausted=true`);
+    return;
   }
-  state.entries = rows;
-  if (!rows.some((e) => e.id === state.selectedId)) {
-    state.selectedId = rows.length ? rows[0].id : null;
+
+  if (!reset && paging.cursor) {
+    const rows = await loadPage(paging.cursor);
+    // 运行时自证：续页不该重放已加载的行（keyset 游标保证不重不漏）。dup 一旦非 0
+    // 就是游标语义坏了，日志里必须看得见，而不是等用户发现列表里有重复行。
+    const seen = new Set(state.entries.map((e) => e.id));
+    const dup = rows.filter((e) => seen.has(e.id));
+    const list = el('entries');
+    state.entries = state.entries.concat(rows);
+    for (const e of rows) list.appendChild(buildEntryRow(e));
+    el('list-count').textContent = t('list.count', { n: state.entries.length });
+    installSentinel();
+    log(
+      `append rows=${rows.length} total=${state.entries.length} dup=${dup.length} exhausted=${paging.exhausted}`
+    );
+    return;
   }
+
+  paging.cursor = null;
+  paging.exhausted = false;
+  paging.error = false;
+  state.entries = await loadPage(null);
+  selectFallback();
   renderList();
   // 静默模式到此为止：正文区一个 DOM 都不动
   if (!reader) return;
-  if (state.selectedId) {
-    // 视图切换只加载，不标记已读
-    const entry = await invoke('get_entry', { id: state.selectedId });
-    if (entry) renderReader(entry);
-    focusRow(state.selectedId, { follow: false });
-  } else {
-    renderReaderEmpty();
+  await renderSelectedEntry();
+  log(
+    `view=${kind}${state.feedId ? '#' + state.feedId : ''} count=${state.entries.length} exhausted=${paging.exhausted}`
+  );
+}
+
+/// 续页（哨兵触发）。防重入：同一时刻只允许一个请求在飞——滚动抖动会让哨兵连续触发，
+/// 用同一个游标并发请求会把同一批行 append 两遍（列表出现重复行）。
+async function loadMore() {
+  if (paging.loading || paging.exhausted || paging.error || !paging.cursor) return;
+  const kind = state.view.kind;
+  paging.loading = true;
+  if (sentinel) sentinel.textContent = t('list.loadingMore');
+  try {
+    await loadEntries({ reader: false, reset: false });
+  } catch (err) {
+    // 失败即停：留着哨兵会立刻重试（新节点必然收到初始通知），把后端和日志打满；
+    // 恢复走换视图/换筛选（reset 路径）或手动刷新。
+    paging.error = true;
+    installSentinel();
+    setStatus(t('status.loadMoreFailed', { error: err.message }), true);
+    log(`loadMore failed view=${kind}: ${err.message}`);
+  } finally {
+    paging.loading = false;
   }
-  log(`view=${kind}${state.feedId ? '#' + state.feedId : ''} count=${rows.length}`);
+}
+
+/// 未读视图里把已加载的行逐条读完时，游标之后可能还有未读：补下一页。不补的话用户
+/// 会停在「没有未读文章」而库里其实还剩几千条（PRD 验收 1：直至加载完全部匹配条目）。
+async function refillAfterRemoval() {
+  if (paging.exhausted || paging.error || !paging.cursor) return false;
+  await loadMore();
+  return state.entries.length > 0;
 }
 
 async function setView(view) {
@@ -691,14 +824,17 @@ async function openEntry(id, { markRead, follow = true } = {}) {
       state.entries = state.entries.filter((e) => e.id !== id);
       const next = state.entries[Math.min(idx, state.entries.length - 1)];
       state.selectedId = next ? next.id : null;
-      if (state.entries.length) {
-        removeListRow(id);
+      removeListRow(id);
+      if (next) {
         el('list-count').textContent = t('list.count', { n: state.entries.length });
+        focusRow(state.selectedId, { follow: true });
+      } else if (await refillAfterRemoval()) {
+        // 已加载的这批被读空、但游标之后还有未读：续一页接着读，别停在「暂无未读」
+        await openEntry(state.entries[0].id, { markRead: false });
       } else {
-        renderList(); // 列表清空：走原路径渲染「暂无未读」占位
+        renderList(); // 读空且没有下一页：走原路径渲染「暂无未读」占位
+        renderReaderEmpty();
       }
-      focusRow(state.selectedId, { follow: true });
-      if (!next) renderReaderEmpty();
     } else {
       markRowRead(id);
     }
@@ -933,8 +1069,14 @@ async function toggleRead() {
     const next = state.entries[Math.min(idx, state.entries.length - 1)];
     state.selectedId = next ? next.id : null;
     renderList();
-    if (next) await openEntry(next.id, { markRead: false });
-    else renderReaderEmpty();
+    if (next) {
+      await openEntry(next.id, { markRead: false });
+    } else if (await refillAfterRemoval()) {
+      // 一批读空但游标之后还有未读：续一页接着读（同 openEntry 的删除路径）
+      await openEntry(state.entries[0].id, { markRead: false });
+    } else {
+      renderReaderEmpty();
+    }
   } else {
     const fresh = await invoke('get_entry', { id: row.id });
     if (fresh) renderReader(fresh);
