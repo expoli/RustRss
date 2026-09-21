@@ -248,6 +248,7 @@ function setStatus(text, isError = false) {
 }
 
 function renderSidebar() {
+  const __st = performance.now();
   const views = el('views');
   views.innerHTML = '';
   const counts = {
@@ -318,6 +319,7 @@ function renderSidebar() {
     info.textContent = `${state.db.entries} 篇 · ${state.db.dbPath}`;
     info.title = state.db.dbPath;
   }
+  window.__SIDEBAR_MS = +(performance.now() - __st).toFixed(1);
 }
 
 function escapeHtml(text) {
@@ -337,6 +339,7 @@ function viewTitle() {
 }
 
 function renderList() {
+  const __t0 = performance.now();
   el('list-title').textContent = viewTitle();
   el('list-count').textContent = state.entries.length ? t('list.count', { n: state.entries.length }) : '';
 
@@ -372,6 +375,7 @@ function renderList() {
     }
     list.appendChild(li);
   }
+  window.__LIST_MS = +(performance.now() - __t0).toFixed(1);
   focusRow(state.selectedId, { follow: true });
 }
 
@@ -407,6 +411,8 @@ function renderReaderEmpty() {
 }
 
 function renderReader(entry) {
+  const __t = [{ tag: 'start', ms: performance.now() }];
+  const mark = (tag) => __t.push({ tag, ms: performance.now() });
   const reader = el('reader');
   const body = entry.content_html
     ? sanitize(entry.content_html, entry.url)
@@ -414,6 +420,7 @@ function renderReader(entry) {
         .split(/\n{1,}/)
         .map((p) => `<p>${escapeHtml(p)}</p>`)
         .join('');
+  mark('sanitize');
 
   reader.innerHTML = `
     <div class="reader-head">
@@ -445,9 +452,12 @@ function renderReader(entry) {
     </div>
     <div class="article">${body}</div>`);
 
+  mark('innerHTML-set');
   // 高亮必须在正文插入 DOM 之后跑（hljs 需要真实节点）；
   // 输入是 sanitize 产物，hljs 输出不回灌 sanitize 流程。
   highlightCode(reader);
+  mark('highlight');
+  window.__RENDER_TIMINGS = __t.concat([{ tag: 'total', ms: +(performance.now() - __t[0].ms).toFixed(1) }]);
 
   el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
@@ -561,24 +571,37 @@ async function openEntry(id, { markRead, follow = true } = {}) {
     if (row) row.read = true;
 
     if (state.view.kind === 'unread') {
-      // 未读视图里读过的文章会离开列表 → 这时才需要重建，并保持阅读位置
+      // 未读视图里读过的文章会离开列表 → 重建列表并保持高亮位置；
+      // 右侧保持用户刚点开的文章（不再额外渲染 next，避免大文章连续两次
+      // sanitize 造成可感卡顿）。
       const idx = state.entries.findIndex((e) => e.id === id);
       state.entries = state.entries.filter((e) => e.id !== id);
       const next = state.entries[Math.min(idx, state.entries.length - 1)];
       state.selectedId = next ? next.id : null;
       renderList();
-      if (next) {
-        const fresh = await invoke('get_entry', { id: next.id });
-        if (fresh) renderReader(fresh);
-      } else {
-        renderReaderEmpty();
-      }
+      if (!next) renderReaderEmpty();
     } else {
       markRowRead(id);
     }
-    await refreshCounts();
+    // 计数刷新节流：连续快速阅读时合并为一次全量刷新（600ms 去抖）
+    refreshCountsSoon();
   }
   log(`open id=${id} markRead=${markRead} read=${entry.read}`);
+}
+
+/// 计数刷新去抖：连续阅读时避免每次点击都全量拉取（db_info/list_feeds 聚合）。
+/// 600ms 内的多次标记合并为一次；需要立即一致的路径（视图切换/手动刷新）仍可直调 refreshCounts。
+let refreshCountsTimer = null;
+function refreshCountsSoon() {
+  if (refreshCountsTimer) return;
+  refreshCountsTimer = setTimeout(async () => {
+    refreshCountsTimer = null;
+    try {
+      await refreshCounts();
+    } catch (e) {
+      log(`refreshCounts failed: ${e.message}`);
+    }
+  }, 600);
 }
 
 async function refreshCounts() {

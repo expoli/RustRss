@@ -34,8 +34,17 @@ pub struct DbInfo {
     pub later: i64,
 }
 
+/// 重查询耗时打点：超过 50ms 打到 stderr（帮助定位界面卡顿）。
+fn log_slow(name: &str, started: std::time::Instant) {
+    let elapsed = started.elapsed();
+    if elapsed.as_millis() >= 50 {
+        eprintln!("[rustrss][slow] {name}: {}ms", elapsed.as_millis());
+    }
+}
+
 #[tauri::command]
-pub fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
+pub async fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
+    let t = std::time::Instant::now();
     state.with_store(|s| {
         Ok(DbInfo {
             db_path: state.db_path.display().to_string(),
@@ -49,12 +58,15 @@ pub fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
 }
 
 #[tauri::command]
-pub fn list_feeds(state: State<'_, AppState>) -> R<Vec<FeedRow>> {
-    state.with_store(|s| s.list_feeds().map_err(err))
+pub async fn list_feeds(state: State<'_, AppState>) -> R<Vec<FeedRow>> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.list_feeds().map_err(err));
+    log_slow("list_feeds", t);
+    r
 }
 
 #[tauri::command]
-pub fn list_entries(
+pub async fn list_entries(
     state: State<'_, AppState>,
     feed_id: Option<i64>,
     unread_only: Option<bool>,
@@ -69,12 +81,18 @@ pub fn list_entries(
         read_later_only: read_later_only.unwrap_or(false),
         limit: Some(limit.unwrap_or(200)),
     };
-    state.with_store(|s| s.list_entries(&query).map_err(err))
+    let t = std::time::Instant::now();
+    let rows = state.with_store(|s| s.list_entries(&query).map_err(err));
+    log_slow("list_entries", t);
+    rows
 }
 
 #[tauri::command]
-pub fn get_entry(state: State<'_, AppState>, id: i64) -> R<Option<EntryRow>> {
-    state.with_store(|s| s.get_entry(id).map_err(err))
+pub async fn get_entry(state: State<'_, AppState>, id: i64) -> R<Option<EntryRow>> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.get_entry(id).map_err(err));
+    log_slow("get_entry", t);
+    r
 }
 
 #[tauri::command]
@@ -394,8 +412,11 @@ pub fn assign_feed_folder(state: State<'_, AppState>, feed_id: i64, folder_id: O
 /// 侧栏分组折叠状态（哪些组被折叠），JSON 序列化后存 settings，跨会话保持。
 /// 列出文件夹（按 position 排序），UI 分组渲染的枚举入口。
 #[tauri::command]
-pub fn list_folders(state: State<'_, AppState>) -> R<Vec<rustrss_core::store::FolderRow>> {
-    state.with_store(|s| s.list_folders_ordered().map_err(err))
+pub async fn list_folders(state: State<'_, AppState>) -> R<Vec<rustrss_core::store::FolderRow>> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.list_folders_ordered().map_err(err));
+    log_slow("list_folders", t);
+    r
 }
 
 /// 读取侧栏折叠状态（未设置返回空表）。
