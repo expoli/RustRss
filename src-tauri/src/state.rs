@@ -5,6 +5,7 @@
 //! 见 `rustrss_core::fetch` 的三阶段拆分）。
 
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use rustrss_core::fetch::{Fetcher, DEFAULT_USER_AGENT};
@@ -16,6 +17,9 @@ pub struct AppState {
     pub db_path: PathBuf,
     /// 应用内托管的 MCP HTTP 服务（用 Arc 以便跨任务共享）
     pub mcp: std::sync::Arc<crate::mcp_server::McpRuntime>,
+    /// 托盘是否构建成功（决定「关闭到托盘」策略是否可用：
+    /// 托盘没了还把窗口藏起来，用户就永远找不回应用了）
+    tray_available: AtomicBool,
 }
 
 impl AppState {
@@ -36,7 +40,17 @@ impl AppState {
             fetcher,
             db_path,
             mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
+            tray_available: AtomicBool::new(false),
         })
+    }
+
+    /// 托盘构建成功后置位（setup 阶段调用一次）。
+    pub fn set_tray_available(&self, ok: bool) {
+        self.tray_available.store(ok, Ordering::Relaxed);
+    }
+
+    pub fn tray_available(&self) -> bool {
+        self.tray_available.load(Ordering::Relaxed)
     }
 
     /// 在锁内做一次数据库操作。闭包内**不得有 await**。

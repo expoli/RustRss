@@ -912,6 +912,7 @@ function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
   el('set-language').value = state.settings.locale || 'auto';
   el('set-theme').value = state.settings.theme || 'system';
+  el('set-close-action').value = state.settings.close_action || 'exit';
   const dbPath = state.db ? state.db.dbPath : '';
   el('settings-db-path').textContent = dbPath;
   el('settings-db-path').title = dbPath;
@@ -1039,6 +1040,20 @@ async function boot() {
     } catch (err) {
       setStatus(t('status.settingFailed', { error: err.message }), true);
     }
+  });
+  el('set-close-action').addEventListener('change', async (e) => {
+    try {
+      state.settings = await invoke('set_ui_close_action', { action: e.target.value });
+      log(`closeAction=${state.settings.close_action}`);
+    } catch (err) {
+      setStatus(t('status.settingFailed', { error: err.message }), true);
+    }
+  });
+  // 自绘标题栏三键（窗口无系统装饰）
+  el('btn-win-min').onclick = () => invoke('window_minimize').catch(() => {});
+  el('btn-win-max').onclick = () => invoke('window_toggle_maximize').catch(() => {});
+  el('btn-win-close').onclick = () => invoke('window_close').catch((e) => {
+    setStatus(t('status.settingFailed', { error: e.message }), true);
   });
   el('settings-overlay').addEventListener('click', (e) => {
     // 点击遮罩区域关闭（点对话框内部不关）

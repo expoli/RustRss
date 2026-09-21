@@ -98,12 +98,16 @@ const DEFAULT_LOCALE: &str = "auto";
 /// 主题：`system`（跟随系统）/ `light` / `dark`
 const KEY_THEME: &str = "ui.theme";
 const DEFAULT_THEME: &str = "system";
+/// 关闭按钮行为：`exit`（退出程序）/ `tray`（最小化到托盘）
+pub(crate) const KEY_CLOSE_ACTION: &str = "ui.close_action";
+const DEFAULT_CLOSE_ACTION: &str = "exit";
 
 #[derive(Serialize)]
 pub struct UiSettings {
     pub mark_read_on_navigate: bool,
     pub locale: String,
     pub theme: String,
+    pub close_action: String,
 }
 
 fn ui_settings(state: &AppState) -> R<UiSettings> {
@@ -118,6 +122,9 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
             theme: crate::ai::non_empty_setting(s, KEY_THEME)
                 .map(|v| normalize_theme(&v).to_string())
                 .unwrap_or_else(|| DEFAULT_THEME.to_string()),
+            close_action: crate::ai::non_empty_setting(s, KEY_CLOSE_ACTION)
+                .map(|v| normalize_close_action(&v).to_string())
+                .unwrap_or_else(|| DEFAULT_CLOSE_ACTION.to_string()),
         })
     })
 }
@@ -170,6 +177,59 @@ pub fn set_ui_theme(state: State<'_, AppState>, theme: String) -> R<UiSettings> 
     ui_settings(&state)
 }
 
+/// 关闭按钮行为白名单：`exit`（退出程序）/ `tray`（最小化到托盘）。
+/// 托盘不可用时即使选了 `tray` 也强制走退出，避免窗口被藏起后找不回。
+pub(crate) fn normalize_close_action(value: &str) -> &'static str {
+    if value.trim() == "tray" { "tray" } else { "exit" }
+}
+
+/// 应用退出（绕过关闭行为拦截，用于托盘菜单「退出」与三键的退出分支）。
+#[tauri::command]
+pub fn exit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
+/// 最小化 / 最大化切换 / 关闭（自绘标题栏三键）。
+#[tauri::command]
+pub fn window_minimize(app: tauri::AppHandle) -> R<()> {
+    use tauri::Manager;
+    if let Some(win) = app.get_webview_window("main") {
+        win.minimize().map_err(err)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn window_toggle_maximize(app: tauri::AppHandle) -> R<()> {
+    use tauri::Manager;
+    if let Some(win) = app.get_webview_window("main") {
+        if win.is_maximized().map_err(err)? {
+            win.unmaximize().map_err(err)?;
+        } else {
+            win.maximize().map_err(err)?;
+        }
+    }
+    Ok(())
+}
+
+/// 关闭按钮：按设置走退出或隐藏到托盘。**每次都实时读库**，设置改完立即生效。
+#[tauri::command]
+pub fn window_close(app: tauri::AppHandle, state: State<'_, AppState>) -> R<()> {
+    use tauri::Manager;
+    let close_to_tray = state
+        .with_store(|s| Ok(normalize_close_action(&crate::ai::non_empty_setting(s, KEY_CLOSE_ACTION).unwrap_or_default()) == "tray"))
+        .unwrap_or(false)
+        && state.tray_available();
+    if close_to_tray {
+        if let Some(win) = app.get_webview_window("main") {
+            win.hide().map_err(err)?;
+        }
+    } else {
+        app.exit(0);
+    }
+    Ok(())
+}
+
 /// 显示主窗口：窗口以 `visible: false` 创建，前端完成主题/数据初始化后调用，
 /// 保证首帧即正确主题（防主题闪变 FOUC）。兜底定时器见 main.rs 的 setup。
 #[tauri::command]
@@ -179,6 +239,14 @@ pub fn show_main_window(app: tauri::AppHandle) -> R<()> {
         win.show().map_err(err)?;
     }
     Ok(())
+}
+
+/// 关闭行为设置（同 window_close 的实时读库语义，写库后下次关闭即生效）。
+#[tauri::command]
+pub fn set_ui_close_action(state: State<'_, AppState>, action: String) -> R<UiSettings> {
+    state
+        .with_store(|s| s.set_setting(KEY_CLOSE_ACTION, normalize_close_action(&action)).map_err(err))?;
+    ui_settings(&state)
 }
 
 fn scope_of(feed_id: Option<i64>) -> MarkScope {

@@ -97,6 +97,28 @@ body {
   flex: 0 0 auto;
 }
 
+/* 自绘标题栏控制键（窗口无系统装饰）：悬停高亮，关闭键悬停红色 */
+.win-controls {
+  display: flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+.win-controls button {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 12px;
+  line-height: 1;
+  cursor: default;
+}
+.win-controls button:hover { background: var(--bg-hover); color: var(--fg); }
+.win-controls button:active { background: var(--bg-active); }
+#btn-win-close:hover { background: var(--danger); color: #fff; }
+
 .brand { font-weight: 600; letter-spacing: .3px; }
 
 .grow { flex: 1; }

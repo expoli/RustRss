@@ -98,8 +98,15 @@ fn main() {
         .setup(|app| {
             // 托盘不可用是预期内情况（Wayland 无 StatusNotifierItem / 缺
             // libappindicator 等）：显式降级，日志说明，主流程照常。
-            if let Err(e) = setup_tray(app) {
-                eprintln!("[rustrss] 托盘不可用，已降级为无托盘模式：{e}");
+            // 托盘是否可用决定「关闭到托盘」策略是否允许（见 commands::window_close）。
+            match setup_tray(app) {
+                Ok(()) => {
+                    use tauri::Manager;
+                    app.state::<crate::state::AppState>().set_tray_available(true);
+                }
+                Err(e) => {
+                    eprintln!("[rustrss] 托盘不可用，已降级为无托盘模式：{e}");
+                }
             }
             // 兜底：窗口以隐藏方式创建，正常由前端在主题/数据就绪后调
             // show_main_window 显示；若前端 5s 仍未就绪（脚本异常等），
@@ -134,7 +141,12 @@ fn main() {
             commands::set_mark_read_on_navigate,
             commands::set_ui_locale,
             commands::set_ui_theme,
+            commands::set_ui_close_action,
             commands::show_main_window,
+            commands::exit_app,
+            commands::window_minimize,
+            commands::window_toggle_maximize,
+            commands::window_close,
             commands::get_ai_settings,
             commands::save_ai_settings,
             commands::test_ai_connection,
@@ -158,6 +170,24 @@ fn main() {
             clip_write,
             clip_read,
         ])
+        .on_window_event(|window, event| {
+            // 拦截系统层关闭（如 Alt+F4）：按设置退出或隐藏到托盘。
+            // 与 commands::window_close（三键）同一套策略，托盘不可用时强制退出。
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                use tauri::Manager;
+                let state = window.app_handle().state::<crate::state::AppState>();
+                let close_to_tray = state
+                    .with_store(|s| {
+                        Ok(commands::normalize_close_action(&crate::ai::non_empty_setting(s, commands::KEY_CLOSE_ACTION).unwrap_or_default()) == "tray")
+                    })
+                    .unwrap_or(false)
+                    && state.tray_available();
+                if close_to_tray {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("RustRss 启动失败");
 }

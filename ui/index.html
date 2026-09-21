@@ -37,14 +37,19 @@
 </head>
 
 <body>
-  <header class="toolbar">
-    <span class="brand" data-i18n="app.name">RustRss</span>
+  <header class="toolbar" data-tauri-drag-region>
+    <span class="brand" data-tauri-drag-region data-i18n="app.name">RustRss</span>
     <input id="search" type="search" data-i18n-placeholder="search.placeholder" autocomplete="off" />
     <div class="grow"></div>
     <button id="btn-refresh" data-i18n="toolbar.refresh" data-i18n-title="toolbar.refreshTitle"></button>
     <button id="btn-add" data-i18n="toolbar.addFeed" data-i18n-title="toolbar.addFeedTitle"></button>
     <button id="btn-settings" data-i18n="toolbar.settings" data-i18n-title="toolbar.settingsTitle"></button>
     <span id="status" class="status" role="status"></span>
+    <div class="win-controls">
+      <button id="btn-win-min" data-i18n-title="win.minimize" aria-label="minimize">─</button>
+      <button id="btn-win-max" data-i18n-title="win.maximize" aria-label="maximize">□</button>
+      <button id="btn-win-close" data-i18n-title="win.close" aria-label="close">✕</button>
+    </div>
   </header>
 
   <main>
@@ -136,6 +141,16 @@
                 <option value="system" data-i18n="settings.themeSystem"></option>
                 <option value="light" data-i18n="settings.themeLight"></option>
                 <option value="dark" data-i18n="settings.themeDark"></option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.closeAction"></b>
+                <small data-i18n="settings.closeActionHint"></small>
+              </div>
+              <select id="set-close-action">
+                <option value="exit" data-i18n="settings.closeExit"></option>
+                <option value="tray" data-i18n="settings.closeTray"></option>
               </select>
             </div>
           </div>
