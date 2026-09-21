@@ -38,6 +38,9 @@ const currentLocale = () => (I18N_API ? I18N_API.locale() : 'zh-CN');
 function highlightCode(root) {
   if (!window.hljs) return;
   for (const block of root.querySelectorAll('pre code')) {
+    // 超大代码块跳过高亮：hljs（尤其 auto-detect）对几十 KB 的块开销很大，
+    // 是打开大文章时 CPU 尖峰的组成部分；纯文本展示不影响阅读。
+    if ((block.textContent || '').length > 16000) continue;
     try {
       window.hljs.highlightElement(block);
     } catch {
@@ -376,6 +379,7 @@ function renderList() {
     list.appendChild(li);
   }
   window.__LIST_MS = +(performance.now() - __t0).toFixed(1);
+  log(`renderList rows=${state.entries.length} ${window.__LIST_MS}ms`);
   focusRow(state.selectedId, { follow: true });
 }
 
@@ -401,6 +405,14 @@ function markRowRead(id) {
   for (const li of el('entries').children) {
     if (li.dataset.id === String(id)) li.classList.add('read');
   }
+}
+
+/** 未读视图：只移除一行 DOM。打开文章时避免 200 行全量重建的 CPU 尖峰
+ *  （全量重建会把 CPU 打满，连并发后端命令都被拖慢一个量级：
+ *   实测 get_entry 本体 0.07ms，撞上重建风暴时被拖到 60-150ms）。 */
+function removeListRow(id) {
+  const li = el('entries').querySelector(`li[data-id="${id}"]`);
+  if (li) li.remove();
 }
 
 function renderReaderEmpty() {
@@ -458,6 +470,13 @@ function renderReader(entry) {
   highlightCode(reader);
   mark('highlight');
   window.__RENDER_TIMINGS = __t.concat([{ tag: 'total', ms: +(performance.now() - __t[0].ms).toFixed(1) }]);
+  // 打点外显：sanitize / DOM 写入 / 高亮三段耗时直接进终端日志（ui_log），
+  // 不用开 devtools 就能定位卡顿在哪一段。
+  {
+    const t0 = __t[0].ms;
+    const parts = __t.slice(1).map((x) => `${x.tag}=${Math.round(x.ms - t0)}`).join(' ');
+    log(`renderReader id=${entry.id} ${parts} total=${Math.round(performance.now() - t0)}ms`);
+  }
 
   el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
@@ -569,14 +588,21 @@ async function openEntry(id, { markRead, follow = true } = {}) {
     if (row) row.read = true;
 
     if (state.view.kind === 'unread') {
-      // 未读视图里读过的文章会离开列表 → 重建列表并保持高亮位置；
+      // 未读视图里读过的文章会离开列表 → 只删那一行 DOM 并移动高亮，
+      // 不做全量重建（200 行 renderList 是打开文章时的 CPU 尖峰来源）。
       // 右侧保持用户刚点开的文章（不再额外渲染 next，避免大文章连续两次
       // sanitize 造成可感卡顿）。
       const idx = state.entries.findIndex((e) => e.id === id);
       state.entries = state.entries.filter((e) => e.id !== id);
       const next = state.entries[Math.min(idx, state.entries.length - 1)];
       state.selectedId = next ? next.id : null;
-      renderList();
+      if (state.entries.length) {
+        removeListRow(id);
+        el('list-count').textContent = t('list.count', { n: state.entries.length });
+      } else {
+        renderList(); // 列表清空：走原路径渲染「暂无未读」占位
+      }
+      focusRow(state.selectedId, { follow: true });
       if (!next) renderReaderEmpty();
     } else {
       markRowRead(id);
