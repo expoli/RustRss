@@ -327,8 +327,9 @@ fn read_later_is_independent_and_queryable() {
 
 #[test]
 fn migration_preserves_existing_rows_on_upgrade() {
-    // 模拟旧库升级：文件库写入一条 + 标记，重开同一文件后 read_later 状态仍在
-    // （Store::open 会按 user_version 自动补跑迁移）。不引 tempfile 依赖，用临时目录唯一名。
+    // 真实走一次 v3→v4 升级：手工建一个 user_version=3 的库（entries 为 v3
+    // 形状，无 read_later 列）并预置数据，Store::open 应只跑第 4 条迁移
+    // （ALTER 加列 + 部分索引），既有行的 read/starred 保留、read_later 可用。
     let db_path = std::env::temp_dir().join(format!(
         "rustrss-migration-test-{}-{}.sqlite",
         std::process::id(),
@@ -337,20 +338,49 @@ fn migration_preserves_existing_rows_on_upgrade() {
             .unwrap()
             .as_nanos()
     ));
-    let id = {
-        let store = Store::open(&db_path).expect("首开应成功");
-        let feed_id = store
-            .add_feed("https://example.com/f.xml", Some("源"))
-            .unwrap();
-        store
-            .upsert_entries(feed_id, &[mk_entry("m1", "迁移保留", "内容")])
-            .unwrap();
-        let id = store.list_entries(&EntryQuery::default()).unwrap()[0].id;
-        store.set_read_later(&[id], true).unwrap();
-        id
-    };
-    let store = Store::open(&db_path).expect("二次打开应自动迁移");
-    let row = store.get_entry(id).unwrap().unwrap();
-    assert!(row.read_later, "重开库后稍后读标记应保留");
+    {
+        let conn = rusqlite::Connection::open(&db_path).expect("应能建旧库");
+        conn.execute_batch(
+            r#"
+            PRAGMA user_version = 3;
+            CREATE TABLE feeds (
+                id INTEGER PRIMARY KEY,
+                url TEXT NOT NULL UNIQUE,
+                title TEXT NOT NULL
+            );
+            CREATE TABLE entries (
+                id INTEGER PRIMARY KEY,
+                feed_id INTEGER NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
+                stable_id TEXT NOT NULL,
+                id_origin TEXT NOT NULL,
+                title TEXT NOT NULL,
+                url TEXT,
+                author TEXT,
+                published_at INTEGER,
+                updated_at INTEGER,
+                summary TEXT,
+                content_html TEXT,
+                content_text TEXT,
+                search_tokens TEXT NOT NULL DEFAULT '',
+                content_hash TEXT NOT NULL DEFAULT '',
+                read INTEGER NOT NULL DEFAULT 0,
+                starred INTEGER NOT NULL DEFAULT 0,
+                fetched_at INTEGER NOT NULL,
+                UNIQUE (feed_id, stable_id)
+            );
+            INSERT INTO feeds (id, url, title) VALUES (1, 'https://example.com/f.xml', '源');
+            INSERT INTO entries (id, feed_id, stable_id, id_origin, title, search_tokens, content_hash, read, starred, fetched_at)
+            VALUES (1, 1, 'm1', 'SourceData', '迁移保留', 'm1', 'h', 1, 0, 0);
+            "#,
+        )
+        .expect("建 v3 形状库应成功");
+    }
+    let store = Store::open(&db_path).expect("打开应自动跑 v4 迁移");
+    let row = store.get_entry(1).unwrap().unwrap();
+    assert!(row.read, "既有 read=1 应保留");
+    assert!(!row.starred);
+    store.set_read_later(&[1], true).unwrap();
+    let row = store.get_entry(1).unwrap().unwrap();
+    assert!(row.read_later, "迁移后新列应可写读");
     let _ = std::fs::remove_file(&db_path);
 }
