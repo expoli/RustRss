@@ -102,7 +102,13 @@ pub async fn list_entries(
 #[tauri::command]
 pub async fn get_entry(state: State<'_, AppState>, id: i64) -> R<Option<EntryRow>> {
     let t = std::time::Instant::now();
-    let r = state.with_store(|s| s.get_entry(id).map_err(err));
+    let mut r = state.with_store(|s| s.get_entry(id).map_err(err));
+    // 阅读页只渲染 content_html；有 HTML 时不再传纯文本副本（大文章可省近一半 IPC 体积）
+    if let Some(entry) = &mut r {
+        if entry.content_html.is_some() {
+            entry.content_text = None;
+        }
+    }
     log_slow("get_entry", t);
     r
 }
@@ -572,7 +578,15 @@ pub async fn refresh_all(
     })?;
     let fetcher = state.fetcher.clone();
     let results = rustrss_core::fetch_jobs(&fetcher, jobs, concurrency.unwrap_or(6)).await;
-    state.with_store(|s| rustrss_core::apply_results(s, results).map_err(err))
+    let report = state.with_store(|s| {
+        let r = rustrss_core::apply_results(s, results).map_err(err);
+        // 大批量写入后收尾 WAL（同一连接、此刻无读者竞争，TRUNCATE 立即归零）
+        if let Err(e) = s.checkpoint_wal() {
+            eprintln!("[rustrss] WAL checkpoint 失败（不影响数据）: {e}");
+        }
+        r
+    });
+    report
 }
 
 /// 刷新单个订阅源（失败源上的「重试」用它）

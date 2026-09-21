@@ -268,6 +268,14 @@ impl Store {
         self.set_setting(FOLDERS_COLLAPSED_KEY, &json)
     }
 
+    /// WAL 收尾：把 WAL 合并回主库并截断（大批量写入后调用，防 WAL 无限增长拖慢读取）。
+    pub fn checkpoint_wal(&self) -> Result<()> {
+        self.conn
+            .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))
+            .map_err(Into::into)?;
+        Ok(())
+    }
+
     /// RSSHub 迁移候选：rsshub:// scheme 与官方域两种存量。
     pub fn list_rsshub_migration_candidates(&self) -> Result<Vec<(i64, String)>> {
         let mut stmt = self.conn.prepare(
