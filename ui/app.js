@@ -575,6 +575,7 @@ function renderReader(entry) {
       <button id="act-star">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</button>
       <button id="act-later" class="${entry.read_later ? 'later-active' : ''}">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</button>
       ${entry.url ? `<button id="act-open">${t('reader.openInBrowser')}</button><button id="act-copy">${t('reader.copyLink')}</button>` : ''}
+      ${entry.needs_fulltext ? `<button id="act-fulltext" title="${t('reader.fetchFulltextTitle')}">${t('reader.fetchFulltext')}</button>` : ''}
       <button id="act-summarize" title="${t('reader.summarizeTitle')}">${t('reader.summarize')}</button>
       <button id="act-translate" title="${t('reader.translateTitle')}">${t('reader.translate')}</button>
     </div>
@@ -618,6 +619,8 @@ function renderReader(entry) {
         .then(() => setStatus(t('reader.linkCopied')))
         .catch((e) => setStatus(t('reader.copyFailed', { error: e.message }), true));
   }
+  // 只有摘要型条目的行会带这个按钮（needs_fulltext 由 Rust 侧判定，列表行恒为 false）
+  if (entry.needs_fulltext) el('act-fulltext').onclick = () => fetchFulltext(entry.id);
 
   // 正文里的链接交给系统浏览器，避免在应用内导航走丢
   reader.querySelectorAll('a[href]').forEach((a) => {
@@ -627,6 +630,46 @@ function renderReader(entry) {
     };
   });
   reader.scrollTop = 0;
+}
+
+/// 「获取全文」在飞标记：同一时刻只允许一个请求（按钮 disabled 只活到下一次重渲染，
+/// 而重渲染随时可能发生——视图切换、后台刷新完成、AI 面板操作；靠 DOM 记状态会漏防）。
+let fulltextInFlight = null;
+
+/**
+ * 抓原文页 → 提取正文 → 写回库，成功后用返回的 EntryRow 重渲染阅读区。
+ *
+ * 三步都与后端 `fetch_fulltext` 的分工一致：幂等、体积闸门、提取都在 Rust 侧，
+ * 前端只负责「显示入口 → 转 loading → 用回读的行替换正文 / 报错」。
+ * 失败时**一个正文 DOM 都不动**：界面继续显示原摘要，按钮恢复可点，用户可重试。
+ */
+async function fetchFulltext(entryId) {
+  if (fulltextInFlight !== null) return;
+  fulltextInFlight = entryId;
+  const btn = el('act-fulltext');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t('reader.fetching');
+  }
+  setStatus(t('reader.fetching'));
+  try {
+    const row = await invoke('fetch_fulltext', { entryId });
+    // 在飞期间用户可能翻到了别的文章：那就只更新数据，不抢当前阅读焦点
+    if (state.selectedId === entryId) renderReader(row);
+    setStatus(t('status.fulltextDone'));
+    log(
+      `fetch_fulltext ok entry=${entryId} html=${row.content_html ? row.content_html.length : 0}chars stillNeeds=${row.needs_fulltext}`
+    );
+  } catch (e) {
+    setStatus(t('status.fulltextFailed', { error: e.message }), true);
+    log(`fetch_fulltext failed entry=${entryId}: ${e.message}`);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = t('reader.fetchFulltext');
+    }
+  } finally {
+    fulltextInFlight = null;
+  }
 }
 
 // ---------------------------------------------------------------- 数据流

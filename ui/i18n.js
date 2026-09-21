@@ -83,6 +83,9 @@ const DICTS = {
     'reader.translateTitle': '翻译成设置里的目标语言',
     'reader.linkCopied': '链接已复制',
     'reader.copyFailed': '复制失败：{error}',
+    'reader.fetchFulltext': '获取全文',
+    'reader.fetching': '正在获取全文…',
+    'reader.fetchFulltextTitle': '抓取原文页并提取正文（失败时保留原摘要）',
 
     'ai.panel.summary': 'AI 摘要',
     'ai.panel.translate': 'AI 翻译',
@@ -231,6 +234,8 @@ const DICTS = {
     'status.refreshing': '正在刷新…',
     'status.refreshDone': '刷新完成：成功 {fetched}｜未修改 {notModified}｜新增 {inserted}｜失败 {failures}',
     'status.refreshFailed': '刷新失败：{error}',
+    'status.fulltextDone': '已获取全文，正文已更新',
+    'status.fulltextFailed': '获取全文失败：{error}',
     'status.loadMoreFailed': '加载更多失败：{error}',
     'status.refreshingOne': '正在刷新该源…',
     'status.refreshOneDone': '该源刷新完成：新增 {inserted}｜未修改 {notModified}｜失败 {failures}',
@@ -331,6 +336,10 @@ const DICTS = {
     'reader.translateTitle': 'Translate into the target language from settings',
     'reader.linkCopied': 'Link copied',
     'reader.copyFailed': 'Copy failed: {error}',
+    'reader.fetchFulltext': 'Get full text',
+    'reader.fetching': 'Fetching full text…',
+    'reader.fetchFulltextTitle':
+      'Fetch the original page and extract the article body (keeps the summary if it fails)',
 
     'ai.panel.summary': 'AI summary',
     'ai.panel.translate': 'AI translation',
@@ -482,6 +491,8 @@ const DICTS = {
     'status.refreshDone':
       'Refreshed: {fetched} fetched | {notModified} not modified | {inserted} new | {failures} failed',
     'status.refreshFailed': 'Refresh failed: {error}',
+    'status.fulltextDone': 'Full text fetched — the article body has been updated',
+    'status.fulltextFailed': 'Could not fetch the full text: {error}',
     'status.loadMoreFailed': 'Could not load more: {error}',
     'status.refreshingOne': 'Refreshing this feed…',
     'status.refreshOneDone':
