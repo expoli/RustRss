@@ -634,7 +634,7 @@ function openFeedMenu(ev, feed) {
   for (const folder of state.folders) {
     if (folder.id === feed.folder_id) continue;
     items.push({
-      label: `${t('menu.moveTo')}：${folder.name}`,
+      label: t('menu.moveToWithName', { name: folder.name }),
       action: () => reassignFeed(feed.id, folder.id),
     });
   }
@@ -1337,9 +1337,21 @@ async function boot() {
       }
       const okToGo = await confirmBox(t('settings.rsshub.migrateConfirm', { n: String(hit) }));
       if (!okToGo) return;
-      const migrated = await invoke('migrate_rsshub_feeds');
-      el('rsshub-status').textContent = t('settings.rsshub.migrateDone', { n: String(migrated) });
-      log(`rsshub migration: ${migrated} feeds rewritten`);
+      const out = await invoke('migrate_rsshub_feeds');
+      if (out.errors && out.errors.length) {
+        el('rsshub-status').textContent = t('settings.rsshub.migrateErrors', {
+          n: String(out.migrated),
+          error: out.errors[0],
+        });
+      } else if (out.skipped) {
+        el('rsshub-status').textContent = t('settings.rsshub.migrateDoneWithSkipped', {
+          m: String(out.migrated),
+          s: String(out.skipped),
+        });
+      } else {
+        el('rsshub-status').textContent = t('settings.rsshub.migrateDone', { n: String(out.migrated) });
+      }
+      log(`rsshub migration: migrated=${out.migrated} skipped=${out.skipped} errors=${out.errors.length}`);
       await refreshCounts();
     } catch (err) {
       el('rsshub-status').textContent = err.message;
@@ -1501,6 +1513,10 @@ async function boot() {
     // 设置面板开着时，导航类快捷键同样让位（否则 j/k 会在面板背后换文章）
     if (!el('settings-overlay').classList.contains('hidden')) return;
 
+    if (e.key === 'Escape' && el('ctx-menu')) {
+      closeContextMenu();
+      return;
+    }
     switch (e.key) {
       case 'j': case 'ArrowDown': e.preventDefault(); move(1); break;
       case 'k': case 'ArrowUp': e.preventDefault(); move(-1); break;

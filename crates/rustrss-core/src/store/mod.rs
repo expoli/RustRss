@@ -35,6 +35,8 @@ pub enum StoreError {
 
 pub type Result<T, E = StoreError> = std::result::Result<T, E>;
 
+pub(crate) const FOLDERS_COLLAPSED_KEY: &str = "ui.folders_collapsed";
+
 /// 订阅源行（带未读数）
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct FeedRow {
@@ -249,6 +251,21 @@ impl Store {
             params![position, folder_id],
         )?;
         Ok(())
+    }
+
+    /// 侧栏折叠状态（JSON 数组存 settings），跨会话保持。
+    pub fn collapsed_folders(&self) -> Vec<i64> {
+        self.setting(FOLDERS_COLLAPSED_KEY)
+            .ok()
+            .flatten()
+            .and_then(|v| serde_json::from_str::<Vec<i64>>(&v).ok())
+            .unwrap_or_default()
+    }
+
+    pub fn set_collapsed_folders(&self, ids: &[i64]) -> Result<()> {
+        let json =
+            serde_json::to_string(ids).map_err(|e| StoreError::Invalid(e.to_string()))?;
+        self.set_setting(FOLDERS_COLLAPSED_KEY, &json)
     }
 
     /// RSSHub 迁移候选：rsshub:// scheme 与官方域两种存量。

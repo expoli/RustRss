@@ -18,7 +18,6 @@ pub const K_TRANSLATE_TARGET: &str = "ai.translate_target";
 pub const K_CONFIRM_BEFORE_SEND: &str = "ai.confirm_before_send";
 
 pub const DEFAULT_PROVIDER: &str = "ollama";
-pub const DEFAULT_MODEL: &str = "llama3.2";
 pub const DEFAULT_TRANSLATE_TARGET: &str = "中文";
 
 /// 每个 provider 一个凭据条目：切换 provider 不会互相覆盖 key

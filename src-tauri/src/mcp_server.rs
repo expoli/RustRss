@@ -52,9 +52,6 @@ impl McpRuntime {
             .and_then(|g| g.as_ref().map(|h| h.url()))
     }
 
-    pub fn addr(&self) -> Option<SocketAddr> {
-        self.handle.lock().ok().and_then(|g| g.as_ref().map(|h| h.addr))
-    }
 
     /// 停止服务（端口随之释放）
     pub fn stop(&self) {
