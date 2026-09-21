@@ -287,7 +287,14 @@ impl Store {
 
     /// WAL 收尾：把 WAL 合并回主库并截断（大批量写入后调用，防 WAL 无限增长拖慢读取）。
     pub fn checkpoint_wal(&self) -> Result<()> {
-        self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)", [])?;
+        // wal_checkpoint 返回一行 (busy, log, checkpointed)：execute() 会因返回结果报错
+        // （61c95c6 误改成 execute，方向反了，导致每次刷新都打「WAL checkpoint 失败」）。
+        // 必须用 query_row 消费掉这一行。
+        let _unused: (i64, i64, i64) = self.conn.query_row(
+            "PRAGMA wal_checkpoint(TRUNCATE)",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )?;
         Ok(())
     }
 

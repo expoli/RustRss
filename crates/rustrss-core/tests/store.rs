@@ -809,3 +809,32 @@ fn keyset_cursor_plans_use_sortkey_index() {
         );
     }
 }
+
+#[test]
+fn checkpoint_wal_succeeds_on_file_backed_db() {
+    // 回归：61c95c6 曾把 checkpoint_wal 改成 execute()，而 wal_checkpoint 返回一行，
+    // 每次调用都报「Execute returned results」（刷新后 stderr 刷错误日志）。
+    // 用真文件库（WAL 生效）验证返回 Ok 且 WAL 文件被截断。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-checkpoint-test-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let store = Store::open(&db_path).unwrap();
+        let feed_id = store.add_feed("https://example.com/feed.xml", Some("示例源")).unwrap();
+        store.upsert_entries(feed_id, &[mk_entry("a", "标题", "正文")]).unwrap();
+        store.checkpoint_wal().unwrap();
+    }
+    // checkpoint(TRUNCATE) 后 WAL 应为 0 字节
+    let wal = std::path::PathBuf::from(format!("{}-wal", db_path.display()));
+    if wal.exists() {
+        assert_eq!(std::fs::metadata(&wal).unwrap().len(), 0, "TRUNCATE 后 WAL 应为空");
+    }
+    let _ = std::fs::remove_file(&db_path);
+    let _ = std::fs::remove_file(&wal);
+    let _ = std::fs::remove_file(format!("{}-shm", db_path.display()));
+}
