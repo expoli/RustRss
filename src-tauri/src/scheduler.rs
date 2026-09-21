@@ -86,12 +86,16 @@ fn on_start_enabled(app: &AppHandle) -> bool {
     }
 }
 
-/// 一次后台刷新：抢单 flight → emit start → 共用刷新管线 → emit done。
+/// 一次后台刷新：抢单 flight → 采样 → emit start → 共用刷新管线 → 通知/角标 → emit done。
 async fn background_refresh(app: &AppHandle) {
     let state = app.state::<AppState>();
     let Ok(_flight) = state.try_begin_refresh() else {
         return; // 已有刷新在跑（手动或上一轮）：本轮跳过，不发事件
     };
+    // 采样点必须在抢到单 flight **之后**：从这里到收工之间不会有第二条刷新
+    // （手动/自动共用这一个标记）并发改动未读数，前后的差值才只反映本轮抓到的
+    // 新文章。
+    let before_unread = unread_total(&state);
     let _ = app.emit(EVENT_REFRESH_START, ());
     match commands::refresh_core(&state, None, CONCURRENCY).await {
         Ok(report) => eprintln!(
@@ -105,6 +109,34 @@ async fn background_refresh(app: &AppHandle) {
         Err(e) => eprintln!("[rustrss] 自动刷新失败: {e}"),
     }
     let _ = app.emit(EVENT_REFRESH_DONE, ());
+    // 通知与角标只在后台路径（手动刷新时用户就在界面前，不打扰也不改角标）。
+    // 角标与刷新成败无关：库里未读是多少，角标就显示多少。
+    let after_unread = unread_total(&state);
+    if let Some(after) = after_unread {
+        if let Some(before) = before_unread {
+            crate::notify::maybe_notify(app, before, after, notify_enabled(&state));
+        }
+        crate::tray::update_badge(app, after);
+    }
+}
+
+/// 未读总数；读不到（锁被污染等）返回 `None`：宁可漏一轮通知，也不要让
+/// 统计把刷新路径搞崩。
+fn unread_total(state: &AppState) -> Option<i64> {
+    state
+        .with_store(|s| s.unread_total().map_err(|e| e.to_string()))
+        .ok()
+}
+
+/// 「新文章通知」开关；读不到按「关」处理（默认关，与设置页一致）。
+fn notify_enabled(state: &AppState) -> bool {
+    match commands::notify_new_articles_setting(state) {
+        Ok(enabled) => enabled,
+        Err(e) => {
+            eprintln!("[rustrss] 读取「新文章通知」设置失败，本轮不通知: {e}");
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -121,5 +153,20 @@ mod tests {
         );
         assert!(is_due(interval, interval), "整点即视为到点");
         assert!(is_due(interval, interval + TICK), "超时后才 tick 也要触发");
+    }
+
+    #[test]
+    fn notify_switch_defaults_off_and_follows_store() {
+        let state = AppState::for_test();
+        assert!(!notify_enabled(&state), "默认关（不打扰）");
+        assert_eq!(unread_total(&state), Some(0), "空库未读为 0");
+
+        state
+            .with_store(|s| {
+                s.set_bool_setting(commands::KEY_NOTIFY_NEW_ARTICLES, true)
+                    .map_err(|e| e.to_string())
+            })
+            .expect("写设置");
+        assert!(notify_enabled(&state), "开关打开后要读到 true");
     }
 }

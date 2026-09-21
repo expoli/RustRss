@@ -13,6 +13,9 @@ rustrss-mcp = { path = "../crates/rustrss-mcp" }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
+# 系统通知（桌面端底层是 notify-rust：Linux 走 org.freedesktop.Notifications，
+# 不额外依赖系统库）。锁 2.x：3.x 还在 alpha，且与 Tauri 2 不兼容。
+tauri-plugin-notification = "2.4"
 # 单实例锁（只在默认库下注册）。平台实现：Linux 是 D-Bus 名（`{identifier}.SingleInstance`）、
 # macOS 是 unix socket、Windows 是命名 mutex + WM_COPYDATA。
 tauri-plugin-single-instance = "2"
@@ -25,3 +28,7 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 
 [features]
 default = []
+
+[dev-dependencies]
+# 测试用 mock app（空 feature）：验「没有托盘时 update_badge 静默 no-op」不必起真窗口。
+tauri = { version = "2", features = ["test"] }

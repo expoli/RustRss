@@ -206,3 +206,62 @@ headless 跑法：`Xvfb :99`（1920x1200）+ `GDK_BACKEND=x11`（**测试进程�
 - [ ] 选错文件（文本文件 / 0 字节文件 / 别的应用的 sqlite / `user_version` 超前的库）：状态栏报错、**现库不变**、不产生 pending
 - [ ] 恢复后重启：库内容 = 备份内容；数据目录出现 `.bak-<时间戳>`（只留 1 份）；把 `.bak-*` 手工改回 `rustrss.sqlite` 能回到恢复前状态
 - [ ] Wayland 会话（KDE / GNOME 各一）下两个按钮与原生对话框行为与 X11 一致（本次是 X11/Xvfb）
+
+## 9. 新文章通知与托盘未读角标（功能⑨，2026-09-21-notifications）
+
+> 判定纯函数、角标图标绘制与「无托盘 no-op」由 `src-tauri` 单测覆盖
+> （`notify.rs` / `tray.rs` / `scheduler.rs`）。本节记录**后台刷新触发链路**的 headless 实测，
+> 托盘角标的**像素级外观**必须真实桌面会话人工核验（headless 下 appindicator 不向会话总线注册
+> StatusNotifierItem，D-Bus 里读不到 `IconPixmap`）。
+>
+> headless 跑法：`Xvfb :99`（1920x1200）+ `GDK_BACKEND=x11`（**测试进程的环境，不是应用代码设置**）+
+> `HOME` 隔离 + `RUSTSS_DB` 指向临时库 + 本地夹具 feed（`/tmp/rustrss-notify/fixture_server.py`：
+> `/feed.xml` 两个条目，每次请求写一行 `access.log`）；库内播种 1 个指向夹具的订阅与
+> `refresh.on_start=true` / `refresh.interval_minutes=off` / `notify.new_articles=1|0` / `ui.locale=en`；
+> 复现脚本 `/tmp/rustrss-notify/smoke.sh`（两轮：开关开 / 开关关）。
+
+### 9.1 已机械验证的部分（应用 stdout 日志 + 库回读自证）
+
+- **后台刷新触发通知（PRD 验收 1 的核心）**：开关开的一轮，日志顺序为
+  `[ui] loaded … unread=0` → `[rustrss] 自动刷新完成: fetched=1 not_modified=0 inserted=2` →
+  `[rustrss] 新文章通知: 2 篇（locale=en）` → `[ui] loaded … unread=2`；库内 `unread=2 / entries=2`。
+  即：后台（启动首刷）路径比对前后未读数 0→2 → 差值 2 → 弹一条**聚合**通知（不是每条一条）。
+- **开关关（默认值）→ 不通知**：另一轮库内 `notify.new_articles=0`，同样 `inserted=2`，日志里**没有**
+  任何「新文章通知」行——开关是唯一的门（缺 key 时默认关，等价于这轮）。
+- **采样点在单 flight 之内**：`before_unread` 在 `try_begin_refresh()` 拿到守卫**之后**采样
+  （`scheduler.rs::background_refresh`），手动/后台共用同一个标记，采样窗口内不会有第二条刷新并发改未读数。
+- **手动刷新路径不通知**：`maybe_notify` 只出现在 `scheduler.rs::background_refresh`
+  （`grep -rn "maybe_notify" src-tauri/src` 只在 `notify.rs` 定义 + `scheduler.rs` 调用一处），
+  `refresh_all` / `refresh_feeds` / `refresh_feed` 三个手动命令不经过它；手动路径同样不动角标
+  （角标在下一轮后台刷新自愈）。
+- **角标同步的触发点**：后台刷新后（`scheduler.rs`）与改变未读数的命令之后
+  （`set_read` / `mark_all_read` / `mark_all_unread` / `remove_feed` → `commands::sync_badge`）；
+  托盘构建成功后还会用库内当前未读初始化一次（`tray::setup_tray` 末尾）。
+- **角标绘制与降级（单测）**：`paint_badge` 在右上角画出角标色 `(229,72,77,255)`、其余像素不动，
+  尺寸不合法（宽高 0 / 字节数不符）返回 `None` 保持原图标；`badge_tooltip` 0 篇 = `RustRss`，
+  > 0 篇 = `RustRss · N 篇未读` / `RustRss · N unread`（**品牌名始终保留**）；
+  `update_badge_without_a_tray_is_a_silent_noop` 用 tauri mock app（无托盘）验证 no-op 不 panic。
+- **降级不刷屏（headless 实测）**：两轮运行的应用日志里 `托盘` / `角标` / `badge` 相关错误行数为 0、
+  `panic` 行数为 0；通知发不出去（会话无通知守护进程）时插件把底层失败吞在异步任务里，日志只有
+  `[rustrss] 新文章通知: N 篇（locale=…）` 一行。
+- **设置读写与 i18n**：`[ui] loaded … notifyNewArticles=true|false`（说明 `get_ui_settings` 回读正确、
+  库内 key `notify.new_articles` 生效）；启动自检 `i18n selftest ok (keys=246)`，
+  另有 node 侧等价脚本核对两份字典 key 集合一致（各 246）、`index.html` 124 处与 `app.js` 112 处
+  引用全部存在；`set_notify_new_articles` 的序列化字段（`notify_new_articles`）与前端读取一致。
+- `cargo test --workspace` 全绿（src-tauri 23 个单测，含本次新增 7 个）。
+- **已知无关噪音（非本次引入，未修）**：每轮后台刷新会有一行
+  `[rustrss] WAL checkpoint 失败（不影响数据）: 数据库错误: Execute returned results`——
+  HEAD 的 `Store::checkpoint_wal` 用 `conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")`，而该 PRAGMA
+  返回一行，rusqlite 的 `execute` 必然报 `ExecuteReturnedResults`（commit 61c95c6 引入）。
+  数据无风险（只是不截断 WAL），与本功能无关，已作为发现上报。
+
+### 9.2 仍需真实桌面会话人工核验
+
+- [ ] 设置 → 通用 →「自动刷新」块出现「新文章通知」开关，默认关；打开后重启仍为开（库内 `notify.new_articles=1`）
+- [ ] 打开开关、间隔设 15 分钟（或等启动首刷）到点有新增未读：弹出**一条**「2 篇新文章」聚合通知（不是每条一条）
+- [ ] 点击通知：主窗口被唤出并 focus（Windows/macOS 由系统激活应用；Linux 依 DE——桌面端插件不提供点击回调，仅展示也可接受，已作为平台差异记录）
+- [ ] 关掉开关后后台刷新不再弹通知；手动刷新（按钮 / `r`）在开关打开时也**不**弹通知
+- [ ] 托盘角标：未读 > 0 时托盘图标右上角出现红点、悬停 tooltip 为「RustRss · N 篇未读」；读完全部未读后红点消失、tooltip 回到 `RustRss`（数字角标是后续增强项，本次只做红点 + tooltip 数字）
+- [ ] 英文界面（设置 → 界面语言 = English）下：通知正文 `N new articles`、tooltip `RustRss · N unread`
+- [ ] Wayland（KDE / GNOME 各一）与无 StatusNotifierItem 的环境：托盘不可用时应用正常跑、无错误刷屏；有托盘时角标行为与 X11 一致
+- [ ] 无通知守护进程的会话（如仅有窗口管理器的 X11）：后台刷新弹出通知失败时应用无卡顿、无错误弹窗、后续刷新照常

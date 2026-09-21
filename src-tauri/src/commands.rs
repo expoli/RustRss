@@ -181,8 +181,15 @@ pub fn search(state: State<'_, AppState>, query: String, limit: Option<u32>) -> 
 }
 
 #[tauri::command]
-pub fn set_read(state: State<'_, AppState>, ids: Vec<i64>, read: bool) -> R<usize> {
-    state.with_store(|s| s.set_read(&ids, read).map_err(err))
+pub fn set_read(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    ids: Vec<i64>,
+    read: bool,
+) -> R<usize> {
+    let n = state.with_store(|s| s.set_read(&ids, read).map_err(err))?;
+    sync_badge(&app, &state);
+    Ok(n)
 }
 
 /// 稍后读标记：与已读/星标独立。
@@ -224,6 +231,9 @@ const DEFAULT_REFRESH_INTERVAL: &str = "30";
 /// 启动时自动刷新（默认开）
 const KEY_REFRESH_ON_START: &str = "refresh.on_start";
 const DEFAULT_REFRESH_ON_START: bool = true;
+/// 新文章系统通知（默认关）。只有后台刷新路径会触发（手动刷新时用户就在看）。
+pub(crate) const KEY_NOTIFY_NEW_ARTICLES: &str = "notify.new_articles";
+const DEFAULT_NOTIFY_NEW_ARTICLES: bool = false;
 
 #[derive(Serialize)]
 pub struct UiSettings {
@@ -235,6 +245,7 @@ pub struct UiSettings {
     /// 回显给界面的是归一化后的值（`off` 或 `15/30/60/120/360`），前端直接当 select 的值用
     pub refresh_interval_minutes: String,
     pub refresh_on_start: bool,
+    pub notify_new_articles: bool,
 }
 
 /// 间隔白名单归一化：`off` 或 `15/30/60/120/360`；其余（含拼错值、负数、空串）一律归默认 30。
@@ -288,6 +299,9 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
             // 布尔设置的非法值在 bool_setting 里已回退默认（与 mark_read_on_navigate 同口径）
             refresh_on_start: s
                 .bool_setting(KEY_REFRESH_ON_START, DEFAULT_REFRESH_ON_START)
+                .map_err(err)?,
+            notify_new_articles: s
+                .bool_setting(KEY_NOTIFY_NEW_ARTICLES, DEFAULT_NOTIFY_NEW_ARTICLES)
                 .map_err(err)?,
         })
     })
@@ -354,6 +368,16 @@ pub fn set_refresh_on_start(state: State<'_, AppState>, enabled: bool) -> R<UiSe
     ui_settings(&state)
 }
 
+/// 新文章系统通知开关（默认关）。调度器在每轮后台刷新后读这个值决定要不要弹。
+#[tauri::command]
+pub fn set_notify_new_articles(state: State<'_, AppState>, enabled: bool) -> R<UiSettings> {
+    state.with_store(|s| {
+        s.set_bool_setting(KEY_NOTIFY_NEW_ARTICLES, enabled)
+            .map_err(err)
+    })?;
+    ui_settings(&state)
+}
+
 /// 读自动刷新间隔（归一化后的档位字符串）。
 pub(crate) fn refresh_interval_setting(state: &AppState) -> R<String> {
     state.with_store(|s| Ok(refresh_interval_from_store(s)))
@@ -365,6 +389,32 @@ pub(crate) fn refresh_on_start_setting(state: &AppState) -> R<bool> {
         s.bool_setting(KEY_REFRESH_ON_START, DEFAULT_REFRESH_ON_START)
             .map_err(err)
     })
+}
+
+/// 读「新文章通知」开关（缺失/非法回退默认 false）。
+pub(crate) fn notify_new_articles_setting(state: &AppState) -> R<bool> {
+    state.with_store(|s| {
+        s.bool_setting(KEY_NOTIFY_NEW_ARTICLES, DEFAULT_NOTIFY_NEW_ARTICLES)
+            .map_err(err)
+    })
+}
+
+/// 未读总数。后台刷新的前后差值、已读操作后的角标同步都走这一条读取路径。
+pub(crate) fn unread_total(state: &AppState) -> R<i64> {
+    state.with_store(|s| s.unread_total().map_err(err))
+}
+
+/// 未读数变化后同步托盘角标。读库失败就跳过：角标是装饰，不该让命令本身失败。
+pub(crate) fn sync_badge(app: &tauri::AppHandle, state: &AppState) {
+    if let Ok(unread) = unread_total(state) {
+        crate::tray::update_badge(app, unread);
+    }
+}
+
+/// 界面语言设置的原值（`auto` / `zh-CN` / `en`）。Rust 侧自己发的文案（托盘菜单、
+/// 系统通知、角标 tooltip）按它选双语常量；界面文案的唯一出处仍是 `ui/i18n.js`。
+pub(crate) fn ui_locale_setting(state: &AppState) -> R<String> {
+    state.with_store(|s| Ok(crate::ai::non_empty_setting(s, KEY_LOCALE).unwrap_or_default()))
 }
 
 /// 语言白名单：仅 `zh-CN` / `en`，其余（含 `auto` 与拼错值）一律归 `auto`。
@@ -967,14 +1017,26 @@ mod tests {
 }
 
 #[tauri::command]
-pub fn mark_all_read(state: State<'_, AppState>, feed_id: Option<i64>) -> R<usize> {
-    state.with_store(|s| s.mark_all(scope_of(feed_id), true).map_err(err))
+pub fn mark_all_read(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    feed_id: Option<i64>,
+) -> R<usize> {
+    let n = state.with_store(|s| s.mark_all(scope_of(feed_id), true).map_err(err))?;
+    sync_badge(&app, &state);
+    Ok(n)
 }
 
 /// 全标已读的撤销（也用于误扫一遍之后的恢复）
 #[tauri::command]
-pub fn mark_all_unread(state: State<'_, AppState>, feed_id: Option<i64>) -> R<usize> {
-    state.with_store(|s| s.mark_all(scope_of(feed_id), false).map_err(err))
+pub fn mark_all_unread(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    feed_id: Option<i64>,
+) -> R<usize> {
+    let n = state.with_store(|s| s.mark_all(scope_of(feed_id), false).map_err(err))?;
+    sync_badge(&app, &state);
+    Ok(n)
 }
 
 #[tauri::command]
@@ -994,11 +1056,14 @@ pub async fn discover_feed(state: State<'_, AppState>, url: String) -> R<Discove
 }
 
 #[tauri::command]
-pub fn remove_feed(state: State<'_, AppState>, feed_id: i64) -> R<()> {
+pub fn remove_feed(app: tauri::AppHandle, state: State<'_, AppState>, feed_id: i64) -> R<()> {
     state.with_store(|s| {
         s.remove_feed(feed_id).map_err(err)?;
         Ok(())
-    })
+    })?;
+    // 删源会级联删条目，未读数可能骤降：立刻摆正角标，不等下一轮后台刷新
+    sync_badge(&app, &state);
+    Ok(())
 }
 
 /// 刷新核心（手动 refresh_all / refresh_feeds 与定时/启动刷新共用）：

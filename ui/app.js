@@ -700,7 +700,7 @@ async function loadAll({ reader = true } = {}) {
   renderSidebar();
   await loadEntries({ reader });
   log(
-    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}${reader ? '' : ' silent（正文未重渲染）'}`
+    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} notifyNewArticles=${settings.notify_new_articles} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}${reader ? '' : ' silent（正文未重渲染）'}`
   );
 }
 
@@ -1553,6 +1553,7 @@ function openSettings() {
   el('set-close-action').value = state.settings.close_action || 'exit';
   el('set-refresh-interval').value = state.settings.refresh_interval_minutes || '30';
   el('set-refresh-on-start').checked = !!state.settings.refresh_on_start;
+  el('set-notify-new-articles').checked = !!state.settings.notify_new_articles;
   el('set-rsshub-mirror').value = state.settings.rsshub_mirror || '';
   const dbPath = state.db ? state.db.dbPath : '';
   el('settings-db-path').textContent = dbPath;
@@ -1794,6 +1795,16 @@ async function boot() {
     } catch (err) {
       setStatus(t('status.settingFailed', { error: err.message }), true);
       log(`set_refresh_on_start failed: ${err.message}`);
+    }
+  });
+  el('set-notify-new-articles').addEventListener('change', async (e) => {
+    try {
+      state.settings = await invoke('set_notify_new_articles', { enabled: e.target.checked });
+      e.target.checked = state.settings.notify_new_articles;
+      log(`notifyNewArticles=${state.settings.notify_new_articles}`);
+    } catch (err) {
+      setStatus(t('status.settingFailed', { error: err.message }), true);
+      log(`set_notify_new_articles failed: ${err.message}`);
     }
   });
   el('act-mark-all-read').onclick = () => markAll(true);

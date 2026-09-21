@@ -185,6 +185,9 @@ const DICTS = {
     'settings.refreshMin360': '每 6 小时',
     'settings.refreshOnStart': '启动时刷新',
     'settings.refreshOnStartHint': '启动 10 秒后自动抓一次（等首屏数据落定）',
+    'settings.notifyNewArticles': '新文章通知',
+    'settings.notifyNewArticlesHint':
+      '后台刷新抓到新文章时弹一条系统通知（手动刷新不打扰）；未读数同时显示在托盘角标上',
     'win.minimize': '最小化',
     'win.maximize': '最大化 / 还原',
     'win.close': '关闭',
@@ -450,6 +453,9 @@ const DICTS = {
     'settings.refreshMin360': 'Every 6 hours',
     'settings.refreshOnStart': 'Refresh on startup',
     'settings.refreshOnStartHint': 'Fetches once 10 seconds after launch (after the first screen settles)',
+    'settings.notifyNewArticles': 'New article notifications',
+    'settings.notifyNewArticlesHint':
+      'Shows one system notification when a background refresh finds new articles (manual refresh stays quiet); the unread count also shows on the tray badge',
     'win.minimize': 'Minimize',
     'win.maximize': 'Maximize / restore',
     'win.close': 'Close',

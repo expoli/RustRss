@@ -7,8 +7,10 @@
 mod ai;
 mod commands;
 mod mcp_server;
+mod notify;
 mod scheduler;
 mod state;
+mod tray;
 
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -130,7 +132,7 @@ fn main() {
             // 托盘不可用是预期内情况（Wayland 无 StatusNotifierItem / 缺
             // libappindicator 等）：显式降级，日志说明，主流程照常。
             // 托盘是否可用决定「关闭到托盘」策略是否允许（见 commands::window_close）。
-            match setup_tray(app) {
+            match crate::tray::setup_tray(app) {
                 Ok(()) => {
                     use tauri::Manager;
                     app.state::<crate::state::AppState>().set_tray_available(true);
@@ -160,6 +162,8 @@ fn main() {
         })
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
+        // 系统通知（后台刷新抓到新文章时用；文案与开关见 notify.rs / commands.rs）
+        .plugin(tauri_plugin_notification::init())
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             commands::db_info,
@@ -178,6 +182,7 @@ fn main() {
             commands::set_mark_read_on_navigate,
             commands::set_refresh_interval,
             commands::set_refresh_on_start,
+            commands::set_notify_new_articles,
             commands::set_ui_locale,
             commands::set_ui_theme,
             commands::set_ui_close_action,
@@ -244,54 +249,4 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("RustRss 启动失败");
-}
-
-/// 构建系统托盘：图标 + 「显示/隐藏窗口」「退出」菜单。任一步失败都原样
-/// 返回错误，由调用方统一降级，不在托盘内部自行吞错。
-fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
-    use tauri::menu::{MenuBuilder, MenuItemBuilder};
-    use tauri::tray::TrayIconBuilder;
-    use tauri::Manager;
-
-    // 菜单文案跟随设置里的界面语言；`auto`/读不到时按 zh-CN 处理
-    //（精确跟随系统语言需引入 sys-locale 依赖，v1 不做）。
-    let locale = app
-        .try_state::<AppState>()
-        .map(|s| {
-            s.with_store(|st| {
-                Ok(crate::ai::non_empty_setting(st, commands::KEY_LOCALE)
-                    .unwrap_or_default())
-            })
-            .unwrap_or_default()
-        })
-        .unwrap_or_default();
-    let (toggle_label, quit_label) = if locale == "en" {
-        ("Show/Hide Window", "Quit")
-    } else {
-        ("显示/隐藏窗口", "退出")
-    };
-
-    let toggle = MenuItemBuilder::with_id("tray-toggle", toggle_label).build(app)?;
-    let quit = MenuItemBuilder::with_id("tray-quit", quit_label).build(app)?;
-    let menu = MenuBuilder::new(app).items(&[&toggle, &quit]).build()?;
-
-    let mut builder = TrayIconBuilder::with_id("main-tray")
-        .menu(&menu)
-        .tooltip("RustRss");
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone());
-    }
-    builder.build(app)?;
-
-    app.on_menu_event(|app, event| match event.id().as_ref() {
-        "tray-toggle" => {
-            if let Some(win) = app.get_webview_window("main") {
-                let visible = win.is_visible().unwrap_or(false);
-                let _ = if visible { win.hide() } else { win.show() };
-            }
-        }
-        "tray-quit" => app.exit(0),
-        _ => {}
-    });
-    Ok(())
 }
