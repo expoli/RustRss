@@ -1,6 +1,9 @@
 /* RustRss 三栏阅读界面：跟随系统深浅色，正文排版按阅读优先 */
 
 :root {
+  /* 告知浏览器原生控件（select/滚动条/输入框）用深色方案渲染——
+     WebKitGTK 的 select 闭合按钮由原生主题绘制，不吃下方变量 */
+  color-scheme: dark;
   --bg: #14161a;
   --bg-panel: #1a1d23;
   --bg-hover: #22262e;
@@ -25,6 +28,7 @@
   /* 跟随系统：用户没手动固定（html 无 data-theme）且系统是浅色。
      CSS 原生实时响应系统切换，无需 JS 监听。 */
   html:not([data-theme]) {
+    color-scheme: light;
     --bg: #f7f8fa;
     --bg-panel: #ffffff;
     --bg-hover: #eef1f5;
@@ -47,6 +51,7 @@
 
 /* 手动固定浅色：设置里选了「浅色」。两处浅色变量必须保持一致。 */
 html[data-theme="light"] {
+  color-scheme: light;
   --bg: #f7f8fa;
   --bg-panel: #ffffff;
   --bg-hover: #eef1f5;
