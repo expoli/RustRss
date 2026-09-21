@@ -49,6 +49,14 @@ pub struct FeedRow {
     pub last_fetched_at: Option<i64>,
 }
 
+/// 文件夹行（侧栏分组）
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct FolderRow {
+    pub id: i64,
+    pub name: String,
+    pub position: i64,
+}
+
 /// 条目行（列表与阅读页共用）
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct EntryRow {
@@ -172,6 +180,21 @@ impl Store {
             .conn
             .prepare("SELECT id, name FROM folders ORDER BY position, name")?;
         let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// 结构化版（含 position），供命令层直接序列化给 UI。
+    pub fn list_folders_ordered(&self) -> Result<Vec<FolderRow>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, name, position FROM folders ORDER BY position, name",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(FolderRow {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                position: r.get(2)?,
+            })
+        })?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 

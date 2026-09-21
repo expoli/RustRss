@@ -263,6 +263,18 @@ pub fn assign_feed_folder(state: State<'_, AppState>, feed_id: i64, folder_id: O
 }
 
 /// 侧栏分组折叠状态（哪些组被折叠），JSON 序列化后存 settings，跨会话保持。
+/// 列出文件夹（按 position 排序），UI 分组渲染的枚举入口。
+#[tauri::command]
+pub fn list_folders(state: State<'_, AppState>) -> R<Vec<rustrss_core::store::FolderRow>> {
+    state.with_store(|s| s.list_folders_ordered().map_err(err))
+}
+
+/// 读取侧栏折叠状态（未设置返回空表）。
+#[tauri::command]
+pub fn get_collapsed_folders(state: State<'_, AppState>) -> R<Vec<i64>> {
+    state.with_store(|s| Ok(collapsed_folders_setting(s)))
+}
+
 #[tauri::command]
 pub fn set_collapsed_folders(state: State<'_, AppState>, ids: Vec<i64>) -> R<()> {
     let json = serde_json::to_string(&ids).map_err(err)?;

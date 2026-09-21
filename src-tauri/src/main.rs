@@ -143,6 +143,8 @@ fn main() {
             commands::set_ui_locale,
             commands::set_ui_theme,
             commands::set_ui_close_action,
+            commands::list_folders,
+            commands::get_collapsed_folders,
             commands::add_folder,
             commands::rename_folder,
             commands::delete_folder,
