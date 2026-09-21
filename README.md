@@ -148,12 +148,13 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 正文安全渲染：白名单清洗 + 相对地址图片/链接解析（详见下）；代码块语法高亮（vendor highlight.js，`language-*` class 优先 + 自动检测，深浅双主题 token 配色；超过 16KB 的超大代码块跳过高亮以保证大文章的打开速度；桌面像素效果需人工核验）
 - [x] 摘要型条目一键获取全文：正文缺失或明显偏短、且未抓过又有原文地址的条目，在阅读器显示「获取全文」按钮；点击后转 loading（防重入）→ 抓原文页 → readability 提取正文 → 写回库并用返回的行重渲染；失败（非 HTML / 超时 / 超 2MB / 无正文）在状态栏报错，**原摘要原样保留**，可直接再点重试。写回会打上 `fulltext_fetched` 标记：同一篇第二次打开零网络，之后 feed 刷新也不会把已抓正文覆盖回摘要（core 侧见 `crates/rustrss-core/src/fulltext.rs` 与 `fetch_fulltext` command，前端见 `ui/app.js` 的 `fetchFulltext`；手动清单第 7 节）
 - [x] OPML 导入 / 导出（嵌套文件夹压平成 `父/子`；按 `xmlUrl` 去重；导入后自动只抓新增的那批源，`feeds_added=0` 的重复导入不抓）
+- [x] 一键备份 / 恢复：设置 → 数据里「备份数据库…」选目录 → rusqlite backup API **在线快照**（导出期间库可继续读写，不需要先 checkpoint），产物 `RustRss-backup-<时间戳>.sqlite`（UTC）是独立干净的库文件（普通 journal 模式，拷到另一台机器直接可用）；「从备份恢复…」选文件 → **只读**校验（非 SQLite 文件 / 空库 / `user_version` 超前一律拒绝，且此步不动现库）→ 覆盖确认 → 暂存 `pending-restore.sqlite`，**重启后在任何连接（Store / MCP）打开之前替换**（退出时替换不可行：MCP 第二条连接还活着、Windows 不能 rename 打开中的文件）。替换前先把现库另存为 `.bak-<时间戳>` 保底回滚（只留最近 1 份）；stale `-wal`/`-shm` **严格先于** `rename(pending→db)` 删除，且**无 pending 时绝不触碰边车**——正常启动时那是未 checkpoint 的已提交事务，删掉就是丢数据（core 侧 `crates/rustrss-core/src/store/backup.rs`，测试 `crates/rustrss-core/tests/backup.rs`；手动清单第 8 节）
 - [x] 自动刷新：定时刷新（默认 30 分钟，可关；调度器每分钟读一次设置，改完无需重启）+ 启动后 10 秒首刷（默认开，可关）。后台刷新只发 `refresh:start` / `refresh:done` 事件：状态栏提示「后台刷新中…」，完成后静默重读侧栏与列表（**不重渲染正文**，正在读的长文与滚动位置保持原位）；手动刷新仍是同步等待、不发事件，两条路径共享单 flight 不会叠加（见验证清单第 5 节）
 - [x] 侧栏文件夹分组：可折叠组头 + 组内未读合计；右键新建 / 重命名 / 删除 / 移动订阅到文件夹（删除组不删订阅；折叠状态跨会话保持；拖拽归组待后续）
 - [x] 系统托盘：显示/隐藏窗口 + 退出（菜单文案跟随界面语言设置，`auto` 时固定中文；托盘文案在 Rust 侧维护、不经 `ui/i18n.js` 的 key-set 自测——这是已知例外；托盘不可用时自动降级为无托盘并日志说明，不崩溃。注意：托盘在真实桌面会话下的行为需人工验证，headless 环境仅验证了代码路径与降级逻辑）
 - [x] 单实例锁：用**默认库**时第二次启动不会开第二个进程，而是把已有实例的主窗口 `show` + `set_focus` 唤出（此前藏在托盘里也一并唤出）后自己退出——避免两进程抢同一个 MCP 端口、双写同一个 SQLite；`RUSTSS_DB`/参数把库指到别处时**不注册锁**，多开诊断副本不受影响
 - [x] Linux 打包：产出 `.deb`（**8.1MB，不打包 WebKit**，依赖声明 `libwebkit2gtk-4.1-0, libgtk-3-0, libayatana-appindicator3-1`）
-- [x] i18n：zh-CN / en（233 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
+- [x] i18n：zh-CN / en（244 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
 - [ ] 便携模式（`portable.txt`）、CSP 收紧（当前 `csp: null`）
 - [ ] 超长列表的 DOM 上限：渐进加载会把已加载的行全部留在 DOM 里（8k 库全扫后约 8k 行，实测滚动与 j/k 均无卡顿），如需更激进的取舍可再做虚拟滚动
 - [ ] 发布构建开 `strip`（当前未开，`Installed-Size` 25MB 偏大）、rpm/Windows/macOS 打包

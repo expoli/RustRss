@@ -163,3 +163,46 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] Wayland 会话（KDE 与 GNOME 各一）下按钮点击、loading 态与重渲染与 X11 一致（本次是 X11/Xvfb）
 - [ ] 英文界面下后端返回的错误原文仍是中文（`Could not fetch the full text: 目标不是 HTML 页面…`）——全应用一致的既有现象，
       不是本次引入；是否统一后端文案另行决定
+
+## 8. 备份 / 恢复（功能⑧，2026-09-21-backup-restore）
+
+> 恢复的核心风险（边车删除顺序、三种崩溃态、无 pending 不碰边车）由 core 测试覆盖：
+> `crates/rustrss-core/tests/backup.rs`（10 个用例：往返一致含 read/starred/read_later/settings、第二连接并发导出、
+> 未提交写不可见、校验三情形、暂存→替换+边车清理+只留 1 份 bak、幂等、崩溃态 A/B/C、无 pending 不触碰 `-wal`/`-shm`，
+> 以及「边车删除失败必须中止替换」这条顺序方向性测试）。
+> 本节记录**真实启动路径**的 headless 实测（PRD 验收 2/3 的端到端部分）与原生对话框链路的人工核验项。
+
+### 8.1 已机械验证的部分（Xvfb + 隔离 HOME + 临时库自证）
+
+headless 跑法：`Xvfb :99`（1920x1200）+ `GDK_BACKEND=x11`（**测试进程环境，不是应用代码设置**）+
+`HOME=/tmp/rustrss-e2e/home`（隔离，不碰真实数据目录）+ `RUSTSS_DB` 指向临时库；用 `sqlite3` 造数据与读回，
+证据是应用 stdout 的 `[rustrss]` / `[ui]` 日志与数据目录快照。
+
+- **恢复在启动时生效，且先于任何连接打开（PRD 验收 2）**：`old.sqlite`（2 条订阅 OLD-A/OLD-B）里预置
+  `pending-restore.sqlite`（另一份库，1 条订阅 NEWDB-MARKER）与**非空垃圾 `-wal`/`-shm`**，重启应用后日志顺序为
+  `[rustrss] 已应用暂存的数据库恢复: …/old.sqlite` → `[rustrss] 数据库: …/old.sqlite`；UI 日志
+  `renderSidebar feeds=1`、`loaded … refreshInterval=off refreshOnStart=false`（这两项设置**只存在于 pending 库里**）——
+  即界面读到的是替换后的库，而不是进程内旧连接；`sqlite3` 读回 old.sqlite 只剩 `NEWDB-MARKER`，
+  `pending-restore.sqlite` 消失，`old.sqlite.bak-20260921-181009` 里是 OLD-A/OLD-B（保底回滚内容正确）。
+- **无 pending 的正常启动绝不碰边车（不丢未 checkpoint 的已提交事务）**：应用运行中用外部连接写入 2 条订阅 →
+  `-wal` 涨到 160712 字节 → `kill -9` 模拟崩溃 → 重启日志**没有**「已应用暂存的数据库恢复」，UI `renderSidebar feeds=2`，
+  `sqlite3` 读回 `WAL-A,WAL-B`。（若 apply 在入口无条件删边车，此时主库只有 4096 字节头部，这 2 条订阅就丢了。）
+- i18n：启动自检 `i18n selftest ok (keys=244)`（zh/en 各 244，含本次新增 11 个 key；该自检同时核对 `index.html`
+  里每个 `data-i18n*` 都能取到文案）；另有 node 侧等价脚本核对两份字典 key 集合一致、`index.html` 130 处
+  `data-i18n*` 与 `app.js` 112 个 `t()` key 全部存在；`app.js` 里 `el('act-backup-db')` / `el('act-restore-db')`
+  两个 id 在 `index.html` 均有定义。
+- `cargo test --workspace` 全绿（含 core `tests/backup.rs` 10 例 + src-tauri 的 `restore_confirm_text` 双语/重启提示单测）。
+
+### 8.2 仍需真实桌面会话人工核验
+
+> 本机 Xvfb 下 XTEST 鼠标/键盘事件没能送进应用窗口：点击「设置」无任何日志或界面变化，
+> `xdotool getmouselocation` 在该窗口区域内返回 `WINDOW=0`（`visible:false` 与 `WEBKIT_DISABLE_COMPOSITING_MODE=1`
+> 两种跑法都试过）。因此**原生对话框那一段链路（目录/文件选择器 + 覆盖确认）没有做点击验证**，只做了代码审查与单测。
+
+- [ ] 设置 → 数据：「备份数据库…」→ 目录选择器选目录（试一个含中文的路径）→ 状态栏「已备份到 …」，目录里出现
+      `RustRss-backup-<时间戳>.sqlite`；`sqlite3` 能直接打开查询（旁边没有 `-wal`/`-shm`），拷到另一台机器可直接用
+- [ ] 「从备份恢复…」：zh-CN 与 en 两种界面语言下各走一次——确认框文案与状态栏「重启后生效」提示；
+      点取消不产生 `pending-restore.sqlite`，点确认才产生
+- [ ] 选错文件（文本文件 / 0 字节文件 / 别的应用的 sqlite / `user_version` 超前的库）：状态栏报错、**现库不变**、不产生 pending
+- [ ] 恢复后重启：库内容 = 备份内容；数据目录出现 `.bak-<时间戳>`（只留 1 份）；把 `.bak-*` 手工改回 `rustrss.sqlite` 能回到恢复前状态
+- [ ] Wayland 会话（KDE / GNOME 各一）下两个按钮与原生对话框行为与 X11 一致（本次是 X11/Xvfb）

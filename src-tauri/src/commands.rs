@@ -7,7 +7,7 @@
 
 use serde::Serialize;
 use tauri::State;
-use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 
 use rustrss_core::ai::prompt::{AiTask, SummaryLength};
 use rustrss_core::ai::{AiClient, AiRequest, AiTaskPlan, CachePolicy};
@@ -674,6 +674,22 @@ mod tests {
     }
 
     #[test]
+    fn restore_confirm_text_is_bilingual_and_warns_about_restart() {
+        let path = "/tmp/RustRss-backup-20260921-120000.sqlite";
+        let zh = restore_confirm_text(path, false);
+        assert!(zh.contains(path), "确认框要显示用户选的具体备份路径");
+        assert!(zh.contains("下次启动"), "必须说明重启后生效，实际: {zh}");
+        assert!(zh.contains(".bak-"), "要预告现库会另存为 bak，实际: {zh}");
+        assert!(!zh.is_ascii(), "zh 分支不该是英文文案");
+
+        let en = restore_confirm_text(path, true);
+        assert!(en.contains(path));
+        assert!(en.contains("next time RustRss starts"), "实际: {en}");
+        assert!(en.contains(".bak-"));
+        assert!(en.is_ascii(), "en 分支不该混中文（路径本身是 ASCII）");
+    }
+
+    #[test]
     fn locale_whitelist() {
         assert_eq!(normalize_locale("zh-CN"), "zh-CN");
         assert_eq!(normalize_locale(" en "), "en");
@@ -1095,6 +1111,90 @@ pub async fn import_opml(
     state
         .with_store(|s| rustrss_core::opml::import(s, &content).map_err(err))
         .map(Some)
+}
+
+/// 备份数据库：选目录 → 在线快照导出（rusqlite backup API，导出期间库可继续读写）。
+///
+/// 返回产物路径；用户取消返回 None。产物是独立干净的库文件，可直接拷到另一台机器使用。
+#[tauri::command]
+pub async fn backup_db(app: tauri::AppHandle, state: State<'_, AppState>) -> R<Option<String>> {
+    let picked = app.dialog().file().blocking_pick_folder();
+    let Some(folder) = picked else {
+        return Ok(None);
+    };
+    let dest_dir = folder.into_path().map_err(|e| format!("路径无效: {e}"))?;
+    state
+        .with_store(|s| rustrss_core::backup::export_backup(s, &dest_dir).map_err(err))
+        .map(|path| {
+            eprintln!("[rustrss] 已导出备份: {}", path.display());
+            Some(path.display().to_string())
+        })
+}
+
+/// 恢复数据库：选文件 → 校验（只读打开 + `user_version`）→ 确认 → 暂存，重启后生效。
+///
+/// 返回暂存的备份路径（用户取消或放弃确认返回 None）。真正的替换在下次启动、任何连接打开
+/// 之前由 `rustrss_core::backup::apply_pending_restore` 完成（退出时替换不可行：MCP 的第二条
+/// 连接还活着，Windows 也不能 rename 打开中的文件）。
+#[tauri::command]
+pub async fn restore_db(app: tauri::AppHandle, state: State<'_, AppState>) -> R<Option<String>> {
+    let picked = app
+        .dialog()
+        .file()
+        .add_filter("SQLite", &["sqlite", "sqlite3", "db"])
+        .blocking_pick_file();
+    let Some(file_path) = picked else {
+        return Ok(None);
+    };
+    let src = file_path.into_path().map_err(|e| format!("路径无效: {e}"))?;
+
+    // 校验要拿「当前 schema 版本」，确认文案要跟随界面语言：同一把锁里读完就放（别跨 await 持锁）。
+    let (current_version, locale) = state.with_store(|s| {
+        Ok((
+            s.schema_version().map_err(err)?,
+            crate::ai::non_empty_setting(s, KEY_LOCALE).unwrap_or_default(),
+        ))
+    })?;
+    // 校验失败直接报错返回：此步之前不落地任何文件，现库一个字节都不会动。
+    rustrss_core::backup::validate_backup(&src, current_version).map_err(err)?;
+
+    // `auto` 与读不到设置时按中文处理——与托盘菜单同一口径（Rust 侧没有系统语言，
+    // 精确跟随系统语言需引入 sys-locale，v1 不做）。
+    let en = normalize_locale(&locale) == "en";
+    let confirmed = app
+        .dialog()
+        .message(restore_confirm_text(&src.display().to_string(), en))
+        .title(if en { "Restore from backup" } else { "从备份恢复" })
+        .buttons(MessageDialogButtons::OkCancel)
+        .blocking_show();
+    if !confirmed {
+        return Ok(None);
+    }
+
+    let data_dir = rustrss_core::backup::data_dir_of(&state.db_path);
+    rustrss_core::backup::stage_restore(&src, &data_dir).map_err(err)?;
+    eprintln!(
+        "[rustrss] 已暂存恢复文件 {}（下次启动替换 {}）",
+        src.display(),
+        state.db_path.display()
+    );
+    Ok(Some(src.display().to_string()))
+}
+
+/// 恢复确认框文案（`en` = 英文界面，与托盘菜单同一套 locale 口径）。
+///
+/// 抽成函数是为了能在单测里机械核对两件事：双语都在、都带「重启后生效」提示——
+/// 用户点了确认却没重启就以为已经恢复了，是这条流程最容易踩的坑。
+fn restore_confirm_text(src: &str, en: bool) -> String {
+    if en {
+        format!(
+            "Replace the current database with this backup?\n\n{src}\n\nThe current database is kept as a .bak-<timestamp> file first; the replacement happens the next time RustRss starts."
+        )
+    } else {
+        format!(
+            "用这个备份替换当前数据库？\n\n{src}\n\n当前数据库会先另存为 .bak-<时间戳> 保底回滚；替换在本应用下次启动时完成。"
+        )
+    }
 }
 
 /// 用系统默认浏览器打开链接。

@@ -15,7 +15,9 @@ thiserror = "2"
 # 相对 href 按页面地址解析：用与浏览器同一套 WHATWG 语义（同 ui 侧 new URL(href, base)）。
 # 它本来就在依赖树里（reqwest 的传递依赖），不是新增的第三方包。
 url = "2"
-rusqlite = { version = "0.40", features = ["bundled"] }
+# features: bundled = 自带 SQLite 源码（不依赖系统库）；backup = 在线快照导出（store/backup.rs 的
+# `sqlite3_backup_*`，导出期间库可继续读写，且不依赖 WAL 尾巴）。
+rusqlite = { version = "0.40", features = ["bundled", "backup"] }
 # 注意：reqwest 0.13 的 TLS feature 名与 0.12 不同（rustls 而非 rustls-tls）。
 # 关掉默认特性以避免引入 native-tls/OpenSSL；根证书用内置的 webpki-roots，
 # 不依赖系统信任库，便于跨发行版打成 native 包。
@@ -26,4 +28,6 @@ dom_smoothie = "0.18.2"
 
 [dev-dependencies]
 wiremock = "0.6"
+# 测试里要直接改 `PRAGMA user_version` / 造非法库文件（备份校验的输入），走裸连接最直接。
+rusqlite = { version = "0.40", features = ["bundled", "backup"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }

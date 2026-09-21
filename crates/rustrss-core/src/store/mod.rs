@@ -5,7 +5,10 @@
 //! - **刷新不动状态**：`read` / `starred` 不在 upsert 的更新列里，已读不会被刷回未读；
 //! - **无谓写入可跳过**：内容指纹没变就只计数 `unchanged`，不写库；
 //! - 正文真身只存一份（FTS5 用外部内容表，不做冗余副本）。
+//!
+//! 子模块 [`backup`]：库的在线快照导出与「重启时替换」式恢复（含 WAL 边车顺序不变量）。
 
+pub mod backup;
 pub mod schema;
 pub mod tokens;
 

@@ -60,6 +60,18 @@ fn install_panic_logger() {
 
 fn main() {
     install_panic_logger();
+
+    // 恢复落地的唯一保证路径：在**任何连接**（Store / MCP）打开之前把暂存的库换上去。
+    // 必须在 AppState::open() 之前——连接一开就出现 WAL 边车与文件锁，替换不再安全，
+    // 且进程内已打开的连接会继续握着旧文件（换了也白换）。
+    let db_path = rustrss_core::resolve_db_path();
+    match rustrss_core::backup::apply_pending_restore(&db_path) {
+        Ok(true) => eprintln!("[rustrss] 已应用暂存的数据库恢复: {}", db_path.display()),
+        Ok(false) => {}
+        // 打不开/换不上都继续启动：现库还在（或在 .bak-* 里），让用户先把界面用起来。
+        Err(e) => eprintln!("[rustrss] 应用暂存的数据库恢复失败（继续用现有库）: {e}"),
+    }
+
     let app_state = match AppState::open() {
         Ok(s) => s,
         Err(e) => {
@@ -202,6 +214,8 @@ fn main() {
             commands::remove_feed,
             commands::export_opml,
             commands::import_opml,
+            commands::backup_db,
+            commands::restore_db,
             commands::refresh_all,
             commands::refresh_feeds,
             commands::refresh_feed,

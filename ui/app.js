@@ -1838,6 +1838,30 @@ async function boot() {
       log(`import_opml failed: ${err.message}`);
     }
   };
+  // 备份 / 恢复：两个动作都在 Rust 侧弹原生对话框（目录 / 文件 / 覆盖确认），
+  // 前端只负责提示结果；恢复是「暂存 + 重启生效」，所以文案里必须带重启提醒。
+  el('act-backup-db').onclick = async () => {
+    try {
+      const path = await invoke('backup_db');
+      setStatus(path ? t('status.backupDone', { path }) : t('status.backupCancelled'));
+      log(`backup_db ${path ?? 'cancelled'}`);
+    } catch (err) {
+      setStatus(t('status.backupFailed', { error: err.message }), true);
+      log(`backup_db failed: ${err.message}`);
+    }
+  };
+
+  el('act-restore-db').onclick = async () => {
+    try {
+      const path = await invoke('restore_db');
+      setStatus(path ? t('status.restoreStaged') : t('status.restoreCancelled'));
+      log(`restore_db ${path ?? 'cancelled'}`);
+    } catch (err) {
+      setStatus(t('status.restoreFailed', { error: err.message }), true);
+      log(`restore_db failed: ${err.message}`);
+    }
+  };
+
   el('add-ok').onclick = doAddFeed;
   el('add-url').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doAddFeed();
