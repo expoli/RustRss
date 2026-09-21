@@ -148,7 +148,7 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 侧栏文件夹分组：可折叠组头 + 组内未读合计；右键新建 / 重命名 / 删除 / 移动订阅到文件夹（删除组不删订阅；折叠状态跨会话保持；拖拽归组待后续）
 - [x] 系统托盘：显示/隐藏窗口 + 退出（菜单文案跟随界面语言设置，`auto` 时固定中文；托盘文案在 Rust 侧维护、不经 `ui/i18n.js` 的 key-set 自测——这是已知例外；托盘不可用时自动降级为无托盘并日志说明，不崩溃。注意：托盘在真实桌面会话下的行为需人工验证，headless 环境仅验证了代码路径与降级逻辑）
 - [x] Linux 打包：产出 `.deb`（**8.1MB，不打包 WebKit**，依赖声明 `libwebkit2gtk-4.1-0, libgtk-3-0, libayatana-appindicator3-1`）
-- [x] i18n：zh-CN / en（169 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
+- [x] i18n：zh-CN / en（192 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
 - [ ] 便携模式（`portable.txt`）、CSP 收紧（当前 `csp: null`）、列表虚拟化（当前硬上限 200 条）
 - [ ] 发布构建开 `strip`（当前未开，`Installed-Size` 25MB 偏大）、rpm/Windows/macOS 打包
 

@@ -483,6 +483,8 @@ async function loadAll() {
     invoke('get_ui_settings'),
     invoke('get_ai_settings'),
     invoke('get_mcp_settings'),
+    invoke('list_folders'),
+    invoke('get_collapsed_folders'),
   ]);
   state.db = db;
   state.feeds = feeds;
