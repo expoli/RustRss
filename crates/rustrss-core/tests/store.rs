@@ -432,11 +432,9 @@ fn add_feed_rewrites_rsshub_urls_via_mirror_setting() {
     let id2 = store.add_feed("rsshub://v2ex/topics/hot", None).unwrap();
     let id3 = store.add_feed("https://rsshub.app/36kr/newsflashes", None).unwrap();
     let feeds = store.list_feeds().unwrap();
-    eprintln!("B1 feeds={:?}", feeds.iter().map(|f| (f.id, f.url.clone())).collect::<Vec<_>>());
-    eprintln!("B1 id2={id2} id3={id3}");
     let url_of = |id: i64| feeds.iter().find(|f| f.id == id).map(|f| f.url.clone()).unwrap();
-    eprintln!("B1 url_of(id2)={:?}", url_of(id2));
-    eprintln!("B1 url_of(id3)={:?}", url_of(id3));
+    assert_eq!(url_of(id2), "https://rsshub.example.com/v2ex/topics/hot");
+    assert_eq!(url_of(id3), "https://rsshub.example.com/36kr/newsflashes");
     // 非 RSSHub 域不受影响；去重幂等（同 URL 再加返回既有 id）
     let id4 = store.add_feed("https://example.com/feed.xml", None).unwrap();
     let feeds_after = store.list_feeds().unwrap(); // 重新拉取后再断言（url_of 闭包捕获的是旧列表）
