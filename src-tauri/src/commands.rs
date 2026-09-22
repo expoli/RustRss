@@ -649,8 +649,11 @@ pub fn set_rsshub_mirror(state: State<'_, AppState>, mirror: String) -> R<String
     })
 }
 
-/// 测试实例可达性：依次尝试 /rsshub/rss 与 /feed/rsshub/rss 两个已知路由，
-/// 任一返回 2xx 即可达（实例路由覆盖有差异，两个都试避免误报）。
+/// 测试实例可达性：依次尝试 /version、/、/rsshub/rss、/feed/rsshub/rss，
+/// 任一返回 2xx 即可达。前两个是每个 RSSHub 实例必有的轻量路由（欢迎页/版本
+/// 探针，实测 2026-09-22：本机实例 / 与 /version 200，但 /health 与两个内容路由
+/// 均 404——实例版本差异下内容路由探测必埪埪误报）；后两个保留作为内容路由
+/// 覆盖验证（部分部署会屏蔽根路径）。
 #[tauri::command]
 pub async fn test_rsshub_mirror(
     state: State<'_, AppState>,
@@ -659,7 +662,7 @@ pub async fn test_rsshub_mirror(
     use rustrss_core::rsshub::clean_base;
     let base = clean_base(&mirror.unwrap_or_default());
     let fetcher = state.fetcher.clone();
-    for path in ["/rsshub/rss", "/feed/rsshub/rss"] {
+    for path in ["/version", "/", "/rsshub/rss", "/feed/rsshub/rss"] {
         let url = format!("{base}{path}");
         match rustrss_core::rsshub::probe_url(&fetcher, &url).await {
             Ok(true) => return Ok(format!("可达：{url}")),
@@ -670,7 +673,7 @@ pub async fn test_rsshub_mirror(
             }
         }
     }
-    Ok("两个探测路由均未返回 2xx（实例可达但路由未覆盖，或被拦截）".into())
+    Ok("全部探测路由均未返回 2xx（实例可达但路由未覆盖，或被拦截）".into())
 }
 
 /// 迁移预览：命中 rsshub:// 与官方域的存量订阅数。
