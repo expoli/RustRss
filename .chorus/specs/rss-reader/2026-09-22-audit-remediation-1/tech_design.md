@@ -17,7 +17,7 @@ documentUuid: 5b08d056-d0d8-43c6-8139-ab1af50ba018
 | `validate_external_url(url: &str) -> Result<String, String>`（src-tauri/src/commands.rs） | trim 后必须 `http://`/`https://` 开头；拒绝任何空白字符、控制字符（U+0000–U+001F、U+007F）、以及 `"` `<` `>` `|` `^` `` ` ``；返回清洗后的 URL 或可读错误。**打开前统一调用**（三平台共用） |
 | Windows 启动器 | `rundll32` + 参数 `["url.dll,FileProtocolHandler", url]`，URL 作为独立进程参数（不经 shell）。Linux 保持 `xdg-open`，macOS 保持 `open` |
 | `MAX_FEED_BYTES`（crates/rustrss-core/src/fetch.rs） | `pub const MAX_FEED_BYTES: usize = 8 * 1024 * 1024;` feed 抓取上限；全文仍用 fulltext::MAX_BYTES=2MiB |
-| 超限错误文案 | 复用现有风格：`页面体积 {n} 超过上限 {max}，已中止下载`（与 fetch_bytes_limited 一致）；该错误作为该源本轮刷新失败上报，**不得写入条目/etag/last_status** |
+| 超限错误文案 | 复用现有风格：`页面体积 {n} 超过上限 {max}，已中止下载`（与 fetch_bytes_limited 一致）；该错误作为该源本轮刷新失败上报：**不得写入条目、不得覆盖 etag/last_modified**，失败态沿用既有失败路径（`record_fetch(code, Some(err), None, None)`——etag/last_modified 传 None 走 COALESCE 不丢，last_status/last_error/last_fetched_at 记录失败，与 5xx/网络错误一致） |
 | CSP（src-tauri/tauri.conf.json） | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; connect-src ipc: http://ipc.localhost; font-src 'self' data:`；withGlobalTauri 保持 true |
 | CSP 违规探针（ui/app.js） | `document.addEventListener('securitypolicyviolation', e => log(...))`，经既有 `ui_log` 输出；常驻（日志噪声可忽略，每次违规一行） |
 | 最小绑定集（ui/app.js） | 标题栏三键（最小化/最大化/关闭）绑定提取为独立函数，初始化正常路径与 catch 路径都无条件执行 |
@@ -38,7 +38,7 @@ documentUuid: 5b08d056-d0d8-43c6-8139-ab1af50ba018
 - 保持：ETag/Last-Modified 请求头、304 路径、gzip/br 自动解压（reqwest feature 不动）、错误类型/文案风格。
 - 可测性：为测试注入上限，可加 `pub(crate)` 或 `pub` 的 `fetch_with_limit(..., max_bytes)` 供 tests/fetch.rs 使用（小限值 + wiremock 大响应即可断言），`fetch()` 调它并传常量。
 - 测试（tests/fetch.rs 追加）：① Content-Length 超限 → 立即报错；② 无 Content-Length 的 chunked 大响应 → 累计超限中止；③ 正常小响应不受影响（现有测试回归）。
-- 注意：超限错误必须走「该源失败」路径（scheduler/commands 已有的失败处理），不得部分写入。
+- 注意：超限错误必须走「该源失败」路径（scheduler/commands 已有的失败处理），不得部分写入：条目不动、etag/last_modified 不覆盖，last_status/last_error 记录失败态（它是 UI 红点与失败 tooltip 的依据，与其它失败模式一致）；不得把本轮记为成功（不得写 status=ok / last_status='not_modified'）。
 
 ### T3 FR-3 quick-xml
 

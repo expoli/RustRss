@@ -22,7 +22,7 @@ documentUuid: a2ec1564-de26-43da-8285-b833893e692f
 ### FR-2（P1）feed 抓取体积闸门
 
 `fetch()`（crates/rustrss-core/src/fetch.rs:105-131）用 `resp.bytes().await` 整包缓冲 + 自动解压，无体积上限；现有 `fetch_bytes_limited()`（fetch.rs:152，Content-Length 预检 + 流式累计双重限制）只用于全文抓取。恶意/病态源可令刷新进程内存耗尽，违反项目红线 #11。
-要求：feed 抓取主路径同样受双重限制保护，上限 8 MiB（新常量，独立于全文的 2 MiB）；超限时中止下载、**不写入任何数据**（条目/etag/状态都不更新），刷新结果给出可读错误原因；ETag/304、编码、重定向等既有行为不回归。
+要求：feed 抓取主路径同样受双重限制保护，上限 8 MiB（新常量，独立于全文的 2 MiB）；超限时中止下载，**条目不被写入、etag/last_modified 不被覆盖**（失败态沿用既有失败路径记录 last_status/last_error/last_fetched_at，与 5xx/网络错误等失败模式一致），刷新结果给出可读错误原因；ETag/304、编码、重定向等既有行为不回归。
 
 ### FR-3（依赖安全，审计定级 P2，零成本顺带修复）quick-xml 依赖升级
 
