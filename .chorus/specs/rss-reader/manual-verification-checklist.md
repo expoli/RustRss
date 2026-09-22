@@ -520,3 +520,62 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（测试进程环境，非应�
 - [ ] 高分屏（125% / 150%）下对话框与下拉的像素对齐（本轮 DSF=1）
 - [ ] tooltip 文案：给某源设了独立间隔后，侧栏 tooltip 的「独立刷新间隔：…」在真实桌面下的展示
       （GTK tooltip 是独立 X 窗口，headless 截图整块黑）
+
+## 15. 列表排序与过滤（2026-09-22-list-sorting，任务 8fc0cf98）
+
+> headless 跑法：`Xvfb :98`（1920x1200，无窗口管理器；`:99` 上占着**上一次跑残的验证实例**
+> （`/tmp/mark-verify`，非本任务）与别人的 fixture 服务，故另起 `:98`，保证点击落在自己的窗口上）+
+> `GDK_BACKEND=x11`（**测试进程环境，不是应用代码设置**）+ `HOME=/tmp/rustrss-sort-verify/w2/home`（隔离）+
+> `RUSTSS_DB=/tmp/rustrss-sort-verify/w2/data/rustrss.sqlite`（临时库）+ 本地夹具 feed（`feed_server.py`，
+> 只绑 `127.0.0.1:8911`，**每次请求比上次多一条**，用来观察后台刷新）+ `xdotool` 真实鼠标/键盘 +
+> `import -window root` 截图 + 应用 stdout 的 `[ui]` 行（重建路径固定打 `view=… sort=… hideRead=… count=… head=<前 5 行 id>`）。
+> 夹具库 `baseline.sqlite`（`prepare_baseline.sh` 可重建）：2 个源 + 260 条（`e0` 最旧 → `e259` 最新，`published_at` 递增），
+> 奇数下标已读（130 已读 / 130 未读），另有 `e1`（已读+星标）、`e3`（已读+稍后读）；
+> `refresh.interval_minutes=off`；排序档与首刷开关按场景改写。脚本：`launchA.sh` / `launchBCD.sh` / `launchE.sh`。
+
+### 15.1 已机械验证的部分（stdout 自证 + 库回读 + 截图）
+
+- **三档顺序**（每档都与「库里同口径 ORDER BY 直查的期望顺序」逐位对齐）：
+
+| 档 | 库内期望头部 | 应用日志 | 截图 |
+|---|---|---|---|
+| newest | 260,259,258,257,256 | `view=all sort=newest hideRead=0 count=200 exhausted=false head=260,259,258,257,256` | `shotA-01-all-newest.png` |
+| oldest | 1,2,3,4,5 | `view=all sort=oldest … head=1,2,3,4,5` | `shotA-02-all-oldest.png`（e0/e1/e2/e3，已读灰显、★/⚑ 标记都在） |
+| unread_first | 259,257,255,253,251 | `view=all sort=unread_first … head=259,257,255,253,251` | `shotA-04-all-unread-first.png`（e199/e197/e195/e193，未读组在最前） |
+
+- **三档续页不重不漏**：三档各自按 `G`（跳末行 → 列表滚到底 → 尾部哨兵续页）后日志都是
+  `append rows=60 total=260 dup=0 exhausted=true` —— `dup` 是运行时自证（重复行会被计数）。unread_first 的复合游标
+  （read 分量）因此真跑了一轮：页 1 末行落在未读组内、页 2 跨到已读组（`open id=120` 即页 1 末行，已读行）。
+- **隐藏已读**：开 → `view=all sort=newest hideRead=1 count=128 exhausted=true`（260 条里已读行消失）；
+  关 → `count=200`（回到整页）。星标 / 稍后读视图的**豁免**由 store 测试
+  `hide_read_filters_lists_but_starred_and_later_views_are_exempt` 钉住（UI 侧不写第二套判断，豁免只在查询层）。
+- **灰显防删行共存**：隐藏已读开着时点一行标读 → 日志只有 `open id=17 markRead=true read=false`，**没有 list 重建**
+  （`renderList` 行不出现），列表计数仍 128 篇、该行灰显留在原位（截图 `shotA-08-hide-read-row-stays.png`）；
+  紧接着切档触发 reset 重建后 `count=127`，那行才离开（`shotA-09`）。
+- **后台刷新不破坏非 newest 排序**（场景 B/C/D 各一次启动，只跑启动首刷；feed 每次请求多一条）：
+  - **oldest**（B）：刷新前已加载 2 页、`head=1,2,3,4,5` → `refresh:start` → `自动刷新完成: fetched=1 inserted=4` →
+    `refresh:done` → `refresh:done prepend skipped（sort=oldest）：改走静默 reset，listScrollTop=15676→15676（reset 重建，无滚动锚点补偿）`
+    → 刷新后 `view=all sort=oldest … count=200 exhausted=false head=1,2,3,4,5`（4 条新条目落在尾部，头部没被顶走）。
+  - **unread_first**（C）：刷新后 `head=265,264,263,262,261`，与库内 `ORDER BY read, sortkey DESC, id LIMIT 8` 查出的
+    `new-4,new-3,new-2,new-1,new-0,e258,…` 完全一致（新未读本就该在未读组头部）；同样记 `prepend skipped`。
+  - **newest（回归对照）**（D）：仍走 prepend —— `refresh:done prepend rows=6 ids=266,265,264,263,262,261 … atTop=false
+    listScrollTop=15676→16168 height=21320→21812 top=69→69 head=266`（视口顶部行 id 没动）。
+- **滚动保持的实际行为**（把「降级」写准）：非 newest 档走 reset 重建，**只保留 `scrollTop` 像素偏移、不做锚点补偿**
+  （实测 `15676→15676`：oldest 档新条目在尾部、视觉上不动；unread_first 档内容整体位移）。
+- **勾选态与保留**（E）：菜单里当前档与开关都打勾（`shotE-02-menu-both-checked.png`：✓未读优先 + ✓隐藏已读）；
+  切视图（全部 ↔ 全部未读）后每条重建日志都写着 `sort=unread_first hideRead=1`；重启（B/C/D 三档各一次）后按库内档位出列表。
+- **i18n**：启动自检 `i18n selftest ok (keys=306)`（新增 5 个 key）；node 侧等价核对 zh/en 各 306 个 key 一一对应、
+  `index.html` 的 149 处 `data-i18n*` 引用全部存在（缺 0）。
+- **单测**：core 新增 6 例（三档顺序与设置兜底、三档×五视图续页矩阵、复合游标与半截回退、hide_read 过滤与豁免、
+  unread_first 计划断言、oldest 计划断言、v10→v11 真文件迁移），`src-tauri` 新增 1 例（命令体归一 + 落库往返）；
+  `cargo test --workspace` 全绿。
+- **顺带修掉的真 bug**：列表头按钮打开菜单后立刻被全局「点菜单外面就关」的 click 监听关掉（同一个 click 事件的冒泡）——
+  按钮 onclick 里 `stopPropagation()` 修掉（commit 见改动清单）。这条只有真点一遍才会暴露（headless 点击序列抓出来的）。
+
+### 15.2 仍需真实桌面会话人工核验
+
+- [ ] 真实桌面会话（X11 / Wayland 各一）下排序按钮的鼠标观感与 tooltip（GTK tooltip 是独立 X 窗口，headless 截图整块黑）
+- [ ] 分数缩放（125% / 150% / 170%）下列表头「标题 + 计数 + 排序按钮」这一行的对齐与按钮尺寸（本轮 DSF=1）
+- [ ] 英文界面下菜单四行文案（Newest first / Oldest first / Unread first / Hide read）与按钮 tooltip 的显示宽度
+- [ ] 真实长列表（8k 条）下三档切换与 oldest / unread_first 续页的手感与冷启动代价
+      （本轮库内 260 条；计划正确性由 EXPLAIN 断言 + v11 索引钉住）
