@@ -2015,9 +2015,14 @@ function openSettings() {
 }
 
 async function boot() {
-  // 点击右键菜单以外的区域时关闭菜单（菜单内部点击不受影响）
+  // 点击右键菜单以外的区域时关闭菜单（菜单内部点击不受影响）。
+  // 下拉触发按钮同样不算「外面」：否则开菜单的那一次点击冒泡到这里就把它关掉了
+  // （菜单在同一事件里被创建又被删除，表现成「下拉点了没反应」——语言/主题/刷新
+  // 间隔/字体四个自绘下拉全中招）；「再点同一个下拉 = 关闭」由 toggleSettingDropdown 管。
   document.addEventListener('click', (e) => {
-    if (el('ctx-menu') && !e.target.closest('#ctx-menu')) closeContextMenu();
+    if (el('ctx-menu') && !e.target.closest('#ctx-menu') && !e.target.closest('.setting-dropdown')) {
+      closeContextMenu();
+    }
   });
   applyStaticI18n();
   const i18n = i18nSelfTest();
