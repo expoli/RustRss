@@ -24,6 +24,14 @@ use crate::store::{Result, Store};
 /// 默认 UA：带产品名与版本，方便源站识别与联系（也是抓取礼貌的一部分）
 pub const DEFAULT_USER_AGENT: &str = concat!("RustRss/", env!("CARGO_PKG_VERSION"));
 
+/// feed 单次抓取的响应体上限（8 MiB）。
+///
+/// 与全文抓取的上限（`fulltext::MAX_BYTES` = 2 MiB）相互独立：feed 要装下整份 XML
+/// （含历史条目）所以更宽，但同样必须有闸门——恶意/病态源回一份超大 body（或小体积
+/// gzip 炸弹）时，整包缓冲会直接吃光进程内存（AGENTS.md 红线 11：闸门放在获取前或
+/// 获取中，不放在整包缓冲之后）。
+pub const MAX_FEED_BYTES: usize = 8 * 1024 * 1024;
+
 /// 单次抓取的结果
 #[derive(Debug, Clone, PartialEq)]
 pub enum FetchResult {
@@ -97,7 +105,19 @@ impl Fetcher {
     }
 
     /// 抓一个 URL。带上 ETag / Last-Modified 即为条件请求。
+    /// 响应体走 [`read_body_limited`]，上限为 [`MAX_FEED_BYTES`]。
     pub async fn fetch(&self, url: &str, cache: CacheHeaders) -> FetchResult {
+        self.fetch_with_limit(url, cache, MAX_FEED_BYTES).await
+    }
+
+    /// [`Fetcher::fetch`] 的可注入上限版本：测试用极小上限跑真实 HTTP 断言闸门，
+    /// 不必真造 8 MiB 的 body。生产路径一律由 `fetch()` 传 [`MAX_FEED_BYTES`]。
+    pub async fn fetch_with_limit(
+        &self,
+        url: &str,
+        cache: CacheHeaders,
+        max_bytes: usize,
+    ) -> FetchResult {
         let mut req = self.client.get(url);
         if let Some(etag) = cache.etag.as_deref() {
             req = req.header(IF_NONE_MATCH, etag);
@@ -131,26 +151,28 @@ impl Fetcher {
             };
         }
 
-        match resp.bytes().await {
+        // 超限与读取失败都是该源本轮失败：交给 apply_results 记失败态
+        // （条目不动；etag/last_modified 传 None，由 store 的 COALESCE 保持原值）。
+        match read_body_limited(resp, max_bytes).await {
             Ok(body) => FetchResult::Fetched {
-                body: body.to_vec(),
+                body,
                 status: status.as_u16(),
                 final_url,
                 etag,
                 last_modified,
             },
-            Err(e) => FetchResult::Failed {
+            Err(error) => FetchResult::Failed {
                 status: Some(status.as_u16()),
-                error: format!("读取响应体失败: {e}"),
+                error,
             },
         }
     }
 
-    /// 带体积上限的抓取（全文获取用）：Content-Length 预检 + 流式累计双重限制，
+    /// 带体积上限的抓取（全文获取用）：与 feed 主路径共用 [`read_body_limited`]。
     /// 超限在下载完成前就放弃——不再把 2MB+ 的页面整个缓冲进内存（网关 follow-up：
     /// 原先闸门在整包缓冲后才判，白流量白内存）。
     pub async fn fetch_bytes_limited(&self, url: &str, max_bytes: usize) -> Result<Vec<u8>, String> {
-        let mut resp = self
+        let resp = self
             .client
             .get(url)
             .send()
@@ -159,20 +181,39 @@ impl Fetcher {
         if !resp.status().is_success() {
             return Err(format!("HTTP {}", resp.status().as_u16()));
         }
-        if let Some(len) = resp.content_length() {
-            if len as usize > max_bytes {
-                return Err(format!("页面体积 {len} 超过上限 {}，已中止下载", max_bytes));
-            }
-        }
-        let mut body: Vec<u8> = Vec::new();
-        while let Some(chunk) = resp.chunk().await.map_err(|e| format!("读取响应体失败: {e}"))? {
-            if body.len() + chunk.len() > max_bytes {
-                return Err(format!("页面体积超过上限 {max_bytes}，已中止下载"));
-            }
-            body.extend_from_slice(&chunk);
-        }
-        Ok(body)
+        read_body_limited(resp, max_bytes).await
     }
+}
+
+/// 读响应体并施加体积上限：Content-Length 预检 + 流式累计双重限制。
+///
+/// feed 主路径（[`Fetcher::fetch_with_limit`]）与全文（[`Fetcher::fetch_bytes_limited`]）
+/// 共用这一处实现，闸门口径只有一个。两层都不能省：Content-Length 是**解压前**的长度，
+/// gzip/brotli 解压炸弹只能靠流式累计那一层在下载中止住。
+async fn read_body_limited(
+    mut resp: reqwest::Response,
+    max_bytes: usize,
+) -> std::result::Result<Vec<u8>, String> {
+    if let Some(len) = resp.content_length() {
+        if len as usize > max_bytes {
+            return Err(over_limit_error(len as usize, max_bytes));
+        }
+    }
+    let mut body: Vec<u8> = Vec::new();
+    while let Some(chunk) = resp.chunk().await.map_err(|e| format!("读取响应体失败: {e}"))? {
+        // 已收到的字节数（超限时它是下限：超出的那一块不再计入）
+        let received = body.len() + chunk.len();
+        if received > max_bytes {
+            return Err(over_limit_error(received, max_bytes));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    Ok(body)
+}
+
+/// 超限文案：带上实际体积与上限，用户/日志能直接看出差多少（与全文路径同款）
+fn over_limit_error(size: usize, max_bytes: usize) -> String {
+    format!("页面体积 {size} 超过上限 {max_bytes}，已中止下载")
 }
 
 /// 有界并发执行：最多同时运行 `concurrency` 个任务。

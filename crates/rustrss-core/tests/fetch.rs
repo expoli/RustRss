@@ -5,11 +5,15 @@
 //! - 单个源失败不阻断其他源；
 //! - 并发有上限（`bounded_map` 单独验，避免依赖 HTTP 时序）。
 
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
+use std::io::{Read, Write};
+use std::net::TcpListener;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
+use std::time::{Duration, Instant};
 
-use rustrss_core::fetch::{FetchResult, Fetcher, CacheHeaders};
+use rustrss_core::fetch::{
+    apply_results, CacheHeaders, FetchResult, FetchedFeed, Fetcher, MAX_FEED_BYTES,
+};
 use rustrss_core::{bounded_map, refresh, EntryQuery, Store};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, Request, ResponseTemplate};
@@ -271,6 +275,309 @@ async fn fetch_bytes_limited_streams_and_returns_small_body() {
         .await
         .unwrap();
     assert_eq!(body, b"hello");
+}
+
+// ---------------------------------------------------------------- T2 体积闸门（feed 主路径）
+
+/// 手写最小 HTTP/1.1 服务器：造 wiremock 造不出的响应时序。
+///
+/// 闸门的关键分界是「响应头已到、正文还没到 / 还没结束」——wiremock 只会把响应
+/// 整包吐出来，表达不了这个中间态，也就区分不了「闸门在获取前/获取中生效」与
+/// 「整包缓冲完才判」。服务端把整个正文发完才置 `body_finished`：测试据此断言
+/// 客户端是在正文结束**之前**就中止的，不靠计时猜。
+struct RawServer {
+    base: String,
+    body_finished: Arc<AtomicBool>,
+    release: Arc<(Mutex<bool>, Condvar)>,
+}
+
+impl RawServer {
+    /// `head` 是完整响应头；`frames` 紧随其后发出；`tail` 里的帧被按住最多 2 秒
+    /// （测试放行 = 断言已做完，连接就此断开、不再补发正文）。
+    fn start(head: String, frames: Vec<Vec<u8>>, tail: Vec<Vec<u8>>) -> Self {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("测试用端口应可监听");
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let body_finished = Arc::new(AtomicBool::new(false));
+        let release = Arc::new((Mutex::new(false), Condvar::new()));
+        let (finished, rel) = (body_finished.clone(), release.clone());
+        std::thread::spawn(move || {
+            for incoming in listener.incoming() {
+                let Ok(mut sock) = incoming else { break };
+                // 先把请求头读掉再回响应，免得响应还没写完就被 RST
+                let mut buf = [0u8; 1024];
+                let mut seen = Vec::new();
+                while !seen.windows(4).any(|w| w == b"\r\n\r\n") && seen.len() < 16 * 1024 {
+                    match sock.read(&mut buf) {
+                        Ok(0) | Err(_) => break,
+                        Ok(n) => seen.extend_from_slice(&buf[..n]),
+                    }
+                }
+                let mut complete = sock.write_all(head.as_bytes()).is_ok();
+                for frame in &frames {
+                    complete = complete && sock.write_all(frame).is_ok();
+                }
+                if complete && !tail.is_empty() {
+                    // 正文还没结束：按住 tail，等测试放行
+                    let (lock, cvar) = &*rel;
+                    let guard = cvar
+                        .wait_timeout(lock.lock().unwrap(), Duration::from_secs(2))
+                        .unwrap()
+                        .0;
+                    complete = if *guard {
+                        // 放行 = 不再补发（客户端早已中止）
+                        false
+                    } else {
+                        tail.iter().all(|f| sock.write_all(f).is_ok())
+                    };
+                }
+                if complete {
+                    finished.store(true, Ordering::SeqCst);
+                }
+            }
+        });
+        Self {
+            base,
+            body_finished,
+            release,
+        }
+    }
+
+    fn url(&self, path: &str) -> String {
+        format!("{}{path}", self.base)
+    }
+
+    /// 服务端是否把整个正文发完了（false = 客户端在正文结束前就中止）
+    fn body_finished(&self) -> bool {
+        self.body_finished.load(Ordering::SeqCst)
+    }
+
+    /// 放行被按住的正文帧（测试收尾）
+    fn finish(&self) {
+        let (lock, cvar) = &*self.release;
+        *lock.lock().unwrap() = true;
+        cvar.notify_all();
+    }
+}
+
+/// chunked 分帧：`<hex 长度>\r\n<数据>\r\n`
+fn chunk(bytes: &[u8]) -> Vec<u8> {
+    let mut out = format!("{:x}\r\n", bytes.len()).into_bytes();
+    out.extend_from_slice(bytes);
+    out.extend_from_slice(b"\r\n");
+    out
+}
+
+fn chunked_head() -> String {
+    "HTTP/1.1 200 OK\r\nContent-Type: application/rss+xml\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n".to_string()
+}
+
+/// ① Content-Length 超限：预检在正文到达前就报错（不进入下载）。
+#[tokio::test]
+async fn fetch_rejects_oversized_content_length_before_body_arrives() {
+    let body = vec![b'x'; 64];
+    let server = RawServer::start(
+        format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/rss+xml\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            body.len()
+        ),
+        Vec::new(),
+        vec![body],
+    );
+
+    let started = Instant::now();
+    let outcome = fetcher()
+        .fetch_with_limit(&server.url("/feed.xml"), CacheHeaders::default(), 4)
+        .await;
+    let elapsed = started.elapsed();
+
+    match outcome {
+        FetchResult::Failed { status, error } => {
+            assert_eq!(
+                status,
+                Some(200),
+                "读取阶段失败沿用原状态码（与既有读取失败一致）"
+            );
+            assert!(
+                error.contains("64") && error.contains("超过上限"),
+                "文案应含实际体积与上限: {error}"
+            );
+        }
+        other => panic!("期望 Failed，实际 {other:?}"),
+    }
+    assert!(
+        !server.body_finished(),
+        "Content-Length 预检必须在正文到达前拒绝（实际读完了正文）"
+    );
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "预检应立即返回，实际 {elapsed:?}"
+    );
+    server.finish();
+}
+
+/// ② 没有 Content-Length 的 chunked 大响应：按累计字节在下载中砍断。
+#[tokio::test]
+async fn fetch_aborts_chunked_body_mid_stream() {
+    // 首帧就 64 字节（上限 4），后续帧与终止块被按住：闸门必须在正文结束前中止
+    let server = RawServer::start(
+        chunked_head(),
+        vec![chunk(&[b'x'; 64])],
+        vec![chunk(&[b'y'; 32]), b"0\r\n\r\n".to_vec()],
+    );
+
+    let started = Instant::now();
+    let outcome = fetcher()
+        .fetch_with_limit(&server.url("/feed.xml"), CacheHeaders::default(), 4)
+        .await;
+    let elapsed = started.elapsed();
+
+    match outcome {
+        FetchResult::Failed { status, error } => {
+            assert_eq!(status, Some(200));
+            assert!(error.contains("超过上限"), "实际错误: {error}");
+        }
+        other => panic!("期望 Failed，实际 {other:?}"),
+    }
+    assert!(
+        !server.body_finished(),
+        "chunked 累计超限应在正文结束前中止（实际读完了整包）"
+    );
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "累计超限应立即中止，实际 {elapsed:?}"
+    );
+    server.finish();
+}
+
+/// ③ `fetch()`（生产路径，不注上限）走的就是 `MAX_FEED_BYTES`：声明超限即拒绝，
+/// 且不必真造 8 MiB 的 body；全文上限保持 2 MiB 不受影响。
+#[tokio::test]
+async fn fetch_applies_named_max_feed_bytes_limit() {
+    assert_eq!(MAX_FEED_BYTES, 8 * 1024 * 1024, "feed 上限口径就是 8MiB");
+    assert_eq!(
+        rustrss_core::fulltext::MAX_BYTES,
+        2 * 1024 * 1024,
+        "全文上限不变（两套上限各自独立）"
+    );
+
+    let declared = MAX_FEED_BYTES + 1;
+    let server = RawServer::start(
+        format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/rss+xml\r\nContent-Length: {declared}\r\nConnection: close\r\n\r\n"
+        ),
+        Vec::new(),
+        vec![b"x".to_vec()],
+    );
+
+    match fetcher()
+        .fetch(&server.url("/feed.xml"), CacheHeaders::default())
+        .await
+    {
+        FetchResult::Failed { error, .. } => {
+            assert!(
+                error.contains(&declared.to_string())
+                    && error.contains(&MAX_FEED_BYTES.to_string()),
+                "文案应含实际体积 {declared} 与上限 {MAX_FEED_BYTES}: {error}"
+            );
+        }
+        other => panic!("期望 Failed，实际 {other:?}"),
+    }
+    assert!(!server.body_finished(), "预检在正文到达前拒绝");
+    server.finish();
+}
+
+/// 手写服务器自身的正例：上限内的 chunked 响应要被完整读出——
+/// 否则上面两条失败用例可能只是「harness 写坏了」。
+/// 顺带钉住全文入口（`fetch_bytes_limited`）也走同一实现。
+#[tokio::test]
+async fn chunked_body_under_limit_is_returned_intact() {
+    let server = RawServer::start(
+        chunked_head(),
+        vec![chunk(b"hello "), chunk(b"world"), b"0\r\n\r\n".to_vec()],
+        Vec::new(),
+    );
+    let body = fetcher()
+        .fetch_bytes_limited(&server.url("/small"), 1024)
+        .await
+        .expect("上限内的小响应应成功");
+    assert_eq!(body, b"hello world");
+    assert!(server.body_finished(), "整个正文都送达了才谈得上成功");
+    server.finish();
+}
+
+/// ④ 超限那一轮不得留下部分写入：条目不动、ETag/Last-Modified 不被覆盖、
+/// 状态按该源失败记录（走既有失败路径，与 http_500 / parse_error 同口径），原因可读。
+#[tokio::test]
+async fn oversize_failure_writes_no_data_for_the_source() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/feed.xml"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("ETag", "\"v1\"")
+                .insert_header("Last-Modified", "Wed, 21 Oct 2026 07:28:00 GMT")
+                .set_body_string(RSS_TWO_ITEMS),
+        )
+        .mount(&server)
+        .await;
+
+    let store = Store::open_in_memory().unwrap();
+    let url = format!("{}/feed.xml", server.uri());
+    let feed_id = store.add_feed(&url, None).unwrap();
+
+    // 先一轮正常抓取：库里有 2 条 + 缓存凭据
+    let first = refresh(&store, &fetcher(), &[feed_id], 1).await.unwrap();
+    assert_eq!((first.fetched, first.inserted), (1, 2));
+    let (etag_before, lm_before) = store.cache_headers(feed_id).unwrap();
+    assert_eq!(etag_before.as_deref(), Some("\"v1\""));
+
+    // 这一轮闸门拒绝（注入 4 字节上限），结果按「该源本轮失败」交给落库阶段
+    let cache = CacheHeaders {
+        etag: etag_before.clone(),
+        last_modified: lm_before.clone(),
+    };
+    let outcome = fetcher().fetch_with_limit(&url, cache, 4).await;
+    let error = match &outcome {
+        FetchResult::Failed { error, .. } => error.clone(),
+        other => panic!("期望 Failed，实际 {other:?}"),
+    };
+    assert!(error.contains("超过上限"), "实际错误: {error}");
+
+    let report = apply_results(
+        &store,
+        vec![FetchedFeed {
+            feed_id,
+            url: url.clone(),
+            outcome,
+        }],
+    )
+    .unwrap();
+
+    assert_eq!(report.failures.len(), 1, "超限必须作为该源本轮失败上报");
+    assert_eq!(report.failures[0].error, error, "上报的就是闸门的可读原因");
+    assert_eq!(store.entry_count().unwrap(), 2, "不得写入/改动任何条目");
+    let (etag_after, lm_after) = store.cache_headers(feed_id).unwrap();
+    assert_eq!(
+        (etag_after.as_deref(), lm_after.as_deref()),
+        (Some("\"v1\""), Some("Wed, 21 Oct 2026 07:28:00 GMT")),
+        "不得覆盖 ETag / Last-Modified（否则下次条件请求会拿错凭据）"
+    );
+    let row = store.feed_row(feed_id).unwrap().unwrap();
+    assert!(
+        !matches!(
+            row.last_status.as_deref(),
+            Some("ok") | Some("not_modified")
+        ),
+        "不得把本轮当成功: {:?}",
+        row.last_status
+    );
+    assert!(
+        row.last_error
+            .as_deref()
+            .is_some_and(|e| e.contains("超过上限")),
+        "失败原因应留给界面: {:?}",
+        row.last_error
+    );
 }
 
 // ---------------------------------------------------------------- 进度回调（fetch_jobs_with_progress）

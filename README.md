@@ -214,7 +214,7 @@ npx -y @tauri-apps/cli@latest build --bundles deb
 - [x] HTML → 纯文本（去标签、剔除 script/style、实体解码、保留块级换行）
 - [x] SQLite 存储：schema 迁移、按 `stable_id` 去重 upsert、已读/星标、未读计数、文件夹、抓取状态与缓存头
 - [x] 全文检索：FTS5 + 中文预分词（拉丁出词、中文出 bigram；单字中文走 LIKE 兜底）
-- [x] 抓取：条件请求（ETag / Last-Modified）、有界并发、单源失败隔离、增量入库
+- [x] 抓取：条件请求（ETag / Last-Modified）、有界并发、单源失败隔离、增量入库、单源响应体积上限 8 MiB（`MAX_FEED_BYTES`：超限在下载中即中止，该源本轮按失败上报——不写条目、不覆盖 ETag，错误文案含实际体积与上限；全文抓取另有 2 MiB 上限）
 
 至此 `抓取 → 解析 → 入库 → 检索` 数据通路已闭合。
 
