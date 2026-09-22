@@ -40,6 +40,33 @@ pub type Result<T, E = StoreError> = std::result::Result<T, E>;
 
 pub(crate) const FOLDERS_COLLAPSED_KEY: &str = "ui.folders_collapsed";
 
+/// 订阅源行查询的共同部分：列清单与聚合口径只写一份，`list_feeds` / `feed_row`
+/// 共用（新增列时只改这里，避免两处 SQL 漂移）。
+const FEED_ROW_SELECT: &str = "\
+    SELECT f.id, f.url, f.title, f.site_url, f.folder_id,
+           COALESCE(SUM(CASE WHEN e.read = 0 THEN 1 ELSE 0 END), 0) AS unread,
+           f.last_status, f.last_error, f.last_fetched_at, f.refresh_interval_minutes
+      FROM feeds f LEFT JOIN entries e ON e.feed_id = f.id";
+
+const FEED_ROW_GROUP_BY: &str = "\
+    GROUP BY f.id, f.url, f.title, f.site_url, f.folder_id, f.last_status, f.last_error,
+             f.last_fetched_at, f.refresh_interval_minutes";
+
+fn feed_row_from(r: &rusqlite::Row<'_>) -> rusqlite::Result<FeedRow> {
+    Ok(FeedRow {
+        id: r.get(0)?,
+        url: r.get(1)?,
+        title: r.get(2)?,
+        site_url: r.get(3)?,
+        folder_id: r.get(4)?,
+        unread: r.get(5)?,
+        last_status: r.get(6)?,
+        last_error: r.get(7)?,
+        last_fetched_at: r.get(8)?,
+        refresh_interval_minutes: r.get(9)?,
+    })
+}
+
 /// 订阅源行（带未读数）
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct FeedRow {
@@ -52,7 +79,13 @@ pub struct FeedRow {
     pub last_status: Option<String>,
     pub last_error: Option<String>,
     pub last_fetched_at: Option<i64>,
+    /// 每源刷新间隔覆盖（分钟）；`None` = 跟随全局档。
+    pub refresh_interval_minutes: Option<i64>,
 }
+
+/// 调度扫描行：`(feed_id, 覆盖分钟, 上次抓取时刻)`。
+/// 宿主侧按源算到期只用得上这三列，用别名把元组留给类型而不留给调用点。
+pub type FeedIntervalRow = (i64, Option<i64>, Option<i64>);
 
 /// 文件夹行（侧栏分组）
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -370,27 +403,41 @@ impl Store {
     }
 
     pub fn list_feeds(&self) -> Result<Vec<FeedRow>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT f.id, f.url, f.title, f.site_url, f.folder_id,
-                    COALESCE(SUM(CASE WHEN e.read = 0 THEN 1 ELSE 0 END), 0) AS unread,
-                    f.last_status, f.last_error, f.last_fetched_at
-             FROM feeds f LEFT JOIN entries e ON e.feed_id = f.id
-             GROUP BY f.id, f.url, f.title, f.site_url, f.folder_id, f.last_status, f.last_error, f.last_fetched_at
-             ORDER BY f.title COLLATE NOCASE",
+        let sql = format!("{FEED_ROW_SELECT} {FEED_ROW_GROUP_BY} ORDER BY f.title COLLATE NOCASE");
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map([], feed_row_from)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// 单个订阅源行。设置命令成功后就回这一行给界面，不必重拉整个侧栏。
+    pub fn feed_row(&self, feed_id: i64) -> Result<Option<FeedRow>> {
+        let sql = format!("{FEED_ROW_SELECT} WHERE f.id = ?1 {FEED_ROW_GROUP_BY}");
+        let mut stmt = self.conn.prepare(&sql)?;
+        let mut rows = stmt.query_map(params![feed_id], feed_row_from)?;
+        match rows.next() {
+            Some(row) => Ok(Some(row?)),
+            None => Ok(None),
+        }
+    }
+
+    /// 设置每源刷新间隔覆盖（`None` = 跟随全局），返回更新后的行。
+    /// 白名单校验在命令层（与全局档共用 `REFRESH_INTERVAL_CHOICES`），这里只落列。
+    pub fn set_feed_refresh_interval(&self, feed_id: i64, minutes: Option<i64>) -> Result<FeedRow> {
+        self.conn.execute(
+            "UPDATE feeds SET refresh_interval_minutes = ?1 WHERE id = ?2",
+            params![minutes, feed_id],
         )?;
-        let rows = stmt.query_map([], |r| {
-            Ok(FeedRow {
-                id: r.get(0)?,
-                url: r.get(1)?,
-                title: r.get(2)?,
-                site_url: r.get(3)?,
-                folder_id: r.get(4)?,
-                unread: r.get(5)?,
-                last_status: r.get(6)?,
-                last_error: r.get(7)?,
-                last_fetched_at: r.get(8)?,
-            })
-        })?;
+        self.feed_row(feed_id)?
+            .ok_or_else(|| StoreError::Invalid(format!("订阅 #{feed_id} 不存在")))
+    }
+
+    /// 调度扫描用：全部源的 `(id, 覆盖分钟, 上次抓取时刻)`。只读三列，扫描很轻，
+    /// 供宿主侧的 tick 在**一次短锁**里拿到「谁到点了」的全部输入。
+    pub fn feeds_with_interval(&self) -> Result<Vec<FeedIntervalRow>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, refresh_interval_minutes, last_fetched_at FROM feeds ORDER BY id",
+        )?;
+        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 

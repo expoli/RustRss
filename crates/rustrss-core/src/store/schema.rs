@@ -126,4 +126,10 @@ pub const MIGRATIONS: &[&str] = &[
     r#"
     ALTER TABLE entries ADD COLUMN fulltext_fetched INTEGER NOT NULL DEFAULT 0;
     "#,
+    // v8：每源刷新间隔覆盖（分钟，NULL=跟随全局档）。白名单校验在命令层
+    // （与全局档共用一张表），迁移只加列：存量源 NULL 即为「跟随全局」，
+    // 行为与升级前一致。
+    r#"
+    ALTER TABLE feeds ADD COLUMN refresh_interval_minutes INTEGER;
+    "#,
 ];

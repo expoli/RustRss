@@ -190,6 +190,7 @@ fn main() {
             commands::get_ui_settings,
             commands::set_mark_read_on_navigate,
             commands::set_refresh_interval,
+            commands::set_feed_refresh_interval,
             commands::set_refresh_on_start,
             commands::set_notify_new_articles,
             commands::set_ui_locale,

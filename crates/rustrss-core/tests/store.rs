@@ -447,6 +447,116 @@ fn migration_v6_to_v7_adds_fulltext_flag_on_real_file() {
 }
 
 #[test]
+fn migration_v7_to_v8_adds_per_feed_interval_on_real_file() {
+    // 真实走一次 v7→v8：用迁移 1..7 **原样**建一个 user_version=7 的真文件库
+    // （v7 形状不手抄，避免抄错而漂移），预置一个源与一条已读条目，再让
+    // Store::open 只跑第 8 条迁移。断言：既有行与状态保留、新列默认 NULL
+    // （存量源继续跟随全局）、覆盖值可写且重启后仍在、二次打开幂等。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-v8-migration-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let conn = rusqlite::Connection::open(&db_path).expect("应能建 v7 库");
+        for sql in &MIGRATIONS[..7] {
+            conn.execute_batch(sql).expect("应能跑 v1..v7 迁移");
+        }
+        conn.pragma_update(None, "user_version", 7).unwrap();
+        conn.execute_batch(
+            r#"
+            INSERT INTO feeds (id, url, title, created_at)
+            VALUES (1, 'https://example.com/feed.xml', '源', 0);
+            INSERT INTO entries (id, feed_id, stable_id, id_origin, title, url, summary,
+                                 search_tokens, content_hash, read, starred, fetched_at, read_later)
+            VALUES (1, 1, 'm1', 'source_data', '迁移保留', 'https://example.com/p1', '一句摘要',
+                    '迁移保留', 'h', 1, 0, 0, 0);
+            "#,
+        )
+        .expect("预置数据应成功");
+    }
+
+    let store = Store::open(&db_path).expect("打开应自动跑 v8 迁移");
+    assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
+    let feeds = store.list_feeds().unwrap();
+    assert_eq!(feeds.len(), 1, "既有的源应保留");
+    assert_eq!(
+        feeds[0].refresh_interval_minutes, None,
+        "升级后新列为 NULL＝跟随全局（行为与升级前一致）"
+    );
+    let row = store.get_entry(1).unwrap().expect("既有条目应保留");
+    assert_eq!(row.title, "迁移保留");
+    assert!(row.read, "既有 read=1 应保留");
+    assert_eq!(store.feeds_with_interval().unwrap(), vec![(1, None, None)]);
+
+    // 新列随即可写：覆盖值落库，二次打开（重启）后仍在
+    store.set_feed_refresh_interval(1, Some(15)).unwrap();
+    drop(store);
+    let store = Store::open(&db_path).expect("二次打开应成功");
+    assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
+    assert_eq!(
+        store.list_feeds().unwrap()[0].refresh_interval_minutes,
+        Some(15),
+        "覆盖值应持久化（重启保留）"
+    );
+    let _ = std::fs::remove_file(&db_path);
+}
+
+#[test]
+fn feed_refresh_interval_round_trip_and_scan() {
+    let (store, feed_id) = setup();
+    let other = store
+        .add_feed("https://example.com/other.xml", Some("另一源"))
+        .unwrap();
+
+    // 默认：NULL（跟随全局），扫描查询原样透出
+    assert_eq!(
+        store.feeds_with_interval().unwrap(),
+        vec![(feed_id, None, None), (other, None, None)],
+        "两个源都未覆盖、都未抓过"
+    );
+
+    // 写覆盖 → 返回行、列表行、扫描行三处都透出新列
+    let row = store.set_feed_refresh_interval(feed_id, Some(15)).unwrap();
+    assert_eq!(row.id, feed_id);
+    assert_eq!(row.refresh_interval_minutes, Some(15));
+    let listed = store.list_feeds().unwrap();
+    assert_eq!(
+        listed
+            .iter()
+            .find(|f| f.id == feed_id)
+            .unwrap()
+            .refresh_interval_minutes,
+        Some(15)
+    );
+    assert_eq!(
+        store.feeds_with_interval().unwrap(),
+        vec![(feed_id, Some(15), None), (other, None, None)],
+        "只有被覆盖的那个源带出档位"
+    );
+
+    // 抓取一次后扫描能读到 last_fetched_at（调度到期基准）
+    store.record_fetch(feed_id, "ok", None, None, None).unwrap();
+    let scanned = store.feeds_with_interval().unwrap();
+    assert!(
+        scanned[0].2.is_some(),
+        "抓取后扫描应带出 last_fetched_at: {scanned:?}"
+    );
+
+    // 恢复跟随全局
+    let row = store.set_feed_refresh_interval(feed_id, None).unwrap();
+    assert_eq!(row.refresh_interval_minutes, None);
+    assert_eq!(store.feeds_with_interval().unwrap()[0].1, None);
+
+    // 不存在的源：可读错误，不静默成功
+    let err = store.set_feed_refresh_interval(9999, Some(30)).unwrap_err();
+    assert!(err.to_string().contains("不存在"), "实际: {err}");
+}
+
+#[test]
 fn folder_rename_delete_and_reassign() {
     let (store, feed_id) = setup();
     let f1 = store.add_folder("开发").unwrap();

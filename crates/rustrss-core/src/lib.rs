@@ -26,4 +26,6 @@ pub use paths::{default_data_dir, default_db_path, resolve_db_path};
 pub use model::{Entry, Feed, IdOrigin};
 pub use parse::{parse, ParseError};
 pub use store::backup;
-pub use store::{EntryQuery, EntryRow, FeedRow, InsertStats, MarkScope, Store, StoreError};
+pub use store::{
+    EntryQuery, EntryRow, FeedIntervalRow, FeedRow, InsertStats, MarkScope, Store, StoreError,
+};

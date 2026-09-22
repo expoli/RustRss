@@ -264,8 +264,28 @@ pub(crate) fn refresh_interval_duration(value: &str) -> Option<std::time::Durati
         .map(|(_, minutes)| std::time::Duration::from_secs(minutes * 60))
 }
 
+/// 每源刷新间隔归一化：`None` / `"global"` / 空串 → `None`（跟随全局档）；
+/// 档位白名单与全局设置**共用同一张表**（`REFRESH_INTERVAL_CHOICES`）。
+///
+/// 与全局档的差别：非法值只给可读错误，不像全局那样静默回默认档——这是用户对
+/// 单个源的显式选择，猜错档位（比如把 `3600` 当 360）比报错更糟。`off` 也不接受：
+/// 单源没有「关闭」档，要彻底停自动刷新就关全局并让该源跟随全局。
+fn normalize_feed_refresh_interval(value: Option<&str>) -> Result<Option<i64>, String> {
+    let Some(raw) = value.map(str::trim).filter(|v| !v.is_empty()) else {
+        return Ok(None);
+    };
+    if raw == "global" {
+        return Ok(None);
+    }
+    REFRESH_INTERVAL_CHOICES
+        .iter()
+        .find(|(label, _)| *label == raw)
+        .map(|(_, minutes)| Some(*minutes as i64))
+        .ok_or_else(|| format!("不支持的刷新间隔「{raw}」（可选 global 或 15/30/60/120/360）"))
+}
+
 /// 库里的间隔设置 → 归一化后的档位串（界面与调度器共用这一条读取路径）。
-fn refresh_interval_from_store(store: &rustrss_core::Store) -> String {
+pub(crate) fn refresh_interval_from_store(store: &rustrss_core::Store) -> String {
     crate::ai::non_empty_setting(store, KEY_REFRESH_INTERVAL)
         .map(|v| normalize_refresh_interval(&v).to_string())
         .unwrap_or_else(|| DEFAULT_REFRESH_INTERVAL.to_string())
@@ -353,6 +373,18 @@ pub fn set_refresh_interval(state: State<'_, AppState>, minutes: String) -> R<Ui
     ui_settings(&state)
 }
 
+/// 设置某个源的刷新间隔覆盖（`null` / `"global"` = 恢复跟随全局档），
+/// 返回更新后的行（前端拿它更新勾选态与 tooltip，不必重拉整个侧栏）。
+#[tauri::command]
+pub fn set_feed_refresh_interval(
+    state: State<'_, AppState>,
+    feed_id: i64,
+    value: Option<String>,
+) -> R<FeedRow> {
+    let minutes = normalize_feed_refresh_interval(value.as_deref())?;
+    state.with_store(|s| s.set_feed_refresh_interval(feed_id, minutes).map_err(err))
+}
+
 /// 启动时是否自动刷新一次。调度器在启动首 tick 时读这个值。
 #[tauri::command]
 pub fn set_refresh_on_start(state: State<'_, AppState>, enabled: bool) -> R<UiSettings> {
@@ -371,11 +403,6 @@ pub fn set_notify_new_articles(state: State<'_, AppState>, enabled: bool) -> R<U
             .map_err(err)
     })?;
     ui_settings(&state)
-}
-
-/// 读自动刷新间隔（归一化后的档位字符串）。
-pub(crate) fn refresh_interval_setting(state: &AppState) -> R<String> {
-    state.with_store(|s| Ok(refresh_interval_from_store(s)))
 }
 
 /// 读「启动时自动刷新」开关（缺失/非法回退默认 true）。
@@ -826,6 +853,59 @@ mod tests {
         let saved = ui_settings(&state).unwrap();
         assert_eq!(saved.refresh_interval_minutes, "off");
         assert!(!saved.refresh_on_start);
+    }
+
+    #[test]
+    fn feed_refresh_interval_normalization_uses_shared_whitelist() {
+        use normalize_feed_refresh_interval as n;
+        assert_eq!(n(None), Ok(None), "缺省 = 跟随全局");
+        assert_eq!(n(Some("global")), Ok(None));
+        assert_eq!(n(Some(" global ")), Ok(None), "容忍前后空白");
+        assert_eq!(n(Some("")), Ok(None));
+        // 白名单与全局档共用同一张表：每个档位都算出一个分钟数
+        for (label, minutes) in REFRESH_INTERVAL_CHOICES {
+            assert_eq!(
+                n(Some(label)),
+                Ok(Some(minutes as i64)),
+                "{label} 档应归一为 {minutes} 分钟"
+            );
+        }
+        // 非法值报错而不是静默套默认档（单源是显式选择）
+        for garbage in ["off", "0", "7", "15m", "3600", "daily", " GLOBAL "] {
+            assert!(
+                n(Some(garbage)).is_err(),
+                "{garbage:?} 应被拒绝（不允许静默套档）"
+            );
+        }
+    }
+
+    /// 命令体 = 「归一 + 落库」两步（`State` 不好在单测里构造，所以用 for_test 的
+    /// AppState 走同一条核心路径）：归一后的档位落库可读回，「跟随全局」能恢复 NULL。
+    #[test]
+    fn feed_refresh_interval_command_path_persists_and_restores() {
+        let state = AppState::for_test();
+        let feed_id = state
+            .with_store(|s| s.add_feed("https://example.com/f.xml", None).map_err(err))
+            .unwrap();
+
+        let minutes = normalize_feed_refresh_interval(Some("15")).unwrap();
+        let row = state
+            .with_store(|s| s.set_feed_refresh_interval(feed_id, minutes).map_err(err))
+            .unwrap();
+        assert_eq!(row.refresh_interval_minutes, Some(15));
+        assert_eq!(
+            state
+                .with_store(|s| s.feeds_with_interval().map_err(err))
+                .unwrap(),
+            vec![(feed_id, Some(15), None)],
+            "调度扫描应看到覆盖档位"
+        );
+
+        let minutes = normalize_feed_refresh_interval(Some("global")).unwrap();
+        let row = state
+            .with_store(|s| s.set_feed_refresh_interval(feed_id, minutes).map_err(err))
+            .unwrap();
+        assert_eq!(row.refresh_interval_minutes, None, "「跟随全局」恢复 NULL");
     }
 
     #[test]
