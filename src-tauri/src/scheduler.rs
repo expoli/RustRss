@@ -25,8 +25,6 @@ use rustrss_core::FeedIntervalRow;
 const TICK: Duration = Duration::from_secs(60);
 /// 启动首刷的延迟：等首屏 loadAll 与主题初始化落定，再让网络流量进场。
 const START_DELAY: Duration = Duration::from_secs(10);
-/// 后台刷新的抓取并发（与手动 refresh_all 的默认档一致）。
-const CONCURRENCY: usize = 6;
 
 /// 后台刷新开始（仅后台刷新发；手动刷新走同步等待，不发事件避免双提示）。
 pub const EVENT_REFRESH_START: &str = "refresh:start";
@@ -135,11 +133,16 @@ async fn background_refresh(app: &AppHandle, feed_ids: Option<Vec<i64>>) {
     // 新文章。
     let before_unread = unread_total(&state);
     let _ = app.emit(EVENT_REFRESH_START, ());
+    // 并发档位每轮现读（用户改设置下一轮立即生效，无需重启）：白名单归一化在
+    // 读取函数里，坏值回退默认 6。
+    let concurrency = state
+        .with_store(|s| Ok(commands::refresh_concurrency_from_store(s)))
+        .unwrap_or(commands::DEFAULT_REFRESH_CONCURRENCY) as usize;
     let progress_app = app.clone();
     match refresh_core(
         &state,
         feed_ids,
-        CONCURRENCY,
+        concurrency,
         Some(move |p| {
             let _ = progress_app.emit(EVENT_REFRESH_PROGRESS, p);
         }),

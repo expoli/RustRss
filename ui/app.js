@@ -1628,7 +1628,9 @@ async function doRefresh() {
   btn.disabled = true;
   setStatus(t('status.refreshing'));
   try {
-    const r = await invoke('refresh_all', { concurrency: 6 });
+    // 并发档位从设置读（默认 6），与后台调度器同一条白名单口径
+    const concurrency = state.settings.refresh_concurrency || 6;
+    const r = await invoke('refresh_all', { concurrency });
     const summary = t('status.refreshDone', {
       fetched: r.fetched,
       notModified: r.not_modified,
@@ -2127,6 +2129,20 @@ const SETTING_DROPDOWNS = [
           : t('status.refreshIntervalSet', { minutes })
       );
     },
+  },
+  {
+    id: 'set-refresh-concurrency',
+    choices: () =>
+      [3, 6, 12, 24].map((n) => ({
+        value: String(n),
+        label: t('settings.refreshConcurrencyChoice', { n }),
+      })),
+    current: () => String(state.settings.refresh_concurrency || 6),
+    apply: (v) => invoke('set_refresh_concurrency', { value: Number(v) }),
+    after: () =>
+      setStatus(
+        t('status.refreshConcurrencySet', { n: state.settings.refresh_concurrency })
+      ),
   },
 ];
 

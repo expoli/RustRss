@@ -212,6 +212,10 @@ const DICTS = {
     'settings.refreshMin120': '每 2 小时',
     'settings.refreshMin360': '每 6 小时',
     'settings.refreshOnStart': '启动时刷新',
+    'settings.refreshConcurrency': '刷新并发',
+    'settings.refreshConcurrencyHint': '同时抓取的订阅源数；弱网/限流敏感选 3，本地镜像可选 24',
+    'settings.refreshConcurrencyChoice': '{n} 路',
+    'status.refreshConcurrencySet': '刷新并发已设为 {n} 路',
     'settings.refreshOnStartHint': '启动 10 秒后自动抓一次（等首屏数据落定）',
     'settings.notifyNewArticles': '新文章通知',
     'settings.notifyNewArticlesHint':
@@ -508,6 +512,10 @@ const DICTS = {
     'settings.refreshMin120': 'Every 2 hours',
     'settings.refreshMin360': 'Every 6 hours',
     'settings.refreshOnStart': 'Refresh on startup',
+    'settings.refreshConcurrency': 'Refresh concurrency',
+    'settings.refreshConcurrencyHint': 'Feeds fetched in parallel; pick 3 on slow/proxied networks, 24 for local mirrors',
+    'settings.refreshConcurrencyChoice': '{n} at once',
+    'status.refreshConcurrencySet': 'Refresh concurrency set to {n}',
     'settings.refreshOnStartHint': 'Fetches once 10 seconds after launch (after the first screen settles)',
     'settings.notifyNewArticles': 'New article notifications',
     'settings.notifyNewArticlesHint':

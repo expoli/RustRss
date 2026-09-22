@@ -192,6 +192,7 @@ fn main() {
             commands::set_refresh_interval,
             commands::set_feed_refresh_interval,
             commands::set_refresh_on_start,
+            commands::set_refresh_concurrency,
             commands::set_notify_new_articles,
             commands::set_ui_locale,
             commands::set_ui_theme,

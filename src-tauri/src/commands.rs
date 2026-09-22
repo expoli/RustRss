@@ -225,6 +225,14 @@ const REFRESH_INTERVAL_CHOICES: [(&str, u64); 5] = [
 const DEFAULT_REFRESH_INTERVAL: &str = "30";
 /// 启动时自动刷新（默认开）
 const KEY_REFRESH_ON_START: &str = "refresh.on_start";
+/// 刷新并发档位（网络抓取阶段的同时在飞源数）。白名单 3/6/12/24：
+/// 3=弱网/代理/源站限流敏感；6=默认（单源同时刻只有 1 个请求，6 个不同源并发，
+/// 大多数源站限流不触发，也是 HTTP/1.1 同域并发的惯例值）；12=数百订阅重度用户；
+/// 24=本地 RSSHub/内网源追求最快刷完。更大值无意义（bounded_map 硬钳 64，
+/// 过大并发只会能触发更多 429）。
+const KEY_REFRESH_CONCURRENCY: &str = "refresh.concurrency";
+pub(crate) const DEFAULT_REFRESH_CONCURRENCY: u32 = 6;
+pub(crate) const REFRESH_CONCURRENCY_CHOICES: [u32; 4] = [3, 6, 12, 24];
 const DEFAULT_REFRESH_ON_START: bool = true;
 /// 新文章系统通知（默认关）。只有后台刷新路径会触发（手动刷新时用户就在看）。
 pub(crate) const KEY_NOTIFY_NEW_ARTICLES: &str = "notify.new_articles";
@@ -255,6 +263,8 @@ pub struct UiSettings {
     pub rsshub_mirror: String,
     /// 回显给界面的是归一化后的值（`off` 或 `15/30/60/120/360`），前端直接当 select 的值用
     pub refresh_interval_minutes: String,
+    /// 刷新并发档位（归一化后的 3/6/12/24，前端直接当下拉值用）
+    pub refresh_concurrency: u32,
     pub refresh_on_start: bool,
     pub notify_new_articles: bool,
     /// 字体族（空串 = 跟随系统/内置字体栈）
@@ -392,6 +402,7 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
                 .map(|v| rustrss_core::rsshub::clean_base(&v))
                 .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string()),
             refresh_interval_minutes: refresh_interval_from_store(s),
+            refresh_concurrency: refresh_concurrency_from_store(s),
             // 布尔设置的非法值在 bool_setting 里已回退默认（与 mark_read_on_navigate 同口径）
             refresh_on_start: s
                 .bool_setting(KEY_REFRESH_ON_START, DEFAULT_REFRESH_ON_START)
@@ -486,6 +497,34 @@ pub fn set_feed_refresh_interval(
 pub fn set_refresh_on_start(state: State<'_, AppState>, enabled: bool) -> R<UiSettings> {
     state.with_store(|s| {
         s.set_bool_setting(KEY_REFRESH_ON_START, enabled)
+            .map_err(err)
+    })?;
+    ui_settings(&state)
+}
+
+/// 并发档位白名单归一化：3/6/12/24；其余（含拼错值、越界、空串）一律归默认 6。
+pub(crate) fn normalize_refresh_concurrency(value: u32) -> u32 {
+    if REFRESH_CONCURRENCY_CHOICES.contains(&value) {
+        value
+    } else {
+        DEFAULT_REFRESH_CONCURRENCY
+    }
+}
+
+/// 读并发档位（缺失/非法回退默认 6）。调度器每轮 tick 与前端手动刷新都用它。
+pub(crate) fn refresh_concurrency_from_store(s: &rustrss_core::Store) -> u32 {
+    crate::ai::non_empty_setting(s, KEY_REFRESH_CONCURRENCY)
+        .and_then(|v| v.parse::<u32>().ok())
+        .map(normalize_refresh_concurrency)
+        .unwrap_or(DEFAULT_REFRESH_CONCURRENCY)
+}
+
+/// 设置刷新并发档位（下拉 3/6/12/24）。
+#[tauri::command]
+pub fn set_refresh_concurrency(state: State<'_, AppState>, value: u32) -> R<UiSettings> {
+    let normalized = normalize_refresh_concurrency(value);
+    state.with_store(|s| {
+        s.set_setting(KEY_REFRESH_CONCURRENCY, &normalized.to_string())
             .map_err(err)
     })?;
     ui_settings(&state)
@@ -1270,6 +1309,43 @@ mod tests {
         let saved = ui_settings(&state).unwrap();
         assert_eq!(saved.refresh_interval_minutes, "off");
         assert!(!saved.refresh_on_start);
+    }
+
+    #[test]
+    fn refresh_concurrency_whitelist_roundtrip() {
+        let state = AppState::for_test();
+
+        // 没写过：默认 6
+        assert_eq!(ui_settings(&state).unwrap().refresh_concurrency, 6);
+
+        // 白名单值原样保存与回显（set_refresh_concurrency 命令入口先把非法值
+        // 归一化再写库，这里验写入-读取往返与读取侧兑底）
+        for ok in [3u32, 6, 12, 24] {
+            state
+                .with_store(|s| {
+                    s.set_setting(KEY_REFRESH_CONCURRENCY, &ok.to_string())
+                        .map_err(err)
+                })
+                .unwrap();
+            assert_eq!(ui_settings(&state).unwrap().refresh_concurrency, ok);
+        }
+
+        // 命令入口的归一化：档位外的值一律归默认 6
+        for bad in [0u32, 1, 5, 64, 999] {
+            assert_eq!(normalize_refresh_concurrency(bad), 6, "非法档位 {bad}");
+        }
+
+        // 库里被写坏（非数字/越界数字）：读出来必须是默认，调度器不因此埪埪
+        for bad in ["lots", "0", "5", "64"] {
+            state
+                .with_store(|s| s.set_setting(KEY_REFRESH_CONCURRENCY, bad).map_err(err))
+                .unwrap();
+            assert_eq!(
+                ui_settings(&state).unwrap().refresh_concurrency,
+                6,
+                "坏值 {bad}"
+            );
+        }
     }
 
     #[test]
