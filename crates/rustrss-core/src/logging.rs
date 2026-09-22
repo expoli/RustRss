@@ -115,6 +115,41 @@ pub fn init(log_dir: &Path, level: LevelFilter) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// 安装 panic hook：先把 panic 写进日志（payload + 位置），再调用**原 hook**。
+///
+/// 「原 hook」= 调用本函数时已经装上的那个（取走后包在外层调用）——所以它之前装的
+/// hook 仍然会执行，stderr 的既有行为（以及 `RUST_BACKTRACE` 回溯）不受影响。
+///
+/// 与 [`init`] 一样**不 panic、不阻断**：logger 没装上时 `log::error!` 静默无事，
+/// 原 hook 照旧执行；日志写入失败也不会把「一次 panic」变成「两次」。
+pub fn install_panic_hook() {
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let location = info
+            .location()
+            .map(|l| l.to_string())
+            .unwrap_or_else(|| "位置未知".to_string());
+        // payload + 位置：用户贴日志时这两条是定位的全部依据（stderr 那份用户拿不到）
+        log::error!(
+            "panic: {}（location={location}）",
+            panic_payload_text(info.payload())
+        );
+        previous(info);
+    }));
+}
+
+/// panic payload 的可读文本：`panic!("...")` 与 `panic!("{x}")` 两种形态都要认。
+fn panic_payload_text(payload: &(dyn std::any::Any + Send)) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        (*s).to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        // 非字符串 payload（`panic_any`）拿不到内容，如实说而不是空着
+        "非字符串 payload（类型不可读）".to_string()
+    }
+}
+
 /// 只建目录与本次日志文件，不碰全局状态（给调用方自组 / 测试用）。
 pub fn create_log_file(log_dir: &Path) -> Result<PathBuf, String> {
     create_log_file_at(log_dir, Local::now())
@@ -584,5 +619,20 @@ mod tests {
         let report = prune(&dir.join("does-not-exist"), KEEP_FILES, MAX_TOTAL_BYTES);
         assert_eq!(report, PruneReport::default());
         cleanup(&dir);
+    }
+
+    /// panic payload 的两种常规形态（`panic!("...")` → `&str`；`panic!("{x}")` → `String`）
+    /// 都要读出内容，其它类型如实标注（不留空白，否则日志里就只剩「有个 panic」）。
+    #[test]
+    fn panic_payload_text_reads_str_and_string_payloads() {
+        let literal: &(dyn std::any::Any + Send) = &"字面量载荷";
+        assert_eq!(panic_payload_text(literal), "字面量载荷");
+
+        let owned = String::from("String 载荷");
+        let owned_ref: &(dyn std::any::Any + Send) = &owned;
+        assert_eq!(panic_payload_text(owned_ref), "String 载荷");
+
+        let number: &(dyn std::any::Any + Send) = &42u32;
+        assert!(panic_payload_text(number).contains("非字符串"));
     }
 }

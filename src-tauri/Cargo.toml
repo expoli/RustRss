@@ -10,6 +10,8 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 rustrss-core = { path = "../crates/rustrss-core" }
 rustrss-mcp = { path = "../crates/rustrss-mcp" }
+# 日志门面：src-tauri 直接用宏（落点与 writer 在 rustrss-core::logging）。
+log = { version = "0.4", features = ["std"] }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"

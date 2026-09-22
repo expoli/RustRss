@@ -124,13 +124,13 @@ pub async fn discover(fetcher: &Fetcher, url: &str) -> Result<Discovery, Discove
     };
 
     if !alternatives.is_empty() {
-        eprintln!(
+        log::warn!(
             "[rustrss] {page_url} 有多个候选 feed，采用第一个 {feed_url}，其余：{}",
             alternatives.join(", ")
         );
     }
     if via == DiscoveryVia::LinkSuffix {
-        eprintln!("[rustrss] {page_url} 的 feed 链接缺标准 type，按 href 后缀兜底：{feed_url}");
+        log::warn!("[rustrss] {page_url} 的 feed 链接缺标准 type，按 href 后缀兜底：{feed_url}");
     }
 
     Ok(Discovery {

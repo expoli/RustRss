@@ -40,7 +40,12 @@ pub fn spawn(app: AppHandle) {
         // 首刷仍是**全量**：刚起来时侧栏/未读要一次到位，而且它天然把所有源的
         // 到期基准（last_fetched_at）推到当下，之后 tick 不会立刻重抓。
         tokio::time::sleep(START_DELAY).await;
-        if on_start_enabled(&app) {
+        let on_start = on_start_enabled(&app);
+        log::debug!(
+            "[rustrss] 调度: 启动首刷延迟 {}s 结束，启动时刷新={on_start}",
+            START_DELAY.as_secs()
+        );
+        if on_start {
             background_refresh(&app, None).await;
         }
 
@@ -49,11 +54,18 @@ pub fn spawn(app: AppHandle) {
             let (global_minutes, rows) = match scan_inputs(&app) {
                 Ok(inputs) => inputs,
                 Err(e) => {
-                    eprintln!("[rustrss] 按源扫描失败（本轮跳过）: {e}");
+                    log::warn!("[rustrss] 按源扫描失败（本轮跳过）: {e}");
                     continue;
                 }
             };
             let due = due_feed_ids(global_minutes, &rows, now_secs());
+            // 每轮 tick 一行 debug（默认级别下不落盘）：本轮扫了几个源、几个到期
+            log::debug!(
+                "[rustrss] 调度 tick: 全局档={:?}分钟 源={} 到期={}",
+                global_minutes,
+                rows.len(),
+                due.len()
+            );
             if due.is_empty() {
                 continue; // 没有到期源：连事件都不发
             }
@@ -115,7 +127,7 @@ fn on_start_enabled(app: &AppHandle) -> bool {
     match commands::refresh_on_start_setting(&state) {
         Ok(enabled) => enabled,
         Err(e) => {
-            eprintln!("[rustrss] 读取「启动时刷新」设置失败，本次不自动刷新: {e}");
+            log::warn!("[rustrss] 读取「启动时刷新」设置失败，本次不自动刷新: {e}");
             false
         }
     }
@@ -126,6 +138,7 @@ fn on_start_enabled(app: &AppHandle) -> bool {
 async fn background_refresh(app: &AppHandle, feed_ids: Option<Vec<i64>>) {
     let state = app.state::<AppState>();
     let Ok(_flight) = state.try_begin_refresh() else {
+        log::debug!("[rustrss] 已有刷新在跑（手动或上一轮），本轮后台刷新跳过");
         return; // 已有刷新在跑（手动或上一轮）：本轮跳过，不发事件
     };
     // 采样点必须在抢到单 flight **之后**：从这里到收工之间不会有第二条刷新
@@ -139,6 +152,11 @@ async fn background_refresh(app: &AppHandle, feed_ids: Option<Vec<i64>>) {
         .with_store(|s| Ok(commands::refresh_concurrency_from_store(s)))
         .unwrap_or(commands::DEFAULT_REFRESH_CONCURRENCY) as usize;
     let progress_app = app.clone();
+    let scope = match &feed_ids {
+        Some(ids) => format!("{} 个到期源", ids.len()),
+        None => "全量（启动首刷）".to_string(),
+    };
+    log::debug!("[rustrss] 后台刷新开始: {scope} 并发={concurrency}");
     match refresh_core(
         &state,
         feed_ids,
@@ -149,7 +167,7 @@ async fn background_refresh(app: &AppHandle, feed_ids: Option<Vec<i64>>) {
     )
     .await
     {
-        Ok(report) => eprintln!(
+        Ok(report) => log::info!(
             "[rustrss] 自动刷新完成: fetched={} not_modified={} inserted={} updated={} failures={}",
             report.fetched,
             report.not_modified,
@@ -157,7 +175,7 @@ async fn background_refresh(app: &AppHandle, feed_ids: Option<Vec<i64>>) {
             report.updated,
             report.failures.len()
         ),
-        Err(e) => eprintln!("[rustrss] 自动刷新失败: {e}"),
+        Err(e) => log::error!("[rustrss] 自动刷新失败: {e}"),
     }
     let _ = app.emit(EVENT_REFRESH_DONE, ());
     // 通知与角标只在后台路径（手动刷新时用户就在界面前，不打扰也不改角标）。
@@ -184,7 +202,7 @@ fn notify_enabled(state: &AppState) -> bool {
     match commands::notify_new_articles_setting(state) {
         Ok(enabled) => enabled,
         Err(e) => {
-            eprintln!("[rustrss] 读取「新文章通知」设置失败，本轮不通知: {e}");
+            log::warn!("[rustrss] 读取「新文章通知」设置失败，本轮不通知: {e}");
             false
         }
     }

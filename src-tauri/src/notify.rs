@@ -55,10 +55,10 @@ pub fn maybe_notify(app: &AppHandle, before_unread: i64, after_unread: i64, enab
     let (title, body) = copy(&locale, count);
     // 一行日志：通知是「异步发出去」的（插件在后台任务里调 notify-rust），
     // 有它才能在 headless 冒烟里核对「后台刷新确实触发了通知」。
-    eprintln!("[rustrss] 新文章通知: {count} 篇（locale={locale}）");
+    log::info!("[rustrss] 新文章通知: {count} 篇（locale={locale}）");
     if let Err(e) = app.notification().builder().title(title).body(body).show() {
         // 发不出去（无通知守护进程、会话没有 D-Bus 服务等）不该影响刷新与角标
-        eprintln!("[rustrss] 系统通知发送失败（忽略）: {e}");
+        log::warn!("[rustrss] 系统通知发送失败（忽略）: {e}");
     }
 }
 

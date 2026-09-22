@@ -43,11 +43,14 @@ pub struct DbInfo {
     pub later: i64,
 }
 
-/// 重查询耗时打点：超过 50ms 打到 stderr（帮助定位界面卡顿）。
+/// 重查询耗时打点：超过 50ms 记一行 warn（帮助定位界面卡顿）。
+///
+/// 保留 `[rustrss][slow]` 标记：AGENTS.md 把「分层计时」列为性能定位的第一手段，
+/// 检索口径不能跟着迁移漂移。
 fn log_slow(name: &str, started: std::time::Instant) {
     let elapsed = started.elapsed();
     if elapsed.as_millis() >= 50 {
-        eprintln!("[rustrss][slow] {name}: {}ms", elapsed.as_millis());
+        log::warn!("[rustrss][slow] {name}: {}ms", elapsed.as_millis());
     }
 }
 
@@ -156,11 +159,18 @@ pub(crate) async fn fetch_fulltext_core(state: &AppState, entry_id: i64) -> R<En
     // ② 抓取：网络阶段不持库锁（与 refresh_core 同一口径）。
     // 用带体积上限的流式抓取：Content-Length 预检 + 下载中累计超限即中止，
     // 不再把超限页面整个缓冲（follow-up：原先闸门在整包后才判，白流量白内存）。
+    let started = std::time::Instant::now();
     let body = state
         .fetcher
         .fetch_bytes_limited(&url, fulltext::MAX_BYTES)
         .await
         .map_err(|e| format!("获取原文失败: {e}"))?;
+    // HTTP 明细只在 debug 级；URL 与错误正文不落盘（部分原文链接自带一次性凭据）
+    log::debug!(
+        "[rustrss] 全文抓取完成: entry={entry_id} 字节={} 耗时={}ms",
+        body.len(),
+        started.elapsed().as_millis()
+    );
 
     // ③ 提取（体积闸门/非 HTML/空正文都在 core 里把关）后写回，写回只在锁内做
     let extracted = fulltext::extract_bytes(&body, &url).map_err(err)?;
@@ -240,6 +250,17 @@ const DEFAULT_REFRESH_ON_START: bool = true;
 /// 新文章系统通知（默认关）。只有后台刷新路径会触发（手动刷新时用户就在看）。
 pub(crate) const KEY_NOTIFY_NEW_ARTICLES: &str = "notify.new_articles";
 const DEFAULT_NOTIFY_NEW_ARTICLES: bool = false;
+/// 日志级别：`info`（默认）/ `debug`。取不到或非法一律回落 `info`。
+/// 键的写路径与设置页界面属 T3；启动读取与归一化在这里（读/写共用同一归一化）。
+pub const KEY_LOG_LEVEL: &str = "log.level";
+
+/// `log.level` 白名单归一化：只认 `debug`，其余（缺失 / 非法 / 未来新档）一律 `info`。
+pub fn log_level_filter(raw: &str) -> log::LevelFilter {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "debug" => log::LevelFilter::Debug,
+        _ => log::LevelFilter::Info,
+    }
+}
 // 列表排序档与「隐藏已读」的键名与默认档白名单在 core 侧定义（`rustrss_core::store::LIST_SORT_KEY` /
 // `ListSort`）：命令层只负责归一化与落库，store 在每次查询时从库读这两个键——这里是唯一写入点。
 /// 字体族设置（设置 → 外观 → 字体）。空串 = 跟随内置字体栈（前端清除对应 CSS 变量）。
@@ -865,7 +886,19 @@ pub async fn test_rsshub_mirror(
     let fetcher = state.fetcher.clone();
     for path in ["/version", "/", "/rsshub/rss", "/feed/rsshub/rss"] {
         let url = format!("{base}{path}");
-        match rustrss_core::rsshub::probe_url(&fetcher, &url).await {
+        let started = std::time::Instant::now();
+        let probe = rustrss_core::rsshub::probe_url(&fetcher, &url).await;
+        // 探测路径与耗时进 debug（只打 path，不打可能带凭据的 base；错误正文同样不打）
+        let status = match &probe {
+            Ok(true) => "2xx",
+            Ok(false) => "非 2xx",
+            Err(_) => "网络错误",
+        };
+        log::debug!(
+            "[rustrss] RSSHub 探测 {path}: {status} 耗时={}ms",
+            started.elapsed().as_millis()
+        );
+        match probe {
             Ok(true) => return Ok(format!("可达：{url}")),
             Ok(false) => continue,
             Err(e) => {
@@ -1087,7 +1120,7 @@ async fn run_font_command(bin: &str, args: &[&str], timeout: std::time::Duration
     match tokio::time::timeout(timeout, run).await {
         Ok(Ok(out)) if out.status.success() => parse_font_families(&String::from_utf8_lossy(&out.stdout)),
         Ok(Ok(out)) => {
-            eprintln!(
+            log::warn!(
                 "[rustrss][fonts] {bin} 退出码 {:?}，字体列表降级为空",
                 out.status.code()
             );
@@ -1095,11 +1128,11 @@ async fn run_font_command(bin: &str, args: &[&str], timeout: std::time::Duration
         }
         // spawn 失败（未装 fontconfig）：正常降级，不当作错误
         Ok(Err(e)) => {
-            eprintln!("[rustrss][fonts] 无法执行 {bin}: {e}（字体列表降级为空）");
+            log::warn!("[rustrss][fonts] 无法执行 {bin}: {e}（字体列表降级为空）");
             Vec::new()
         }
         Err(_) => {
-            eprintln!(
+            log::warn!(
                 "[rustrss][fonts] {bin} 超过 {}ms 未返回，已终止（字体列表降级为空）",
                 timeout.as_millis()
             );
@@ -1126,6 +1159,85 @@ fn cursor_pair(cursor_sortkey: Option<i64>, cursor_id: Option<i64>) -> Option<(i
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 日志级别归一化：只认 `debug`，其余（缺失/非法/未来新档）一律 `info`。
+    /// 读侧（启动）与 T3 的写侧共用这一个函数，坏值不会被带进 logger。
+    #[test]
+    fn log_level_filter_only_accepts_debug() {
+        assert_eq!(log_level_filter("debug"), log::LevelFilter::Debug);
+        assert_eq!(
+            log_level_filter(" DEBUG "),
+            log::LevelFilter::Debug,
+            "大小写与空白都要归一化"
+        );
+        for raw in ["info", "", "  ", "trace", "warn", "garbage", "debugx"] {
+            assert_eq!(
+                log_level_filter(raw),
+                log::LevelFilter::Info,
+                "{raw:?} 应回落 info"
+            );
+        }
+    }
+
+    /// 落盘前打码：含凭据形态的输入（URL 查询串 / userinfo）抹成 `***`，正常日志行不受影响。
+    #[test]
+    fn scrub_log_line_masks_credentials_in_urls() {
+        // 真实泄漏路径 1：AI 错误正文回显端点 URL（Gemini 把 key 放在查询串里）
+        let ai_err = "ai summarize failed: error sending request for url \
+                      (https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSy-SECRET-9f3c1a7b)";
+        let scrubbed = scrub_log_line(ai_err);
+        assert!(
+            !scrubbed.contains("AIzaSy-SECRET-9f3c1a7b"),
+            "key 不得留在日志里: {scrubbed}"
+        );
+        assert!(scrubbed.contains("key=***"), "应保留参数名便于定位: {scrubbed}");
+        assert!(
+            scrubbed.contains("generateContent"),
+            "非敏感部分要保留: {scrubbed}"
+        );
+
+        // 真实泄漏路径 2：私有订阅地址把凭据放在查询串里（前端 [ui] 行会带整个 URL）
+        let feed = "https://example.com/private.xml?token=9f3c1a7b2e5d4c6f&x=1";
+        let scrubbed = scrub_log_line(feed);
+        assert!(!scrubbed.contains("9f3c1a7b2e5d4c6f"));
+        assert!(scrubbed.contains("token=***"));
+        assert!(
+            scrubbed.contains("x=1"),
+            "同一条 URL 上的其它参数要保留: {scrubbed}"
+        );
+
+        // 真实泄漏路径 3：URL userinfo 里的 HTTP Basic 凭据
+        let basic = "https://alice:hunter2@example.com/private.xml";
+        let scrubbed = scrub_log_line(basic);
+        assert!(!scrubbed.contains("hunter2"), "密码不得留在日志里: {scrubbed}");
+        assert!(!scrubbed.contains("alice"), "用户名也不留: {scrubbed}");
+        assert!(scrubbed.contains("***@example.com"), "主机名要保留: {scrubbed}");
+
+        // 多种常见参数名
+        for (raw, secret) in [
+            ("https://x.test/a?api_key=SECRET-A", "SECRET-A"),
+            ("https://x.test/a?api-key=SECRET-B", "SECRET-B"),
+            ("https://x.test/a?access_token=SECRET-C&y=2", "SECRET-C"),
+            ("https://x.test/a?password=SECRET-D", "SECRET-D"),
+            ("https://x.test/a?foo=1&client_secret=SECRET-E", "SECRET-E"),
+            ("https://x.test/a?KEY=SECRET-F", "SECRET-F"),
+        ] {
+            let out = scrub_log_line(raw);
+            assert!(!out.contains(secret), "{raw} → {out}");
+            assert!(out.contains("=***"), "{raw} → {out}");
+        }
+
+        // 正常日志行原样通过（打码不能把界面诊断行搞花）
+        for line in [
+            "view=all count=3 exhausted=true",
+            "[ui] renderList rows=200 12ms",
+            "ai summarize entry=7 from_cache=true chars=42 model=openai:gpt-4o-mini",
+            "settings pane=ai base=https://api.openai.com/v1",
+            "[rustrss] 已暂存恢复文件 /tmp/a.sqlite（下次启动替换 /tmp/b.sqlite）",
+        ] {
+            assert_eq!(scrub_log_line(line), line, "不该动: {line}");
+        }
+    }
 
     #[test]
     fn cursor_pair_needs_both_halves() {
@@ -2087,23 +2199,50 @@ pub(crate) async fn refresh_core<P: Fn(rustrss_core::RefreshProgress) + Send + S
         })?,
     };
     if jobs.is_empty() {
+        log::debug!("[rustrss] 刷新跳过: 没有可抓的源");
         return Ok(RefreshReport::default());
     }
     // 阶段二：无锁并发抓取（带进度回调时逐源发事件，前端状态栏实时显示 N/M）
     let fetcher = state.fetcher.clone();
+    let started = std::time::Instant::now();
+    log::debug!(
+        "[rustrss] 刷新批次开始: 源={} 并发={concurrency}",
+        jobs.len()
+    );
     let results = match on_progress {
         Some(cb) => rustrss_core::fetch_jobs_with_progress(&fetcher, jobs, concurrency, cb).await,
         None => rustrss_core::fetch_jobs(&fetcher, jobs, concurrency).await,
     };
     // 阶段三：锁内串行写库
-    state.with_store(|s| {
+    let report = state.with_store(|s| {
         let r = rustrss_core::apply_results(s, results).map_err(err);
         // 大批量写入后收尾 WAL（同一连接、此刻无读者竞争，TRUNCATE 立即归零）
         if let Err(e) = s.checkpoint_wal() {
-            eprintln!("[rustrss] WAL checkpoint 失败（不影响数据）: {e}");
+            log::warn!("[rustrss] WAL checkpoint 失败（不影响数据）: {e}");
         }
         r
-    })
+    })?;
+    // 批次级明细（源数/耗时/失败源）：debug 级，受 log.level 控制。
+    // 逐源失败行的 url/error 先过 scrub：私有订阅地址可能把凭据放在查询串里。
+    log::debug!(
+        "[rustrss] 刷新批次完成: fetched={} not_modified={} inserted={} updated={} unchanged={} failures={} 耗时={}ms",
+        report.fetched,
+        report.not_modified,
+        report.inserted,
+        report.updated,
+        report.unchanged,
+        report.failures.len(),
+        started.elapsed().as_millis()
+    );
+    for f in &report.failures {
+        log::debug!(
+            "[rustrss] 源抓取失败: feed={} url={} err={}",
+            f.feed_id,
+            scrub_log_line(&f.url),
+            scrub_log_line(&f.error)
+        );
+    }
+    Ok(report)
 }
 
 /// 刷新全部订阅源（界面按钮 / `r` 键）。逐源发 `refresh:progress` 事件，
@@ -2208,7 +2347,7 @@ pub async fn backup_db(app: tauri::AppHandle, state: State<'_, AppState>) -> R<O
     state
         .with_store(|s| rustrss_core::backup::export_backup(s, &dest_dir).map_err(err))
         .map(|path| {
-            eprintln!("[rustrss] 已导出备份: {}", path.display());
+            log::info!("[rustrss] 已导出备份: {}", path.display());
             Some(path.display().to_string())
         })
 }
@@ -2255,7 +2394,7 @@ pub async fn restore_db(app: tauri::AppHandle, state: State<'_, AppState>) -> R<
 
     let data_dir = rustrss_core::backup::data_dir_of(&state.db_path);
     rustrss_core::backup::stage_restore(&src, &data_dir).map_err(err)?;
-    eprintln!(
+    log::info!(
         "[rustrss] 已暂存恢复文件 {}（下次启动替换 {}）",
         src.display(),
         state.db_path.display()
@@ -2336,10 +2475,107 @@ pub fn open_external(url: String) -> R<()> {
         .map_err(|e| format!("调用 {program} 失败: {e}"))
 }
 
-/// 前端诊断：打到 stdout，便于无人值守时核对界面状态（stdout 在 GUI 里不进协议通道）
+/// 前端诊断：进同一个日志文件（target=ui），保留 `[ui]` 前缀便于检索（headless 冒烟
+/// 与人工排障都靠它核对界面状态）。
+///
+/// 落盘前过 [`scrub_log_line`]：前端会把 AI/MCP 的原始错误文本原样送进来（例如
+/// Gemini 的 `?key=` 查询串、带凭据的订阅地址），而日志文件是要用户贴出去排障的。
 #[tauri::command]
 pub fn ui_log(line: String) {
-    println!("[ui] {line}");
+    log::info!(target: "ui", "[ui] {}", scrub_log_line(&line));
+}
+
+/// 日志行打码：抹掉 URL 里的凭据形态——userinfo（`https://user:pass@host/x`）与
+/// 查询串里的敏感参数值（`?key=…` / `&token=…`）。
+///
+/// 为什么在这个口子上做：前端/调用方无从知道「哪个值是凭据」，而日志一旦落盘就会
+/// 被用户贴进 issue。只动已知的凭据**形态**，正常日志行（`view=all count=3`）原样通过。
+/// 边界：不处理 `Authorization: Bearer …` 这类**请求头**——本任务新增的日志点不打印
+/// 任何请求头（逐点审查见 T2 报告）；将来要打请求头，先在调用点按 AI 预览的
+/// `***已隐藏***` 口径打码。
+pub fn scrub_log_line(line: &str) -> String {
+    const SENSITIVE: &[&str] = &[
+        "key",
+        "apikey",
+        "api_key",
+        "api-key",
+        "token",
+        "access_token",
+        "refresh_token",
+        "secret",
+        "client_secret",
+        "password",
+        "passwd",
+    ];
+    /// 值的结束位置：下一个参数（`&`）、终止展示符，或空白。
+    fn value_end(rest: &str) -> usize {
+        rest.find(|c: char| {
+            c == '&' || c.is_whitespace() || matches!(c, ')' | '"' | '\'' | '>' | ',' | ']' | '}')
+        })
+        .unwrap_or(rest.len())
+    }
+
+    let line = mask_url_userinfo(line);
+    let mut out = String::with_capacity(line.len());
+    let mut rest = line.as_str();
+    loop {
+        let Some(sep) = rest.find(['?', '&']) else {
+            out.push_str(rest);
+            break;
+        };
+        out.push_str(&rest[..=sep]);
+        let tail = &rest[sep + 1..];
+        let Some(eq) = tail.find('=') else {
+            rest = tail;
+            continue;
+        };
+        let name = &tail[..eq];
+        if SENSITIVE.iter().any(|s| name.eq_ignore_ascii_case(s)) {
+            let end = value_end(&tail[eq + 1..]);
+            out.push_str(name);
+            out.push_str("=***");
+            rest = &tail[eq + 1 + end..];
+        } else {
+            // 非敏感参数：原样输出「名字=」，值里的下一个 `&` 继续由循环处理
+            out.push_str(&tail[..=eq]);
+            rest = &tail[eq + 1..];
+        }
+    }
+    out
+}
+
+/// 抹掉 URL 的 userinfo：`https://user:pass@host/x` → `https://***@host/x`。
+///
+/// 私有订阅地址可能把 HTTP Basic 凭据直接写在 URL 里（前端也把这些 URL 打进 `[ui]` 行）。
+fn mask_url_userinfo(text: &str) -> String {
+    /// authority 段的结束位置（路径/查询/空白/展示符）。
+    fn authority_end(rest: &str) -> usize {
+        rest.find(|c: char| {
+            matches!(c, '/' | '?' | '#' | ' ' | '"' | '\'' | ')' | '>' | ',' | ']' | '}')
+                || c.is_control()
+        })
+        .unwrap_or(rest.len())
+    }
+
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    loop {
+        let Some(pos) = rest.find("://") else {
+            out.push_str(rest);
+            return out;
+        };
+        let after = &rest[pos + 3..];
+        let end = authority_end(after);
+        out.push_str(&rest[..pos + 3]);
+        match after[..end].rfind('@') {
+            Some(at) => {
+                out.push_str("***");
+                out.push_str(&after[at..end]);
+            }
+            None => out.push_str(&after[..end]),
+        }
+        rest = &after[end..];
+    }
 }
 
 // ---------------------------------------------------------------- MCP
@@ -2581,7 +2817,15 @@ pub async fn test_ai_connection(state: State<'_, AppState>) -> R<String> {
         system: Some("这是连通性测试。只回答两个字：可用".into()),
         user: "请回复：可用".into(),
     };
-    client.complete(request).await.map_err(|e| e.to_string())
+    let started = std::time::Instant::now();
+    let result = client.complete(request).await;
+    // 只记结果与耗时：错误正文可能回显带凭据的端点 URL（如 Gemini 把 key 放在查询串里）
+    log::debug!(
+        "[rustrss] AI 连通性测试: {} 耗时={}ms",
+        if result.is_ok() { "通过" } else { "失败" },
+        started.elapsed().as_millis()
+    );
+    result.map_err(|e| e.to_string())
 }
 
 /// 计划阶段：持锁读库 + 取凭据 + 拼请求（请求本身不在锁内发）。
@@ -2719,6 +2963,11 @@ async fn run_ai(
     let (plan, client) = build_ai_plan(&state, entry_id, task, policy)?;
 
     if let Some(hit) = plan.cached.clone() {
+        log::debug!(
+            "[rustrss] AI 命中缓存: model={} 字符={}",
+            plan.provider_model,
+            hit.chars().count()
+        );
         return Ok(AiOutcomeView {
             output: hit,
             from_cache: true,
@@ -2727,10 +2976,16 @@ async fn run_ai(
         });
     }
 
-    let output = client
-        .complete(plan.request.clone())
-        .await
-        .map_err(|e| e.to_string())?;
+    let started = std::time::Instant::now();
+    let output = client.complete(plan.request.clone()).await;
+    // 只记 model / 成败 / 耗时：provider 的错误正文可能带端点凭据（界面会如实提示，但不落盘）
+    log::debug!(
+        "[rustrss] AI 请求完成: model={} {} 耗时={}ms",
+        plan.provider_model,
+        if output.is_ok() { "成功" } else { "失败" },
+        started.elapsed().as_millis()
+    );
+    let output = output.map_err(|e| e.to_string())?;
     state.with_store(|s| {
         rustrss_core::ai::save_task_output(s, &plan, &output).map_err(|e| e.to_string())
     })?;
