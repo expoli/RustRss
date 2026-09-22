@@ -1369,17 +1369,42 @@ function openContextMenu(ev, items, anchor) {
     menu.appendChild(btn);
   }
   document.body.appendChild(menu);
-  const pad = 8;
-  // 锚定模式（设置页下拉）：贴着触发按钮下沿展开，宽度不小于按钮宽；
-  // 事件坐标模式（右键菜单）行为不变
+  // 锚定模式（设置页下拉）：宽度不小于触发按钮，展开点贴按钮下沿
   if (anchor) {
     const r = anchor.getBoundingClientRect();
     menu.style.minWidth = r.width + 'px';
-    menu.style.left = Math.min(r.left, window.innerWidth - menu.offsetWidth - pad) + 'px';
-    menu.style.top = Math.min(r.bottom + 2, window.innerHeight - menu.offsetHeight - pad) + 'px';
+    placeMenu(menu, r.left, r.bottom + 2);
   } else {
-    menu.style.left = Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - pad) + 'px';
-    menu.style.top = Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - pad) + 'px';
+    placeMenu(menu, ev.clientX, ev.clientY);
+  }
+}
+
+/// 菜单定位三步：优先贴锚点向下展开，高度压缩到可用空间（菜单内部滚动，
+/// 它本来就 overflow-y:auto）；下方连 160px 都放不下时翻转到锚点上方；两边都
+/// 放不下才贴顶。top/left 永不为负。
+/// 背景：菜单 CSS 上限 460px，在视口底部右键时旧公式
+/// `min(clientY, innerHeight - h - pad)` 会把 top 钳成极小值甚至负数——菜单
+/// 飞到屏幕顶端，视觉上像挂在别的行上（实测 2026-09-22：以为在操作 ZZ 行，
+/// 实际菜单属于另一行，破坏性操作误认风险）。
+function placeMenu(menu, x, y) {
+  const pad = 8;
+  const MIN_USABLE = 160;
+  menu.style.left =
+    Math.max(pad, Math.min(x, window.innerWidth - menu.offsetWidth - pad)) + 'px';
+  const below = window.innerHeight - y - pad;
+  const above = y - pad;
+  if (below >= MIN_USABLE) {
+    // 贴锚点向下：高度收到可用空间（内联值覆盖 CSS 的 min(70vh,460)）
+    menu.style.maxHeight = Math.min(460, below) + 'px';
+    menu.style.top = y + 'px';
+  } else if (above >= MIN_USABLE) {
+    // 翻转到锚点上方：先限高再量实际高度，top 用收紧后的 offsetHeight
+    menu.style.maxHeight = Math.min(460, above) + 'px';
+    menu.style.top = Math.max(pad, y - menu.offsetHeight - 2) + 'px';
+  } else {
+    // 两边都放不下（窗口太矮）：清掉内联限高回 CSS 规则，贴顶整高
+    menu.style.maxHeight = '';
+    menu.style.top = pad + 'px';
   }
 }
 
