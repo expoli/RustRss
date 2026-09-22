@@ -642,6 +642,6 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（测试进程环境，非应�
 
 ### 17.2 环境限制与仍需真机核验
 
-- **Windows 运行时未实测（T1 遗留）**：本机无 Windows/mingw，`open_external` 的 rundll32 路径只有单元测试 + `rustc --target x86_64-pc-windows-gnu --emit=metadata` 类型检查。真机核验步骤：Windows 构建启动后，打开一篇 link 含 `&` 的文章（如 `https://example.com/?a=1&b=2`）点「浏览器打开」→ 应打开完整 URL 且无任何命令被执行；同时确认标题栏三键（最小化/最大化/关闭）可用。
+- **Windows 运行时未实测（T1 遗留）**：本机无 Windows/mingw，`open_external` 的 rundll32 路径只有单元测试 + `rustc --target x86_64-pc-windows-gnu --emit=metadata` 类型检查。真机核验步骤：Windows 构建启动后，打开一篇 link 含 `&` 的文章（如 `https://example.com/?a=1&b=2`）点「浏览器打开」→ 应打开完整 URL，且不得出现由 shell 解析产生的额外命令（rundll32 自身进程属预期）；同时确认标题栏三键（最小化/最大化/关闭）可用。
 - **UI 修复（T4）与 CSP（T5）仅在 X11/Xvfb 验证**：Wayland 原生会话、macOS、Windows 的界面回归（滚动保持 / 按钮态 / 零 CSP 违规）未覆盖；CSP 在 Windows WebView2 下 `connect-src ipc:` 的兼容性需真机回归。
 - **日志功能批次（2026-09-22-logging）**：待实现，验收点见 spec.md「诊断与日志」节。
