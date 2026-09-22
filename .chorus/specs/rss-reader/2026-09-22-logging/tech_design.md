@@ -45,7 +45,7 @@ documentUuid: 0ffb9733-14fa-4dfa-a5ea-7e167666763e
 
 ### T1 日志基础设施（core）
 
-`paths::logs_dir()` + `logging.rs`（文件 writer、`init` 不含全局安装的可测部分、`prune`）+ 单测：
+`paths::logs_dir()` + `logging.rs`（文件 writer、`init`（**包含全局 logger 安装与 `set_max_level`，与契约表一致**；另提供 `create_log_file` 供不碰全局状态的可测路径）、`prune`）+ 单测：
 - 命名与本地时间戳格式；同秒冲突后缀；
 - `prune` 边界：恰好 20 个不删、21 个删 1、总量超 50 MB 按最旧删、混合场景、单文件超上限（应删到只剩它或空）；
 - writer：写入后文件内容含级别/target/消息，多行追加正确；
