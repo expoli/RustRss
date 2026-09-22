@@ -47,6 +47,10 @@ pub enum FulltextError {
     BadUrl,
     #[error("页面里没有可提取的正文")]
     NoContent,
+    /// 反爬质询页（Anubis 等）：需要浏览器执行 JS 才能过，服务端抓取只能拿到质询壳。
+    /// 必须拒绝写回——否则质询文本会覆盖真实摘要。
+    #[error("目标站点需要浏览器验证（反爬质询页），服务端无法获取全文；请用「浏览器打开」查看原文")]
+    BotChallenge,
     #[error("正文提取失败: {0}")]
     Extract(String),
 }
@@ -73,6 +77,9 @@ pub fn extract(html: &str, url: &str) -> Result<Extracted, FulltextError> {
     if !looks_like_html(html) {
         return Err(FulltextError::NotHtml);
     }
+    if is_bot_challenge(html) {
+        return Err(FulltextError::BotChallenge);
+    }
 
     let mut readability = Readability::new(html, Some(&url), None)
         .map_err(|e| FulltextError::Extract(e.to_string()))?;
@@ -97,8 +104,13 @@ pub fn extract(html: &str, url: &str) -> Result<Extracted, FulltextError> {
 
 /// 该条目是否还值得抓全文（前端「获取全文」按钮的显示条件）。
 ///
-/// 三个条件缺一不可：没抓过（抓过就以库里的正文为准）、有可抓的原文地址、
-/// 现有正文「明显偏短」。
+/// 判定是双层启发式：
+/// 1. 没抓过（抓过就以库里的正文为准）、有可抓的原文地址；
+/// 2. 现有正文「明显偏短」，**或**带「源端摘要标记」。
+///
+/// 标记层针对长摘要漏判：lkml.org 的 RSS 摘要动辄七八百字（超过长度阈值），
+/// 但开头固定带 `某人 writes: (Summary)` 前缀——靠标记才能识别它其实是摘要。
+/// 误报代价仍然低（多点一下按钮，拿回与现有正文相近的内容）。
 pub fn is_summary_entry(
     url: Option<&str>,
     content_html: Option<&str>,
@@ -111,19 +123,35 @@ pub fn is_summary_entry(
     if url.map(str::trim).unwrap_or_default().is_empty() {
         return false;
     }
-    readable_text_len(content_html, content_text) < SUMMARY_TEXT_MIN_CHARS
+    let text = content_text
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+        .map(str::to_owned)
+        .or_else(|| content_html.map(|h| html_to_text(h)));
+    let Some(text) = text else {
+        // 连正文都没有：当作值得抓
+        return true;
+    };
+    let chars = text.chars().collect::<Vec<_>>();
+    if chars.len() < SUMMARY_TEXT_MIN_CHARS {
+        return true;
+    }
+    // 源端摘要标记（lkml.org/rss.php 约定）：`XXX writes: (Summary)` 开头
+    let head: String = chars.into_iter().take(96).collect();
+    head.contains("writes: (Summary)")
 }
 
-/// 现有正文的纯文本字数：优先信已存的 `content_text`（解析层与它是同一来源派生的），
-/// 缺失时才从 `content_html` 现算。
-fn readable_text_len(content_html: Option<&str>, content_text: Option<&str>) -> usize {
-    match content_text.map(str::trim).filter(|t| !t.is_empty()) {
-        Some(text) => text.chars().count(),
-        None => content_html
-            .map(|html| html_to_text(html).chars().count())
-            .unwrap_or(0),
-    }
+/// 反爬质询页特征（Anubis / techaro.lol）：固定标题 + 资源路径。
+/// 命中即拒绝提取——这类页面没有正文价值，写回只会覆盖真实摘要。
+fn is_bot_challenge(html: &str) -> bool {
+    // Anubis 质询页固定标题（两种转义形态）
+    html.contains("Making sure you're not a bot")
+        || html.contains("Making sure you&#39;re not a bot")
+        // Anubis 静态资源/接口路径（正文页不会引用）
+        || html.contains("/.within.website/x/cmd/anubis/")
 }
+
+// 现有正文的纯文本字数逻辑已内联到 `is_summary_entry`（需要同时拿到头部做标记检查）。
 
 /// 原文地址必须是绝对的 http/https：`Readability` 要求绝对 URL，而 feed 里的链接
 /// 偶尔是相对的（本仓库 `parse.rs` 原样保存 href）——那种情况给一句明确的错误，

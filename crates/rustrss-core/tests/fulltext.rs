@@ -253,6 +253,37 @@ fn needs_fulltext_judgement() {
     assert!(!fulltext::is_summary_entry(url, Some(&long_html), None, false));
     let short_html = format!("<p>{}</p>", "摘".repeat(SUMMARY_TEXT_MIN_CHARS - 1));
     assert!(fulltext::is_summary_entry(url, Some(&short_html), None, false));
+
+    // 长摘要标记（lkml.org/rss.php 约定）：超过长度阈值但带 `(Summary)` 前缀
+    let lkml_summary = format!(
+        "Guangshuo Li writes: (Summary) {}",
+        "正文".repeat(SUMMARY_TEXT_MIN_CHARS)
+    );
+    assert!(
+        fulltext::is_summary_entry(url, None, Some(&lkml_summary), false),
+        "lkml 长摘要（超阈值）也该显示按钮"
+    );
+    // 标记必须在头部：正文中途出现 `(Summary)` 不算
+    let marker_late = format!(
+        "{} Guangshuo Li writes: (Summary)",
+        "正文".repeat(SUMMARY_TEXT_MIN_CHARS)
+    );
+    assert!(!fulltext::is_summary_entry(url, None, Some(&marker_late), false),
+        "标记在 96 字窗口之外不算摘要");
+    // 普通长文不带标记：不显示按钮
+    let plain_long = "这是完整的长文。".repeat(100);
+    assert!(!fulltext::is_summary_entry(url, None, Some(&plain_long), false));
+}
+
+/// Anubis 反爬质询页：拒绝提取而不是把质询文本写回覆盖真实摘要
+#[test]
+fn bot_challenge_page_is_rejected_not_extracted() {
+    const CHALLENGE: &str = include_str!("fixtures/fulltext/anubis-challenge.html");
+    let err = fulltext::extract(CHALLENGE, ARTICLE_URL).unwrap_err();
+    assert!(matches!(err, FulltextError::BotChallenge), "实际: {err:?}");
+    // 提示必须引导用户去浏览器，而不是让他们以为重试能好
+    let msg = err.to_string();
+    assert!(msg.contains("浏览器"), "提示语: {msg}");
 }
 
 #[test]
