@@ -5,6 +5,8 @@
 .chorus/*
 !.chorus/specs/
 
+.pi/
+
 # Rust / Tauri
 /target
 src-tauri/gen/schemas
