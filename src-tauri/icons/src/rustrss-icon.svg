@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>RustRss</title>
+  <!-- Filled-only geometry (no strokes) so every renderer, incl. ImageMagick MSVG, draws it identically. -->
+  <rect width="512" height="512" rx="104" fill="#1c1f26"/>
+  <!-- RSS: solid dot + 2 concentric quarter arcs (bottom-left) -->
+  <path d="M 92 279 A 133 133 0 0 1 225 412 A 17 17 0 0 1 191 412 A 99 99 0 0 0 92 313 A 17 17 0 0 1 92 279 Z" fill="#4c9aff"/>
+  <path d="M 92 337 A 75 75 0 0 1 167 412 A 15 15 0 0 1 137 412 A 45 45 0 0 0 92 367 A 15 15 0 0 1 92 337 Z" fill="#4c9aff"/>
+  <circle cx="92" cy="412" r="27" fill="#4c9aff"/>
+  <!-- Ferris: 2 legs per side (behind the shell) -->
+  <path d="M 234.41 294.61 L 216.41 326.61 A 11 11 0 0 0 235.59 337.39 L 253.59 305.39 A 11 11 0 0 0 234.41 294.61 Z" fill="#E03E00"/>
+  <path d="M 265.56 314.52 L 255.56 344.52 A 11 11 0 0 0 276.44 351.48 L 286.44 321.48 A 11 11 0 0 0 265.56 314.52 Z" fill="#E03E00"/>
+  <path d="M 350.41 305.39 L 368.41 337.39 A 11 11 0 0 0 387.59 326.61 L 369.59 294.61 A 11 11 0 0 0 350.41 305.39 Z" fill="#E03E00"/>
+  <path d="M 317.56 321.48 L 327.56 351.48 A 11 11 0 0 0 348.44 344.52 L 338.44 314.52 A 11 11 0 0 0 317.56 321.48 Z" fill="#E03E00"/>
+  <!-- Ferris: rounded oval shell -->
+  <ellipse cx="302" cy="256" rx="100" ry="78" fill="#F74C00"/>
+  <!-- Ferris: arms -->
+  <path d="M 252.89 201.03 L 194.89 197.03 A 13 13 0 0 0 193.11 222.97 L 251.11 226.97 A 13 13 0 0 0 252.89 201.03 Z" fill="#F74C00"/>
+  <path d="M 353.84 228.87 L 395.84 222.87 A 13 13 0 0 0 392.16 197.13 L 350.16 203.13 A 13 13 0 0 0 353.84 228.87 Z" fill="#F74C00"/>
+  <!-- Ferris: chunky open pincers -->
+  <path d="M 176.86 139.77 A 51 51 0 1 1 123.83 215.5 A 21 21 0 0 1 160.21 194.5 A 9 9 0 1 0 169.56 181.14 A 21 21 0 0 1 176.86 139.77 Z" fill="#F74C00"/>
+  <path d="M 460.17 215.5 A 51 51 0 1 1 407.14 139.77 A 21 21 0 0 1 414.44 181.14 A 9 9 0 1 0 423.79 194.5 A 21 21 0 0 1 460.17 215.5 Z" fill="#F74C00"/>
+  <!-- Ferris: eyes + smile -->
+  <circle cx="262" cy="168" r="28" fill="#e6e8ec"/>
+  <circle cx="342" cy="168" r="28" fill="#e6e8ec"/>
+  <circle cx="264" cy="172" r="13" fill="#1c1f26"/>
+  <circle cx="340" cy="172" r="13" fill="#1c1f26"/>
+  <path d="M 326.14 218.35 A 35 35 0 0 1 277.86 218.35 A 6 6 0 0 1 286.14 209.66 A 23 23 0 0 0 317.86 209.66 A 6 6 0 0 1 326.14 218.35 Z" fill="#1c1f26"/>
+</svg>

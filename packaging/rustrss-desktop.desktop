@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=RustRss
+Comment=Local-first RSS reader (Rust + Tauri)
+GenericName=RSS Reader
+# dev 安装时把 Exec 换成你的调试二进制绝对路径（deb 安装由 Tauri 打包器自动生成）
+Exec=/usr/bin/rustrss-desktop
+Icon=rustrss
+Terminal=false
+Categories=Network;News;
+StartupWMClass=rustrss-desktop
+StartupNotify=true
