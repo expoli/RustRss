@@ -1906,6 +1906,113 @@ mod tests {
             .expect_err("没有原文地址应报错");
         assert!(message.contains("没有原文地址"), "实际: {message}");
     }
+
+    // ------------------------------------------------------------ 外链打开（安全）
+
+    /// 合法 http/https 原样通过；首尾空白先 trim 再返回「清洗后」的 URL。
+    #[test]
+    fn external_url_accepts_http_and_https_verbatim() {
+        for url in [
+            "http://example.com/post",
+            "https://example.com/post?a=1&b=2",
+        ] {
+            assert_eq!(validate_external_url(url).unwrap(), url, "合法链接应原样通过: {url}");
+        }
+        assert_eq!(
+            validate_external_url("  https://example.com/post  ").unwrap(),
+            "https://example.com/post",
+            "首尾空白应被 trim"
+        );
+
+        // `&` 与 `%` 是合法 URL 字符（query 分隔符 / 百分号编码），不能拦住：
+        // 命令注入真正的根治点是「不经 shell」，白名单只是纵深。
+        let with_metachars = "https://example.com/?q=1&calc.exe&x=%PATH%";
+        assert_eq!(validate_external_url(with_metachars).unwrap(), with_metachars);
+    }
+
+    /// 非 http/https 协议一律拒绝（`javascript:` / `file:` / `data:` 会被系统打开器当执行入口）。
+    #[test]
+    fn external_url_rejects_other_schemes() {
+        for url in [
+            "javascript:alert(1)",
+            "file:///etc/passwd",
+            "data:text/html,<script>alert(1)</script>",
+            "vbscript:msgbox(1)",
+            "ftp://example.com/x",
+            "https:/example.com",
+            "",
+            "   ",
+        ] {
+            let err = validate_external_url(url)
+                .expect_err("非 http/https 应被拒绝");
+            assert!(err.contains("只允许打开 http/https"), "{url:?} 的错误应说明协议要求，实际: {err}");
+        }
+    }
+
+    /// 空白 / 控制字符（U+0000–U+001F、U+007F）与 shell 元字符一律拒绝 ——
+    /// 这是纵深防御：即便将来某条路径真的经过 shell，这些字符也进不去。
+    #[test]
+    fn external_url_rejects_whitespace_control_and_metacharacters() {
+        for (label, url) in [
+            ("空格", "https://example.com/a b"),
+            ("制表符", "https://example.com/a\tb"),
+            ("换行", "https://example.com/a\nb"),
+            ("回车", "https://example.com/a\rb"),
+            ("NUL", "https://example.com/a\u{0}b"),
+            ("U+001F", "https://example.com/a\u{1f}b"),
+            ("DEL U+007F", "https://example.com/a\u{7f}b"),
+            ("反引号", "https://example.com/a`whoami`"),
+            ("双引号", "https://example.com/\"a\""),
+            ("<", "https://example.com/<a>"),
+            (">", "https://example.com/>a"),
+            ("|", "https://example.com/a|b"),
+            ("^", "https://example.com/a^b"),
+        ] {
+            let err = validate_external_url(url).expect_err("含空白/控制/元字符的链接应被拒绝");
+            assert!(err.contains("不允许的字符"), "{label} 的错误应指出字符问题，实际: {err}");
+        }
+    }
+
+    /// 打开命令：URL 必须原样作为**独立参数**传入，且程序名只可能是三平台打开器之一
+    /// （Windows 曾用 `cmd /C start`，shell 会把 URL 里的 `&` 当命令分隔符 → 命令注入）。
+    #[test]
+    fn external_open_command_never_uses_a_shell() {
+        let url = "https://example.com/?a=1&calc.exe";
+        let command = external_open_command(url);
+        let program = command.get_program().to_string_lossy().into_owned();
+        let args: Vec<String> = command
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect();
+
+        assert!(
+            !program.contains("cmd") && !program.contains("sh"),
+            "不允许经 shell 打开外链，实际程序: {program}"
+        );
+        assert!(
+            matches!(program.as_str(), "rundll32" | "open" | "xdg-open"),
+            "实际程序: {program}"
+        );
+        assert!(
+            args.iter().any(|a| a == url),
+            "URL 必须原样作为独立参数传入，实际参数: {args:?}"
+        );
+        assert!(
+            !args.iter().any(|a| a == "/C" || a == "start"),
+            "参数里不该出现 cmd 的 /C start，实际参数: {args:?}"
+        );
+
+        #[cfg(target_os = "windows")]
+        assert_eq!(
+            args,
+            vec!["url.dll,FileProtocolHandler".to_string(), url.to_string()],
+            "Windows 走 rundll32 url.dll,FileProtocolHandler <url>"
+        );
+        #[cfg(all(unix, not(target_os = "macos")))]
+        assert_eq!(args, vec![url.to_string()], "Linux 行为不变：xdg-open <url>");
+        #[cfg(target_os = "macos")]
+        assert_eq!(args, vec![url.to_string()], "macOS 行为不变：open <url>");
+    }
 }
 
 #[tauri::command]
@@ -2172,27 +2279,57 @@ fn restore_confirm_text(src: &str, en: bool) -> String {
     }
 }
 
+/// 外链在交给系统打开器之前的硬化校验（纵深防御，不是唯一防线）。
+///
+/// 只放行 http/https，且拒绝空白、控制字符与 shell 元字符：URL 来自 feed，
+/// 属不可信输入。注意 `&`、`%` 是合法 URL 字符（query 分隔符 / 百分号编码），
+/// 白名单**不能**靠它们挡住命令注入 —— 根治点是 [`external_open_command`]
+/// 始终把 URL 当独立进程参数传入、不经任何 shell 解析。
+fn validate_external_url(url: &str) -> Result<String, String> {
+    /// 各平台 shell 上有特殊含义、且不该出现在合法 URL 里的字符（不含 `&` `%`）。
+    const FORBIDDEN: [char; 6] = ['"', '<', '>', '|', '^', '`'];
+
+    let trimmed = url.trim();
+    if !(trimmed.starts_with("http://") || trimmed.starts_with("https://")) {
+        return Err(format!("只允许打开 http/https 链接，收到: {trimmed}"));
+    }
+    if let Some(c) = trimmed
+        .chars()
+        .find(|c| c.is_whitespace() || c.is_control() || FORBIDDEN.contains(c))
+    {
+        return Err(format!("链接含不允许的字符 {c:?}（不允许空白、控制字符与 \" < > | ^ `）: {trimmed}"));
+    }
+    Ok(trimmed.to_string())
+}
+
+/// 组装「用系统默认程序打开 URL」的命令。
+///
+/// URL 一律作为**独立进程参数**传入，任何平台都不经 shell 解析。Windows 走
+/// `rundll32 url.dll,FileProtocolHandler`：URL 若经 cmd.exe 解释，其中的 `&` 会被
+/// 当命令分隔符、`%VAR%` 会被展开 —— 恶意 feed 的链接 + 用户单击即命令执行
+/// （审计 P0-1），因此这条路径上不允许再出现任何 shell 启动器。
+fn external_open_command(url: &str) -> std::process::Command {
+    #[cfg(target_os = "windows")]
+    let (program, prefix): (&str, &[&str]) = ("rundll32", &["url.dll,FileProtocolHandler"]);
+    #[cfg(target_os = "macos")]
+    let (program, prefix): (&str, &[&str]) = ("open", &[]);
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let (program, prefix): (&str, &[&str]) = ("xdg-open", &[]);
+
+    let mut command = std::process::Command::new(program);
+    command.args(prefix).arg(url);
+    command
+}
+
 /// 用系统默认浏览器打开链接。
 ///
 /// 只允许 http/https —— 文章里的链接是不可信输入，绝不能把 file:// 之类
 /// 交给系统打开器；也因此这里只用 `Command::new(程序).arg(地址)`，不经过 shell。
 #[tauri::command]
 pub fn open_external(url: String) -> R<()> {
-    let trimmed = url.trim();
-    if !(trimmed.starts_with("http://") || trimmed.starts_with("https://")) {
-        return Err(format!("只允许打开 http/https 链接，收到: {trimmed}"));
-    }
-    #[cfg(target_os = "windows")]
-    let program = "cmd";
-    #[cfg(target_os = "macos")]
-    let program = "open";
-    #[cfg(all(unix, not(target_os = "macos")))]
-    let program = "xdg-open";
-
-    let mut command = std::process::Command::new(program);
-    #[cfg(target_os = "windows")]
-    command.args(["/C", "start", ""]);
-    command.arg(trimmed);
+    let url = validate_external_url(&url)?;
+    let mut command = external_open_command(&url);
+    let program = command.get_program().to_string_lossy().into_owned();
     command
         .spawn()
         .map(|_| ())
