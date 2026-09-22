@@ -948,3 +948,76 @@ fn checkpoint_wal_succeeds_on_file_backed_db() {
     let _ = std::fs::remove_file(&wal);
     let _ = std::fs::remove_file(format!("{}-shm", db_path.display()));
 }
+
+#[test]
+fn counts_rides_indexes_never_the_table_btree() {
+    // 回归：旧版单扫描 4 聚合因 starred/read_later 不在覆盖索引且排在正文大列之后，
+    // planner 只能全表扫——冷启动真实库（8.5k 条 × 11.5KB 正文）实测 83-119ms/次且
+    // 侧栏每次计数刷新都付。改 4 子查询后必须全部走覆盖索引（EXPLAIN 与线上 SQL
+    // 同源，经 explain_counts），任何一个子查询退化为裸 SCAN entries 即失败。
+    let store = Store::open_in_memory().unwrap();
+    let feed_id = store.add_feed("https://example.com/feed.xml", Some("示例源")).unwrap();
+    store
+        .upsert_entries(feed_id, &[mk_entry("a", "标题", "正文"), mk_entry("b", "标题2", "正文2")])
+        .unwrap();
+    store.set_starred(&[1], true).unwrap();
+    store.set_read_later(&[2], true).unwrap();
+    store.set_read(&[1], true).unwrap();
+
+    let (total, unread, starred, later) = store.counts().unwrap();
+    assert_eq!((total, unread, starred, later), (2, 1, 1, 1), "4 计数值语义不变");
+
+    let plan = store.explain_counts().unwrap().join(" | ");
+    let bare_scan = plan
+        .split(" | ")
+        .find(|l| l.contains("SCAN entries") && !l.contains("USING"))
+        .map(|l| l.to_string());
+    assert!(
+        bare_scan.is_none(),
+        "任何子查询都不得退化为裸表扫描（正文大列的溢出页链代价），实际计划: {plan}"
+    );
+    for needle in [
+        "idx_entries_sortkey",
+        "idx_entries_read_published",
+        "idx_entries_starred",
+        "idx_entries_read_later",
+    ] {
+        assert!(plan.contains(needle), "子查询应走 {needle}，实际计划: {plan}");
+    }
+}
+
+#[test]
+fn migration_v8_to_v9_adds_starred_partial_index_on_real_file() {
+    // 真文件走一次 v8→v9：v8 库（无星标部分索引）升级后 idx_entries_starred 存在、
+    // counts 的 EXPLAIN 即刻全走索引、既有行与计数不变。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-v9-test-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute_batch(&MIGRATIONS[..8].join(";")).unwrap();
+        conn.execute_batch(
+            "INSERT INTO feeds (id, url, title, created_at) VALUES (1, 'https://a', 'A', 0);
+             INSERT INTO entries (id, feed_id, stable_id, id_origin, title, fetched_at)
+               VALUES (1, 1, 's1', 'source_data', 'T1', 100), (2, 1, 's2', 'source_data', 'T2', 200);
+             UPDATE entries SET starred = 1 WHERE id = 1;
+             PRAGMA user_version = 8;",
+        )
+        .unwrap();
+    }
+    let store = Store::open(&db_path).unwrap();
+    assert_eq!(store.schema_version().unwrap() as usize, MIGRATIONS.len());
+    let (total, unread, starred, _later) = store.counts().unwrap();
+    assert_eq!((total, unread, starred), (2, 2, 1), "升级不改变计数");
+    let plan = store.explain_counts().unwrap().join(" | ");
+    assert!(
+        !plan.split(" | ").any(|l| l.contains("SCAN entries") && !l.contains("USING")),
+        "升级后即走索引: {plan}"
+    );
+    let _ = std::fs::remove_file(&db_path);
+}

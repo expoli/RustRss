@@ -741,26 +741,33 @@ impl Store {
             .map_err(Into::into)
     }
 
-    /// 一次扫描取全部计数（entry/unread/starred/read_later），避免 4 次分别全表扫。
+    /// 全部计数（entry/unread/starred/read_later）。
+    ///
+    /// 历史教训：旧版是单扫描 4 聚合（SUM CASE × 3），但 starred/read_later 不在任何
+    /// 覆盖索引里，且这两列排在正文大列之后—— planner 只能全表扫，逐行穿过溢出页链。
+    /// 热缓存下 8.5k 条只要 ~10ms（曾因此误判可接受）；冷启动真实库上实测 83-119ms，
+    /// 且侧栏每次计数刷新都付一次（打开文章去抖后也会触发），锁排队还会拖着 get_entry
+    /// 一起变慢。改为 4 个子查询后各自走覆盖索引（total→sortkey / unread→read_published /
+    /// starred→v9 部分索引 / later→v4 部分索引），实测 <1ms，冷热无关。
     pub fn counts(&self) -> Result<(i64, i64, i64, i64)> {
         self.conn
-            .query_row(
-                "SELECT COUNT(*),
-                        COALESCE(SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END), 0),
-                        COALESCE(SUM(CASE WHEN starred = 1 THEN 1 ELSE 0 END), 0),
-                        COALESCE(SUM(CASE WHEN read_later = 1 THEN 1 ELSE 0 END), 0)
-                 FROM entries",
-                [],
-                |r| {
-                    Ok((
-                        r.get::<_, i64>(0)?,
-                        r.get::<_, i64>(1)?,
-                        r.get::<_, i64>(2)?,
-                        r.get::<_, i64>(3)?,
-                    ))
-                },
-            )
+            .query_row(COUNTS_SQL, [], |r| {
+                Ok((
+                    r.get::<_, i64>(0)?,
+                    r.get::<_, i64>(1)?,
+                    r.get::<_, i64>(2)?,
+                    r.get::<_, i64>(3)?,
+                ))
+            })
             .map_err(Into::into)
+    }
+
+    /// counts 的 EXPLAIN 断言入口（与线上 SQL 同源，见 `explain_list_entries` 先例）。
+    #[doc(hidden)]
+    pub fn explain_counts(&self) -> Result<Vec<String>> {
+        let mut stmt = self.conn.prepare(&format!("EXPLAIN QUERY PLAN {COUNTS_SQL}"))?;
+        let rows = stmt.query_map([], |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
     fn set_flag(&self, column: &str, ids: &[i64], value: bool) -> Result<usize> {
@@ -944,6 +951,14 @@ pub struct AiCacheKey<'a> {
     pub provider_model: &'a str,
     pub prompt_version: &'a str,
 }
+
+/// counts() 的 SQL：4 个子查询各自走覆盖索引（total→sortkey / unread→read_published /
+/// starred→v9 部分索引 / later→v4 部分索引），绝不触碰正文大列所在的表 B 树。
+/// 抽成独立常量是为了让 EXPLAIN 断言与线上 SQL 逐字同源（见 `explain_counts`）。
+const COUNTS_SQL: &str = "SELECT (SELECT COUNT(*) FROM entries),
+       (SELECT COUNT(*) FROM entries WHERE read = 0),
+       (SELECT COUNT(*) FROM entries WHERE starred = 1),
+       (SELECT COUNT(*) FROM entries WHERE read_later = 1)";
 
 const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, e.content_html, e.content_text,

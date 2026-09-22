@@ -132,4 +132,10 @@ pub const MIGRATIONS: &[&str] = &[
     r#"
     ALTER TABLE feeds ADD COLUMN refresh_interval_minutes INTEGER;
     "#,
+    // v9：星标部分索引。旧版 counts() 是单扫描 4 聚合，starred 不在任何覆盖索引且列在
+    // 正文大列之后 → 全表扫穿溢出页链（冷启动真实库实测 ~100ms/次，侧栏每次刷新都付）。
+    // 改成 4 个子查询后 starred 需要自己的索引；部分索引只含已星标行（常态 0 行，体积忽略）。
+    r#"
+    CREATE INDEX idx_entries_starred ON entries(starred) WHERE starred = 1;
+    "#,
 ];
