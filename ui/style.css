@@ -662,6 +662,11 @@ li.folder-feed .name { font-size: 13px; }
 #ctx-menu button:hover { background: var(--bg-hover); }
 #ctx-menu button.danger { color: var(--danger); }
 #ctx-menu button.danger:hover { background: var(--bg-hover); }
+/* 分组分隔线 / 分组小标题 / 勾选标记（未勾选项留同宽占位，标签左对齐） */
+#ctx-menu .ctx-sep { height: 1px; margin: 4px 6px; background: var(--line); }
+#ctx-menu .ctx-head { padding: 4px 10px 2px; font-size: 11px; color: var(--fg-dim); }
+#ctx-menu button .mark { display: inline-block; width: 15px; color: var(--accent); }
+#ctx-menu button.checked .label { font-weight: 600; }
 
 .prompt-overlay {
   position: fixed;

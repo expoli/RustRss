@@ -317,12 +317,20 @@ function feedRow(f, existing) {
   }
   const failed = !!(f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified');
   li.className = `${state.view.kind === 'feed' && state.feedId === f.id ? 'active' : ''} folder-feed`;
-  li.title = failed
+  const tooltip = failed
     ? t('sidebar.feedTooltipFailed', {
         status: f.last_status,
         error: f.last_error || '',
       })
     : t('sidebar.feedTooltipOk', { url: f.url });
+  // 独立档位是「看不见的设置」：跟随全局的源不写这一行，有覆盖的源在常驻
+  // tooltip 里显出来（否则只有打开右键菜单才知道这个源跟别人不一样）。
+  li.title =
+    f.refresh_interval_minutes == null
+      ? tooltip
+      : `${tooltip}\n${t('sidebar.feedTooltipInterval', {
+          interval: feedIntervalLabel(f.refresh_interval_minutes),
+        })}`;
   setText(li.querySelector('.name'), f.title);
   li.querySelector('.dot').hidden = !failed;
   setText(li.querySelector('.count'), String(f.unread));
@@ -925,16 +933,42 @@ function closeContextMenu() {
   el('ctx-menu')?.remove();
 }
 
-/// 通用右键菜单：items = [{label, danger?, action}]
+/// 通用右键菜单：items = [{label, danger?, action} | {separator: true} | {header: true, label}]
+/// - `separator` 画一条分组分隔线；`header` 是小号灰字的分组标题（不可点）。
+/// - `checked` 参与勾选组：勾中项前面打 ✓，未勾中项留同宽占位（标签对齐）。
 function openContextMenu(ev, items) {
   closeContextMenu();
   const menu = document.createElement('div');
   menu.id = 'ctx-menu';
   for (const item of items) {
+    if (item.separator) {
+      const sep = document.createElement('div');
+      sep.className = 'ctx-sep';
+      menu.appendChild(sep);
+      continue;
+    }
+    if (item.header) {
+      const head = document.createElement('div');
+      head.className = 'ctx-head';
+      head.textContent = item.label;
+      menu.appendChild(head);
+      continue;
+    }
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.textContent = item.label;
     if (item.danger) btn.classList.add('danger');
+    if (item.checked !== undefined) {
+      const mark = document.createElement('span');
+      mark.className = 'mark';
+      mark.textContent = item.checked ? '✓' : '';
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = item.label;
+      btn.append(mark, label);
+      if (item.checked) btn.classList.add('checked');
+    } else {
+      btn.textContent = item.label;
+    }
     btn.onclick = () => {
       closeContextMenu();
       item.action();
@@ -945,6 +979,36 @@ function openContextMenu(ev, items) {
   const pad = 8;
   menu.style.left = Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - pad) + 'px';
   menu.style.top = Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - pad) + 'px';
+}
+
+/// 每源刷新间隔档位：`value` 与后端 `set_feed_refresh_interval` 的白名单一一对应
+/// （`null` / `"global"` = 跟随全局档）。单源没有「关闭」档——要停自动刷新就选
+/// 「跟随全局」并把全局档关掉，避免出现两套「关」的语义。
+/// 档位文案直接复用设置页的 `settings.refreshMin*`：同一档位在设置页与菜单里
+/// 必须是同一句话（tech_design 允许复用或新建 key，这里选复用以免两份翻译漂移）。
+const FEED_REFRESH_CHOICES = [
+  { value: null, label: followGlobalLabel },
+  { value: '15', label: () => t('settings.refreshMin15') },
+  { value: '30', label: () => t('settings.refreshMin30') },
+  { value: '60', label: () => t('settings.refreshMin60') },
+  { value: '120', label: () => t('settings.refreshMin120') },
+  { value: '360', label: () => t('settings.refreshMin360') },
+];
+
+/// 档位（分钟数，来自 FeedRow）→ 界面文案；认不出的值原样显示数字，不静默换档
+function feedIntervalLabel(minutes) {
+  const choice = FEED_REFRESH_CHOICES.find((c) => c.value === String(minutes));
+  return choice ? choice.label() : String(minutes);
+}
+
+/// 「跟随全局」项的口径：跟随的就是全局档，全局关掉时这个源也随之不自动刷新
+/// （评审 B1 的例外只针对**已单独设置间隔**的源，所以这里必须把当前全局档写出来，
+/// 否则用户分不清「跟随」到底跟到了什么）。
+function followGlobalLabel() {
+  const minutes = state.settings?.refresh_interval_minutes;
+  const globalText =
+    !minutes || minutes === 'off' ? t('settings.refreshOff') : t(`settings.refreshMin${minutes}`);
+  return t('menu.refreshFollowGlobalWith', { state: globalText });
 }
 
 function openFeedMenu(ev, feed) {
@@ -959,8 +1023,34 @@ function openFeedMenu(ev, feed) {
   if (feed.folder_id != null) {
     items.push({ label: t('menu.moveToUngrouped'), action: () => reassignFeed(feed.id, null) });
   }
-  if (!items.length) return;
+  // 刷新间隔组：与「移入文件夹」同层、分隔线隔开；当前档位打勾（FeedRow 直出）
+  const current =
+    feed.refresh_interval_minutes == null ? null : String(feed.refresh_interval_minutes);
+  // 没有「移动」项时（无分组可移动）不画分隔线——否则菜单顶部多一条没意义的线。
+  if (items.length) items.push({ separator: true });
+  items.push({ header: true, label: t('menu.refreshInterval') });
+  for (const choice of FEED_REFRESH_CHOICES) {
+    items.push({
+      label: choice.label(),
+      checked: current === choice.value,
+      action: () => setFeedRefreshInterval(feed.id, choice.value),
+    });
+  }
   openContextMenu(ev, items);
+}
+
+/// 保存单源刷新间隔覆盖；返回的行已带最新 refresh_interval_minutes，但侧栏勾选态/
+/// tooltip 与计数从同一条 `sidebar_data` 读取路径更新，避免两套状态漂移。
+function setFeedRefreshInterval(feedId, value) {
+  invoke('set_feed_refresh_interval', { feedId, value })
+    .then((row) => {
+      log(`feed ${feedId} refreshInterval=${row.refresh_interval_minutes ?? 'global'}`);
+      return refreshCounts();
+    })
+    .catch((err) => {
+      setStatus(err.message, true);
+      log(`set_feed_refresh_interval failed: ${err.message}`);
+    });
 }
 
 function openFolderMenu(ev, folder) {

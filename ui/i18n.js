@@ -30,6 +30,7 @@ const DICTS = {
     'sidebar.add': '添加',
     'sidebar.feedTooltipOk': '{url}\n双击刷新此源',
     'sidebar.feedTooltipFailed': '上次抓取：{status}｜{error}\n双击可重试',
+    'sidebar.feedTooltipInterval': '独立刷新间隔：{interval}',
 
     'list.unread': '全部未读',
     'list.starred': '星标',
@@ -55,6 +56,8 @@ const DICTS = {
     'menu.moveToUngrouped': '移出到未分组',
     'menu.rename': '重命名',
     'menu.delete': '删除',
+    'menu.refreshInterval': '刷新间隔',
+    'menu.refreshFollowGlobalWith': '跟随全局（{state}）',
     'folder.newTitle': '新建文件夹',
     'folder.renameTitle': '重命名文件夹',
     'prompt.ok': '确定',
@@ -176,7 +179,8 @@ const DICTS = {
     'settings.closeExit': '退出程序',
     'settings.closeTray': '最小化到托盘',
     'settings.refreshInterval': '自动刷新间隔',
-    'settings.refreshIntervalHint': '开启后到点自动抓取全部订阅；正在进行的刷新不会被叠加',
+    'settings.refreshIntervalHint':
+      '开启后到点自动抓取订阅；正在进行的刷新不会被叠加。全局关闭时，已单独设置间隔的源仍会按各自间隔刷新',
     'settings.refreshOff': '关闭',
     'settings.refreshMin15': '每 15 分钟',
     'settings.refreshMin30': '每 30 分钟',
@@ -297,6 +301,7 @@ const DICTS = {
     'sidebar.add': 'Add',
     'sidebar.feedTooltipOk': '{url}\nDouble-click to refresh this feed',
     'sidebar.feedTooltipFailed': 'Last fetch: {status} | {error}\nDouble-click to retry',
+    'sidebar.feedTooltipInterval': 'Own refresh interval: {interval}',
 
     'list.unread': 'All unread',
     'list.starred': 'Starred',
@@ -323,6 +328,8 @@ const DICTS = {
     'menu.moveToUngrouped': 'Move to ungrouped',
     'menu.rename': 'Rename',
     'menu.delete': 'Delete',
+    'menu.refreshInterval': 'Refresh interval',
+    'menu.refreshFollowGlobalWith': 'Follow the global setting ({state})',
     'folder.newTitle': 'New folder',
     'folder.renameTitle': 'Rename folder',
     'prompt.ok': 'OK',
@@ -444,7 +451,7 @@ const DICTS = {
     'settings.closeTray': 'Minimize to tray',
     'settings.refreshInterval': 'Auto refresh interval',
     'settings.refreshIntervalHint':
-      'Fetches every feed on a schedule; a refresh already running is never stacked on top',
+      'Fetches feeds on a schedule; a refresh already running is never stacked on top. When the global setting is off, feeds with their own interval still refresh on their own schedule',
     'settings.refreshOff': 'Off',
     'settings.refreshMin15': 'Every 15 minutes',
     'settings.refreshMin30': 'Every 30 minutes',

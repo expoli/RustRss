@@ -272,3 +272,56 @@ headless 已机械验证（P0-5 任务报告）：默认库二次启动 264ms �
 
 - [ ] 托盘隐藏态（关闭到托盘）后二次启动：主窗口从托盘唤出并获得焦点（headless 无法复现 GTK 侧隐藏语义）
 - [ ] Wayland 会话下二次启动行为一致
+
+## 11. 每源独立刷新间隔（2026-09-22-per-feed-refresh，前端任务 2e1fab5f）
+
+> headless 跑法：`Xvfb :99`（1920x1200）+ `GDK_BACKEND=x11`（**测试进程环境，不是应用代码设置**）+
+> `HOME`/`XDG_DATA_HOME` 隔离到 `/tmp/rr-perfeed-ui/home` + `RUSTSS_DB=/tmp/rr-perfeed-ui/e2e.sqlite` +
+> 本地 fixture 服务（`python3 -m http.server 8792`，3 个源 feed_a/b/c.xml，访问日志即请求证据）+
+> `xdotool` 驱动真实 GUI；读回 `sqlite3`、应用 stdout（`[ui]` 行）、fixture 访问日志。
+> 两处环境细节：① 加 `WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1`，否则菜单区域截图出现黑块；
+> ② GTK tooltip 是独立 X 窗口，用 `import -window <应用窗口>` 会截成一整块黑，**要截 tooltip 得用 `import -window root`**。
+> 用户真实库（`~/.local/share/rustrss/rustrss.sqlite`）mtime 全程停在 09-21 18:59，未被触碰。
+
+### 11.1 已机械验证的部分（截图 + 库回读 + 访问日志自证）
+
+- **菜单结构与勾选（zh-CN）**：右键某源 →「移动到：Work」→ 分隔线 → 灰字组标题「刷新间隔」→
+  ✓跟随全局（关闭）/ 每 15 分钟 / 每 30 分钟 / 每 60 分钟 / 每 2 小时 / 每 6 小时（截图 `shot-menu-with-folder.png`）。
+  点「每 15 分钟」后重开菜单，✓ 移到 15 那一档且该行加粗（`shot-menu-checked15-crop.png`）——勾选态来自
+  `FeedRow.refresh_interval_minutes`，经 `refreshCounts()` 的同一条 `sidebar_data` 路径刷新。
+  「跟随全局」项把当前全局档写进文案（全局 off → 「跟随全局（关闭）」；若全局是 30 则是「跟随全局（每 30 分钟）」），
+  与设置页 Hint 的例外口径一致。
+- **点选即落库**：点「每 15 分钟」→ 应用日志 `[ui] feed 2 refreshInterval=15` 紧接 `[ui] renderSidebar feeds=3`
+  （= `invoke('set_feed_refresh_interval')` 成功后 `refreshCounts()`），库内 `feeds.id=2` 由 NULL 变 15；
+  点「跟随全局（关闭）」→ 回 NULL（日志 `feed 2 refreshInterval=global`）；再点「每 30 分钟」→ 30。
+  侧栏 tooltip 同步显示独立档（zh `独立刷新间隔：每 15 分钟` `shot-tooltip-b-crop.png`；
+  en `Own refresh interval: Every 30 minutes` `shot-tooltip-en2-crop.png`），跟随全局的源不显示这一行。
+- **覆盖优先于全局关闭（本任务的关键例外）**：库内全局档 `refresh.interval_minutes=off`、`refresh.on_start=false`，
+  三个源的 `last_fetched_at` 都预置成约 19 分钟前 —— A 覆盖 15min、B 跟随全局、C 覆盖 360min。
+  **先**验证 B 跟随全局且全局 off：tick 只刷 A（fixture 日志仅 `GET /feed_a.xml`）。
+  再用右键把 B 设成 15 分钟：下一 tick（08:47:34）fixture 日志只多一条 `GET /feed_b.xml`，B 的 `last_fetched_at`
+  前移到 08:47:34、标题被刷新成 feed 里的 `Fixture B`；C（未到点）与 A（2 分钟前刚刷过、未到点）零请求。
+  → 全局关闭时，已单独设置间隔的源仍按各自间隔刷新，未到点的源不刷。
+- **「跟随全局」把源交回全局开关**：08:48:37 用菜单把 B 设回「跟随全局（关闭）」后，08:48:34 与 08:49:34
+  两个 tick 都没有新的 `feed_b` 请求，B 的 `last_fetched_at` 停在 08:47:34。
+- **重启保留**：B 设成 30 分钟后杀进程重启（顺便把 `ui.locale` 改成 en）：库内 B 仍为 30，重开右键菜单 ✓ 落在
+  「Every 30 minutes」（`shot-menu-en-crop.png`），tooltip 显示 `Own refresh interval: Every 30 minutes`
+  （`shot-tooltip-en2-crop.png`）——重启后勾选态与 tooltip 都从同一列读回。
+- **设置页 Hint 双语（评审 B1 的例外）**：zh-CN `shot-hint-zh-crop.png`「开启后到点自动抓取订阅；正在进行的刷新
+  不会被叠加。全局关闭时，已单独设置间隔的源仍会按各自间隔刷新」；en `shot-hint-en-crop.png`
+  「… When the global setting is off, feeds with their own interval still refresh on their own schedule」。
+- **i18n 与测试**：应用启动自检 `i18n selftest ok (keys=249)`（新增 `menu.refreshInterval` /
+  `menu.refreshFollowGlobalWith` / `sidebar.feedTooltipInterval` 三个 key，档位文案复用 `settings.refreshMin*`，
+  避免两份翻译漂移）；node 侧等价脚本核对两份字典各 249 key、`index.html` 132 处与 `app.js` 121 处引用全部存在；
+  `cargo test --workspace` 全绿。
+- **事件代理模式不变**：右键仍由 `#feeds` 容器统一代理（`contextmenu` → `openFeedMenu`），行复用不重挂监听；
+  菜单原语 `{separator}` / `{header}` / `{checked}` 加在共用的 `openContextMenu` 上，文件夹菜单不受影响。
+
+### 11.2 仍需真实桌面会话人工核验
+
+- [ ] 真实 WebKitGTK 主题/字体下：分隔线、灰字组标题、✓ 勾选标记与标签对齐显示正常（headless 截图已确认结构，像素风格需真机复核），长文案不被 `max-width: 260px` 截断
+- [ ] 悬停 source 行：tooltip 三行文案正常显示（Xvfb 下 GTK tooltip 窗口整块黑，只能靠 root 截图读文字）
+- [ ] 15 分钟档真等到点：右键设 15 分钟后不动应用，到点自动刷新一次（headless 是预置 19 分钟前的 `last_fetched_at` + 60s tick 复现的，没有真等 15 分钟）
+- [ ] 英文界面（Settings → Language = English）下右键菜单与 tooltip 文案；切换语言后重开菜单文案跟着变
+- [ ] 全局档从「关闭」改成 30 分钟：下一 tick 里「跟随全局」的源按新档补刷，已覆盖的源不受影响（后端 `due_feed_ids` 纯函数单测已覆盖该分支）
+- [ ] Wayland 会话（KDE / GNOME 各一）下右键菜单定位与点击命中（本次是 X11/Xvfb）
