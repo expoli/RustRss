@@ -885,15 +885,14 @@ pub async fn list_font_families() -> R<Vec<String>> {
 /// `list_font_families` 的本体（不依赖 Tauri，单测直接跑真机路径）。
 ///
 /// Linux 走 `fc-list --format=%{family[0]}`；其余平台空表（见上）。
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))] // 非 Linux 只有测试引用
+/// 平台分支用运行时 `cfg!` 而不是 `#[cfg]` 属性：两个分支在**所有**平台都参与编译，
+/// Windows / macOS 的 nightly 构建因此也能类型检查到 fc-list 这条路——`#[cfg]` 掉的
+/// 分支在本机（只跑 Linux）永远不编译，写坏了要到打包时才发现。
 pub(crate) async fn probe_font_families() -> Vec<String> {
-    #[cfg(target_os = "linux")]
-    {
+    if cfg!(target_os = "linux") {
         // `--format` 的长写法比 `-f` 在旧版 fontconfig 上更稳；`%{family[0]}` = 首个族名
         run_font_command("fc-list", &["--format=%{family[0]}\n"], FONT_LIST_TIMEOUT).await
-    }
-    #[cfg(not(target_os = "linux"))]
-    {
+    } else {
         Vec::new()
     }
 }
@@ -901,7 +900,6 @@ pub(crate) async fn probe_font_families() -> Vec<String> {
 /// 解析 fc-list 输出（每行一个族名）→ 排序去重的族名表。
 ///
 /// 纯函数：真机装了哪些字体不可控，解析/去重/排序用固定输入单测。
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))] // 非 Linux 只有测试引用
 fn parse_font_families(raw: &str) -> Vec<String> {
     let mut families: Vec<String> = raw
         .lines()
@@ -919,7 +917,6 @@ fn parse_font_families(raw: &str) -> Vec<String> {
 ///
 /// `kill_on_drop`：超时后子进程真被杀掉，不留一个还在跑 fc-list 的孤儿。
 /// （`std::process` 没有带超时的 `wait`，自己轮询 `try_wait` 在子进程写满管道时会死锁。）
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))] // 非 Linux 只有测试引用
 async fn run_font_command(bin: &str, args: &[&str], timeout: std::time::Duration) -> Vec<String> {
     let run = tokio::process::Command::new(bin)
         .args(args)
@@ -1198,7 +1195,6 @@ mod tests {
     }
 
     /// spawn 失败（未装 fontconfig 的机器）：空表，不报错、不 panic。
-    #[cfg(unix)]
     #[tokio::test]
     async fn run_font_command_degrades_when_binary_missing() {
         let families = run_font_command("rustrss-definitely-no-such-binary", &[], std::time::Duration::from_secs(1)).await;
@@ -1224,9 +1220,12 @@ mod tests {
         );
     }
 
-    /// fc-list 是否可用（测试环境相关，两条分支都断言）。
-    #[cfg(target_os = "linux")]
+    /// fc-list 是否可用（测试环境相关，两条分支都断言）。`cfg!` 而不是 `#[cfg]`：
+    /// 与 `probe_font_families` 同一口径，非 Linux 平台一样能编译到这里。
     fn fc_list_available() -> bool {
+        if !cfg!(target_os = "linux") {
+            return false;
+        }
         std::process::Command::new("fc-list")
             .arg("--version")
             .stdout(std::process::Stdio::null())
@@ -1234,11 +1233,6 @@ mod tests {
             .status()
             .map(|s| s.success())
             .unwrap_or(false)
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    fn fc_list_available() -> bool {
-        false
     }
 
     #[test]
