@@ -644,4 +644,31 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（测试进程环境，非应�
 
 - **Windows 运行时未实测（T1 遗留）**：本机无 Windows/mingw，`open_external` 的 rundll32 路径只有单元测试 + `rustc --target x86_64-pc-windows-gnu --emit=metadata` 类型检查。真机核验步骤：Windows 构建启动后，打开一篇 link 含 `&` 的文章（如 `https://example.com/?a=1&b=2`）点「浏览器打开」→ 应打开完整 URL，且不得出现由 shell 解析产生的额外命令（rundll32 自身进程属预期）；同时确认标题栏三键（最小化/最大化/关闭）可用。
 - **UI 修复（T4）与 CSP（T5）仅在 X11/Xvfb 验证**：Wayland 原生会话、macOS、Windows 的界面回归（滚动保持 / 按钮态 / 零 CSP 违规）未覆盖；CSP 在 Windows WebView2 下 `connect-src ipc:` 的兼容性需真机回归。
-- **日志功能批次（2026-09-22-logging）**：待实现，验收点见 spec.md「诊断与日志」节。
+- **日志功能批次（2026-09-22-logging）**：已实现并收口，验证记录见第 18 节。
+
+## 18. 日志功能（2026-09-22-logging，任务 7ae90b5b / 7cee65c2 / 69a5a579 / fabcc214）
+
+### 18.1 已机械验证的部分（单测 + Xvfb 实机日志/截图 + 库回读自证）
+
+headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不是应用代码设置**）+ 隔离 `HOME=/tmp/t4-live/home`（数据目录随之隔离）+ `RUSTSS_DB` 指向真实库副本 + `setsid` 后台启动 + `xdotool` 真实点击 + `import` 截屏；改 `ui/` 后先 `cargo build -p rustrss-desktop`（Tauri 编译期嵌入 `ui/`）。
+
+- **T1 core 基础设施（7ae90b5b，c3c8170）**：`paths::logs_dir()` = `default_data_dir()/logs`；`logging.rs` 单测覆盖文件命名（`rustrss-YYYYMMDD-HHMMSS.log` + 同秒 `-N` 后缀）、行格式（本地时间毫秒 + 级别 + target + message）、`prune` 边界（恰好 20 不删 / 21 删 1 / 超 50MB 按 mtime 从旧删 / 单文件超上限）、`init` 目录不可创建时返回 `Err` 而不是 panic。
+- **T2 接入与迁移（7cee65c2，c8b2b38）**：启动最早期以默认 `info` 初始化并装 panic hook、开库后按 `log.level` 覆盖；`ui_log` 改为 `log::info!(target: "ui", "[ui] …")`；`crates/rustrss-core/tests/logging_runtime.rs` 独占进程断言：级别门（info 下 debug 不落盘 / 切 debug 后落盘）、debug 目标过滤（`h2`/`hyper`/`reqwest` 的 debug/trace 丢弃，本应用与 `ui` 保留，依赖的 info/warn/error 仍收录）、panic 写 payload + 位置且链式调用原 hook（stderr 现场不丢）。
+- **T3 log.level（69a5a579，792e77b）**：白名单 `info`/`debug` + 非法回落 + 写库钳位 + 即时生效（`set_max_level`）有测试；设置页下拉 + i18n 双语。
+- **T4（fabcc214）**：`open_logs_dir` 单测（启动器程序名只可能是 `xdg-open`/`open`/`explorer`、绝不含 `cmd`/`sh`、目录路径是唯一独立参数；启动器缺失时返回可读错误而不是 panic）。
+- **本批收口实机复跑（2026-09-23，Xvfb :99 + 隔离 HOME + 库副本）**：
+  - 每次启动各写一份新日志（连续 5 次启动 5 份），行如 `2026-09-23T01:47:05.433+08:00 INFO  rustrss_desktop: [rustrss] 本次日志文件: …`、`INFO  ui: [ui] app.js start`——`[ui]` 行只在日志文件里，stdout 无。
+  - 保留策略：预置 25 个文件 / 62,914,994 字节（3×20MB 最旧 + 22 个 1KB）→ 重启后 **20 个 / 1939 字节**（两条上限同时满足），日志行 `日志保留清理: 删除 6 个（剩 20 个 / 377 字节）`，被删的正是最旧的 3 个 20MB 与最旧的 3 个小文件（`ls -lS` 复读）。
+  - 关于页按钮：`xdotool` 真实点击（设置 → 关于 →「打开日志目录」）→ 日志 `[ui] open_logs_dir ok` / `[ui] open_logs_dir failed: …`；正常环境状态栏「已请系统文件管理器打开日志目录」，无启动器环境红字可读错误且进程存活（截图）。
+  - 目录兜底：把 `logs/` 整个移走后点按钮 → 目录被重新创建（空目录），即 `create_dir_all` 分支生效。
+  - 级别：库内 `log.level=debug` 后启动 → 出现 `DEBUG` 行（`调度: 启动首刷延迟 10s 结束…`、`刷新批次开始: 源=120 并发=12`）。
+  - 降级（初始化失败不阻断启动）：`chmod 500 logs/` → 启动仅一行 stderr `[rustrss] 日志初始化失败（本次不写日志文件，应用继续启动）: …（os error 13）`，界面照常渲染 120 个源 / 13197 条（截图），不新增日志文件。
+  - 敏感信息：库内 `mcp.token`（32 位）明文在所有本批日志文件中 0 命中；`key=` / `token=` / `Bearer ` / `password=` 形态 0 命中；MCP 启动行只有 URL +「需 token 鉴权」。
+  - `cargo test --workspace` **231 passed / 0 failed（17 个测试目标）**；`cargo clippy --workspace --all-targets` 仅 3 条既有基线警告（`rustrss-core`：`fulltext.rs:130` redundant closure、`store/mod.rs:292` 与 `:499` redundant `ok()`），无新增。
+
+### 18.2 环境限制与仍需真机核验
+
+- **Windows / macOS 未实测**：`explorer` / `open` 路径只有单测 + 类型检查。真机核验步骤：点「打开日志目录」→ Windows 应开资源管理器、macOS 应开 Finder 并定位到 `logs/`。
+- **「启动器存在但自身失败」不报错（已知取舍）**：状态栏文案是「已**请**系统文件管理器打开」而不是「已打开」，因为 `spawn` 成功 ≠ 目录真的打开了。实测本机（隔离 HOME + Xvfb）`xdg-open` 静默 `exit 0` 且不打开任何窗口 → 应用无从区分（退出码没有信号；Windows `explorer` 成功也常返回 1，用退出码判断会误报）。只有**启动器不存在**（裸容器 / 未装 xdg-utils）才走可读错误路径——与既有 `open_external` 同一口径。
+- **真实桌面会话点击未覆盖**：本次是 Xvfb（无桌面会话、无 D-Bus 文件管理器），「按钮 → 命令 → 系统启动器」这一跳由真实点击 + 日志自证；「文件管理器真的打开该目录」需真机（KDE / GNOME，含 Wayland 各一次）。
+- **每次点击留一个短暂 `defunct` 子进程**：`Command::spawn` 不 reap，直到应用退出（与既有 `open_external` 完全相同）；一次点击一个、无增长风险，未改。

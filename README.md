@@ -165,8 +165,9 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 应用图标：Ferris（Rust 蟹吉祥物）+ RSS 电波标记（源文件 src-tauri/icons/src/ 含几何生成脚本）；Wayland 下 cargo run 的任务栏图标需装 desktop 文件（packaging/rustrss-desktop.desktop 模板）
 - [x] 托盘未读角标：未读 > 0 时在托盘图标右上角画红点（由现有窗口图标派生，不预置图片资源）+ tooltip「RustRss · N 篇未读」（**保留品牌名**），未读清零后恢复原图标。角标由后台刷新与改变未读数的命令（`set_read` / 全部已读 / 全部未读 / 删除订阅）同步；手动刷新路径不动角标（下一轮后台刷新自愈）。托盘不可用时静默 no-op，不刷错误日志（见验证清单第 9 节）
 - [x] 单实例锁：用**默认库**时第二次启动会在毫秒级被已有实例接管（唤出主窗口后新进程自退）——避免两进程抢同一个 MCP 端口、双写同一个 SQLite。注意：新进程在被接管前有短暂启动期（历史行为是先开库再被退出，现已把开库/拉起 MCP 全部移到单实例判定之后，新进程不再触碰库与端口）；`RUSTSS_DB`/参数把库指到别处时**不注册锁**，多开诊断副本不受影响
+- [x] 日志（诊断材料）：每次启动在数据目录 `logs/` 下新建一个日志文件（`rustrss-YYYYMMDD-HHMMSS.log`），行内含本地时间戳（毫秒）/级别/来源模块，Rust 侧关键事件与界面诊断行（`[ui]`，target=ui）进同一份文件；panic 写一条 ERROR（payload + 位置）且保留 stderr 现场；每次启动清理保留最近 20 个文件且总量 ≤50MB（两条上限独立生效、超限从最旧删）；设置 → 关于有「日志级别」（`log.level`，info/debug，改完即时生效、跨重启保持，debug 只收录本应用 `rustrss*`/`ui` 的记录）与「打开日志目录」（系统文件管理器打开，路径作独立参数不经 shell，失败给可读错误不崩溃）；初始化失败降级为不写日志、不阻断启动。详见下节
 - [x] Linux 打包：产出 `.deb`（**8.1MB，不打包 WebKit**，依赖声明 `libwebkit2gtk-4.1-0, libgtk-3-0, libayatana-appindicator3-1`）
-- [x] i18n：zh-CN / en（306 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
+- [x] i18n：zh-CN / en（317 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
 - [ ] 便携模式（`portable.txt`）
 - [ ] 超长列表的 DOM 上限：渐进加载会把已加载的行全部留在 DOM 里（8k 库全扫后约 8k 行，实测滚动与 j/k 均无卡顿），如需更激进的取舍可再做虚拟滚动
 - [ ] 发布构建开 `strip`（当前未开，`Installed-Size` 25MB 偏大）、rpm/Windows/macOS 打包
@@ -205,6 +206,18 @@ npx -y @tauri-apps/cli@latest build --bundles deb
 关于第 2 条：页面启动时会跑一次自检（构造带 `<script>`/`onerror`/`javascript:` 的脏 HTML，验证清洗结果与相对地址解析），结果上报到 stdout：日志里看到 `sanitizer selftest ok` 即通过。**这个自检不是形式，它已经抓出两个真 bug**：清洗时误删了 `body` 自身（启动直接失败），以及把相对地址当非法协议删除（导致 feed 里的图片全不显示）。
 
 **添加订阅**：输入框既收站点首页也收 feed 地址，两者是同一条路径——先发现、再订阅。发现只发一次 GET：返回内容本身能按 feed 解析时，输入地址（重定向后）就是订阅地址；是 HTML 则扫 `<head>` 里的 `<link rel="alternate">`，`application/rss+xml` / `atom+xml` / `feed+json` 三个标准 `type` 优先，`type` 缺失或写错时按 href 后缀兜底，相对 href 按页面地址解析成绝对地址。拿到 feed 地址后走原有订阅 + 首次抓取路径；找不到候选则报错并保留原始原因（不做 `/feed`、`/rss.xml` 之类的路径猜测），输入内容与按钮都留在原地，直接重试即可。逻辑在 `rustrss-core/src/discover.rs`，桌面侧只包一层 `discover_feed` command。
+
+### 日志（诊断材料）
+
+每次启动在数据目录的 `logs/` 下新建一个日志文件——Linux `~/.local/share/rustrss/logs/`、macOS `~/Library/Application Support/rustrss/logs/`、Windows `%APPDATA%\rustrss\logs\`（`XDG_DATA_HOME` 生效时跟随它）。注意日志目录只跟随数据目录，**不跟着 `RUSTSS_DB` 走**（诊断副本的库可以指到别处，日志仍在同一个数据目录）。
+
+- **文件名**：`rustrss-YYYYMMDD-HHMMSS.log`（本地时间；同一秒内第二次启动追加 `-N` 后缀）。
+- **行格式**：`2026-09-22T23:45:01.123 INFO  rustrss_core::fetch: …`（本地时间带毫秒、级别、来源模块）。界面诊断行进同一份文件，target 为 `ui`、正文保留 `[ui]` 前缀——**它们不在 stdout 里**，看界面在干什么要看日志文件。
+- **内容**：抓取/入库/刷新/调度/迁移/托盘降级等 Rust 侧关键事件 + 界面诊断行；panic 另写一条 `ERROR`（payload + 位置），stderr 现场照旧。落盘前对凭据形态打码（URL 里的 userinfo、`key=`/`token=` 查询串），AI 错误文本在 core 侧已打码。
+- **级别**：设置 → 关于 →「日志级别」（存库键 `log.level`，默认 `info`）。`debug` 记录更细的过程（刷新批次、逐源失败、HTTP 请求耗时），**改完即时生效、无需重启**，跨重启保持；debug 级只收录本应用（`rustrss*` 与 `ui`）的记录，依赖库（h2/hyper/reqwest…）的 debug 不写文件。
+- **保留策略**：每次启动清理一次，**保留最近 20 个文件且总量 ≤ 50MB**（两条上限独立生效，超限从最旧的开始删）；清理结果写进当次日志（`日志保留清理: 删除 N 个（剩 N 个 / N 字节）`）。
+- **反馈问题**：设置 → 关于 →「打开日志目录」用系统文件管理器打开该目录，把**最新的那个文件**附在 issue 里。启动器起不来（如裸容器没装 `xdg-open`）会在状态栏给出可读错误（含原因）且应用不崩溃。**已知取舍**：启动器在、但它自己打不开（环境里没有文件管理器）时无法检测——`spawn` 成功不等于目录真的打开（实测 Xvfb 下 `xdg-open` 静默 `exit 0`），此时只显示「已**请**系统文件管理器打开」，文案刻意不说「已打开」；与既有「浏览器打开」同一口径。
+- **初始化失败不阻断启动**：日志目录不可写（权限 / 磁盘满）时降级为「本次不写日志文件」，只在 stderr 打印一行原因，其余功能照常。
 
 ## 进度
 
