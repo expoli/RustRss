@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 
 pub const APP_DIR: &str = "rustrss";
 pub const DB_FILE: &str = "rustrss.sqlite";
+pub const LOG_DIR: &str = "logs";
 
 #[cfg(target_os = "windows")]
 fn platform_data_root() -> PathBuf {
@@ -46,6 +47,15 @@ pub fn default_data_dir() -> PathBuf {
 /// 默认库位置
 pub fn default_db_path() -> PathBuf {
     default_data_dir().join(DB_FILE)
+}
+
+/// 日志目录（数据目录下 `logs/`）。
+///
+/// 与 [`default_data_dir()`] 同源，因此界面、MCP 与日志永远落在同一个数据目录下。
+/// **不负责创建**（由 `logging::init` 按需建）。便携模式（程序同级 `data/`）当前未实现，
+/// 未来落地后本函数会随 [`default_data_dir()`] 自动跟随。
+pub fn logs_dir() -> PathBuf {
+    default_data_dir().join(LOG_DIR)
 }
 
 /// 解析库位置：`$RUSTSS_DB` → 第一个命令行参数 → 平台默认位置。
@@ -103,6 +113,14 @@ mod tests {
         let p = default_db_path();
         assert_eq!(p.file_name().unwrap(), DB_FILE);
         assert_eq!(p.parent().unwrap().file_name().unwrap(), APP_DIR);
+    }
+
+    #[test]
+    fn logs_dir_is_the_data_dirs_logs_subdir() {
+        // 只断言路径组成（便携模式未实现，不做多模式断言）
+        assert_eq!(logs_dir(), default_data_dir().join("logs"));
+        assert_eq!(logs_dir().file_name().unwrap(), LOG_DIR);
+        assert_eq!(logs_dir().parent().unwrap(), default_data_dir());
     }
 
     #[test]

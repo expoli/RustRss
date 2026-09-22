@@ -4068,6 +4068,7 @@ dependencies = [
  "chrono",
  "dom_smoothie",
  "feed-rs",
+ "log",
  "quick-xml 0.42.0",
  "reqwest",
  "rusqlite",

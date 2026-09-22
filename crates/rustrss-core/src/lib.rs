@@ -8,6 +8,7 @@ pub mod discover;
 pub mod fetch;
 pub mod fulltext;
 pub mod html;
+pub mod logging;
 pub mod model;
 pub mod opml;
 pub mod parse;
