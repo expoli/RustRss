@@ -71,6 +71,14 @@ fn initial_unread(app: &tauri::App) -> i64 {
 /// 托盘不可用（取不到托盘 / 取不到图标）时静默 no-op——降级路径不产生错误日志。
 /// 对 runtime 泛型：测试用 mock app（无托盘）也能走这条路径验「不 panic」。
 pub fn update_badge<R: Runtime>(app: &AppHandle<R>, unread: i64) {
+    // 同值短路：每次文章导航都会 sync_badge，COUNT 后的重绘+tooltip 才是可感开销；
+    // 未读数没变就完全不碰托盘（swap 保证并发下不重不漏：并发同值时必有一方执行）。
+    // -1 初值强制首绘；托盘从无到有的运行期重建不存在（启动时 setup_tray 内首绘）。
+    static LAST_UNREAD: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(-1);
+    use std::sync::atomic::Ordering::Relaxed;
+    if LAST_UNREAD.swap(unread, Relaxed) == unread {
+        return;
+    }
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return; // 托盘不可用是预期场景（headless / Wayland 无 SNI / 缺库）
     };
