@@ -1420,6 +1420,10 @@ async function unsubscribeFeed(feed) {
       await setView(VIEWS.find((v) => v.kind === 'all'));
     } else {
       await refreshCounts();
+      // 其他视图（全部未读/全部等）也要重拉：已删源的条目级联没了，但内存里的
+      // 列表 DOM 还留着旧行，用户会看到「源删了文章还在」（实测 2026-09-22）。
+      // 静默模式：侧栏计数 + 列表重建，正文与滚动保持原位。
+      await loadEntries({ reader: false });
     }
     setStatus(t('status.unsubscribed', { name: feed.title }));
     log(`feed removed: ${feed.id} ${feed.title}`);
