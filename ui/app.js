@@ -1163,17 +1163,22 @@ async function loadEntries({ reader = true, reset = true } = {}) {
 
   if (!reset && paging.cursor) {
     const rows = await loadPage(paging.cursor);
-    // 运行时自证：续页不该重放已加载的行（keyset 游标保证不重不漏）。dup 一旦非 0
-    // 就是游标语义坏了，日志里必须看得见，而不是等用户发现列表里有重复行。
+    // 运行时自证：续页不该重放已加载的行。dup 两个成因要分开看：
+    // ① newest/oldest 档游标只看时间键，dup>0 = 游标语义坏了（必须报警）；
+    // ② unread_first 的复合游标看 (read,sortkey,id)，分页之间用户读了已加载行
+    //    （read 0→1 挪到已读组）后，这些行会重新落进下一页的游标窗口——这是
+    //    排序语义的固有漂移，不是游标 bug。两种情况都在前端按已见 ID 去重，
+    //    列表永不出现重复行；日志保留 dup 计数供诊断（code-review B1 实例）。
     const seen = new Set(state.entries.map((e) => e.id));
     const dup = rows.filter((e) => seen.has(e.id));
+    const fresh = rows.filter((e) => !seen.has(e.id));
     const list = el('entries');
-    state.entries = state.entries.concat(rows);
-    for (const e of rows) list.appendChild(buildEntryRow(e));
+    state.entries = state.entries.concat(fresh);
+    for (const e of fresh) list.appendChild(buildEntryRow(e));
     el('list-count').textContent = t('list.count', { n: listCountN() });
     installSentinel();
     log(
-      `append rows=${rows.length} total=${state.entries.length} dup=${dup.length} exhausted=${paging.exhausted}`
+      `append rows=${rows.length} fresh=${fresh.length} total=${state.entries.length} dup=${dup.length}${dup.length && listSortMode() !== 'unread_first' ? '（游标异常，非 unread_first 档不该重复）' : ''} exhausted=${paging.exhausted}`
     );
     return;
   }
