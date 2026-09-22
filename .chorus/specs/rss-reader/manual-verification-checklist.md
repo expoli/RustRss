@@ -672,3 +672,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - **「启动器存在但自身失败」不报错（已知取舍）**：状态栏文案是「已**请**系统文件管理器打开」而不是「已打开」，因为 `spawn` 成功 ≠ 目录真的打开了。实测本机（隔离 HOME + Xvfb）`xdg-open` 静默 `exit 0` 且不打开任何窗口 → 应用无从区分（退出码没有信号；Windows `explorer` 成功也常返回 1，用退出码判断会误报）。只有**启动器不存在**（裸容器 / 未装 xdg-utils）才走可读错误路径——与既有 `open_external` 同一口径。
 - **真实桌面会话点击未覆盖**：本次是 Xvfb（无桌面会话、无 D-Bus 文件管理器），「按钮 → 命令 → 系统启动器」这一跳由真实点击 + 日志自证；「文件管理器真的打开该目录」需真机（KDE / GNOME，含 Wayland 各一次）。
 - **每次点击留一个短暂 `defunct` 子进程**：`Command::spawn` 不 reap，直到应用退出（与既有 `open_external` 完全相同）；一次点击一个、无增长风险，未改。
+- **聚合代码复审（2026-09-23）的 3 条非阻断 NOTE**（已知残余，后续可评估）：
+  1. **依赖库的 info/warn/error 行不经 `scrub_log_line`**（debug/trace 已被 target 过滤拦下，但 info 以上不限 target）：`url` crate 的 Display 会掩密码但保留 username，极端情况下私有源 URL 的 username 可能出现在依赖库的罕见错误行里；
+  2. **init 降级模式下 `[ui]` 诊断行全丢**（logger 装不上时无处可写，仅一行 stderr 提示）：headless 冒烟若靠 grep stdout 找 `[ui]` 会失掉信号，属已知取舍；
+  3. **panic payload 落盘不打码**（panic 信息里若含敏感串不会被 scrub；上游 AI/UI 路径已有 core 侧打码，残余风险低）。
