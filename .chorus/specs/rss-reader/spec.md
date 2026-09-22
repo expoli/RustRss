@@ -23,7 +23,7 @@ created: 2026-09-20
 
 - [ ] Windows / macOS / Linux 三平台均可从 release 资产安装并启动，启动后能完成「添加订阅 → 刷新 → 阅读 → 标记已读 → OPML 导出」全流程
 - [ ] 数据目录遵循各平台惯例（`%APPDATA%` / `~/Library/Application Support` / `~/.local/share`）；存在便携标记文件时改为程序同级 `data/` 目录，且迁移后订阅与已读状态不丢
-- [x] 外部链接仅允许 http/https，且打开动作不经 shell 解析（Windows 下 URL 中的 `&` 等元字符无法注入命令；见 2026-09-22-audit-remediation-1）
+- [x] 外部链接仅允许 http/https，且打开动作不经 shell 解析（Windows 下 URL 中的 `&` 等元字符无法注入命令；见 2026-09-22-audit-remediation-1）——⚠ **局限**：Windows 端运行时未实测（证据截至单测 + Windows 分支 `rustc --emit=metadata` 类型检查），遗留项见验证清单 §17.2
 
 ### Linux 显示服务器（X11 / Wayland）
 

@@ -629,3 +629,19 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（测试进程环境，非应�
 - [ ] 真实桌面会话（X11 / Wayland 各一）下：设置页 RSSHub 面板的输入 + 「保存 / 测试连接 / 归一化」按钮观感与点击
 - [ ] 真实桌面会话下粘 `rsshub://path` 到添加框的完整手感（含发现阶段状态栏文案「正在发现…」→「已订阅 N 篇」）
 - [ ] 断网 / 镜像 5xx 时 scheme 源的失败标记与错误文案（本轮夹具都是 200/304）
+
+## 17. 审计修复批次一（2026-09-22-audit-remediation-1，任务 3dcfe44c / ba8c1c96 / 45d45a47 / 78fee86f / b8698b1e）
+
+### 17.1 已机械验证的部分（单测 + 实机截图/日志 + 独立复跑）
+
+- **T1 外链注入（8fead17）**：`validate_external_url` 单测（合法 http/https 原样通过；javascript:/file:/data: 拒绝；空白/控制字符/`"<>|^`` 拒绝；空串拒绝）；`external_open_command` 断言程序名不含 cmd/sh、URL 为独立参数；reviewer 复跑 `cargo test -p rustrss-desktop` 47 passed；literal grep 确认实现区无 `cmd`/`"/C"`。
+- **T2 feed 体积闸门（d77e65d）**：Content-Length 预检与 chunked 累计两条中止路径测试（raw-socket 装置，断言正文未读完即中止）；超限后条目不写、etag/last_modified 不覆盖、失败态走既有路径；reviewer 复跑 `cargo test -p rustrss-core` 140 passed。
+- **T3 quick-xml ≥0.42（8396f73）**：`cargo audit` 0 漏洞；红基线对显式 commit d77e65d 的 lock 复现 2 条（RUSTSEC-2026-0194/0195）；OPML 6/6 用例；`unescape_value→normalized_value` 行为等价经 vendored 源码逐字比对。
+- **T4 前端（a060444）**：Xvfb 实机——长文滚到中部按 u/s/l 三次 `readerScrollTop` 相同、阅读区像素 AE=0、其后无 `renderReader` 重渲染；星标/稍后读视图定向移除行；坏 DB 启动后 ✕ 可关窗（对修复前代码 A/B 复现死窗）；reviewer 独立复跑两项核心场景。
+- **T5 CSP（f74235d）**：Xvfb 主流程零 `securitypolicyviolation`（43 行日志 0 违规）；负向对照证明探针会报（img-src / connect-src 各一行，含 blockedURI 与来源）；含图文章真实渲染；`cargo test --workspace` 203 passed（16 目标，覆盖三个 crate），`cargo clippy --workspace` 仅 3 条既有基线警告。
+
+### 17.2 环境限制与仍需真机核验
+
+- **Windows 运行时未实测（T1 遗留）**：本机无 Windows/mingw，`open_external` 的 rundll32 路径只有单元测试 + `rustc --target x86_64-pc-windows-gnu --emit=metadata` 类型检查。真机核验步骤：Windows 构建启动后，打开一篇 link 含 `&` 的文章（如 `https://example.com/?a=1&b=2`）点「浏览器打开」→ 应打开完整 URL 且无任何命令被执行；同时确认标题栏三键（最小化/最大化/关闭）可用。
+- **UI 修复（T4）与 CSP（T5）仅在 X11/Xvfb 验证**：Wayland 原生会话、macOS、Windows 的界面回归（滚动保持 / 按钮态 / 零 CSP 违规）未覆盖；CSP 在 Windows WebView2 下 `connect-src ipc:` 的兼容性需真机回归。
+- **日志功能批次（2026-09-22-logging）**：待实现，验收点见 spec.md「诊断与日志」节。
