@@ -38,14 +38,155 @@ const currentLocale = () => (I18N_API ? I18N_API.locale() : 'zh-CN');
 function highlightCode(root) {
   if (!window.hljs) return;
   for (const block of root.querySelectorAll('pre code')) {
-    // 超大代码块跳过高亮：hljs（尤其 auto-detect）对几十 KB 的块开销很大，
-    // 是打开大文章时 CPU 尖峰的组成部分；纯文本展示不影响阅读。
-    if ((block.textContent || '').length > 16000) continue;
+    // 超大代码块跳过 auto-detect：hljs 对几十 KB 的块开销很大，是打开大文章时
+    // CPU 尖峰的组成部分。已显式标注 language-diff 的块走的是行级正则、代价线性，
+    // 放宽到 64KB（内核补丁动辄几十 KB，不能因此退化成无高亮）。
+    const len = (block.textContent || '').length;
+    const explicitDiff = block.classList.contains('language-diff');
+    if (len > (explicitDiff ? 65536 : 16000)) continue;
     try {
       window.hljs.highlightElement(block);
+      if (explicitDiff) flattenDiffBlockSpacing(block);
     } catch {
       /* 检测失败/未知语言：原样显示 */
     }
+  }
+}
+
+/// hljs 的 diff 输出里，块级行 span（addition/deletion）之间的裸换行文本节点
+/// 会各自占一整行（pre 保留白空格）——实测每条着色行后多出一行空白，补丁
+/// 双倍行距。高亮后把「纯换行」节点删掉即可；带内容的上下文行节点保留。
+function flattenDiffBlockSpacing(code) {
+  for (const node of [...code.childNodes]) {
+    if (node.nodeType === 3 && /^[\n\r]+$/.test(node.textContent || '')) {
+      node.remove();
+    }
+  }
+}
+
+/// diff 行分类：返回 'add' | 'del' | 'hunk' | 'head' | null。
+/// 注意真实 diff 的 +/− 后面直接跟代码（不一定是空格），所以只认前缀字符；
+/// 误报（如破折号开头的段落）靠调用方的运行长度与混合签名门槛拦。
+/// 邮件签名分隔行 `-- ` 单独排除：它以 - 开头但不是删除行（实测 lkml 文末
+/// 被误标红过）。
+function diffLineKind(line) {
+  if (line.startsWith('@@')) return 'hunk';
+  if (
+    line.startsWith('diff --git ') ||
+    line.startsWith('index ') ||
+    line.startsWith('--- ') ||
+    line.startsWith('+++ ') ||
+    line.startsWith('new file mode ') ||
+    line.startsWith('deleted file mode ')
+  ) {
+    return 'head';
+  }
+  if (line === '--' || line === '-- ') return null;
+  if (line.startsWith('+')) return 'add';
+  if (line.startsWith('-')) return 'del';
+  return null;
+}
+
+/// 合并门槛：marked>=4 且（有 hunk/头行且增删行合计≥2，或增删都存在）。
+/// 第二个分支覆盖真实邮件补丁：lkml 的 cover-letter/纯删补丁可能一条 + 行
+/// 都没有（实测 2026-09-22：2 个 @@ + 2 个 - 行的补丁被旧门槛拒之门外）；
+/// @@ 在散文里几乎不存在，所以 hunkOrHead 分支的误报风险足够低。
+function isStrongDiffSignature(marked, adds, dels, hunksOrHeads) {
+  if (marked < 4) return false;
+  if (hunksOrHeads >= 1 && adds + dels >= 2) return true;
+  return adds >= 1 && dels >= 1;
+}
+
+/// lkml 等邮件列表源把补丁拆成一连串 <p>（每行一段）——没有 pre/code，
+/// 高亮管线（`pre code`）根本匹配不到，补丁就以比例字体正文样式渲染
+/// （2026-09-22 截图实测：无等宽、无底色、无 +/- 配色，上下文行缩进还被
+/// HTML 塌掉）。sanitize 之后、highlightCode 之前做一次「diff 区域归一」：
+/// 把连续 diff 形状段落合并成单个 <pre><code class="language-diff">。
+/// 保守门槛：至少 4 个标记行（+/-/@@/头行），且同时含 + 行与（- 行或 @@/头行），
+/// 避免把普通列表/破折号段落误吞。
+function normalizeDiffBlocks(root) {
+  // 快速预筛：没有 @@ 或 diff --git 头的正文直接跳过（绝大多数文章零成本）
+  const whole = root.textContent || '';
+  if (!whole.includes('@@') && !whole.includes('diff --git ')) return;
+
+  const blocks = [...root.children];
+  const kinds = blocks.map((b) => {
+    if (b.tagName === 'PRE') return 'pre';
+    const t = (b.textContent || '').trim();
+    return t === '' ? 'blank' : diffLineKind(t);
+  });
+
+  let i = 0;
+  while (i < blocks.length) {
+    // 找一段连续的可疑区（标记行/空行，且首行必须是标记行）
+    if (!kinds[i] || kinds[i] === 'pre' || kinds[i] === 'blank') { i++; continue; }
+    let j = i;
+    let marked = 0, adds = 0, dels = 0, hunksOrHeads = 0;
+    const scan = () => {
+      marked = adds = dels = hunksOrHeads = 0;
+      for (let k = i; k <= j; k++) {
+        const kind = kinds[k];
+        if (kind === 'add') { marked++; adds++; }
+        else if (kind === 'del') { marked++; dels++; }
+        else if (kind === 'hunk' || kind === 'head') { marked++; hunksOrHeads++; }
+      }
+    };
+    // 区域延伸：后面跟着的标记行、空行、以及「短的单行上下文段」（补丁上下文行
+    // 缩进被塌掉后与普通段落无异，只吸收短行，遇到长句/散文即停）
+    while (j + 1 < blocks.length) {
+      const nk = kinds[j + 1];
+      const nb = blocks[j + 1];
+      const nt = (nb.textContent || '').trim();
+      const isPlainShortLine = !nk && nk !== 'pre' && nb.tagName !== 'PRE' && nt.length > 0 && nt.length <= 120;
+      if (nk === 'blank' || (nk && nk !== 'pre') || isPlainShortLine) j++;
+      else break;
+    }
+    scan();
+    if (isStrongDiffSignature(marked, adds, dels, hunksOrHeads)) {
+      // 收集行文本（含被吸收的上下文/空行），去掉尾部空行
+      const lines = [];
+      for (let k = i; k <= j; k++) {
+        const t = blocks[k].textContent || '';
+        t.split('\n').forEach((l) => lines.push(l.replace(/\s+$/, '')));
+      }
+      while (lines.length && lines[lines.length - 1] === '') lines.pop();
+      if (lines.join('\n').length <= 200000) {
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        code.className = 'language-diff';
+        code.textContent = lines.join('\n');
+        pre.appendChild(code);
+        blocks[i].replaceWith(pre);
+        for (let k = i + 1; k <= j; k++) blocks[k].remove();
+      }
+    }
+    i = j + 1;
+  }
+
+  // 第二类结构：源直接把补丁放进 <pre>（无 language 类）——上面段落归一
+  // 刻意跳过 pre，这里补上：对无 language-*/lang-* 类的代码块做同样的形状探测，
+  // 强签名就补 language-diff（否则交给 hljs auto-detect 不可靠：大块常被
+  // 跳过或选错语言）。裸 <pre>（无 code 子元素）强签名时包一层 code。
+  for (const pre of root.querySelectorAll('pre')) {
+    let code = pre.querySelector(':scope > code');
+    if (code && (code.className.includes('language-') || code.className.includes('lang-'))) continue;
+    const text = (code || pre).textContent || '';
+    const lines = text.split('\n');
+    let marked = 0, adds = 0, dels = 0, hunksOrHeads = 0;
+    for (const l of lines) {
+      const k = diffLineKind(l.trim());
+      if (k === 'add') { marked++; adds++; }
+      else if (k === 'del') { marked++; dels++; }
+      else if (k === 'hunk' || k === 'head') { marked++; hunksOrHeads++; }
+    }
+    if (isStrongDiffSignature(marked, adds, dels, hunksOrHeads) === false) continue;
+    if (!code) {
+      code = document.createElement('code');
+      code.textContent = text;
+      pre.textContent = '';
+      pre.appendChild(code);
+    }
+    code.classList.add('language-diff');
   }
 }
 
@@ -605,6 +746,7 @@ function renderReader(entry) {
   mark('innerHTML-set');
   // 高亮必须在正文插入 DOM 之后跑（hljs 需要真实节点）；
   // 输入是 sanitize 产物，hljs 输出不回灌 sanitize 流程。
+  normalizeDiffBlocks(reader.querySelector('.article'));
   highlightCode(reader);
   mark('highlight');
   window.__RENDER_TIMINGS = __t.concat([{ tag: 'total', ms: +(performance.now() - __t[0].ms).toFixed(1) }]);
@@ -707,6 +849,7 @@ async function loadAll({ reader = true } = {}) {
   setLocale(settings.locale || 'auto');
   // 主题同理：渲染前先设好 data-theme，避免启动时闪错色
   applyTheme(settings.theme || 'system');
+  bindSettingDropdowns();
   applyStaticI18n();
   renderSidebar();
   await loadEntries({ reader });
@@ -1013,7 +1156,7 @@ function closeContextMenu() {
 /// 通用右键菜单：items = [{label, danger?, action} | {separator: true} | {header: true, label}]
 /// - `separator` 画一条分组分隔线；`header` 是小号灰字的分组标题（不可点）。
 /// - `checked` 参与勾选组：勾中项前面打 ✓，未勾中项留同宽占位（标签对齐）。
-function openContextMenu(ev, items) {
+function openContextMenu(ev, items, anchor) {
   closeContextMenu();
   const menu = document.createElement('div');
   menu.id = 'ctx-menu';
@@ -1054,8 +1197,17 @@ function openContextMenu(ev, items) {
   }
   document.body.appendChild(menu);
   const pad = 8;
-  menu.style.left = Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - pad) + 'px';
-  menu.style.top = Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - pad) + 'px';
+  // 锚定模式（设置页下拉）：贴着触发按钮下沿展开，宽度不小于按钮宽；
+  // 事件坐标模式（右键菜单）行为不变
+  if (anchor) {
+    const r = anchor.getBoundingClientRect();
+    menu.style.minWidth = r.width + 'px';
+    menu.style.left = Math.min(r.left, window.innerWidth - menu.offsetWidth - pad) + 'px';
+    menu.style.top = Math.min(r.bottom + 2, window.innerHeight - menu.offsetHeight - pad) + 'px';
+  } else {
+    menu.style.left = Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - pad) + 'px';
+    menu.style.top = Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - pad) + 'px';
+  }
 }
 
 /// 每源刷新间隔档位：`value` 与后端 `set_feed_refresh_interval` 的白名单一一对应
@@ -1731,12 +1883,124 @@ function showPane(name) {
 /// 记住上次看的是哪个分类（同一次运行内）
 let currentPane = 'general';
 
+/// 设置页自绘下拉：原生 <select> 的弹层由 GTK 系统主题绘制，应用内切深色它
+/// 仍白底（实测 2026-09-22：Breeze 浅色弹层 #FFFFFF/#3DAEE9 混在深色 UI 里），
+/// CSS 的 option 配色够不到它。改为按钮 + 锚定菜单（复用右键菜单基建），
+/// 三态主题完全可控。注册表驱动：标签随 locale 重译、值随设置回填。
+const SETTING_DROPDOWNS = [
+  {
+    id: 'set-language',
+    choices: () => [
+      { value: 'auto', label: t('settings.languageAuto') },
+      { value: 'zh-CN', label: t('settings.languageZh') },
+      { value: 'en', label: t('settings.languageEn') },
+    ],
+    current: () => state.settings.locale || 'auto',
+    apply: (v) => invoke('set_ui_locale', { locale: v }),
+    after: async () => {
+      setLocale(state.settings.locale || 'auto');
+      applyStaticI18n();
+      renderSidebar();
+      renderList();
+      if (state.selectedId) {
+        const entry = await invoke('get_entry', { id: state.selectedId });
+        if (entry) renderReader(entry);
+      }
+    },
+  },
+  {
+    id: 'set-theme',
+    choices: () => [
+      { value: 'system', label: t('settings.themeSystem') },
+      { value: 'light', label: t('settings.themeLight') },
+      { value: 'dark', label: t('settings.themeDark') },
+    ],
+    current: () => state.settings.theme || 'system',
+    apply: (v) => invoke('set_ui_theme', { theme: v }),
+    after: () => applyTheme(state.settings.theme || 'system'),
+  },
+  {
+    id: 'set-close-action',
+    choices: () => [
+      { value: 'exit', label: t('settings.closeExit') },
+      { value: 'tray', label: t('settings.closeTray') },
+    ],
+    current: () => state.settings.close_action || 'exit',
+    apply: (v) => invoke('set_ui_close_action', { action: v }),
+  },
+  {
+    id: 'set-refresh-interval',
+    choices: () => [
+      { value: 'off', label: t('settings.refreshOff') },
+      { value: '15', label: t('settings.refreshMin15') },
+      { value: '30', label: t('settings.refreshMin30') },
+      { value: '60', label: t('settings.refreshMin60') },
+      { value: '120', label: t('settings.refreshMin120') },
+      { value: '360', label: t('settings.refreshMin360') },
+    ],
+    current: () => state.settings.refresh_interval_minutes || '30',
+    apply: (v) => invoke('set_refresh_interval', { minutes: v }),
+    after: () => {
+      const minutes = state.settings.refresh_interval_minutes;
+      setStatus(
+        minutes === 'off'
+          ? t('status.refreshIntervalOff')
+          : t('status.refreshIntervalSet', { minutes })
+      );
+    },
+  },
+];
+
+function settingDropdownLabel(d) {
+  const cur = d.current();
+  return (d.choices().find((c) => c.value === cur) || d.choices()[0]).label;
+}
+
+/// 打开/关闭某个下拉：再点同一下拉 = 关闭（菜单源标记防「关了叉开」）
+function toggleSettingDropdown(d) {
+  const menu = el('ctx-menu');
+  if (menu && menu.dataset.dropdown === d.id) {
+    closeContextMenu();
+    return;
+  }
+  const cur = d.current();
+  openContextMenu(
+    { clientX: 0, clientY: 0 },
+    d.choices().map((c) => ({
+      label: c.label,
+      checked: c.value === cur,
+      action: async () => {
+        try {
+          state.settings = await d.apply(c.value);
+          if (d.after) await d.after();
+          refreshSettingDropdowns();
+        } catch (err) {
+          setStatus(t('status.settingFailed', { error: err.message }), true);
+        }
+      },
+    })),
+    el(d.id)
+  );
+  el('ctx-menu').dataset.dropdown = d.id;
+}
+
+function refreshSettingDropdowns() {
+  for (const d of SETTING_DROPDOWNS) {
+    const btn = el(d.id);
+    if (btn) btn.textContent = settingDropdownLabel(d);
+  }
+}
+
+function bindSettingDropdowns() {
+  for (const d of SETTING_DROPDOWNS) {
+    el(d.id).onclick = () => toggleSettingDropdown(d);
+  }
+  refreshSettingDropdowns();
+}
+
 function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
-  el('set-language').value = state.settings.locale || 'auto';
-  el('set-theme').value = state.settings.theme || 'system';
-  el('set-close-action').value = state.settings.close_action || 'exit';
-  el('set-refresh-interval').value = state.settings.refresh_interval_minutes || '30';
+  refreshSettingDropdowns();
   el('set-refresh-on-start').checked = !!state.settings.refresh_on_start;
   el('set-notify-new-articles').checked = !!state.settings.notify_new_articles;
   el('set-rsshub-mirror').value = state.settings.rsshub_mirror || '';
@@ -1846,42 +2110,6 @@ async function boot() {
     log(`settings pane=${currentPane}`);
   });
 
-  el('set-language').addEventListener('change', async (e) => {    try {
-      state.settings = await invoke('set_ui_locale', { locale: e.target.value });
-      setLocale(state.settings.locale || 'auto');
-      applyStaticI18n();
-      // 动态文案需要重渲染
-      renderSidebar();
-      renderList();
-      if (state.selectedId) {
-        const entry = await invoke('get_entry', { id: state.selectedId });
-        if (entry) renderReader(entry);
-      } else {
-        renderReaderEmpty();
-      }
-      fillAiForm();
-      log(`locale=${state.settings.locale} → ${currentLocale()}`);
-    } catch (err) {
-      setStatus(t('status.settingFailed', { error: err.message }), true);
-    }
-  });
-  el('set-theme').addEventListener('change', async (e) => {
-    try {
-      state.settings = await invoke('set_ui_theme', { theme: e.target.value });
-      applyTheme(state.settings.theme || 'system');
-      log(`theme=${state.settings.theme}`);
-    } catch (err) {
-      setStatus(t('status.settingFailed', { error: err.message }), true);
-    }
-  });
-  el('set-close-action').addEventListener('change', async (e) => {
-    try {
-      state.settings = await invoke('set_ui_close_action', { action: e.target.value });
-      log(`closeAction=${state.settings.close_action}`);
-    } catch (err) {
-      setStatus(t('status.settingFailed', { error: err.message }), true);
-    }
-  });
   // 自绘标题栏三键（窗口无系统装饰）
   el('btn-new-folder').onclick = () => createFolder();
   el('btn-win-min').onclick = () => invoke('window_minimize').catch(() => {});
@@ -1950,23 +2178,6 @@ async function boot() {
       log(`setting mark_read_on_navigate=${e.target.checked}`);
     } catch (err) {
       setStatus(t('status.settingFailed', { error: err.message }), true);
-    }
-  });
-  el('set-refresh-interval').addEventListener('change', async (e) => {
-    try {
-      state.settings = await invoke('set_refresh_interval', { minutes: e.target.value });
-      // 后端是白名单唯一来源：把归一化后的值回显到控件，界面与库里不会各说一套
-      const minutes = state.settings.refresh_interval_minutes;
-      e.target.value = minutes;
-      setStatus(
-        minutes === 'off'
-          ? t('status.refreshIntervalOff')
-          : t('status.refreshIntervalSet', { minutes })
-      );
-      log(`refreshInterval=${minutes}`);
-    } catch (err) {
-      setStatus(t('status.settingFailed', { error: err.message }), true);
-      log(`set_refresh_interval failed: ${err.message}`);
     }
   });
   el('set-refresh-on-start').addEventListener('change', async (e) => {

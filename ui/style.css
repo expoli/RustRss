@@ -22,6 +22,14 @@
   --code-fn: #61afef;
   --code-type: #e5c07b;
   --code-var: #e06c75;
+  /* diff 行底色（半透明，深浅两套都各自调） */
+  --diff-add-bg: rgba(63, 185, 80, 0.13);
+  --diff-add-fg: #7ee787;
+  --diff-add-edge: rgba(63, 185, 80, 0.55);
+  --diff-del-bg: rgba(248, 81, 73, 0.12);
+  --diff-del-fg: #ffb3ab;
+  --diff-del-edge: rgba(248, 81, 73, 0.5);
+  --diff-hunk-bg: rgba(88, 166, 255, 0.1);
 }
 
 @media (prefers-color-scheme: light) {
@@ -46,6 +54,13 @@
     --code-fn: #6f42c1;
     --code-type: #22863a;
     --code-var: #e36209;
+    --diff-add-bg: rgba(46, 160, 67, 0.14);
+    --diff-add-fg: #116329;
+    --diff-add-edge: rgba(46, 160, 67, 0.45);
+    --diff-del-bg: rgba(248, 81, 73, 0.12);
+    --diff-del-fg: #9a2c2c;
+    --diff-del-edge: rgba(248, 81, 73, 0.4);
+    --diff-hunk-bg: rgba(88, 166, 255, 0.12);
   }
 }
 
@@ -69,6 +84,13 @@ html[data-theme="light"] {
   --code-fn: #6f42c1;
   --code-type: #22863a;
   --code-var: #e36209;
+  --diff-add-bg: rgba(46, 160, 67, 0.14);
+  --diff-add-fg: #116329;
+  --diff-add-edge: rgba(46, 160, 67, 0.45);
+  --diff-del-bg: rgba(248, 81, 73, 0.12);
+  --diff-del-fg: #9a2c2c;
+  --diff-del-edge: rgba(248, 81, 73, 0.4);
+  --diff-hunk-bg: rgba(88, 166, 255, 0.12);
 }
 /* 手动固定深色 = :root 默认值，无需额外规则；html[data-theme="dark"] 仅作语义标记。 */
 
@@ -393,7 +415,8 @@ main {
 .setting-item input:not([type]),
 .setting-item input[type="password"],
 .setting-item input[type="number"],
-.setting-item select {
+.setting-item select,
+.setting-item .setting-dropdown {
   flex: 0 0 auto;
   width: min(280px, 42%);
   padding: 6px 10px;
@@ -402,12 +425,16 @@ main {
   background: var(--bg);
   color: var(--fg);
   font: inherit;
+  text-align: left;
+  cursor: pointer;
   /* 放弃原生绘制：WebKitGTK 对这些控件的部分区域按系统主题画，
-     不认下方变量；自绘后三态完全可控 */
+     不认下方变量；自绘后三态完全可控（下拉弹层同理——原生弹层
+     只吃系统 GTK 主题，改用自绘菜单，见 SETTING_DROPDOWNS） */
   appearance: none;
   -webkit-appearance: none;
 }
-.setting-item select {
+.setting-item select,
+.setting-item .setting-dropdown {
   padding-right: 30px;
   /* 自绘下拉箭头（appearance:none 后原生箭头消失） */
   background-image:
@@ -425,7 +452,7 @@ main {
   background: var(--bg-panel);
   color: var(--fg);
 }
-.setting-item input:focus, .setting-item select:focus { outline: 2px solid var(--accent); }
+.setting-item input:focus, .setting-item select:focus, .setting-item .setting-dropdown:focus { outline: 2px solid var(--accent); }
 
 /* MCP 客户端配置片段等只读文本域：同主题配色（此前完全无样式，深色下白底） */
 .setting-item textarea {
@@ -576,7 +603,15 @@ main {
   padding: 12px;
   overflow-x: auto;
 }
-.article code { font: 12.5px/1.5 ui-monospace, "JetBrains Mono", monospace; }
+/* 长写而非简写 + 真实等宽家族前置：ui-monospace 在 WebKitGTK 会解析成比例
+   字体（家族链在第一个可用家族处停止，实测 2026-09-22 两台环境代码块全是
+   比例字体），通用 monospace 兑底永远轮不到 */
+.article code {
+  font-family: "JetBrains Mono", "Cascadia Mono", Menlo, Consolas,
+    "DejaVu Sans Mono", "Liberation Mono", "Noto Sans Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
 .article table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 13px; }
 .article th, .article td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
 .article hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
@@ -590,12 +625,28 @@ main {
 .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-literal { color: var(--code-kw); }
 .hljs-string, .hljs-attr, .hljs-attribute, .hljs-regexp { color: var(--code-str); }
 .hljs-number, .hljs-symbol, .hljs-bullet, .hljs-link { color: var(--code-num); }
-.hljs-comment, .hljs-quote, .hljs-deletion { color: var(--code-com); font-style: italic; }
+.hljs-comment, .hljs-quote { color: var(--code-com); font-style: italic; }
 .hljs-title, .hljs-function .hljs-title, .hljs-title.function_ { color: var(--code-fn); }
 .hljs-type, .hljs-class .hljs-title, .hljs-title.class_, .hljs-tag { color: var(--code-type); }
-.hljs-variable, .hljs-template-variable, .hljs-name, .hljs-addition { color: var(--code-var); }
+.hljs-variable, .hljs-template-variable, .hljs-name { color: var(--code-var); }
 .hljs-section, .hljs-emphasis { font-style: italic; color: var(--code-fn); }
 .hljs-strong { font-weight: 600; color: var(--code-str); }
+
+/* diff 行级配色（GitHub 口径：绿增红删）。曾把 .hljs-addition 挂在红色变量上
+   （语义反了）且无底色——2026-09-22 截图证实补丁毫无增删区分。行级 span
+   改块级铺满行宽，底色 + 左缘强调条同时给扫读信号；两套主题各自变量。 */
+.hljs-addition,
+.hljs-deletion {
+  display: block;
+  box-shadow: inset 3px 0 0 var(--edge);
+  padding-left: 6px;
+  margin-left: -6px;
+}
+.hljs-addition { color: var(--diff-add-fg); background: var(--diff-add-bg); --edge: var(--diff-add-edge); }
+.hljs-deletion { color: var(--diff-del-fg); background: var(--diff-del-bg); --edge: var(--diff-del-edge); }
+/* @@ 行保持行内：块级会把 hunk 尾部的函数上下文拆到下一行（实测），
+   行内化后色带只盖 @@ 文本本身，可接受 */
+.hljs-meta { color: var(--code-fn); background: var(--diff-hunk-bg); }
 
 /* ---------------- 侧栏文件夹分组 / 右键菜单 / 输入对话框 ---------------- */
 
