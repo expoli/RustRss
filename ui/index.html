@@ -44,7 +44,6 @@
     <button id="btn-refresh" data-i18n="toolbar.refresh" data-i18n-title="toolbar.refreshTitle"></button>
     <button id="btn-add" data-i18n="toolbar.addFeed" data-i18n-title="toolbar.addFeedTitle"></button>
     <button id="btn-settings" data-i18n="toolbar.settings" data-i18n-title="toolbar.settingsTitle"></button>
-    <span id="status" class="status" role="status"></span>
     <div class="win-controls">
       <button id="btn-win-min" data-i18n-title="win.minimize" aria-label="minimize">─</button>
       <button id="btn-win-max" data-i18n-title="win.maximize" aria-label="maximize">□</button>
@@ -78,12 +77,19 @@
       <ul id="entries" class="entries"></ul>
     </section>
 
-    <article id="reader" class="reader">
-      <div class="reader-empty">
-        <p data-i18n="reader.empty"></p>
-        <p id="reader-shortcuts" class="dim"></p>
-      </div>
-    </article>
+    <section class="right-col">
+      <article id="reader" class="reader">
+        <div class="reader-empty">
+          <p data-i18n="reader.empty"></p>
+          <p id="reader-shortcuts" class="dim"></p>
+        </div>
+      </article>
+      <!-- 状态栏在右下角：原先放工具栏右侧会被长文案挤压刷新/添加/设置按钮。
+           常驻固定高度（空时也是一条细线），避免状态出现/消失时阅读区高度跳动。 -->
+      <footer class="statusbar" data-tauri-drag-region>
+        <span id="status" class="status" role="status"></span>
+      </footer>
+    </section>
   </main>
 
   <div id="settings-overlay" class="overlay hidden" role="dialog" aria-modal="true">
