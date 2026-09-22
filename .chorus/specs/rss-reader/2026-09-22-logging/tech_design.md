@@ -14,7 +14,7 @@ documentUuid:
 
 | 层 | 文件 | 改动 |
 |---|---|---|
-| core | `crates/rustrss-core/src/paths.rs` | 新增 `logs_dir()`：`default_data_dir()/logs`（便携模式自然跟随 `data/`） |
+| core | `crates/rustrss-core/src/paths.rs` | 新增 `logs_dir()`：`default_data_dir()/logs`（便携模式未实现，见 PRD 范围外；未来落地后自动跟随） |
 | core | `crates/rustrss-core/src/logging.rs`（新） | `init` / 文件 writer（`log::Log` 实现）/ `prune` / panic hook 安装函数 |
 | core | `crates/rustrss-core/src/discover.rs` | 2 处 `println!/eprintln!` → `log` 宏 |
 | core | `crates/rustrss-core/Cargo.toml` | 新增 `log = "0.4"`（门面，无传递负担） |
