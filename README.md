@@ -127,7 +127,7 @@ RUSTSS_AI_PROVIDER=anthropic RUSTSS_AI_MODEL=claude-x RUSTSS_AI_KEY=... \
 - 凭据库不可用时返回明确错误（提示需要 Secret Service / KWallet），**不静默降级成明文文件**；临时可用环境变量 `RUSTSS_AI_KEY` 代替。
 - 「测试连接」会真的发一个最小请求——它比「检查 key 是否存在」有意义得多：同时验证了凭据、模型名与端点三件事。
 - 正文里点「AI 摘要 / AI 翻译」→ 结果面板会标出**来自缓存还是本次新请求**、以及正文是否因超长被截断；旁边有「重新生成」。
-- AI 输出 token 上限可调（设置 → AI → 输出上限，默认 4096、范围 256–32768）：推理模型的思考链也在同一预算内，上限太小时正文会一个字没产出（finish_reason=length + 空 content），错误提示会针对性指出该调大上限或换非推理模型。
+- AI 输出 token 上限可调（设置 → AI → 输出上限，默认 4096、范围 256–32768）：推理模型的思考链也在同一预算内，上限太小时正文会一个字没产出（finish_reason=length + 空 content），错误提示会针对性指出该调大上限或换非推理模型。思考强度也可调（设置 → AI → 思考强度：跟随默认/最低/低/中/高，仅 OpenAI 兼容接口随请求发送 reasoning_effort；摘要/翻译任务调低可显著提速省 token，deepseek-r1 固定思考不受此参数影响）。
 
 本机实测：凭据库探针（`cargo run -p rustrss-desktop --example keyring_probe`）在本机 KDE 下完成写入/读回/清理完整往返——**API key 的存储方案不建立在「应该能行」的假设上**。
 

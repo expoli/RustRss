@@ -2145,6 +2145,26 @@ const SETTING_DROPDOWNS = [
         t('status.refreshConcurrencySet', { n: state.settings.refresh_concurrency })
       ),
   },
+  {
+    // 思考强度：立即生效的独立旋钮（不经 AI 表单的保存按钮）；
+    // 只在 OpenAI 兼容 provider 下随请求发送，其它 provider 选了也只是存着
+    id: 'set-ai-reasoning',
+    choices: () => [
+      { value: '', label: t('settings.ai.reasoningAuto') },
+      { value: 'minimal', label: t('settings.ai.reasoningMinimal') },
+      { value: 'low', label: t('settings.ai.reasoningLow') },
+      { value: 'medium', label: t('settings.ai.reasoningMedium') },
+      { value: 'high', label: t('settings.ai.reasoningHigh') },
+    ],
+    current: () => (state.ai && state.ai.reasoning_effort) || '',
+    // 基建会把返回值赋给 state.settings：这里返回的是 UiSettings 不变，
+    // AI 视图单独存 state.ai
+    apply: async (v) => {
+      state.ai = await invoke('set_ai_reasoning_effort', { value: v });
+      return state.settings;
+    },
+    after: () => setStatus(t('status.aiReasoningSet', { v: settingDropdownLabel(SETTING_DROPDOWNS.find((d) => d.id === 'set-ai-reasoning')) })),
+  },
 ];
 
 function settingDropdownLabel(d) {

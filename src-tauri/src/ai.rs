@@ -17,12 +17,25 @@ pub const K_BASE_URL: &str = "ai.base_url";
 pub const K_TRANSLATE_TARGET: &str = "ai.translate_target";
 pub const K_CONFIRM_BEFORE_SEND: &str = "ai.confirm_before_send";
 pub const K_MAX_OUTPUT_TOKENS: &str = "ai.max_output_tokens";
+pub const K_REASONING_EFFORT: &str = "ai.reasoning_effort";
 
 pub const DEFAULT_PROVIDER: &str = "ollama";
 pub const DEFAULT_TRANSLATE_TARGET: &str = "中文";
 pub const DEFAULT_MAX_OUTPUT_TOKENS: u32 = 4096;
 /// 上限范围：太小会在长文翻译上截断（推理模型思考链更耗），太大在小上下文模型上直接 400。
 pub const MAX_OUTPUT_TOKENS_LIMITS: (u32, u32) = (256, 32_768);
+/// 思考强度白名单：""=跟随模型默认（不发参数）+ OpenAI reasoning_effort 的四档。
+pub const REASONING_EFFORT_CHOICES: [&str; 5] = ["", "minimal", "low", "medium", "high"];
+
+/// 读思考强度：白名单外的值一律归 None（跟随默认）。None 表示请求里不带这个参数。
+pub fn reasoning_effort_from_store(store: &Store) -> Option<String> {
+    let v = non_empty_setting(store, K_REASONING_EFFORT).unwrap_or_default();
+    if REASONING_EFFORT_CHOICES.contains(&v.as_str()) {
+        Some(v).filter(|s| !s.is_empty())
+    } else {
+        None
+    }
+}
 
 /// 读输出上限（缺失/非法回退默认；clamp 到上下限内）。
 pub fn max_output_tokens_from_store(store: &Store) -> u32 {
@@ -135,7 +148,8 @@ pub fn config_from_store(store: &Store) -> Result<(AiConfig, Option<String>), St
         Provider::Gemini => AiConfig::gemini(&model, key.clone().unwrap_or_default()).with_base_url(&base),
         Provider::Ollama => AiConfig::ollama(&model).with_base_url(&base),
     }
-    .with_max_output_tokens(max_output_tokens_from_store(store));
+    .with_max_output_tokens(max_output_tokens_from_store(store))
+    .with_reasoning_effort(reasoning_effort_from_store(store));
     Ok((config, key_source))
 }
 

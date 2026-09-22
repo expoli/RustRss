@@ -113,6 +113,7 @@ async fn anthropic_shape_and_parsing() {
         base_url: server.uri(),
         api_key: Some("ak-test".into()),
         max_output_tokens: 512,
+        reasoning_effort: None,
     };
     let client = AiClient::new(config).unwrap();
     let out = client
@@ -155,6 +156,7 @@ async fn gemini_path_carries_model_and_parsing() {
         base_url: server.uri(),
         api_key: Some("gk-test".into()),
         max_output_tokens: 512,
+        reasoning_effort: None,
     };
     let client = AiClient::new(config).unwrap();
     let out = client
@@ -401,4 +403,40 @@ async fn empty_content_plain_length_reports_truncation() {
     let msg = err.to_string();
     assert!(msg.contains("token 上限截断"), "实际: {msg}");
     assert!(!msg.contains("思考链"), "无思考链不该误报: {msg}");
+}
+
+/// 思考强度：设置后请求体带 reasoning_effort；默认（None）不发这个参数。
+#[tokio::test]
+async fn reasoning_effort_is_sent_only_when_set() {
+    async fn capture_body(effort: Option<&str>) -> serde_json::Value {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/chat/completions"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(json!({
+                    "choices": [{ "message": { "role": "assistant", "content": "ok" } }]
+                })),
+            )
+            .mount(&server)
+            .await;
+        let mut config = AiConfig::openai_compatible(&format!("{}/v1", server.uri()), "m", "k");
+        config = config.with_reasoning_effort(effort.map(str::to_string));
+        let client = AiClient::new(config).unwrap();
+        client
+            .complete(rustrss_core::ai::prompt::build(
+                &summarize_short(),
+                &rustrss_core::ai::prompt::ArticleText { title: "t", body: "b" },
+            ))
+            .await
+            .unwrap();
+        let reqs = server.received_requests().await.unwrap();
+        serde_json::from_slice(&reqs[0].body).unwrap()
+    }
+
+    let with = capture_body(Some("low")).await;
+    assert_eq!(with["reasoning_effort"], "low", "设置后必须发送");
+    let without = capture_body(None).await;
+    assert!(without.get("reasoning_effort").is_none(), "默认不该带这个参数");
+    let empty = capture_body(Some("")).await;
+    assert!(empty.get("reasoning_effort").is_none(), "空串等价于不发");
 }

@@ -2009,6 +2009,8 @@ pub struct AiSettingsView {
     /// 单次回答的输出 token 上限（归一化后 256-32768，默认 4096）：
     /// 推理模型思考链也在这个预算里，太小会把正文轴掉
     pub max_output_tokens: u32,
+    /// 思考强度（""=跟随模型默认；minimal/low/medium/high；仅 OpenAI 兼容接口发送）
+    pub reasoning_effort: String,
 }
 
 fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
@@ -2028,6 +2030,7 @@ fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
             default_base_url: crate::ai::default_base_url(provider).to_string(),
             confirm_before_send: crate::ai::confirm_before_send(s),
             max_output_tokens: crate::ai::max_output_tokens_from_store(s),
+            reasoning_effort: crate::ai::reasoning_effort_from_store(s).unwrap_or_default(),
         })
     })
 }
@@ -2045,6 +2048,24 @@ pub fn set_ai_confirm_before_send(
 ) -> R<AiSettingsView> {
     state.with_store(|s| {
         s.set_setting(crate::ai::K_CONFIRM_BEFORE_SEND, if enabled { "true" } else { "false" })
+            .map_err(err)
+    })?;
+    ai_settings_view(&state)
+}
+
+/// 思考强度开关（立即生效，无需点保存——独立于 AI 表单的调优旋钮）。
+#[tauri::command]
+pub fn set_ai_reasoning_effort(
+    state: State<'_, AppState>,
+    value: String,
+) -> R<AiSettingsView> {
+    let normalized = if crate::ai::REASONING_EFFORT_CHOICES.contains(&value.as_str()) {
+        value
+    } else {
+        String::new()
+    };
+    state.with_store(|s| {
+        s.set_setting(crate::ai::K_REASONING_EFFORT, &normalized)
             .map_err(err)
     })?;
     ai_settings_view(&state)

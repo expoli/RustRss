@@ -38,6 +38,9 @@ pub struct AiConfig {
     pub base_url: String,
     pub api_key: Option<String>,
     pub max_output_tokens: u32,
+    /// 思考强度（仅 OpenAI 兼容接口生效：reasoning_effort minimal/low/medium/high；
+    /// None = 不发这个参数，跟随模型默认）。摘要/翻译这类任务调低可显著提速省 token。
+    pub reasoning_effort: Option<String>,
 }
 
 impl AiConfig {
@@ -48,6 +51,7 @@ impl AiConfig {
             base_url: base_url.to_string(),
             api_key: Some(api_key.into()),
             max_output_tokens: 4096,
+            reasoning_effort: None,
         }
     }
 
@@ -58,6 +62,7 @@ impl AiConfig {
             base_url: "https://api.anthropic.com".to_string(),
             api_key: Some(api_key.into()),
             max_output_tokens: 4096,
+            reasoning_effort: None,
         }
     }
 
@@ -68,6 +73,7 @@ impl AiConfig {
             base_url: "https://generativelanguage.googleapis.com".to_string(),
             api_key: Some(api_key.into()),
             max_output_tokens: 4096,
+            reasoning_effort: None,
         }
     }
 
@@ -79,6 +85,7 @@ impl AiConfig {
             base_url: "http://127.0.0.1:11434".to_string(),
             api_key: None,
             max_output_tokens: 4096,
+            reasoning_effort: None,
         }
     }
 
@@ -89,6 +96,12 @@ impl AiConfig {
 
     pub fn with_max_output_tokens(mut self, n: u32) -> Self {
         self.max_output_tokens = n;
+        self
+    }
+
+    /// 设置思考强度（Some("")/None = 不发参数）。值由 src-tauri 白名单归一化。
+    pub fn with_reasoning_effort(mut self, effort: Option<String>) -> Self {
+        self.reasoning_effort = effort.filter(|e| !e.trim().is_empty());
         self
     }
 
@@ -257,15 +270,23 @@ impl AiClient {
                     url: format!("{base}/chat/completions"),
                     // content-type 由 .json() 负责，不在这里重复设置（避免发出两个同名头）
                     headers: vec![("authorization".into(), format!("Bearer {key}"))],
-                    body: json!({
-                        "model": model,
-                        "messages": messages,
-                        // 推理模型（deepseek-r1 等）会先输出 reasoning_content 再输出正文：
-                        // 上限太小会把预算全烧在思考链上（实测 1024 时 finish_reason=length
-                        // 且 content 为空），默认给到 4096，可在设置里调
-                        "max_tokens": max,
-                        "stream": false,
-                    }),
+                    body: {
+                        let mut b = json!({
+                            "model": model,
+                            "messages": messages,
+                            // 推理模型（deepseek-r1 等）会先输出 reasoning_content 再输出正文：
+                            // 上限太小会把预算全烧在思考链上（实测 1024 时 finish_reason=length
+                            // 且 content 为空），默认给到 4096，可在设置里调
+                            "max_tokens": max,
+                            "stream": false,
+                        });
+                        // 思考强度：仅推理模型有意义；deepseek-r1 固定思考不受控，
+                        // 非推理模型多数端点会忽略，严格端点可能 4xx（用户自己选的档位，默认不发）
+                        if let Some(effort) = &self.config.reasoning_effort {
+                            b["reasoning_effort"] = json!(effort);
+                        }
+                        b
+                    },
                 })
             }
             Provider::Anthropic => {
