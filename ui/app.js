@@ -1710,6 +1710,20 @@ function initRefreshEvents() {
       setStatus(backgroundRefreshHint);
     })
     .catch((e) => log(`listen refresh:start failed: ${e.message}`));
+  // 逐源进度：把 start 时的笼统提示换成「N/M · 成功 X · 失败 Y」实时计数。
+  // 事件无序到达（并发抓取），直接用 payload 里的快照值，不在前端累加。
+  events
+    .listen('refresh:progress', (e) => {
+      const p = e.payload || {};
+      backgroundRefreshHint = t('status.refreshProgress', {
+        done: p.done ?? 0,
+        total: p.total ?? 0,
+        ok: p.ok ?? 0,
+        failed: p.failed ?? 0,
+      });
+      setStatus(backgroundRefreshHint);
+    })
+    .catch((e) => log(`listen refresh:progress failed: ${e.message}`));
   events
     .listen('refresh:done', async () => {
       log('refresh:done');

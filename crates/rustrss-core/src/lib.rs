@@ -18,8 +18,8 @@ pub mod store;
 pub use ai::{AiClient, AiConfig, AiError, Provider, RequestPreview};
 pub use discover::{discover, DiscoverError, Discovery, DiscoveryVia};
 pub use fetch::{
-    apply_results, bounded_map, collect_jobs, fetch_jobs, refresh, refresh_all, Fetcher,
-    FetchResult, RefreshReport,
+    apply_results, bounded_map, collect_jobs, fetch_jobs, fetch_jobs_with_progress, refresh,
+    refresh_all, Fetcher, FetchResult, RefreshProgress, RefreshReport,
 };
 pub use fulltext::{extract, extract_bytes, Extracted, FulltextError};
 pub use paths::{default_data_dir, default_db_path, resolve_db_path};

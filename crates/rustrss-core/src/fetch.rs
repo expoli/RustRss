@@ -8,6 +8,7 @@
 //! `Store`（内部是 `!Sync` 的连接）不需要跨任务共享，省掉一把锁。
 
 use std::future::Future;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -239,13 +240,62 @@ pub fn collect_jobs(store: &Store, feed_ids: &[i64]) -> Result<Vec<RefreshJob>> 
     Ok(jobs)
 }
 
+/// 一次抓取完成后的进度快照（事件载荷）。`ok + failed = done`。
+/// 「成功」= 拿到内容或确认未变（Fetched / NotModified）；网络错、HTTP 错、
+/// 解析失败都算 failed（与 RefreshReport 的 failures 口径一致）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct RefreshProgress {
+    pub done: u32,
+    pub total: u32,
+    pub ok: u32,
+    pub failed: u32,
+}
+
+/// 抓取结果是否算「成功」：拿到内容或确认未变。
+fn outcome_ok(outcome: &FetchResult) -> bool {
+    matches!(
+        outcome,
+        FetchResult::Fetched { .. } | FetchResult::NotModified { .. }
+    )
+}
+
 /// 阶段二：并发抓取（此阶段不需要数据库，因此可以安全地跨任务）
 pub async fn fetch_jobs(fetcher: &Fetcher, jobs: Vec<RefreshJob>, concurrency: usize) -> Vec<FetchedFeed> {
+    fetch_jobs_with_progress(fetcher, jobs, concurrency, |_| {}).await
+}
+
+/// [`fetch_jobs`] 的带进度版：每完成一个源回调一次 `on_progress`（无序，到达即报）。
+/// 回调在抓取任务里执行，只该做廉价的事（发射事件/写原子变量），不能碰库。
+pub async fn fetch_jobs_with_progress(
+    fetcher: &Fetcher,
+    jobs: Vec<RefreshJob>,
+    concurrency: usize,
+    on_progress: impl Fn(RefreshProgress) + Send + Sync + 'static,
+) -> Vec<FetchedFeed> {
+    let total = jobs.len() as u32;
+    // (done, ok)：两个原子计数器，失败数 = done - ok，无需第三个
+    let counters = Arc::new((AtomicU32::new(0), AtomicU32::new(0)));
     let fetcher = fetcher.clone();
+    let on_progress = Arc::new(on_progress);
     bounded_map(jobs, concurrency, move |job| {
         let fetcher = fetcher.clone();
+        let counters = counters.clone();
+        let on_progress = on_progress.clone();
         async move {
             let outcome = fetcher.fetch(&job.url, job.cache.clone()).await;
+            let ok_hit = outcome_ok(&outcome);
+            let done = counters.0.fetch_add(1, Ordering::Relaxed) + 1;
+            let ok = if ok_hit {
+                counters.1.fetch_add(1, Ordering::Relaxed) + 1
+            } else {
+                counters.1.load(Ordering::Relaxed)
+            };
+            on_progress(RefreshProgress {
+                done,
+                total,
+                ok,
+                failed: done - ok,
+            });
             FetchedFeed {
                 feed_id: job.feed_id,
                 url: job.url,

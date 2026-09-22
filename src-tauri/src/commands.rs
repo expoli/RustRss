@@ -1563,11 +1563,13 @@ pub fn remove_feed(app: tauri::AppHandle, state: State<'_, AppState>, feed_id: i
 ///
 /// 单 flight 不在这里判定：调用方先拿 `try_begin_refresh` 的守卫，这样手动与自动
 /// 走的一定是同一条管线，不会出现「两套路径各改一半」的漂移。
-/// `feed_ids = None` 表示全量。
-pub(crate) async fn refresh_core(
+/// `feed_ids = None` 表示全量。`on_progress` 每抓完一个源回调一次（None = 不报进度，
+/// 单源刷新这类瞬时操作不需要）。
+pub(crate) async fn refresh_core<P: Fn(rustrss_core::RefreshProgress) + Send + Sync + 'static>(
     state: &AppState,
     feed_ids: Option<Vec<i64>>,
     concurrency: usize,
+    on_progress: Option<P>,
 ) -> R<RefreshReport> {
     // 阶段一：锁内取任务（全量时读 id 列表与取任务在同一个锁窗口里做完）
     let jobs = match feed_ids {
@@ -1580,9 +1582,12 @@ pub(crate) async fn refresh_core(
     if jobs.is_empty() {
         return Ok(RefreshReport::default());
     }
-    // 阶段二：无锁并发抓取
+    // 阶段二：无锁并发抓取（带进度回调时逐源发事件，前端状态栏实时显示 N/M）
     let fetcher = state.fetcher.clone();
-    let results = rustrss_core::fetch_jobs(&fetcher, jobs, concurrency).await;
+    let results = match on_progress {
+        Some(cb) => rustrss_core::fetch_jobs_with_progress(&fetcher, jobs, concurrency, cb).await,
+        None => rustrss_core::fetch_jobs(&fetcher, jobs, concurrency).await,
+    };
     // 阶段三：锁内串行写库
     state.with_store(|s| {
         let r = rustrss_core::apply_results(s, results).map_err(err);
@@ -1594,27 +1599,40 @@ pub(crate) async fn refresh_core(
     })
 }
 
-/// 刷新全部订阅源（界面按钮 / `r` 键）。
+/// 刷新全部订阅源（界面按钮 / `r` 键）。逐源发 `refresh:progress` 事件，
+/// 前端状态栏实时显示「N/M · 成功 X · 失败 Y」。
 /// 尊重单 flight：已有刷新（定时或上一轮手动）在跑时直接返回可读错误，不叠加第二条管线。
 #[tauri::command]
 pub async fn refresh_all(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     concurrency: Option<usize>,
 ) -> R<RefreshReport> {
     let _flight = state.try_begin_refresh()?;
-    refresh_core(&state, None, concurrency.unwrap_or(6)).await
+    refresh_core(&state, None, concurrency.unwrap_or(6), Some(progress_emitter(app))).await
 }
 
 /// 刷新指定一批订阅源（OPML 导入后只抓新增的那些）。
 /// 与 refresh_all 共享单 flight 与管线，只差「抓哪些源」。
 #[tauri::command]
 pub async fn refresh_feeds(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     feed_ids: Vec<i64>,
     concurrency: Option<usize>,
 ) -> R<RefreshReport> {
     let _flight = state.try_begin_refresh()?;
-    refresh_core(&state, Some(feed_ids), concurrency.unwrap_or(6)).await
+    refresh_core(&state, Some(feed_ids), concurrency.unwrap_or(6), Some(progress_emitter(app))).await
+}
+
+/// 构造逐源进度的事件发射闭包：每抓完一个源向前端发 `refresh:progress`。
+fn progress_emitter(
+    app: tauri::AppHandle,
+) -> impl Fn(rustrss_core::RefreshProgress) + Send + Sync + 'static {
+    use tauri::Emitter;
+    move |p| {
+        let _ = app.emit(crate::scheduler::EVENT_REFRESH_PROGRESS, p);
+    }
 }
 
 /// 刷新单个订阅源（失败源上的「重试」用它，新增订阅后的首抓也用它）。
@@ -1626,7 +1644,7 @@ pub async fn refresh_feed(
     feed_id: i64,
     concurrency: Option<usize>,
 ) -> R<RefreshReport> {
-    refresh_core(&state, Some(vec![feed_id]), concurrency.unwrap_or(1)).await
+    refresh_core(&state, Some(vec![feed_id]), concurrency.unwrap_or(1), None::<fn(_)>).await
 }
 
 /// 导出 OPML：弹原生保存对话框 → 写文件。返回实际写入路径（用户取消则 None）。

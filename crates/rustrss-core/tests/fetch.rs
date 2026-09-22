@@ -272,3 +272,62 @@ async fn fetch_bytes_limited_streams_and_returns_small_body() {
         .unwrap();
     assert_eq!(body, b"hello");
 }
+
+// ---------------------------------------------------------------- 进度回调（fetch_jobs_with_progress）
+
+/// 进度回调逐源触发：done 单调递增至 total、每步 ok+failed=done、
+/// 成功/失败口径与 RefreshReport 一致（HTTP 错算 failed，200/304 算 ok）。
+#[tokio::test]
+async fn fetch_jobs_progress_counts_match_outcomes() {
+    use rustrss_core::fetch::{fetch_jobs_with_progress, CacheHeaders, RefreshJob};
+
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/ok1.xml"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(RSS_TWO_ITEMS))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/ok2.xml"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(RSS_TWO_ITEMS))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/dead.xml"))
+        .respond_with(ResponseTemplate::new(404))
+        .mount(&server)
+        .await;
+
+    let jobs: Vec<RefreshJob> = ["ok1", "ok2", "dead"]
+        .iter()
+        .enumerate()
+        .map(|(i, name)| RefreshJob {
+            feed_id: i as i64 + 1,
+            url: format!("{}/{}.xml", server.uri(), name),
+            cache: CacheHeaders::default(),
+        })
+        .collect();
+
+    let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let sink = seen.clone();
+    let out = fetch_jobs_with_progress(&fetcher(), jobs, 2, move |p| {
+        sink.lock().unwrap().push(p);
+    })
+    .await;
+
+    assert_eq!(out.len(), 3, "三个源都返回了抓取结果");
+    let seen = seen.lock().unwrap().clone();
+    assert_eq!(seen.len(), 3, "每完成一个源回调一次");
+    // 每个快照的不变量
+    for p in &seen {
+        assert_eq!(p.total, 3);
+        assert_eq!(p.ok + p.failed, p.done, "ok+failed=done");
+    }
+    // done 覆盖 1..=3 各一次（并发完成顺序不定，但恰好每源一报）
+    let mut dones: Vec<u32> = seen.iter().map(|p| p.done).collect();
+    dones.sort_unstable();
+    assert_eq!(dones, vec![1, 2, 3]);
+    // 终态：2 成功 1 失败
+    let last = seen.last().unwrap();
+    assert_eq!((last.done, last.ok, last.failed), (3, 2, 1));
+}

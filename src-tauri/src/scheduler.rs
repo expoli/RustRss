@@ -16,7 +16,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::commands;
+use crate::commands::{self, refresh_core};
 use crate::state::AppState;
 use rustrss_core::FeedIntervalRow;
 
@@ -32,6 +32,8 @@ const CONCURRENCY: usize = 6;
 pub const EVENT_REFRESH_START: &str = "refresh:start";
 /// 后台刷新结束（成功或失败都会发；前端据此静默 loadAll，不打断阅读焦点）。
 pub const EVENT_REFRESH_DONE: &str = "refresh:done";
+/// 逐源进度（手动与后台都发；payload = RefreshProgress {done,total,ok,failed}）。
+pub const EVENT_REFRESH_PROGRESS: &str = "refresh:progress";
 
 /// 启动调度：setup 阶段调用一次，之后整个进程生命周期都在后台跑。
 pub fn spawn(app: AppHandle) {
@@ -133,7 +135,17 @@ async fn background_refresh(app: &AppHandle, feed_ids: Option<Vec<i64>>) {
     // 新文章。
     let before_unread = unread_total(&state);
     let _ = app.emit(EVENT_REFRESH_START, ());
-    match commands::refresh_core(&state, feed_ids, CONCURRENCY).await {
+    let progress_app = app.clone();
+    match refresh_core(
+        &state,
+        feed_ids,
+        CONCURRENCY,
+        Some(move |p| {
+            let _ = progress_app.emit(EVENT_REFRESH_PROGRESS, p);
+        }),
+    )
+    .await
+    {
         Ok(report) => eprintln!(
             "[rustrss] 自动刷新完成: fetched={} not_modified={} inserted={} updated={} failures={}",
             report.fetched,
