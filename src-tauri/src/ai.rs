@@ -16,9 +16,21 @@ pub const K_MODEL: &str = "ai.model";
 pub const K_BASE_URL: &str = "ai.base_url";
 pub const K_TRANSLATE_TARGET: &str = "ai.translate_target";
 pub const K_CONFIRM_BEFORE_SEND: &str = "ai.confirm_before_send";
+pub const K_MAX_OUTPUT_TOKENS: &str = "ai.max_output_tokens";
 
 pub const DEFAULT_PROVIDER: &str = "ollama";
 pub const DEFAULT_TRANSLATE_TARGET: &str = "中文";
+pub const DEFAULT_MAX_OUTPUT_TOKENS: u32 = 4096;
+/// 上限范围：太小会在长文翻译上截断（推理模型思考链更耗），太大在小上下文模型上直接 400。
+pub const MAX_OUTPUT_TOKENS_LIMITS: (u32, u32) = (256, 32_768);
+
+/// 读输出上限（缺失/非法回退默认；clamp 到上下限内）。
+pub fn max_output_tokens_from_store(store: &Store) -> u32 {
+    non_empty_setting(store, K_MAX_OUTPUT_TOKENS)
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or(DEFAULT_MAX_OUTPUT_TOKENS)
+        .clamp(MAX_OUTPUT_TOKENS_LIMITS.0, MAX_OUTPUT_TOKENS_LIMITS.1)
+}
 
 /// 每个 provider 一个凭据条目：切换 provider 不会互相覆盖 key
 pub fn key_account(provider: &str) -> String {
@@ -122,7 +134,8 @@ pub fn config_from_store(store: &Store) -> Result<(AiConfig, Option<String>), St
         }
         Provider::Gemini => AiConfig::gemini(&model, key.clone().unwrap_or_default()).with_base_url(&base),
         Provider::Ollama => AiConfig::ollama(&model).with_base_url(&base),
-    };
+    }
+    .with_max_output_tokens(max_output_tokens_from_store(store));
     Ok((config, key_source))
 }
 

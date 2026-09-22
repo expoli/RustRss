@@ -47,7 +47,7 @@ impl AiConfig {
             model: model.to_string(),
             base_url: base_url.to_string(),
             api_key: Some(api_key.into()),
-            max_output_tokens: 1024,
+            max_output_tokens: 4096,
         }
     }
 
@@ -57,7 +57,7 @@ impl AiConfig {
             model: model.to_string(),
             base_url: "https://api.anthropic.com".to_string(),
             api_key: Some(api_key.into()),
-            max_output_tokens: 1024,
+            max_output_tokens: 4096,
         }
     }
 
@@ -67,7 +67,7 @@ impl AiConfig {
             model: model.to_string(),
             base_url: "https://generativelanguage.googleapis.com".to_string(),
             api_key: Some(api_key.into()),
-            max_output_tokens: 1024,
+            max_output_tokens: 4096,
         }
     }
 
@@ -78,7 +78,7 @@ impl AiConfig {
             model: model.to_string(),
             base_url: "http://127.0.0.1:11434".to_string(),
             api_key: None,
-            max_output_tokens: 1024,
+            max_output_tokens: 4096,
         }
     }
 
@@ -260,6 +260,9 @@ impl AiClient {
                     body: json!({
                         "model": model,
                         "messages": messages,
+                        // 推理模型（deepseek-r1 等）会先输出 reasoning_content 再输出正文：
+                        // 上限太小会把预算全烧在思考链上（实测 1024 时 finish_reason=length
+                        // 且 content 为空），默认给到 4096，可在设置里调
                         "max_tokens": max,
                         "stream": false,
                     }),
@@ -331,9 +334,30 @@ impl AiClient {
         match text {
             Some(t) if !t.trim().is_empty() => Ok(t.trim().to_string()),
             _ => Err(AiError::BadResponse(format!(
-                "响应里没有文本内容: {}",
+                "{}{}",
+                self.empty_content_diagnosis(value),
                 shorten(&value.to_string(), 300)
             ))),
+        }
+    }
+
+    /// 正文为空时的补充诊断：区分「截断」（可自救：调大上限/换模型）与真异常，
+    /// 拼在原始响应前面让用户一眼看懂该怎么处理。
+    fn empty_content_diagnosis(&self, value: &Value) -> &'static str {
+        if self.config.provider != Provider::OpenAiCompatible {
+            return "响应里没有文本内容: ";
+        }
+        let finish = value["choices"][0]["finish_reason"].as_str().unwrap_or("");
+        let reasoning = value["choices"][0]["message"]["reasoning_content"]
+            .as_str()
+            .map(str::is_empty)
+            .unwrap_or(true);
+        match (finish, reasoning) {
+            // 推理模型把 token 预算全烧在思考链上，正文一个字没产出
+            ("length", false) => "输出被 token 上限截断：模型思考链占满了预算，正文未产出。请在设置里调大「输出上限」或换非推理模型。原始响应: ",
+            ("length", true) => "输出被 token 上限截断（finish_reason=length）。请在设置里调大「输出上限」或缩短正文。原始响应: ",
+            (_, false) => "模型只返回了思考链没有正文（推理模型异常输出）。原始响应: ",
+            _ => "响应里没有文本内容: ",
         }
     }
 }

@@ -342,3 +342,63 @@ async fn missing_entry_is_reported_not_silently_empty() {
         .unwrap_err();
     assert!(matches!(err, AiError::EntryNotFound(99999)), "{err:?}");
 }
+
+/// 空正文诊断：推理模型烧完预算（finish_reason=length + reasoning_content 非空 +
+/// content 空）时，错误信息必须指向「调大上限/换模型」，而不是笼统的「没有文本」。
+#[tokio::test]
+async fn empty_content_with_reasoning_budget_reports_actionable_error() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "choices": [{
+                "finish_reason": "length",
+                "message": {
+                    "content": "",
+                    "reasoning_content": "我们需要回答用户……（思考链占满预算）"
+                }
+            }]
+        })))
+        .mount(&server)
+        .await;
+
+    let config = AiConfig::openai_compatible(&format!("{}/v1", server.uri()), "r1", "k");
+    let client = AiClient::new(config).unwrap();
+    let err = client
+        .complete(rustrss_core::ai::prompt::build(
+            &summarize_short(),
+            &rustrss_core::ai::prompt::ArticleText { title: "t", body: "b" },
+        ))
+        .await
+        .unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("token 上限截断"), "实际: {msg}");
+    assert!(msg.contains("思考链"), "应指向推理模型: {msg}");
+    assert!(msg.contains("输出上限"), "应给出可操作建议: {msg}");
+}
+
+/// 纯截断（无思考链）也要说明原因，且保留原始响应片段便于排查。
+#[tokio::test]
+async fn empty_content_plain_length_reports_truncation() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "choices": [{ "finish_reason": "length", "message": { "content": "" } }]
+        })))
+        .mount(&server)
+        .await;
+
+    let config = AiConfig::openai_compatible(&format!("{}/v1", server.uri()), "m", "k");
+    let client = AiClient::new(config).unwrap();
+    let err = client
+        .complete(rustrss_core::ai::prompt::build(
+            &summarize_short(),
+            &rustrss_core::ai::prompt::ArticleText { title: "t", body: "b" },
+        ))
+        .await
+        .unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("token 上限截断"), "实际: {msg}");
+    assert!(!msg.contains("思考链"), "无思考链不该误报: {msg}");
+}

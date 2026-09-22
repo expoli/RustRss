@@ -1999,6 +1999,7 @@ function fillAiForm() {
   el('ai-model').value = ai.model;
   el('ai-base-url').value = ai.base_url;
   el('ai-target').value = ai.translate_target;
+  el('ai-max-tokens').value = ai.max_output_tokens || 4096;
   el('ai-key').value = '';
   el('ai-key-hint').textContent = ai.has_key
     ? t('settings.ai.keySet', { source: ai.key_note || '' })
@@ -2347,6 +2348,8 @@ async function boot() {
   el('btn-settings').onclick = openSettings;
   el('ai-save').onclick = async () => {
     const key = el('ai-key').value;
+    // 空值不传：后端不动这个设置（保持原值），非法值后端 clamp
+    const maxTokensRaw = parseInt(el('ai-max-tokens').value, 10);
     try {
       state.ai = await invoke('save_ai_settings', {
         provider: el('ai-provider').value,
@@ -2355,6 +2358,7 @@ async function boot() {
         translateTarget: el('ai-target').value,
         // 留空表示「不修改 key」，要清除得点专门的按钮
         apiKey: key.trim() === '' ? null : key,
+        maxOutputTokens: Number.isFinite(maxTokensRaw) ? maxTokensRaw : null,
       });
       fillAiForm();
       el('ai-status').textContent = state.ai.has_key
@@ -2368,6 +2372,7 @@ async function boot() {
   };
 
   el('ai-clear-key').onclick = async () => {
+    const maxTokensRaw = parseInt(el('ai-max-tokens').value, 10);
     try {
       state.ai = await invoke('save_ai_settings', {
         provider: el('ai-provider').value,
@@ -2375,6 +2380,7 @@ async function boot() {
         baseUrl: el('ai-base-url').value,
         translateTarget: el('ai-target').value,
         apiKey: '',
+        maxOutputTokens: Number.isFinite(maxTokensRaw) ? maxTokensRaw : null,
       });
       fillAiForm();
       el('ai-status').textContent = t('settings.ai.keyCleared');

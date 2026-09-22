@@ -2006,6 +2006,9 @@ pub struct AiSettingsView {
     pub default_base_url: String,
     /// 「发送前确认要发什么」是否开启
     pub confirm_before_send: bool,
+    /// 单次回答的输出 token 上限（归一化后 256-32768，默认 4096）：
+    /// 推理模型思考链也在这个预算里，太小会把正文轴掉
+    pub max_output_tokens: u32,
 }
 
 fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
@@ -2024,6 +2027,7 @@ fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
             key_note: note,
             default_base_url: crate::ai::default_base_url(provider).to_string(),
             confirm_before_send: crate::ai::confirm_before_send(s),
+            max_output_tokens: crate::ai::max_output_tokens_from_store(s),
         })
     })
 }
@@ -2047,6 +2051,7 @@ pub fn set_ai_confirm_before_send(
 }
 
 /// 保存 AI 设置。`api_key` 为 `Some("")` 表示清除凭据，`None` 表示不动它。
+/// `max_output_tokens` 为 `None` 表示不动它（缺失/非法时读倒回退默认）。
 #[tauri::command]
 pub fn save_ai_settings(
     state: State<'_, AppState>,
@@ -2055,6 +2060,7 @@ pub fn save_ai_settings(
     base_url: String,
     translate_target: String,
     api_key: Option<String>,
+    max_output_tokens: Option<u32>,
 ) -> R<AiSettingsView> {
     let provider = provider.trim().to_string();
     state.with_store(|s| {
@@ -2064,6 +2070,14 @@ pub fn save_ai_settings(
             .map_err(err)?;
         s.set_setting(crate::ai::K_TRANSLATE_TARGET, translate_target.trim())
             .map_err(err)?;
+        if let Some(max) = max_output_tokens {
+            let clamped = max.clamp(
+                crate::ai::MAX_OUTPUT_TOKENS_LIMITS.0,
+                crate::ai::MAX_OUTPUT_TOKENS_LIMITS.1,
+            );
+            s.set_setting(crate::ai::K_MAX_OUTPUT_TOKENS, &clamped.to_string())
+                .map_err(err)?;
+        }
         if let Some(key) = api_key {
             if key.trim().is_empty() {
                 crate::ai::delete_key(&provider)?;
