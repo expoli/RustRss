@@ -912,8 +912,9 @@ fn parse_font_families(raw: &str) -> Vec<String> {
     families
 }
 
-/// 跑一条「输出字体族」的外部命令：成功 → 解析后的族名表；
-/// spawn 失败、超时、非零退出、非 UTF-8 输出一律降级为空表（并留一行 stderr 便于诊断）。
+/// 跑一条「输出字体族」的外部命令：成功 → 解析后的族名表（非 UTF-8 字节用
+/// lossy 替换，不会丢字体）；spawn 失败 / 超时 / 非零退出降级为空表（并留
+/// 一行 stderr 便于诊断）。
 ///
 /// `kill_on_drop`：超时后子进程真被杀掉，不留一个还在跑 fc-list 的孤儿。
 /// （`std::process` 没有带超时的 `wait`，自己轮询 `try_wait` 在子进程写满管道时会死锁。）
