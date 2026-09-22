@@ -466,3 +466,57 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（测试进程环境，非应�
 - [ ] 中文输入法激活时在下拉菜单里的键盘操作（本轮只用鼠标）
 - [ ] 弹层遮住触发按钮时的菜单定位观感：菜单高于视口可用空间时会被向上钳位、盖住触发按钮本身
       （点外面或选中条目都能关，但「再点同一个下拉关闭」在该位置够不到按钮）——是否需要改成向上展开待定
+
+## 14. 订阅源编辑对话框（2026-09-22-feed-edit，任务 312ff15d）
+
+> headless 跑法：`Xvfb :99`（1920x1200，无窗口管理器）+ `GDK_BACKEND=x11`（**测试进程环境，不是应用代码设置**）+
+> `HOME=/tmp/rustrss-feededit/home`（隔离）+ `RUSTSS_DB=/tmp/rustrss-feededit/db.sqlite`（临时库）+
+> 本地 fixture（`python3 -m http.server 8912`，`feed.xml` / `feed2.xml`）+ `xdotool` 真实鼠标/键盘事件；
+> 读回 `sqlite3`、应用 stdout 的 `[ui]` 行、`import -window <应用窗口>` 截图。
+> 库内先塞一个源（`feeds` 行，`title='Local Feed A'`），启动后 10 秒首刷从 fixture 学到源站名并入库两条目——
+> 即「源站名由抓取写、用户改名不该被它洗掉」这条链路的真机起点。
+
+### 14.1 已机械验证的部分（截图 + 库回读 + stdout 自证）
+
+- **菜单入口与位置**：右键某源 → 立即刷新 → 分隔线 → **编辑** → 移动到：X → 分隔线 → 刷新间隔组 → 取消订阅
+  （截图 `shot-02-menu.png`；与 PRD 要求的「立即刷新之后、移入文件夹之前」一致）。
+- **对话框内容**：标题输入框 placeholder = **源站名**（`Fixture Channel`）、文件夹下拉 = 未分组 + 已有分组、
+  刷新间隔下拉 = 跟随全局（每 30 分钟）+ 五档、订阅地址只读展示（截图 `shot-03-dialog.png`）；
+  已有自定义名时输入框预填该值（截图 `shot-16-dialog-prefill.png`）。
+- **自绘下拉不与弹窗互踩**：下拉触发按钮带 `.setting-dropdown` 类 → 开菜单那一次点击不被 `document`
+  上「点菜单外面就关」的监听当成外部点击（截图 `shot-04-interval-menu.png` / `shot-11-folder-menu.png`：
+  菜单真实打开并锚在字段行下沿）；Esc 关弹窗时菜单一并关掉（两者都是「取消」语义）。
+- **保存：部分写入 + 一次落库**。只改标题 → 库内 `custom_title='我的改写名'`，`folder_id` / `refresh_interval_minutes`
+  原样；改标题 + 文件夹 → `custom_title` 与 `folder_id=1`（开发）都落库、间隔仍是 NULL；
+  清空标题 + 选未分组 + 选每 30 分钟 → `custom_title=NULL`、`folder_id=NULL`、`refresh_interval_minutes=30`。
+  三条命令的 stdout 行分别印证同一件事（`source_title` 与显示名都在回读行里）：
+  `feed 1 config saved name="我的改写名" source="Fixture Channel" folder=1 interval=global`、
+  `feed 1 config saved name="Fixture Channel v2" source="Fixture Channel v2" folder=none interval=30`、
+  `feed 2 config saved name="AAA 第二源" source="Second Source" folder=none interval=global`。
+- **立即生效，且不重建列表/正文**：保存后侧栏（含未读合计与位置）、列表行的源名、列表标题（视图标题）、
+  阅读区元信息、状态栏「已保存：X」同步更新（截图 `shot-13-saved.png`、`shot-17-reader-sync.png`、
+  `shot-20-cleared.png`）；文章仍开着、正文 DOM 未重建（`shot-17` 与保存前同一篇）。
+- **改名后侧栏立刻按显示名重排**：把第二个源改名为 `AAA 第二源` 后它立刻排到 `Fixture Channel v2` 之前
+  （截图 `shot-23-resort.png`）——`list_feeds` 的 `ORDER BY COALESCE(custom_title, title) COLLATE NOCASE`。
+- **刷新不覆盖自定义名**：fixture 的 `<title>` 改成 `Fixture Channel v2` 后点「刷新全部」→ 库内
+  `title='Fixture Channel v2'`（源站名跟着刷新走）、`custom_title='我的改写名'` 保持不变，界面继续显示自定义名
+  （截图 `shot-15-after-refresh.png`）；启动首刷路径同样如此（重启后截图 `shot-24-restart.png` 仍显示自定义名）。
+- **取消零副作用**：改下拉档位后按 Esc / 点取消 → 库里三列一个都没动（`title/custom_title/refresh_interval_minutes`
+  仍为原值），stdout 也没有 `config saved` 行（截图 `shot-06-esc-cancel.png`）。
+- **重启保持**：杀掉进程重启 → 自定义名与新顺序照旧（截图 `shot-24-restart.png`；对应 core 侧的
+  v9→v10 真文件迁移测试 `migration_v9_to_v10_adds_custom_title_on_real_file`）。
+- **i18n**：启动自检 `i18n selftest ok (keys=301)`；node 侧等价核对 zh/en 各 301 个 key 一一对应，
+  `app.js` 的 `t()` key 与 `index.html` 的 148 处 `data-i18n*` 全部存在（缺 0 个）。
+- **单测**：core 新增 3 例（迁移 v9→v10、显示层 COALESCE + 刷新不覆盖 + 排序、刷新管线端到端不覆盖）、
+  `src-tauri` 新增 3 例（补丁对象三态解析、自定义名归一化、只写补丁内字段且非法值不写一半）；
+  `cargo test --workspace` 全绿。
+
+### 14.2 仍需真实桌面会话人工核验
+
+- [ ] 真实桌面会话（X11 / Wayland 各一）下对话框与自绘下拉的定位观感：下拉菜单贴字段行下沿展开，
+      可用空间不足时会盖住「保存 / 取消」按钮（点外面即可关，功能不受影响）
+- [ ] 输入法（fcitx / ibus）激活时在标题输入框里输入中文：候选框定位与回车提交行为（本轮用的是
+      `xdotool type` 直接送按键，没经过输入法）
+- [ ] 高分屏（125% / 150%）下对话框与下拉的像素对齐（本轮 DSF=1）
+- [ ] tooltip 文案：给某源设了独立间隔后，侧栏 tooltip 的「独立刷新间隔：…」在真实桌面下的展示
+      （GTK tooltip 是独立 X 窗口，headless 截图整块黑）
