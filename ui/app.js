@@ -1353,6 +1353,13 @@ function openFeedMenu(ev, feed) {
       action: () => setFeedRefreshInterval(feed.id, choice.value),
     });
   }
+  // 取消订阅：破坏性（条目级联删），与刷新间隔组分隔开，红色危险样式
+  items.push({ separator: true });
+  items.push({
+    label: t('menu.unsubscribe'),
+    danger: true,
+    action: () => unsubscribeFeed(feed),
+  });
   openContextMenu(ev, items);
 }
 
@@ -1368,6 +1375,58 @@ function setFeedRefreshInterval(feedId, value) {
       setStatus(err.message, true);
       log(`set_feed_refresh_interval failed: ${err.message}`);
     });
+}
+
+/// 通用危险操作确认弹窗：返回 Promise<boolean>（true=确认）。Esc/点遮罩/取消均关闭。
+/// 复用 confirm-sheet 样式（小尺寸变体），与 AI 确认弹窗同一套视觉。
+function confirmDialog({ title, body, okLabel, cancelLabel, danger = true }) {
+  return new Promise((resolve) => {
+    const overlay = el('generic-confirm-overlay');
+    el('generic-confirm-title').textContent = title;
+    el('generic-confirm-body').textContent = body || '';
+    const ok = el('generic-confirm-ok');
+    const cancel = el('generic-confirm-cancel');
+    ok.textContent = okLabel || t('confirm.ok');
+    cancel.textContent = cancelLabel || t('confirm.cancel');
+    ok.classList.toggle('danger', danger);
+    const done = (v) => {
+      overlay.classList.add('hidden');
+      ok.onclick = cancel.onclick = overlay.onclick = null;
+      document.removeEventListener('keydown', onKey);
+      resolve(v);
+    };
+    ok.onclick = () => done(true);
+    cancel.onclick = () => done(false);
+    overlay.onclick = (ev) => { if (ev.target === overlay) done(false); };
+    const onKey = (ev) => { if (ev.key === 'Escape') done(false); };
+    document.addEventListener('keydown', onKey);
+    overlay.classList.remove('hidden');
+    ok.focus();
+  });
+}
+
+/// 取消订阅：破坏性操作（条目级联删除，不可恢复），必须过确认弹窗。
+async function unsubscribeFeed(feed) {
+  const ok = await confirmDialog({
+    title: t('confirm.unsubscribeTitle'),
+    body: t('confirm.unsubscribeBody', { name: feed.title }),
+    okLabel: t('confirm.unsubscribeOk'),
+  });
+  if (!ok) return;
+  try {
+    await invoke('remove_feed', { feedId: feed.id });
+    // 当前正在看这个源的文章列表 → 回到「全部」避免空列表死状态
+    if (state.view.kind === 'feed' && state.feedId === feed.id) {
+      await setView(VIEWS.find((v) => v.kind === 'all'));
+    } else {
+      await refreshCounts();
+    }
+    setStatus(t('status.unsubscribed', { name: feed.title }));
+    log(`feed removed: ${feed.id} ${feed.title}`);
+  } catch (err) {
+    setStatus(err.message, true);
+    log(`remove_feed failed: ${err.message}`);
+  }
 }
 
 function openFolderMenu(ev, folder) {

@@ -521,6 +521,19 @@
     </div>
   </div>
 
+  <!-- 通用危险操作确认（取消订阅等）：小尺寸弹窗，Esc/点遮罩/取消均关闭 -->
+  <div id="generic-confirm-overlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-sheet small-sheet">
+      <h3 id="generic-confirm-title"></h3>
+      <p id="generic-confirm-body" class="dim small"></p>
+      <div class="confirm-actions">
+        <span class="spacer"></span>
+        <button id="generic-confirm-cancel"></button>
+        <button id="generic-confirm-ok" class="danger"></button>
+      </div>
+    </div>
+  </div>
+
   <script src="vendor/highlight.min.js"></script>
   <script src="i18n.js"></script>
   <script src="app.js"></script>
