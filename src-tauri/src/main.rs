@@ -227,6 +227,7 @@ fn main() {
             commands::set_refresh_on_start,
             commands::set_refresh_concurrency,
             commands::set_notify_new_articles,
+            commands::set_log_level,
             commands::set_ui_locale,
             commands::set_ui_theme,
             commands::set_list_sort,

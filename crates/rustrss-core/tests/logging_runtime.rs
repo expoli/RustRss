@@ -6,11 +6,21 @@
 //!
 //! 覆盖 T2 验收 3（PRD 验收 2）：debug 关闭时不出现、打开时出现；panic 后日志文件里
 //! 有 payload + 位置，且原 hook 仍被调用（既有 stderr 行为不丢）。
+//! 另覆盖 T3 验收 4（debug 目标过滤）：debug/trace 只收本应用（`rustrss*`）与 `ui`，
+//! 依赖库（h2/hyper/reqwest…）的 debug 丢弃，info/warn/error 不限 target。
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use log::LevelFilter;
+
+/// 本应用形态的 target（writer 的 debug 过滤只放行 `rustrss*` 与 `ui`）。
+/// 用显式 target 而不是默认的 `module_path!()`（集成测试 crate 名 `logging_runtime`
+/// 不带 `rustrss` 前缀，会被 T3 的过滤规则当第三方丢掉）：这样每条记录的 target
+/// 与线上日志同形态，断言才能区分「级别门」与「target 过滤」两道门。
+const APP_TARGET: &str = "rustrss_core::logging_runtime";
+/// 前端 `ui_log` 通道的 target。
+const UI_TARGET: &str = "ui";
 
 /// 原 hook 是否被调用过（新 hook 必须链式调用它，否则 stderr 那份现场就丢了）。
 static PREVIOUS_HOOK_CALLED: AtomicBool = AtomicBool::new(false);
@@ -41,8 +51,8 @@ fn level_gate_and_panic_hook_recording() {
     assert_eq!(log::max_level(), LevelFilter::Info, "init 要按传入级别设门");
 
     // ② info 级别（默认）：debug 行不落盘，info 行照落
-    log::debug!("DEBUG-不应出现-9f3c1a7b");
-    log::info!("INFO-应出现-9f3c1a7b");
+    log::debug!(target: APP_TARGET, "DEBUG-不应出现-9f3c1a7b");
+    log::info!(target: APP_TARGET, "INFO-应出现-9f3c1a7b");
     let text = read(&log_file);
     assert!(
         !text.contains("DEBUG-不应出现"),
@@ -52,7 +62,7 @@ fn level_gate_and_panic_hook_recording() {
 
     // ③ 切到 debug（T3 的 `log.level=debug` 走同一条 set_max_level 路径）：debug 行出现
     log::set_max_level(LevelFilter::Debug);
-    log::debug!("DEBUG-应出现-9f3c1a7b");
+    log::debug!(target: APP_TARGET, "DEBUG-应出现-9f3c1a7b");
     let text = read(&log_file);
     let debug_line = text
         .lines()
@@ -60,7 +70,7 @@ fn level_gate_and_panic_hook_recording() {
         .unwrap_or_else(|| panic!("debug 打开后应有 debug 行：{text}"));
     assert!(debug_line.contains(" DEBUG "), "级别字段应补齐：{debug_line}");
     assert!(
-        debug_line.contains("logging_runtime: DEBUG-应出现"),
+        debug_line.contains(&format!("{APP_TARGET}: DEBUG-应出现")),
         "行格式应是 `{{target}}: {{message}}`：{debug_line}"
     );
     assert!(
@@ -68,7 +78,41 @@ fn level_gate_and_panic_hook_recording() {
         "应带本地 RFC3339 时间戳：{debug_line}"
     );
 
-    // ④ panic：日志文件里有 payload + 位置，且原 hook 仍被调用
+    // ④ T3 debug 目标过滤：debug/trace 只收本应用（`rustrss*`）与 `ui`——依赖库
+    //    （h2/hyper/reqwest…）的 debug 不写文件；info 及以上不限 target
+    log::debug!(target: "h2::codec", "DEP-DEBUG-不应出现-9f3c1a7b");
+    log::trace!(target: "hyper::proto", "DEP-TRACE-不应出现-9f3c1a7b");
+    log::debug!(target: "reqwest::async_impl", "DEP-DEBUG-不应出现-9f3c1a7b");
+    log::debug!(target: UI_TARGET, "UI-DEBUG-应出现-9f3c1a7b");
+    log::info!(target: "reqwest", "DEP-INFO-应出现-9f3c1a7b");
+    log::warn!(target: "h2::codec", "DEP-WARN-应出现-9f3c1a7b");
+    log::error!(target: "hyper::proto", "DEP-ERROR-应出现-9f3c1a7b");
+
+    let text = read(&log_file);
+    assert!(
+        !text.contains("DEP-DEBUG-不应出现"),
+        "依赖 target 的 debug 不该落盘：{text}"
+    );
+    assert!(
+        !text.contains("DEP-TRACE-不应出现"),
+        "依赖 target 的 trace 不该落盘：{text}"
+    );
+    assert!(
+        text.contains(&format!(" DEBUG {UI_TARGET}: UI-DEBUG-应出现")),
+        "ui 的 debug 应落盘：{text}"
+    );
+    for (level, message) in [
+        ("INFO ", "DEP-INFO-应出现"),
+        ("WARN ", "DEP-WARN-应出现"),
+        ("ERROR", "DEP-ERROR-应出现"),
+    ] {
+        assert!(
+            text.lines().any(|l| l.contains(level) && l.contains(message)),
+            "依赖 target 的 {level}（{message}）必须收录：{text}"
+        );
+    }
+
+    // ⑤ panic：日志文件里有 payload + 位置，且原 hook 仍被调用
     std::panic::set_hook(Box::new(|_| {
         PREVIOUS_HOOK_CALLED.store(true, Ordering::SeqCst);
     }));

@@ -1020,7 +1020,7 @@ async function loadAll({ reader = true } = {}) {
   renderSidebar();
   await loadEntries({ reader });
   log(
-    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} notifyNewArticles=${settings.notify_new_articles} fonts ui=${settings.font_ui || 'default'} read=${settings.font_read || 'follow-ui'} mono=${settings.font_mono || 'default'} size=${fontSizeText(settings.font_read_size)}px line=${fontLineText(settings.font_read_line)} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}${reader ? '' : ' silent（正文未重渲染）'}`
+    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} notifyNewArticles=${settings.notify_new_articles} fonts ui=${settings.font_ui || 'default'} read=${settings.font_read || 'follow-ui'} mono=${settings.font_mono || 'default'} size=${fontSizeText(settings.font_read_size)}px line=${fontLineText(settings.font_read_line)} logLevel=${settings.log_level} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}${reader ? '' : ' silent（正文未重渲染）'}`
   );
 }
 
@@ -2557,6 +2557,23 @@ const SETTING_DROPDOWNS = [
       return state.settings;
     },
     after: () => setStatus(t('status.aiReasoningSet', { v: settingDropdownLabel(SETTING_DROPDOWNS.find((d) => d.id === 'set-ai-reasoning')) })),
+  },
+  {
+    // 日志级别：写库后 Rust 侧立刻 set_max_level（即时生效，不用重启）。
+    // debug 只收本应用（rustrss*/ui）的记录，依赖库的 debug 由 core writer 按 target 丢弃。
+    id: 'set-log-level',
+    choices: () => [
+      { value: 'info', label: t('settings.logLevelInfo') },
+      { value: 'debug', label: t('settings.logLevelDebug') },
+    ],
+    current: () => state.settings.log_level || 'info',
+    apply: (v) => invoke('set_log_level', { level: v }),
+    after: () =>
+      setStatus(
+        t('status.logLevelSet', {
+          v: settingDropdownLabel(SETTING_DROPDOWNS.find((d) => d.id === 'set-log-level')),
+        })
+      ),
   },
 ];
 

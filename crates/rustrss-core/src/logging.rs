@@ -16,7 +16,7 @@ use std::sync::Mutex;
 use std::time::SystemTime;
 
 use chrono::{DateTime, Local, SecondsFormat};
-use log::{LevelFilter, Log, Metadata, Record};
+use log::{Level, LevelFilter, Log, Metadata, Record};
 
 /// 保留的日志文件个数上限（每次启动清理一次）。
 pub const KEEP_FILES: usize = 20;
@@ -65,9 +65,25 @@ impl FileLogger {
     }
 }
 
+/// debug/trace 是否收录这条 target 的记录（info 及以上恒为 `true`）。
+///
+/// 全局 `set_max_level` 只能按级别切，管不了来源：打开 debug 后第三方依赖
+/// （h2/hyper/reqwest…）的 debug 会一并进文件（实测占 2207 行里的 2186 行，而且
+/// 绕过调用点自己的打码），所以「谁的 debug 能收」必须在 writer 侧判。
+/// 只放行本应用（`rustrss*`：core / 桌面端 / MCP 三个 crate 的模块路径）与 `ui`
+/// （前端 `ui_log` 通道的 target）；info/warn/error 不限 target——依赖库的
+/// 报错信息仍是排障线索。
+fn target_allowed(level: Level, target: &str) -> bool {
+    if !matches!(level, Level::Debug | Level::Trace) {
+        return true;
+    }
+    target.starts_with("rustrss") || target == "ui"
+}
+
 impl Log for FileLogger {
     fn enabled(&self, metadata: &Metadata<'_>) -> bool {
         metadata.level() <= log::max_level()
+            && target_allowed(metadata.level(), metadata.target())
     }
 
     fn log(&self, record: &Record<'_>) {
@@ -450,6 +466,92 @@ mod tests {
 
         let text = std::fs::read_to_string(&path).expect("应能读回日志");
         assert!(text.contains(" INFO  ui: hello"), "{text:?}");
+        cleanup(&dir);
+    }
+
+    /// debug 目标过滤（T3 AC4）的纯函数口径：本应用（`rustrss*` / `ui`）放行，
+    /// 依赖库丢弃；info 及以上一律放行。
+    #[test]
+    fn debug_target_filter_admits_app_and_ui_only() {
+        for target in [
+            "rustrss",
+            "rustrss_core::fetch",
+            "rustrss_desktop::commands",
+            "rustrss_mcp::http",
+            "ui",
+        ] {
+            for level in [Level::Debug, Level::Trace] {
+                assert!(
+                    target_allowed(level, target),
+                    "{target} 的 {level} 应放行（本应用/前端）"
+                );
+            }
+        }
+
+        for target in [
+            "",
+            "h2::codec",
+            "hyper::proto",
+            "hyper_util::client",
+            "reqwest::async_impl",
+            "rustls::client",
+            " UI",
+            "rustrssx",
+        ] {
+            let expected = target == "rustrssx"; // 前缀匹配：rustrssx 也算本应用（保守放行）
+            for level in [Level::Debug, Level::Trace] {
+                assert_eq!(
+                    target_allowed(level, target),
+                    expected,
+                    "{target:?} 的 {level} 放行口径不符"
+                );
+            }
+            for level in [Level::Info, Level::Warn, Level::Error] {
+                assert!(
+                    target_allowed(level, target),
+                    "{target:?} 的 {level} 不限 target（依赖库错误仍是排障线索）"
+                );
+            }
+        }
+    }
+
+    /// 写侧端到端：全局门开到 Trace 时，依赖库的 debug/trace 仍不落盘，
+    /// 本应用与 `ui` 的 debug 落盘，依赖库的 error/warn 落盘。
+    /// 同一条记录按 target 分叉，证明是 target 规则（而非级别门）在起作用。
+    #[test]
+    fn writer_drops_dependency_debug_but_keeps_their_errors() {
+        let dir = tmp_dir("writer-target-filter");
+        let path = dir.join("filter.log");
+        let logger = FileLogger::open(&path).expect("应能打开日志文件");
+
+        log::set_max_level(LevelFilter::Trace);
+        Log::log(&logger, &record!(Level::Debug, "h2::codec", "dep-debug"));
+        Log::log(&logger, &record!(Level::Trace, "hyper::proto", "dep-trace"));
+        Log::log(&logger, &record!(Level::Debug, "ui", "ui-debug"));
+        Log::log(
+            &logger,
+            &record!(Level::Debug, "rustrss_core::fetch", "app-debug"),
+        );
+        Log::log(&logger, &record!(Level::Error, "hyper::proto", "dep-error"));
+        Log::log(&logger, &record!(Level::Warn, "reqwest::async_impl", "dep-warn"));
+
+        let text = std::fs::read_to_string(&path).expect("应能读回日志");
+        assert!(!text.contains("dep-debug"), "依赖库 debug 不该落盘：{text:?}");
+        assert!(!text.contains("dep-trace"), "依赖库 trace 不该落盘：{text:?}");
+        assert!(text.contains(" DEBUG ui: ui-debug"), "{text:?}");
+        assert!(
+            text.contains(" DEBUG rustrss_core::fetch: app-debug"),
+            "{text:?}"
+        );
+        assert!(
+            text.contains(" ERROR hyper::proto: dep-error"),
+            "依赖库 error 必须收录：{text:?}"
+        );
+        assert!(
+            text.contains(" WARN  reqwest::async_impl: dep-warn"),
+            "依赖库 warn 必须收录：{text:?}"
+        );
+        assert_eq!(text.lines().count(), 4, "恰好 4 条：{text:?}");
         cleanup(&dir);
     }
 

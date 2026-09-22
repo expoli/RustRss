@@ -141,6 +141,7 @@ const DICTS = {
     'settings.section.refresh': '自动刷新',
     'settings.section.storage': '存储',
     'settings.section.readBehaviour': '已读行为',
+    'settings.section.logging': '日志',
     'settings.section.bulk': '批量操作',
     'settings.section.opml': '订阅导入导出',
     'settings.section.backup': '备份与恢复',
@@ -171,6 +172,12 @@ const DICTS = {
     'settings.about.license': '许可证',
     'settings.about.privacy': '隐私',
     'settings.about.privacyHint': '除订阅源与你配置的 AI 端点外，不产生其他外呼；无账号、无遥测',
+    'settings.logLevel': '日志级别',
+    'settings.logLevelHint':
+      'debug 记录更详细的过程（如刷新批次、逐源失败、抓取耗时），排查问题时打开；重启后保持，日志文件最多保留 20 个',
+    'settings.logLevelInfo': 'info（默认）',
+    'settings.logLevelDebug': 'debug（详细）',
+    'status.logLevelSet': '日志级别已设为：{v}',
 
     'ai.confirm.title': '这一步会把以下内容发出去',
     'ai.confirm.summary': '模型 {model}｜请求体 {chars} 字符',
@@ -472,6 +479,7 @@ const DICTS = {
     'settings.section.refresh': 'Auto refresh',
     'settings.section.storage': 'Storage',
     'settings.section.readBehaviour': 'Read behaviour',
+    'settings.section.logging': 'Logging',
     'settings.section.bulk': 'Bulk actions',
     'settings.section.opml': 'Import and export',
     'settings.section.backup': 'Backup and restore',
@@ -502,6 +510,12 @@ const DICTS = {
     'settings.about.license': 'License',
     'settings.about.privacy': 'Privacy',
     'settings.about.privacyHint': 'No traffic beyond your feeds and the AI endpoint you configure; no account, no telemetry',
+    'settings.logLevel': 'Log level',
+    'settings.logLevelHint':
+      'debug records more detail (refresh batches, per-feed failures, fetch timings) — turn it on when troubleshooting; it survives restart, and at most 20 log files are kept',
+    'settings.logLevelInfo': 'info (default)',
+    'settings.logLevelDebug': 'debug (verbose)',
+    'status.logLevelSet': 'Log level set to: {v}',
 
     'ai.confirm.title': 'This step sends the following',
     'ai.confirm.summary': 'Model {model}｜request body {chars} characters',

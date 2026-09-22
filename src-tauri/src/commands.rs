@@ -251,15 +251,34 @@ const DEFAULT_REFRESH_ON_START: bool = true;
 pub(crate) const KEY_NOTIFY_NEW_ARTICLES: &str = "notify.new_articles";
 const DEFAULT_NOTIFY_NEW_ARTICLES: bool = false;
 /// 日志级别：`info`（默认）/ `debug`。取不到或非法一律回落 `info`。
-/// 键的写路径与设置页界面属 T3；启动读取与归一化在这里（读/写共用同一归一化）。
+/// 键的读路径在启动（`main.rs`）与设置回显，写路径是 `set_log_level`。
 pub const KEY_LOG_LEVEL: &str = "log.level";
+/// `log.level` 的默认值（也是非法值的回落目标）。
+pub(crate) const DEFAULT_LOG_LEVEL: &str = "info";
 
 /// `log.level` 白名单归一化：只认 `debug`，其余（缺失 / 非法 / 未来新档）一律 `info`。
+/// 写库前过这道，库里不存拼错的值；读侧（启动 / 回显）同源，坏值不会被带进 logger。
+pub(crate) fn normalize_log_level(raw: &str) -> &'static str {
+    if raw.trim().eq_ignore_ascii_case("debug") {
+        "debug"
+    } else {
+        DEFAULT_LOG_LEVEL
+    }
+}
+
+/// `log.level` → `log::LevelFilter`（复用同一份归一化，避免读写两套口径分叉）。
 pub fn log_level_filter(raw: &str) -> log::LevelFilter {
-    match raw.trim().to_ascii_lowercase().as_str() {
+    match normalize_log_level(raw) {
         "debug" => log::LevelFilter::Debug,
         _ => log::LevelFilter::Info,
     }
+}
+
+/// 从设置读日志级别并归一化（缺失 / 非法 → 默认 `info`）：回显与启动应用共用。
+pub(crate) fn log_level_from_store(s: &rustrss_core::Store) -> String {
+    crate::ai::non_empty_setting(s, KEY_LOG_LEVEL)
+        .map(|v| normalize_log_level(&v).to_string())
+        .unwrap_or_else(|| DEFAULT_LOG_LEVEL.to_string())
 }
 // 列表排序档与「隐藏已读」的键名与默认档白名单在 core 侧定义（`rustrss_core::store::LIST_SORT_KEY` /
 // `ListSort`）：命令层只负责归一化与落库，store 在每次查询时从库读这两个键——这里是唯一写入点。
@@ -303,6 +322,8 @@ pub struct UiSettings {
     pub list_sort: String,
     /// 列表「隐藏已读」开关（星标 / 稍后读视图豁免，由 store 侧决定）
     pub list_hide_read: bool,
+    /// 日志级别（归一化后的 `info` / `debug`，前端直接当下拉值用）
+    pub log_level: String,
 }
 
 /// 间隔白名单归一化：`off` 或 `15/30/60/120/360`；其余（含拼错值、负数、空串）一律归默认 30。
@@ -456,6 +477,7 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
             ),
             list_sort: s.list_sort().as_str().to_string(),
             list_hide_read: s.list_hide_read(),
+            log_level: log_level_from_store(s),
         })
     })
 }
@@ -674,6 +696,28 @@ pub fn set_notify_new_articles(state: State<'_, AppState>, enabled: bool) -> R<U
             .map_err(err)
     })?;
     ui_settings(&state)
+}
+
+/// 日志级别（`info` / `debug`）的命令体：归一 → 落库 → **立刻**应用全局级别。
+///
+/// 即时生效靠这里的 `set_max_level`（不重启就生效）；重启后由启动路径从同一个键
+/// 重新应用。debug 下第三方依赖的 debug 会在 core writer 侧按 target 丢弃
+/// （见 `rustrss_core::logging`），所以切到 debug 不会把日志文件刷成依赖库的流水账。
+fn apply_log_level(state: &AppState, level: &str) -> R<UiSettings> {
+    let normalized = normalize_log_level(level);
+    state.with_store(|s| s.set_setting(KEY_LOG_LEVEL, normalized).map_err(err))?;
+    log::set_max_level(log_level_filter(normalized));
+    log::info!(
+        "[rustrss] 日志级别已切换: {}（设置 log.level={normalized:?}）",
+        log::max_level()
+    );
+    ui_settings(state)
+}
+
+/// 设置日志级别（设置 → 关于 → 日志级别）。
+#[tauri::command]
+pub fn set_log_level(state: State<'_, AppState>, level: String) -> R<UiSettings> {
+    apply_log_level(&state, &level)
 }
 
 /// 列表排序档白名单：`newest`（默认）/ `oldest` / `unread_first`。
@@ -1161,7 +1205,7 @@ mod tests {
     use super::*;
 
     /// 日志级别归一化：只认 `debug`，其余（缺失/非法/未来新档）一律 `info`。
-    /// 读侧（启动）与 T3 的写侧共用这一个函数，坏值不会被带进 logger。
+    /// 读侧（启动/回显）与写侧（`set_log_level`）共用这一个函数，坏值不会被带进 logger。
     #[test]
     fn log_level_filter_only_accepts_debug() {
         assert_eq!(log_level_filter("debug"), log::LevelFilter::Debug);
@@ -1176,7 +1220,61 @@ mod tests {
                 log::LevelFilter::Info,
                 "{raw:?} 应回落 info"
             );
+            assert_eq!(
+                normalize_log_level(raw),
+                DEFAULT_LOG_LEVEL,
+                "{raw:?} 归一化应回落默认档"
+            );
         }
+        assert_eq!(normalize_log_level("Debug"), "debug", "落库值是白名单内的小写档");
+    }
+
+    /// 测试内直读库里**原样**的 `log.level`（`ui_settings` 回显的是归一值，
+    /// 看它区分不出「入库前钳位」与「读取时兜底」）。
+    fn stored_log_level(state: &AppState) -> String {
+        state
+            .with_store(|s| {
+                crate::ai::non_empty_setting(s, KEY_LOG_LEVEL)
+                    .ok_or_else(|| "log.level 应已写入".to_string())
+            })
+            .unwrap()
+    }
+
+    /// 日志级别设置（T3 AC1/AC3）：缺失 → 默认 `info`；库里被写坏 → 回显回落 `info`；
+    /// 写路径先把非法值钳位成 `info` 再落库；每次写入都**立刻**改全局级别（无需重启）。
+    #[test]
+    fn set_log_level_clamps_unknown_values_and_applies_immediately() {
+        let state = AppState::for_test();
+
+        // 缺失键：默认 info（不能因为设置没写过就没日志）
+        assert_eq!(ui_settings(&state).unwrap().log_level, DEFAULT_LOG_LEVEL);
+
+        // 库里被写坏（如 sqlite3 手工改库）：回显回落 info，且坏值不会被拿去设级别
+        state
+            .with_store(|s| s.set_setting(KEY_LOG_LEVEL, "verbose").map_err(err))
+            .unwrap();
+        assert_eq!(ui_settings(&state).unwrap().log_level, "info");
+        assert_eq!(
+            log_level_filter(&stored_log_level(&state)),
+            log::LevelFilter::Info,
+            "坏值不得进 logger"
+        );
+
+        // 写路径：大小写/空白归一后再落库，且改完立刻生效
+        let applied = apply_log_level(&state, " DEBUG ").unwrap();
+        assert_eq!(applied.log_level, "debug");
+        assert_eq!(stored_log_level(&state), "debug", "库里存归一值");
+        assert_eq!(
+            log::max_level(),
+            log::LevelFilter::Debug,
+            "写入后立刻生效（不必重启）"
+        );
+
+        // 白名单外的值：库里落 info（不是原样写入），级别也立刻回落
+        let applied = apply_log_level(&state, "trace").unwrap();
+        assert_eq!(applied.log_level, "info", "白名单外回落 info");
+        assert_eq!(stored_log_level(&state), "info", "非法值不得入库");
+        assert_eq!(log::max_level(), log::LevelFilter::Info, "回落也要立刻生效");
     }
 
     /// 落盘前打码：含凭据形态的输入（URL 查询串 / userinfo）抹成 `***`，正常日志行不受影响。

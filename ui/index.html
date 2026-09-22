@@ -505,6 +505,19 @@
               </div>
             </div>
           </div>
+
+          <!-- 日志：级别下拉（T3）+ 「打开日志目录」按钮（T4）。排在关于页是因为
+               诊断类设置与日志文件位置放在一起更顺；改完立刻生效，不需要重启。 -->
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.logging"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.logLevel"></b>
+                <small data-i18n="settings.logLevelHint"></small>
+              </div>
+              <button type="button" id="set-log-level" class="setting-dropdown" aria-haspopup="menu"></button>
+            </div>
+          </div>
         </div>
       </section>
 
