@@ -265,3 +265,10 @@ headless 跑法：`Xvfb :99`（1920x1200）+ `GDK_BACKEND=x11`（**测试进程�
 - [ ] 英文界面（设置 → 界面语言 = English）下：通知正文 `N new articles`、tooltip `RustRss · N unread`
 - [ ] Wayland（KDE / GNOME 各一）与无 StatusNotifierItem 的环境：托盘不可用时应用正常跑、无错误刷屏；有托盘时角标行为与 X11 一致
 - [ ] 无通知守护进程的会话（如仅有窗口管理器的 X11）：后台刷新弹出通知失败时应用无卡顿、无错误弹窗、后续刷新照常
+
+## 10. 单实例锁（真机补充项）
+
+headless 已机械验证（P0-5 任务报告）：默认库二次启动 264ms 自退、D-Bus ExecuteCallback 唤窗、焦点转移实测、RUSTSS_DB 多开共存。以下需要真实桌面会话核验：
+
+- [ ] 托盘隐藏态（关闭到托盘）后二次启动：主窗口从托盘唤出并获得焦点（headless 无法复现 GTK 侧隐藏语义）
+- [ ] Wayland 会话下二次启动行为一致
