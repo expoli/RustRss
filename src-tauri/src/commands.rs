@@ -2223,6 +2223,45 @@ mod tests {
         #[cfg(target_os = "macos")]
         assert_eq!(args, vec![url.to_string()], "macOS 行为不变：open <url>");
     }
+
+    /// 打开日志目录的命令同口径：程序名只可能是三平台文件管理器启动器、绝不经 shell，
+    /// 目录路径作为**唯一独立参数**原样传入（含空格与中文的路径也不能被拆开）。
+    #[test]
+    fn open_dir_command_never_uses_a_shell() {
+        let dir = std::path::Path::new("/tmp/rustrss logs 测试 目录");
+        let command = open_dir_command(dir);
+        let program = command.get_program().to_string_lossy().into_owned();
+        let args: Vec<String> = command
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect();
+
+        assert!(
+            !program.contains("cmd") && !program.contains("sh"),
+            "不允许经 shell 打开目录，实际程序: {program}"
+        );
+        assert!(
+            matches!(program.as_str(), "explorer" | "open" | "xdg-open"),
+            "实际程序: {program}"
+        );
+        assert_eq!(
+            args,
+            vec![dir.to_string_lossy().into_owned()],
+            "目录路径必须原样作为唯一独立参数"
+        );
+    }
+
+    /// 启动器不存在 → 返回可读错误（含程序名与目录），而不是 panic。
+    /// 「无文件管理器 / 未装 xdg-utils」的机器就走这条路径，错误文案要能直接展示给用户。
+    #[test]
+    fn spawn_dir_opener_reports_missing_launcher() {
+        let dir = std::path::Path::new("/tmp/rustrss-logs-missing-launcher");
+        let missing = std::process::Command::new("rustrss-no-such-file-manager-9f3c1a7b");
+        let err = spawn_dir_opener(missing, dir).expect_err("启动器不存在时应返回 Err");
+        assert!(err.contains("rustrss-no-such-file-manager-9f3c1a7b"), "错误里要有程序名: {err}");
+        assert!(err.contains("/tmp/rustrss-logs-missing-launcher"), "错误里要有目录路径: {err}");
+        assert!(err.contains("失败"), "错误要是可读提示: {err}");
+    }
 }
 
 #[tauri::command]
@@ -2571,6 +2610,61 @@ pub fn open_external(url: String) -> R<()> {
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("调用 {program} 失败: {e}"))
+}
+
+/// 平台文件管理器启动器：Linux `xdg-open` / macOS `open` / Windows `explorer`。
+fn dir_opener_program() -> &'static str {
+    #[cfg(target_os = "windows")]
+    {
+        "explorer"
+    }
+    #[cfg(target_os = "macos")]
+    {
+        "open"
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        "xdg-open"
+    }
+}
+
+/// 组装「用系统文件管理器打开目录」的命令。
+///
+/// 与 [`external_open_command`] 同一份硬化口径：程序名固定，目录路径作为**独立进程
+/// 参数**传入，任何平台都不经 shell 解析（Windows 上若走 `cmd /C start`，路径里的
+/// `&` 之类会被当命令分隔符）。
+fn open_dir_command(dir: &std::path::Path) -> std::process::Command {
+    let mut command = std::process::Command::new(dir_opener_program());
+    command.arg(dir);
+    command
+}
+
+/// 启动已组装好的启动器；失败返回**可读错误**（含程序名、原因与目录），不 panic。
+///
+/// 机器上连启动器都没有时（裸容器 / 未装 xdg-utils）走的就是这条路径。启动器“存在但
+/// 自己失败”（如 Xvfb 下没有文件管理器）在 `spawn` 之后才发生，进程已经起来了，这里
+/// 看不见——那属于系统启动器的错误输出，不由本函数负责（见 README 日志一节）。
+///
+/// 文案把**原因排在目录路径前面**：状态栏按 72ch 截断，原因是被截掉后最影响判断的那半。
+fn spawn_dir_opener(mut command: std::process::Command, dir: &std::path::Path) -> R<()> {
+    let program = command.get_program().to_string_lossy().into_owned();
+    command
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("调用 {program} 打开日志目录失败: {e}（目录: {}）", dir.display()))
+}
+
+/// 关于页「打开日志目录」：确保目录存在后交给系统文件管理器（不内嵌日志查看器）。
+///
+/// 目录不存在时先建：一次日志都没落地时（例如首次启动后立刻点按钮）给文件管理器一个
+/// 不存在的路径，用户只会看到系统那句含糊的报错。失败返回可读错误字符串，由界面放进
+/// 状态栏——不弹窗、不 panic、不影响其它功能。
+#[tauri::command]
+pub fn open_logs_dir() -> R<()> {
+    let dir = rustrss_core::paths::logs_dir();
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| format!("创建日志目录 {} 失败: {e}", dir.display()))?;
+    spawn_dir_opener(open_dir_command(&dir), &dir)
 }
 
 /// 前端诊断：进同一个日志文件（target=ui），保留 `[ui]` 前缀便于检索（headless 冒烟

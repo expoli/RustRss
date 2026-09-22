@@ -177,7 +177,13 @@ const DICTS = {
       'debug 记录更详细的过程（如刷新批次、逐源失败、抓取耗时），排查问题时打开；重启后保持，日志文件最多保留 20 个',
     'settings.logLevelInfo': 'info（默认）',
     'settings.logLevelDebug': 'debug（详细）',
+    'settings.logsDir': '日志目录',
+    'settings.openLogsDir': '打开日志目录',
+    'settings.openLogsDirHint':
+      '日志文件在数据目录的 logs/ 下，每次启动写一个；反馈问题时附上最新的那个文件',
     'status.logLevelSet': '日志级别已设为：{v}',
+    'status.logsDirOpened': '已请系统文件管理器打开日志目录',
+    'status.logsDirFailed': '打开日志目录失败：{error}',
 
     'ai.confirm.title': '这一步会把以下内容发出去',
     'ai.confirm.summary': '模型 {model}｜请求体 {chars} 字符',
@@ -515,7 +521,13 @@ const DICTS = {
       'debug records more detail (refresh batches, per-feed failures, fetch timings) — turn it on when troubleshooting; it survives restart, and at most 20 log files are kept',
     'settings.logLevelInfo': 'info (default)',
     'settings.logLevelDebug': 'debug (verbose)',
+    'settings.logsDir': 'Log folder',
+    'settings.openLogsDir': 'Open log folder',
+    'settings.openLogsDirHint':
+      'Log files live in logs/ under the data directory, one file per launch — attach the newest file when reporting an issue',
     'status.logLevelSet': 'Log level set to: {v}',
+    'status.logsDirOpened': 'Asked your file manager to open the log folder',
+    'status.logsDirFailed': 'Could not open the log folder: {error}',
 
     'ai.confirm.title': 'This step sends the following',
     'ai.confirm.summary': 'Model {model}｜request body {chars} characters',

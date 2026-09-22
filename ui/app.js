@@ -3041,6 +3041,19 @@ async function boot() {
     }
   };
 
+  // 关于页「打开日志目录」：Rust 侧先确保目录存在，再交给系统文件管理器（不内嵌查看器）。
+  // 失败（没装 xdg-open / 启动器打不开）只把可读错误放进状态栏，不弹窗、不影响其它功能。
+  el('act-open-logs').onclick = async () => {
+    try {
+      await invoke('open_logs_dir');
+      setStatus(t('status.logsDirOpened'));
+      log('open_logs_dir ok');
+    } catch (err) {
+      setStatus(t('status.logsDirFailed', { error: err.message }), true);
+      log(`open_logs_dir failed: ${err.message}`);
+    }
+  };
+
   el('add-ok').onclick = doAddFeed;
   el('add-url').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doAddFeed();

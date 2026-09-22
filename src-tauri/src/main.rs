@@ -275,6 +275,7 @@ fn main() {
             commands::refresh_feeds,
             commands::refresh_feed,
             commands::open_external,
+            commands::open_logs_dir,
             commands::ui_log,
             clip_write,
             clip_read,
