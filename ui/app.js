@@ -699,10 +699,18 @@ function buildEntryRow(e) {
   return li;
 }
 
+/// 列表计数口径：未读视图只数未读行（灰显的已读行还在列表里但不算数），
+/// 其余视图数全部行。
+function listCountN() {
+  return state.view.kind === 'unread'
+    ? state.entries.filter((e) => !e.read).length
+    : state.entries.length;
+}
+
 function renderList() {
   const __t0 = performance.now();
   el('list-title').textContent = viewTitle();
-  el('list-count').textContent = state.entries.length ? t('list.count', { n: state.entries.length }) : '';
+  el('list-count').textContent = state.entries.length ? t('list.count', { n: listCountN() }) : '';
 
   const list = el('entries');
   list.innerHTML = '';
@@ -745,14 +753,6 @@ function markRowRead(id) {
   for (const li of el('entries').children) {
     if (li.dataset.id === String(id)) li.classList.add('read');
   }
-}
-
-/** 未读视图：只移除一行 DOM。打开文章时避免 200 行全量重建的 CPU 尖峰
- *  （全量重建会把 CPU 打满，连并发后端命令都被拖慢一个量级：
- *   实测 get_entry 本体 0.07ms，撞上重建风暴时被拖到 60-150ms）。 */
-function removeListRow(id) {
-  const li = el('entries').querySelector(`li[data-id="${id}"]`);
-  if (li) li.remove();
 }
 
 // ------------------------------------------- 列表续页（尾部哨兵 + IntersectionObserver）
@@ -1049,7 +1049,7 @@ async function prependFreshEntries() {
   }
   state.entries = fresh.concat(state.entries);
   if (!atTop) list.scrollTop += list.scrollHeight - heightBefore;
-  el('list-count').textContent = t('list.count', { n: state.entries.length });
+  el('list-count').textContent = t('list.count', { n: listCountN() });
   log(
     `refresh:done prepend rows=${fresh.length} ids=${fresh.map((e) => e.id).join(',')} sessionReadSkipped=${skipped} atTop=${atTop} listScrollTop=${scrollBefore}→${list.scrollTop} height=${heightBefore}→${list.scrollHeight} top=${visibleBefore}→${topVisibleRowId(list)} head=${list.firstChild?.dataset.id ?? 'none'} children=${list.children.length} total=${state.entries.length}`
   );
@@ -1103,7 +1103,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
     const list = el('entries');
     state.entries = state.entries.concat(rows);
     for (const e of rows) list.appendChild(buildEntryRow(e));
-    el('list-count').textContent = t('list.count', { n: state.entries.length });
+    el('list-count').textContent = t('list.count', { n: listCountN() });
     installSentinel();
     log(
       `append rows=${rows.length} total=${state.entries.length} dup=${dup.length} exhausted=${paging.exhausted}`
@@ -1117,7 +1117,11 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   // 列表要整体重建（换视图/换筛选/手动刷新）：会话已读集合对应的「已删除行」没了，清空
   state.readSessionIds.clear();
   state.entries = await loadPage(null);
-  selectFallback();
+  // 静默刷新（reader=false）不动 selectedId：正文区一个 DOM 都不动，选中态也
+  // 保持——否则重指到首行后，操作按钮（标已读/星标/稍后读）会作用于用户没在看的
+  // 文章（实测 2026-09-22：后台刷新把 selected 挪到 9320 而正文还是 9135）。
+  // 视图切换（reader=true）才重新回退到首行并同步重渲染正文。
+  if (reader) selectFallback();
   renderList();
   // 静默模式到此为止：正文区一个 DOM 都不动
   if (!reader) return;
@@ -1148,13 +1152,9 @@ async function loadMore() {
   }
 }
 
-/// 未读视图里把已加载的行逐条读完时，游标之后可能还有未读：补下一页。不补的话用户
-/// 会停在「没有未读文章」而库里其实还剩几千条（PRD 验收 1：直至加载完全部匹配条目）。
-async function refillAfterRemoval() {
-  if (paging.exhausted || paging.error || !paging.cursor) return false;
-  await loadMore();
-  return state.entries.length > 0;
-}
+/// 列表重建路径（换视图/搜索/手动刷新/后台静默刷新）会整体重拉数据，灰显行在那里
+/// 自然离开，不需要补页逻辑（未读行还在时哨兵续页；读完且游标尽了则重建后自然
+/// 落到「暂无未读」占位）。
 
 async function setView(view) {
   state.view = view;
@@ -1183,28 +1183,20 @@ async function openEntry(id, { markRead, follow = true } = {}) {
     if (row) row.read = true;
 
     if (state.view.kind === 'unread') {
-      // 未读视图里读过的文章会离开列表 → 只删那一行 DOM 并移动高亮，
-      // 不做全量重建（200 行 renderList 是打开文章时的 CPU 尖峰来源）。
-      // 右侧保持用户刚点开的文章（不再额外渲染 next，避免大文章连续两次
-      // sanitize 造成可感卡顿）。
-      const idx = state.entries.findIndex((e) => e.id === id);
-      state.entries = state.entries.filter((e) => e.id !== id);
-      const next = state.entries[Math.min(idx, state.entries.length - 1)];
-      state.selectedId = next ? next.id : null;
-      removeListRow(id);
-      if (next) {
-        el('list-count').textContent = t('list.count', { n: state.entries.length });
-        focusRow(state.selectedId, { follow: true });
-      } else if (await refillAfterRemoval()) {
-        // 已加载的这批被读空、但游标之后还有未读：续一页接着读，别停在「暂无未读」
-        await openEntry(state.entries[0].id, { markRead: false });
-      } else {
-        renderList(); // 读空且没有下一页：走原路径渲染「暂无未读」占位
-        renderReaderEmpty();
-      }
+      // 未读视图里读过的文章**灰显而非立即删行**：立即删行会把高亮/键盘锚点/操作
+      // 按钮的目标一起挪到下一篇，而阅读区还停在刚点开的文章——三者互相脱钩
+      // （实测 2026-09-22：高亮在下一篇、正文还是被点的这篇，且「标为已读」会
+      // 错误作用于高亮行而非正文行）。灰显让「显示 = 高亮 = 操作目标」保持同一篇，
+      // 行在下次列表整体重建（换视图/搜索/刷新）时自然离开，打开路径上零重建。
+      markRowRead(id);
+      el('list-count').textContent = t('list.count', { n: listCountN() });
     } else {
       markRowRead(id);
     }
+    // renderReader 用的是 set_read 前取的 entry：按钮文案会滞后一拍（已读却写着
+    // 「标为已读」）。只改这一个按钮的文本，不重渲染整个阅读区。
+    const readBtn = el('act-read');
+    if (readBtn) readBtn.textContent = t('reader.markUnread');
     // 计数刷新节流：连续快速阅读时合并为一次全量刷新（600ms 去抖）
     refreshCountsSoon();
   }
@@ -1521,29 +1513,16 @@ async function toggleRead() {
   if (read) state.readSessionIds.add(row.id);
   else state.readSessionIds.delete(row.id);
   row.read = read;
-  // 未读视图下标记已读后，该条应从列表消失
-  if (state.view.kind === 'unread' && read) {
-    // 未读视图下标记已读 → 该条离开列表，保持阅读位置（选原位置的下一行，不跳回顶部）
-    const idx = state.entries.findIndex((e) => e.id === row.id);
-    state.entries = state.entries.filter((e) => e.id !== row.id);
-    const next = state.entries[Math.min(idx, state.entries.length - 1)];
-    state.selectedId = next ? next.id : null;
-    renderList();
-    if (next) {
-      await openEntry(next.id, { markRead: false });
-    } else if (await refillAfterRemoval()) {
-      // 一批读空但游标之后还有未读：续一页接着读（同 openEntry 的删除路径）
-      await openEntry(state.entries[0].id, { markRead: false });
-    } else {
-      renderReaderEmpty();
-    }
-  } else {
-    const fresh = await invoke('get_entry', { id: row.id });
-    if (fresh) renderReader(fresh);
-    // 只改那一行的已读样式，不重建列表
-    for (const li of el('entries').children) {
-      if (li.dataset.id === String(row.id)) li.classList.toggle('read', read);
-    }
+  // 未读视图同样只灰显不删行：按钮切换后留在原文章（不未经请求地跳到下一篇），
+  // 双向都生效（读→灰、取消未读→恢复），计数口径同步更新。
+  const fresh = await invoke('get_entry', { id: row.id });
+  if (fresh) renderReader(fresh);
+  // 只改那一行的已读样式，不重建列表
+  for (const li of el('entries').children) {
+    if (li.dataset.id === String(row.id)) li.classList.toggle('read', read);
+  }
+  if (state.view.kind === 'unread') {
+    el('list-count').textContent = t('list.count', { n: listCountN() });
   }
   await refreshCounts();
 }
