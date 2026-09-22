@@ -1,7 +1,7 @@
 ---
 title: Tech Design: 日志功能（每次启动独立日志文件 + 关于页入口）
 proposalUuid: b0a7595b-a530-49c1-82f7-a7c89fc90a9a
-documentUuid:
+documentUuid: 0ffb9733-14fa-4dfa-a5ea-7e167666763e
 ---
 
 # Technical Design: 日志功能

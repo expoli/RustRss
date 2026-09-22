@@ -1,7 +1,7 @@
 ---
 title: PRD: 日志功能（每次启动独立日志文件 + 关于页入口）
 proposalUuid: b0a7595b-a530-49c1-82f7-a7c89fc90a9a
-documentUuid:
+documentUuid: d8c2b65a-bdad-40c7-9e5b-4af2fc485f1b
 ---
 
 # PRD: 日志功能
