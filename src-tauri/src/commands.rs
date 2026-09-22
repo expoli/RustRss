@@ -90,6 +90,7 @@ pub async fn list_entries(
     limit: Option<u32>,
     cursor_sortkey: Option<i64>,
     cursor_id: Option<i64>,
+    cursor_read: Option<bool>,
 ) -> R<Vec<EntryRow>> {
     let query = EntryQuery {
         feed_id,
@@ -98,6 +99,8 @@ pub async fn list_entries(
         read_later_only: read_later_only.unwrap_or(false),
         limit: Some(limit.unwrap_or(200)),
         cursor: cursor_pair(cursor_sortkey, cursor_id),
+        // 只有 unread_first 档用得上（store 侧只在该档读它）；其他档传了也被忽略
+        cursor_read,
     };
     let t = std::time::Instant::now();
     let rows = state.with_store(|s| s.list_entries(&query).map_err(err));
@@ -237,7 +240,8 @@ const DEFAULT_REFRESH_ON_START: bool = true;
 /// 新文章系统通知（默认关）。只有后台刷新路径会触发（手动刷新时用户就在看）。
 pub(crate) const KEY_NOTIFY_NEW_ARTICLES: &str = "notify.new_articles";
 const DEFAULT_NOTIFY_NEW_ARTICLES: bool = false;
-
+// 列表排序档与「隐藏已读」的键名与默认档白名单在 core 侧定义（`rustrss_core::store::LIST_SORT_KEY` /
+// `ListSort`）：命令层只负责归一化与落库，store 在每次查询时从库读这两个键——这里是唯一写入点。
 /// 字体族设置（设置 → 外观 → 字体）。空串 = 跟随内置字体栈（前端清除对应 CSS 变量）。
 const KEY_FONT_UI: &str = "ui.font_ui";
 const KEY_FONT_READ: &str = "ui.font_read";
@@ -274,6 +278,10 @@ pub struct UiSettings {
     /// 正文字号 px 与行高（已 clamp 回 13-18 / 1.5-1.8，前端直接当滑块值用）
     pub font_read_size: f64,
     pub font_read_line: f64,
+    /// 列表排序档（归一化后的 `newest` / `oldest` / `unread_first`，前端直接当菜单值用）
+    pub list_sort: String,
+    /// 列表「隐藏已读」开关（星标 / 稍后读视图豁免，由 store 侧决定）
+    pub list_hide_read: bool,
 }
 
 /// 间隔白名单归一化：`off` 或 `15/30/60/120/360`；其余（含拼错值、负数、空串）一律归默认 30。
@@ -425,6 +433,8 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
                 DEFAULT_FONT_READ_LINE,
                 FONT_READ_LINE_RANGE,
             ),
+            list_sort: s.list_sort().as_str().to_string(),
+            list_hide_read: s.list_hide_read(),
         })
     })
 }
@@ -643,6 +653,53 @@ pub fn set_notify_new_articles(state: State<'_, AppState>, enabled: bool) -> R<U
             .map_err(err)
     })?;
     ui_settings(&state)
+}
+
+/// 列表排序档白名单：`newest`（默认）/ `oldest` / `unread_first`。
+/// 其余（含大小写变体、拼错值、空串）一律归默认档——与 locale/theme 同一口径，
+/// 不让拼错的设置把列表卡死。
+pub(crate) fn normalize_list_sort(value: &str) -> &'static str {
+    match value.trim() {
+        "oldest" => "oldest",
+        "unread_first" => "unread_first",
+        _ => "newest",
+    }
+}
+
+/// 列表排序档（三档）的命令体：白名单归一 → 落库 → 回显一份 UiSettings。
+/// 命令层只管写；store 每次查询从设置读（单一事实源），前端不往 list_entries 带档位。
+fn apply_list_sort(state: &AppState, sort: &str) -> R<UiSettings> {
+    state.with_store(|s| {
+        s.set_setting(
+            rustrss_core::store::LIST_SORT_KEY,
+            normalize_list_sort(sort),
+        )
+        .map_err(err)
+    })?;
+    ui_settings(state)
+}
+
+/// 列表排序档（三档）。写库后 store 的每次查询都从设置读它（单一事实源），
+/// 前端不再把档位带进 `list_entries` 参数。
+#[tauri::command]
+pub fn set_list_sort(state: State<'_, AppState>, sort: String) -> R<UiSettings> {
+    apply_list_sort(&state, &sort)
+}
+
+/// 列表「隐藏已读」开关的命令体。豁免规则（星标 / 稍后读视图不受影响）在 store 查询层，
+/// 命令层只管写开关。
+fn apply_list_hide_read(state: &AppState, enabled: bool) -> R<UiSettings> {
+    state.with_store(|s| {
+        s.set_bool_setting(rustrss_core::store::LIST_HIDE_READ_KEY, enabled)
+            .map_err(err)
+    })?;
+    ui_settings(state)
+}
+
+/// 列表「隐藏已读」开关。
+#[tauri::command]
+pub fn set_list_hide_read(state: State<'_, AppState>, enabled: bool) -> R<UiSettings> {
+    apply_list_hide_read(&state, enabled)
 }
 
 /// 读「启动时自动刷新」开关（缺失/非法回退默认 true）。
@@ -1145,6 +1202,51 @@ mod tests {
         assert_eq!(normalize_locale("auto"), "auto");
         assert_eq!(normalize_locale("fr"), "auto");
         assert_eq!(normalize_locale(""), "auto");
+    }
+
+    /// 列表排序 / 隐藏已读的命令体：白名单归一 + 落库 + 回 UiSettings（菜单与设置页的
+    /// 回显数据源）；非法排序值归默认档而不是把垃圾写进库；两键互不干扰。
+    #[test]
+    fn list_sort_and_hide_read_command_path_round_trips() {
+        let state = AppState::for_test();
+
+        // 默认：newest + 不隐藏（与加排序功能前的行为一致）
+        let s = ui_settings(&state).unwrap();
+        assert_eq!(s.list_sort, "newest");
+        assert!(!s.list_hide_read);
+
+        // 三档往返；非法值（含前后空白、大小写变体、空串）一律归 newest
+        for (input, expected) in [
+            ("newest", "newest"),
+            (" oldest ", "oldest"),
+            ("unread_first", "unread_first"),
+            ("OLDEST", "newest"),
+            ("unread", "newest"),
+            ("", "newest"),
+        ] {
+            let s = apply_list_sort(&state, input).unwrap();
+            assert_eq!(s.list_sort, expected, "{input:?} 应归一为 {expected}");
+            assert_eq!(
+                state.with_store(|st| Ok(st.list_sort().as_str())).unwrap(),
+                expected,
+                "库里存的应是归一后的值（{input:?}）"
+            );
+        }
+
+        // 隐藏已读开关往返
+        let s = apply_list_hide_read(&state, true).unwrap();
+        assert!(s.list_hide_read);
+        assert!(state.with_store(|st| Ok(st.list_hide_read())).unwrap());
+        assert_eq!(s.list_sort, "newest", "改开关不该动排序档");
+        let s = apply_list_hide_read(&state, false).unwrap();
+        assert!(!s.list_hide_read);
+
+        // 两键独立持久化：重新读设置仍在（菜单勾选靠这份回显）
+        apply_list_sort(&state, "oldest").unwrap();
+        apply_list_hide_read(&state, true).unwrap();
+        let s = ui_settings(&state).unwrap();
+        assert_eq!(s.list_sort, "oldest");
+        assert!(s.list_hide_read);
     }
 
     #[test]

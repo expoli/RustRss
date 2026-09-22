@@ -197,6 +197,8 @@ fn main() {
             commands::set_notify_new_articles,
             commands::set_ui_locale,
             commands::set_ui_theme,
+            commands::set_list_sort,
+            commands::set_list_hide_read,
             commands::set_ui_close_action,
             commands::set_font_config,
             commands::list_font_families,

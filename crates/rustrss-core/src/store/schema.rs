@@ -144,4 +144,15 @@ pub const MIGRATIONS: &[&str] = &[
     r#"
     ALTER TABLE feeds ADD COLUMN custom_title TEXT;
     "#,
+    // v11：未读优先（list.sort=unread_first）的复合排序索引。
+    // 该档 ORDER BY 是 `read ASC, COALESCE(published_at, fetched_at) DESC, id ASC`，
+    // 列序/方向与下面索引逐列对应——只有这样的复合索引才能同时满足「顺序」与
+    // 「read 等值筛选」，否则 planner 会选 idx_entries_feed_read 之类等值索引
+    // 再加 TEMP B-TREE 排序（本程序从不 ANALYZE，planner 没有统计可依）。
+    // 后缀 id 用升序（与 newest 档的 id DESC 不同）：索引最后一列正是 ORDER BY 的
+    // 末列，SQLite 才能只靠索引走完排序，同 sortkey 的并列行也能被 keyset 游标稳定续扫。
+    r#"
+    CREATE INDEX idx_entries_unread_sortkey
+        ON entries(read, COALESCE(published_at, fetched_at) DESC, id);
+    "#,
 ];

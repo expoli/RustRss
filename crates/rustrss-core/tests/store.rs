@@ -5,7 +5,8 @@
 //! 4. 中文检索真的能用（FTS5 默认分词器对中文无效，靠预分词解决）。
 
 use rustrss_core::store::schema::MIGRATIONS;
-use rustrss_core::{Entry, EntryQuery, IdOrigin, MarkScope, Store};
+use rustrss_core::store::{LIST_HIDE_READ_KEY, LIST_SORT_KEY};
+use rustrss_core::{Entry, EntryQuery, IdOrigin, ListSort, MarkScope, Store};
 use rustrss_core::rsshub;
 
 fn mk_entry(stable_id: &str, title: &str, text: &str) -> Entry {
@@ -850,15 +851,20 @@ fn mk_entry_published(stable_id: &str, title: &str, published: Option<i64>) -> E
 }
 
 /// 从 `base.cursor`（没有就从首页）开始逐页续扫，返回拼接后的 id 序列。
+///
+/// 游标的 `read` 分量（unread_first 档需要）从末行直出——与前端 `paging.cursor`
+/// 取的是同一样东西，测试不得自己"再造"一份。
 fn page_through(store: &Store, base: &EntryQuery, page_size: u32) -> Vec<i64> {
     let mut ids = Vec::new();
     let mut cursor = base.cursor;
+    let mut cursor_read = base.cursor_read;
     // 页数兜底：游标条件写错（例如没排除游标行本身）会死循环，测试必须失败而不是挂住。
     for _ in 0..200 {
         let page = store
             .list_entries(&EntryQuery {
                 limit: Some(page_size),
                 cursor,
+                cursor_read,
                 ..base.clone()
             })
             .unwrap();
@@ -867,6 +873,7 @@ fn page_through(store: &Store, base: &EntryQuery, page_size: u32) -> Vec<i64> {
         }
         assert!(page.len() <= page_size as usize, "单页不应超过 limit");
         cursor = page.last().map(|r| (r.sortkey, r.id));
+        cursor_read = page.last().map(|r| r.read);
         ids.extend(page.iter().map(|r| r.id));
     }
     panic!("续扫 200 页仍未取空：游标条件可能写错");
@@ -1044,6 +1051,456 @@ fn keyset_cursor_plans_use_sortkey_index() {
     }
 }
 
+// ------------------------------------- 排序档（list.sort）与隐藏已读（list.hide_read）
+
+/// 三档排序的固定样本：主序列 e0..e5（published 递增，e0 最旧）+ 两条并列 sortkey。
+/// 状态：e0 / e2 / e5 已读（未读 = e1 e3 e4 + tie0 tie1）；e2 已读且星标（豁免验证用）；
+/// e5 已读且稍后读。
+///
+/// 期望顺序：
+/// - newest       ：时间倒序，并列按 id 倒序 → tie1 tie0 e5 e4 e3 e2 e1 e0
+/// - oldest       ：时间升序，并列按 id 升序 → e0 e1 e2 e3 e4 e5 tie0 tie1
+/// - unread_first ：未读组（组内时间倒序）→ tie0 tie1 e4 e3 e1，已读组 → e5 e2 e0
+fn setup_sort_fixture() -> (Store, i64) {
+    let (store, feed_id) = setup();
+    let base = 1_700_000_000_i64;
+    let mut entries: Vec<Entry> = (0..6)
+        .map(|i| mk_entry_published(&format!("e{i}"), &format!("e{i}"), Some(base + i)))
+        .collect();
+    for t in ["tie0", "tie1"] {
+        entries.push(mk_entry_published(t, t, Some(base + 100)));
+    }
+    store.upsert_entries(feed_id, &entries).unwrap();
+
+    let rows = store
+        .list_entries(&EntryQuery { limit: Some(500), ..Default::default() })
+        .unwrap();
+    let id_of = |title: &str| rows.iter().find(|r| r.title == title).unwrap().id;
+    let read_ids: Vec<i64> = ["e0", "e2", "e5"].iter().map(|t| id_of(t)).collect();
+    store.set_read(&read_ids, true).unwrap();
+    store.set_starred(&[id_of("e2")], true).unwrap();
+    store.set_read_later(&[id_of("e5")], true).unwrap();
+    (store, feed_id)
+}
+
+/// 当前设置下的列表顺序（按标题，断言失败时一眼看出顺序差在哪）。
+fn list_titles(store: &Store, q: EntryQuery) -> Vec<String> {
+    store
+        .list_entries(&EntryQuery {
+            limit: Some(500),
+            ..q
+        })
+        .unwrap()
+        .iter()
+        .map(|r| r.title.clone())
+        .collect()
+}
+
+fn all_entries() -> EntryQuery {
+    EntryQuery::default()
+}
+
+#[test]
+fn list_sort_three_modes_order_and_setting_fallback() {
+    let (store, _feed) = setup_sort_fixture();
+
+    // 默认档（设置缺失）= newest，行为与加排序功能前完全一致
+    assert_eq!(store.list_sort(), ListSort::Newest);
+    let newest = ["tie1", "tie0", "e5", "e4", "e3", "e2", "e1", "e0"];
+    assert_eq!(list_titles(&store, all_entries()), newest);
+
+    store.set_setting(LIST_SORT_KEY, "oldest").unwrap();
+    assert_eq!(store.list_sort(), ListSort::Oldest);
+    assert_eq!(
+        list_titles(&store, all_entries()),
+        ["e0", "e1", "e2", "e3", "e4", "e5", "tie0", "tie1"],
+        "最早在前：时间升序，并列按 id 升序"
+    );
+
+    store.set_setting(LIST_SORT_KEY, "unread_first").unwrap();
+    assert_eq!(store.list_sort(), ListSort::UnreadFirst);
+    assert_eq!(
+        list_titles(&store, all_entries()),
+        ["tie0", "tie1", "e4", "e3", "e1", "e5", "e2", "e0"],
+        "未读优先：未读全在前（组内时间倒序），已读组在后"
+    );
+
+    // 白名单：trim 容忍；非法值（含大小写变体与空串）一律回默认档，不让拼错的设置卡死列表
+    assert_eq!(
+        ListSort::from_setting(Some(" unread_first ")),
+        ListSort::UnreadFirst
+    );
+    for garbage in ["", "  ", "OLDEST", "Newest", "unread", "latest"] {
+        assert_eq!(
+            ListSort::from_setting(Some(garbage)),
+            ListSort::Newest,
+            "{garbage:?} 应归默认档"
+        );
+    }
+    assert_eq!(ListSort::from_setting(None), ListSort::Newest);
+    assert_eq!(ListSort::UnreadFirst.as_str(), "unread_first");
+
+    // 库里被写坏 → 查询仍能跑，按默认档出（读取侧兜底，与 locale/theme 同口径）
+    store.set_setting(LIST_SORT_KEY, "bogus").unwrap();
+    assert_eq!(store.list_sort(), ListSort::Newest);
+    assert_eq!(list_titles(&store, all_entries()), newest);
+}
+
+#[test]
+fn list_sort_pagination_matrix_three_modes_by_five_views() {
+    // 三档 × 五种视图：续扫序列与一次取全完全一致（不重不漏、顺序相同）。页大小特意小于
+    // 未读组（5 条），让 unread_first 的游标经历「组内续扫 → 跨组边界 → 已读组内」三种位置。
+    let (store, feed_id) = setup_sort_fixture();
+    for sort in ["newest", "oldest", "unread_first"] {
+        store.set_setting(LIST_SORT_KEY, sort).unwrap();
+        let shapes = [
+            ("全部", EntryQuery::default()),
+            (
+                "未读",
+                EntryQuery {
+                    unread_only: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "星标",
+                EntryQuery {
+                    starred_only: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "稍后读",
+                EntryQuery {
+                    read_later_only: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "单源",
+                EntryQuery {
+                    feed_id: Some(feed_id),
+                    ..Default::default()
+                },
+            ),
+        ];
+        for (label, base) in shapes {
+            let full = store
+                .list_entries(&EntryQuery { limit: Some(500), ..base.clone() })
+                .unwrap();
+            assert!(!full.is_empty(), "{sort}/{label} 视图应有数据，否则本用例无约束力");
+            let paged = page_through(&store, &base, 3);
+            assert_eq!(
+                paged,
+                full.iter().map(|r| r.id).collect::<Vec<_>>(),
+                "{sort}/{label} 续扫应与一次取全完全一致（不重不漏、顺序相同）"
+            );
+        }
+    }
+}
+
+#[test]
+fn unread_first_cursor_is_composite_and_missing_read_half_falls_back_to_first_page() {
+    let (store, _feed) = setup_sort_fixture();
+    store.set_setting(LIST_SORT_KEY, "unread_first").unwrap();
+
+    // 首页末行是未读的 e4（组内）——续页必须接着 e3 e1，然后跨到已读组
+    let first = store
+        .list_entries(&EntryQuery { limit: Some(3), ..Default::default() })
+        .unwrap();
+    assert_eq!(
+        first.iter().map(|r| r.title.as_str()).collect::<Vec<_>>(),
+        ["tie0", "tie1", "e4"]
+    );
+    let cursor = (first[2].sortkey, first[2].id);
+    let next = store
+        .list_entries(&EntryQuery {
+            limit: Some(3),
+            cursor: Some(cursor),
+            cursor_read: Some(first[2].read),
+            ..Default::default()
+        })
+        .unwrap();
+    assert_eq!(
+        next.iter().map(|r| r.title.as_str()).collect::<Vec<_>>(),
+        ["e3", "e1", "e5"],
+        "组内续扫后应跨到已读组，且已读组内仍时间倒序"
+    );
+    // 已读组内的续页（游标 read=1）
+    let next2 = store
+        .list_entries(&EntryQuery {
+            limit: Some(3),
+            cursor: Some((next[2].sortkey, next[2].id)),
+            cursor_read: Some(next[2].read),
+            ..Default::default()
+        })
+        .unwrap();
+    assert_eq!(
+        next2.iter().map(|r| r.title.as_str()).collect::<Vec<_>>(),
+        ["e2", "e0"]
+    );
+
+    // 半截游标（只有 sortkey/id、没有 read 分量）按首页处理：宁可重取首页，也不静默翻到错页
+    let no_read_half = store
+        .list_entries(&EntryQuery {
+            limit: Some(3),
+            cursor: Some(cursor),
+            cursor_read: None,
+            ..Default::default()
+        })
+        .unwrap();
+    assert_eq!(
+        no_read_half.iter().map(|r| r.title.as_str()).collect::<Vec<_>>(),
+        ["tie0", "tie1", "e4"],
+        "缺 read 分量时应按首页处理"
+    );
+}
+
+#[test]
+fn hide_read_filters_lists_but_starred_and_later_views_are_exempt() {
+    let (store, feed_id) = setup_sort_fixture();
+    assert!(!store.list_hide_read(), "默认关");
+    assert_eq!(list_titles(&store, all_entries()).len(), 8);
+
+    store.set_setting(LIST_HIDE_READ_KEY, "true").unwrap();
+    assert!(store.list_hide_read());
+    // 全部 / 单源 / 未读视图：已读行（e0 e2 e5）消失；未读视图本来就只有未读，冗余无害
+    let unread_titles = ["tie1", "tie0", "e4", "e3", "e1"];
+    assert_eq!(list_titles(&store, all_entries()), unread_titles);
+    assert_eq!(list_titles(&store, EntryQuery { feed_id: Some(feed_id), ..Default::default() }), unread_titles);
+    assert_eq!(list_titles(&store, EntryQuery { unread_only: true, ..Default::default() }), unread_titles);
+    // 星标 / 稍后读视图豁免：读完了的星标（e2）与稍后读（e5）必须还找得到
+    assert_eq!(
+        list_titles(&store, EntryQuery { starred_only: true, ..Default::default() }),
+        ["e2"],
+        "hide_read 不得把已读星标藏掉"
+    );
+    assert_eq!(
+        list_titles(&store, EntryQuery { read_later_only: true, ..Default::default() }),
+        ["e5"],
+        "hide_read 不得把已读稍后读藏掉"
+    );
+    // 搜索同样过滤（无搜索豁免：PRD 需求 3「所有视图生效」）
+    assert_eq!(
+        store.search("正文", 50).unwrap().len(),
+        5,
+        "隐藏已读对搜索结果同样生效"
+    );
+    // 三个档位下过滤都在（过滤器与排序正交）
+    store.set_setting(LIST_SORT_KEY, "oldest").unwrap();
+    assert_eq!(list_titles(&store, all_entries()), ["e1", "e3", "e4", "tie0", "tie1"]);
+    store.set_setting(LIST_SORT_KEY, "unread_first").unwrap();
+    assert_eq!(list_titles(&store, all_entries()), ["tie0", "tie1", "e4", "e3", "e1"]);
+
+    // 关回去：已读行回来；库里写坏 → 回默认关
+    store.set_setting(LIST_HIDE_READ_KEY, "false").unwrap();
+    assert!(!store.list_hide_read());
+    assert_eq!(list_titles(&store, all_entries()).len(), 8);
+    store.set_setting(LIST_HIDE_READ_KEY, "bogus").unwrap();
+    assert!(!store.list_hide_read());
+}
+
+#[test]
+fn unread_first_cursor_plans_use_v11_composite_index() {
+    // v11 复合索引的验收：unread_first 档首屏与续页都必须走
+    // idx_entries_unread_sortkey，且不得出现 TEMP B-TREE。断言跑在 list_entries 真实
+    // 生成的 SQL 上（explain_list_entries 复用同一个 SQL 构造函数，不存在测试另抄一份
+    // 而漂移的问题）。
+    //
+    // 变异敏感度（手工核对过，改动会变红）：
+    // - 删/改 v11 迁移 → FROM 上的 INDEXED BY 找不到索引，explain 直接报错；
+    // - ORDER BY 少一列或方向错（例如漏掉 read 前缀）→ 索引不再满足顺序，
+    //   plan 里出现 `USE TEMP B-TREE FOR ORDER BY`，下面的断言变红。
+    let (store, feed_id) = setup_sort_fixture();
+    store.set_setting(LIST_SORT_KEY, "unread_first").unwrap();
+
+    // 首屏（无游标）：索引顺序即最终顺序，只需按序取前 N
+    let first_plan = store
+        .explain_list_entries(&EntryQuery { limit: Some(3), ..Default::default() })
+        .unwrap()
+        .join(" | ");
+    assert!(
+        first_plan.contains("idx_entries_unread_sortkey"),
+        "首屏应走 v11 复合索引，实际计划: {first_plan}"
+    );
+
+    let first = store
+        .list_entries(&EntryQuery { limit: Some(3), ..Default::default() })
+        .unwrap();
+    let cursor = (first[2].sortkey, first[2].id);
+    let cases = [
+        (
+            "无筛选续页",
+            EntryQuery {
+                limit: Some(3),
+                cursor: Some(cursor),
+                cursor_read: Some(false),
+                ..Default::default()
+            },
+        ),
+        (
+            "feed 等值筛选续页",
+            EntryQuery {
+                feed_id: Some(feed_id),
+                limit: Some(3),
+                cursor: Some(cursor),
+                cursor_read: Some(false),
+                ..Default::default()
+            },
+        ),
+        (
+            "read=0 筛选续页",
+            EntryQuery {
+                unread_only: true,
+                limit: Some(3),
+                cursor: Some(cursor),
+                cursor_read: Some(false),
+                ..Default::default()
+            },
+        ),
+    ];
+    for (label, q) in cases {
+        let plan = store.explain_list_entries(&q).unwrap().join(" | ");
+        assert!(
+            plan.contains("SEARCH e USING INDEX idx_entries_unread_sortkey"),
+            "{label} 应按 v11 索引定位游标（seek），实际计划: {plan}"
+        );
+        assert!(
+            !plan.to_lowercase().contains("temp b-tree"),
+            "{label} 不应临时排序，实际计划: {plan}"
+        );
+    }
+
+    // 对照：同一份数据用 newest 档时走 v6 索引（两档各自钉自己的索引，互不串门）
+    store.set_setting(LIST_SORT_KEY, "newest").unwrap();
+    let newest_plan = store
+        .explain_list_entries(&EntryQuery {
+            limit: Some(3),
+            cursor: Some(cursor),
+            ..Default::default()
+        })
+        .unwrap()
+        .join(" | ");
+    assert!(
+        newest_plan.contains("idx_entries_sortkey") && !newest_plan.contains("unread_sortkey"),
+        "newest 档不应改用 v11 索引，实际计划: {newest_plan}"
+    );
+}
+
+#[test]
+fn oldest_pages_reverse_scan_the_sortkey_index() {
+    // 最早在前用「反扫 v6 表达式索引」实现（不新增索引），且续页同样是 SEARCH 定位而非
+    // 从头扫描 + 临时排序。第二组用例带 feed 等值筛选：这种形态不钉索引时 planner 会改选
+    // idx_entries_feed_read + 临时排序（本程序从不 ANALYZE），所以断言对「去掉 INDEXED BY」
+    // 这个变异是敏感的（手工核对过）。
+    let (store, feed_id) = setup_sort_fixture();
+    store.set_setting(LIST_SORT_KEY, "oldest").unwrap();
+
+    let first = store
+        .list_entries(&EntryQuery { limit: Some(3), ..Default::default() })
+        .unwrap();
+    assert_eq!(
+        first.iter().map(|r| r.title.as_str()).collect::<Vec<_>>(),
+        ["e0", "e1", "e2"]
+    );
+    let q = EntryQuery {
+        limit: Some(3),
+        cursor: Some((first[2].sortkey, first[2].id)),
+        ..Default::default()
+    };
+    let plan = store.explain_list_entries(&q).unwrap().join(" | ");
+    assert!(
+        plan.contains("SEARCH e USING INDEX idx_entries_sortkey"),
+        "oldest 续页应反扫表达式索引定位游标，实际计划: {plan}"
+    );
+    assert!(
+        !plan.to_lowercase().contains("temp b-tree"),
+        "oldest 续页不应临时排序，实际计划: {plan}"
+    );
+    let next = store.list_entries(&q).unwrap();
+    assert_eq!(
+        next.iter().map(|r| r.title.as_str()).collect::<Vec<_>>(),
+        ["e3", "e4", "e5"],
+        "更旧的接着来（升序档的续页方向不能反）"
+    );
+
+    store.set_setting(LIST_SORT_KEY, "oldest").unwrap();
+    let feed_q = EntryQuery { feed_id: Some(feed_id), ..q.clone() };
+    let feed_plan = store.explain_list_entries(&feed_q).unwrap().join(" | ");
+    assert!(
+        feed_plan.contains("SEARCH e USING INDEX idx_entries_sortkey")
+            && !feed_plan.to_lowercase().contains("temp b-tree"),
+        "oldest + 单源续页也必须钉住表达式索引（否则等值索引 + 临时排序），实际计划: {feed_plan}"
+    );
+    assert_eq!(
+        store
+            .list_entries(&feed_q)
+            .unwrap()
+            .iter()
+            .map(|r| r.title.as_str())
+            .collect::<Vec<_>>(),
+        ["e3", "e4", "e5"]
+    );
+}
+
+#[test]
+fn migration_v10_to_v11_adds_unread_sortkey_index_on_real_file() {
+    // 真文件走一次 v10→v11：v10 库（无复合索引）升级后既有行/状态全保留，
+    // unread_first 查询立刻吃到新索引；升级前同一形态用不上该索引（差异即索引的功劳）。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-v11-test-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute_batch(&MIGRATIONS[..10].join(";")).unwrap();
+        conn.execute_batch(
+            "INSERT INTO feeds (id, url, title, created_at) VALUES (1, 'https://a', '源 A', 0);
+             INSERT INTO entries (id, feed_id, stable_id, id_origin, title, url, summary,
+                                  search_tokens, content_hash, read, starred, fetched_at, read_later)
+               VALUES (1, 1, 'm1', 'source_data', '未读的', 'https://a/1', '摘要', 'x', 'h', 0, 0, 100, 0),
+                      (2, 1, 'm2', 'source_data', '已读的', 'https://a/2', '摘要', 'x', 'h', 1, 1, 200, 0);
+             PRAGMA user_version = 10;",
+        )
+        .unwrap();
+        // 升级前：v10 库里根本没有这个索引（下面的断言靠它区分「迁移的功劳」）
+        let before: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_entries_unread_sortkey'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(before, 0, "v10 库不应预先存在 v11 索引");
+    }
+
+    let store = Store::open(&db_path).expect("打开应自动跑 v11 迁移");
+    assert_eq!(store.schema_version().unwrap() as usize, MIGRATIONS.len());
+    assert_eq!(store.entry_count().unwrap(), 2, "既有条目应保留");
+    let row = store.get_entry(2).unwrap().expect("既有条目应保留");
+    assert!(row.read && row.starred, "既有阅读状态应保留");
+
+    store.set_setting(LIST_SORT_KEY, "unread_first").unwrap();
+    assert_eq!(
+        list_titles(&store, all_entries()),
+        ["未读的", "已读的"],
+        "未读优先：未读在前"
+    );
+    let plan = store
+        .explain_list_entries(&EntryQuery { limit: Some(10), ..Default::default() })
+        .unwrap()
+        .join(" | ");
+    assert!(
+        plan.contains("idx_entries_unread_sortkey"),
+        "升级后应吃到 v11 索引，实际计划: {plan}"
+    );
+    let _ = std::fs::remove_file(&db_path);
+}
+
 #[test]
 fn checkpoint_wal_succeeds_on_file_backed_db() {
     // 回归：61c95c6 曾把 checkpoint_wal 改成 execute()，而 wal_checkpoint 返回一行，
@@ -1102,12 +1559,18 @@ fn counts_rides_indexes_never_the_table_btree() {
     );
     for needle in [
         "idx_entries_sortkey",
-        "idx_entries_read_published",
         "idx_entries_starred",
         "idx_entries_read_later",
     ] {
         assert!(plan.contains(needle), "子查询应走 {needle}，实际计划: {plan}");
     }
+    // 未读子查询：v11 之前走 idx_entries_read_published，v11 加了 (read, sortkey) 复合索引后
+    // planner 改选 idx_entries_unread_sortkey——两个都是覆盖索引、都不穿正文大列的表 B 树，
+    // 哪个都行；关键是不得退化成裸扫（上面已断言）。
+    assert!(
+        plan.contains("idx_entries_read_published") || plan.contains("idx_entries_unread_sortkey"),
+        "未读子查询应走覆盖索引（read_published 或 v11 的 unread_sortkey），实际计划: {plan}"
+    );
 }
 
 #[test]

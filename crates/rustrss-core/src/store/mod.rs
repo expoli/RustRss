@@ -40,6 +40,46 @@ pub type Result<T, E = StoreError> = std::result::Result<T, E>;
 
 pub(crate) const FOLDERS_COLLAPSED_KEY: &str = "ui.folders_collapsed";
 
+/// 列表排序档位的设置键（值：`newest` / `oldest` / `unread_first`）。
+///
+/// 排序与「隐藏已读」都是**全局设置**，`list_entries` 在查询时直接读库——前端不再
+/// 往 `EntryQuery` 里塞一份副本，避免两个事实源（MCP 与界面共用同一条读取路径）。
+pub const LIST_SORT_KEY: &str = "list.sort";
+/// 「隐藏已读」开关的设置键（布尔，默认关）。过滤时星标/稍后读视图豁免，理由见
+/// `list_entries_sql` 的过滤分支。
+pub const LIST_HIDE_READ_KEY: &str = "list.hide_read";
+
+/// 列表排序档位（`list.sort`；库里的值缺失或写坏都回退 [`ListSort::Newest`]）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ListSort {
+    /// 最新在前（默认）：`sortkey DESC, id DESC`
+    Newest,
+    /// 最早在前：`sortkey ASC, id ASC`——反扫 [`ListSort::Newest`] 用的同一个索引
+    Oldest,
+    /// 未读优先：`read ASC, sortkey DESC, id ASC`（未读组内仍最新在前）
+    UnreadFirst,
+}
+
+impl ListSort {
+    /// 存储值 → 档位；非法值归默认档（与 locale/theme 同一口径：库被写坏也不卡死）。
+    pub fn from_setting(value: Option<&str>) -> Self {
+        match value.map(str::trim) {
+            Some("oldest") => Self::Oldest,
+            Some("unread_first") => Self::UnreadFirst,
+            _ => Self::Newest,
+        }
+    }
+
+    /// 档位的存储值（命令层白名单归一化后落库用）。
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Newest => "newest",
+            Self::Oldest => "oldest",
+            Self::UnreadFirst => "unread_first",
+        }
+    }
+}
+
 /// 订阅源行查询的共同部分：列清单与聚合口径只写一份，`list_feeds` / `feed_row`
 /// 共用（新增列时只改这里，避免两处 SQL 漂移）。
 ///
@@ -161,6 +201,13 @@ pub struct EntryQuery {
     /// `None` = 取首页；只返回排在游标之后的行，因此与 `limit` 一起构成稳定分页
     /// ——期间新增条目不会让下一页重复或跳条。
     pub cursor: Option<(i64, i64)>,
+    /// 游标的 `read` 分量：**只**在 [`ListSort::UnreadFirst`] 档需要（该档排序键是
+    /// `(read, sortkey, id)`，缺这一位就定位不到续扫起点）。
+    ///
+    /// 它是游标载荷的一部分，不是排序/过滤设置的副本——排序档与「隐藏已读」两个
+    /// 设置一律由 [`Store::list_entries`] 在查询时从库里读，故此处没有对应字段。
+    /// `UnreadFirst` 档下给了 `cursor` 却没给这一位时按首页处理（半截游标不静默翻错页）。
+    pub cursor_read: Option<bool>,
 }
 
 /// 「全部标记已读」的作用域
@@ -684,18 +731,21 @@ impl Store {
     // ---------------------------------------------------------------- 条目查询
 
     pub fn list_entries(&self, q: &EntryQuery) -> Result<Vec<EntryRow>> {
-        let (sql, values) = list_entries_sql(q);
+        // 排序档与「隐藏已读」在查询时从设置读（单一事实源）：界面与 MCP 共用这条
+        // 路径，谁都不用自己带一份副本，也就不会与库里真正的设置漂移。
+        let (sql, values) = list_entries_sql(q, self.list_sort(), self.list_hide_read());
         self.query_entries(&sql, values, map_entry_row_list)
     }
 
     /// 诊断/测试用：`list_entries` 实际 SQL 的 EXPLAIN QUERY PLAN。
     ///
-    /// 存在的意义是让「续扫必须走 idx_entries_sortkey 且不做临时排序」这条性能
+    /// 存在的意义是让「续扫必须走本档的排序索引且不做临时排序」这条性能
     /// 契约能被断言，而断言跑在与线上逐字相同的 SQL 上——测试另抄一份 SQL 会在
-    /// 实现改动后静默漂移。
+    /// 实现改动后静默漂移。设置（排序档 / 隐藏已读）与线上同源，因此把设置写进库
+    /// 再断言计划，验的就是用户真会跑到的那个形态。
     #[doc(hidden)]
     pub fn explain_list_entries(&self, q: &EntryQuery) -> Result<Vec<String>> {
-        let (sql, values) = list_entries_sql(q);
+        let (sql, values) = list_entries_sql(q, self.list_sort(), self.list_hide_read());
         let mut stmt = self.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
         let rows = stmt.query_map(params_from_iter(values), |r| r.get::<_, String>(3))?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -708,16 +758,22 @@ impl Store {
     }
 
     /// 全文搜索：拉丁词与中文 bigram 走 FTS5，单字中文走 LIKE 兜底。
+    ///
+    /// 搜索的排序仍是「相关度（bm25）优先 / 无词时按时间」——排序档是列表的展示
+    /// 口径，不参与搜索排序；但「隐藏已读」是全局列表过滤，搜索同样生效（无视图豁免）。
     pub fn search(&self, query: &str, limit: u32) -> Result<Vec<EntryRow>> {
         let plan = plan_query(query);
         let mut values: Vec<Value> = Vec::new();
-        let mut sql = entry_list_sql(false);
+        let mut sql = entry_list_sql(None);
         let has_fts = !plan.fts.is_empty();
 
         if has_fts {
             sql.push_str(" JOIN entries_fts ON entries_fts.rowid = e.id");
         }
         sql.push_str(" WHERE 1=1");
+        if self.list_hide_read() {
+            sql.push_str(" AND e.read = 0");
+        }
         if has_fts {
             sql.push_str(" AND entries_fts MATCH ?");
             values.push(Value::Text(plan.fts.clone()));
@@ -886,6 +942,18 @@ impl Store {
         self.set_setting(key, if value { "true" } else { "false" })
     }
 
+    /// 列表排序档（`list.sort`）：缺失或非法值一律回默认 [`ListSort::Newest`]。
+    ///
+    /// 读取侧的兜底与主题/语言同一口径：库里被写坏也不至于让列表打不开。
+    pub fn list_sort(&self) -> ListSort {
+        ListSort::from_setting(self.setting(LIST_SORT_KEY).ok().flatten().as_deref())
+    }
+
+    /// 「隐藏已读」开关（`list.hide_read`）：缺失或非法值回默认关。
+    pub fn list_hide_read(&self) -> bool {
+        self.bool_setting(LIST_HIDE_READ_KEY, false).unwrap_or(false)
+    }
+
     /// 每个源的未读数
     pub fn unread_by_feed(&self) -> Result<Vec<(i64, i64)>> {
         let mut stmt = self.conn.prepare(
@@ -1016,18 +1084,55 @@ const ENTRY_LIST_COLUMNS: &str =
 
 /// 列表/搜索查询的公共主体（列 + 条目 JOIN 订阅源，列表要源标题）。
 ///
-/// `indexed_by_sortkey`（仅 keyset 续扫用）在 FROM 上钉死表达式索引，理由见
-/// `list_entries_sql` 里那段注释。
-fn entry_list_sql(indexed_by_sortkey: bool) -> String {
-    let hint = if indexed_by_sortkey { " INDEXED BY idx_entries_sortkey" } else { "" };
+/// `pin = Some(档位)` 时在 FROM 上钉死该档的排序索引；`None` 交给 planner
+/// （搜索按相关度排序，没有可钉的排序索引）。
+fn entry_list_sql(pin: Option<ListSort>) -> String {
+    let hint = match pin {
+        Some(ListSort::UnreadFirst) => " INDEXED BY idx_entries_unread_sortkey",
+        Some(ListSort::Newest | ListSort::Oldest) => " INDEXED BY idx_entries_sortkey",
+        None => "",
+    };
     format!("{ENTRY_LIST_COLUMNS} FROM entries e{hint} JOIN feeds f ON f.id = e.feed_id")
 }
 
-/// `list_entries` 的 SQL 与参数（游标续扫条件在这里拼接）。
+/// 某一档的 `ORDER BY`：**列序与方向都与该档钉住的索引逐列对应**（这是
+/// `USE TEMP B-TREE FOR ORDER BY` 不出现的前提，见 `list_entries_sql` 的注释）。
+fn list_order_by(sort: ListSort) -> &'static str {
+    match sort {
+        ListSort::Newest => {
+            " ORDER BY COALESCE(e.published_at, e.fetched_at) DESC, e.id DESC LIMIT ?"
+        }
+        ListSort::Oldest => {
+            // 升序 = 反扫同一个表达式索引（SQLite 支持逆序扫描，不需要第二个索引）
+            " ORDER BY COALESCE(e.published_at, e.fetched_at) ASC, e.id ASC LIMIT ?"
+        }
+        ListSort::UnreadFirst => {
+            // 未读组内仍是最新在前；末列 id 用升序与 v11 索引的末列一致。
+            // 并列关系（同 read 同 sortkey）下方向本身无意义，但必须与索引一致，
+            // 否则 SQLite 只能临时排序。
+            " ORDER BY e.read ASC, COALESCE(e.published_at, e.fetched_at) DESC, e.id ASC LIMIT ?"
+        }
+    }
+}
+
+/// `list_entries` 的 SQL 与参数（排序档 / 隐藏已读 / 游标续扫条件都在这里拼接）。
 ///
-/// 抽成独立函数是为了让 EXPLAIN 断言与线上 SQL 逐字同源（见 `explain_list_entries`）。
-fn list_entries_sql(q: &EntryQuery) -> (String, Vec<Value>) {
-    let mut sql = entry_list_sql(q.cursor.is_some());
+/// 抽成独立函数是为了让 EXPLAIN 断言与线上 SQL 逐字同源（见 `explain_list_entries`）；
+/// `sort` 与 `hide_read` 由调用方从设置读出传入（测试里先写设置再断言计划，
+/// 验的就是线上真会跑到的 SQL）。
+fn list_entries_sql(q: &EntryQuery, sort: ListSort, hide_read: bool) -> (String, Vec<Value>) {
+    // INDEXED BY 的必要性（实测，sqlite 3.53.2，无 sqlite_stat1 的新库）：
+    // - `newest`/`oldest` 的续页：不过滤时靠统计也能选中 idx_entries_sortkey，但
+    //   read/feed_id 这类带等值索引的筛选形态，planner 会改选等值索引 + 临时排序
+    //   （本程序从不 ANALYZE）。续页是逐页路径，计划不能看统计的脸色。
+    // - `unread_first`：首屏也钉。它的 ORDER BY 只有 v11 复合索引能同时满足顺序与
+    //   `read` 等值筛选；不钉的话 feed 视图退化成 idx_entries_feed_read +
+    //   `USE TEMP B-TREE FOR LAST 2 TERMS OF ORDER BY`（每页重排一遍筛选集合）。
+    let pin = match sort {
+        ListSort::UnreadFirst => Some(sort),
+        ListSort::Newest | ListSort::Oldest => q.cursor.map(|_| sort),
+    };
+    let mut sql = entry_list_sql(pin);
     let mut values: Vec<Value> = Vec::new();
     sql.push_str(" WHERE 1=1");
     if let Some(feed_id) = q.feed_id {
@@ -1043,32 +1148,76 @@ fn list_entries_sql(q: &EntryQuery) -> (String, Vec<Value>) {
     if q.read_later_only {
         sql.push_str(" AND e.read_later = 1");
     }
-    if let Some((sortkey, id)) = q.cursor {
-        // keyset 续扫：语义就是行值比较 `(sortkey, id) < (?, ?)`。
-        //
-        // 实测（sqlite 3.53.2，8000 条库，带/不带 ANALYZE 统计都验过）：
-        // 1. 行值比较不会被当成 idx_entries_sortkey 上的范围约束——计划退化成
-        //    `SCAN ... USING INDEX`，续页得从索引头部扫到游标位置，逐页变慢；
-        // 2. 只写展开式（下面的 OR）又会走 MULTI-INDEX OR + `USE TEMP B-TREE FOR ORDER BY`。
-        // 因此这里多带一条冗余的前导范围约束 `sortkey <= ?`：它给表达式索引一个
-        // 真正可用的 SEARCH 起点；括号内的 OR 把语义收回到严格小于（同值按 id 续扫）。
-        //
-        // 另外 FROM 上带 INDEXED BY（经 entry_list_sql）：不过滤时靠统计就能选中
-        // idx_entries_sortkey，但 read/feed_id 这类有等值索引的筛选形态，在没有
-        // sqlite_stat1 的新库里 planner 会改选等值索引 + 临时排序（本程序从不 ANALYZE）。
-        // 续扫是逐页路径，计划不能看统计的脸色——钉住索引后各筛选形态实测均为
-        // `SEARCH e USING INDEX idx_entries_sortkey (<expr><? )`，无 TEMP B-TREE。
-        sql.push_str(
-            " AND COALESCE(e.published_at, e.fetched_at) <= ?
+    // 隐藏已读：星标/稍后读视图豁免——「星标了但读完了」还要能找到（PRD 需求 3）。
+    // 未读视图本来就有 `read = 0`，重复一次无害。
+    if hide_read && !q.starred_only && !q.read_later_only {
+        sql.push_str(" AND e.read = 0");
+    }
+    match sort {
+        ListSort::Newest => {
+            if let Some((sortkey, id)) = q.cursor {
+                // keyset 续扫：语义就是行值比较 `(sortkey, id) < (?, ?)`。
+                //
+                // 实测（sqlite 3.53.2，8000 条库，带/不带 ANALYZE 统计都验过）：
+                // 1. 行值比较不会被当成 idx_entries_sortkey 上的范围约束——计划退化成
+                //    `SCAN ... USING INDEX`，续页得从索引头部扫到游标位置，逐页变慢；
+                // 2. 只写展开式（下面的 OR）又会走 MULTI-INDEX OR + `USE TEMP B-TREE FOR ORDER BY`。
+                // 因此这里多带一条冗余的前导范围约束 `sortkey <= ?`：它给表达式索引一个
+                // 真正可用的 SEARCH 起点；括号内的 OR 把语义收回到严格小于（同值按 id 续扫）。
+                sql.push_str(
+                    " AND COALESCE(e.published_at, e.fetched_at) <= ?
                  AND (COALESCE(e.published_at, e.fetched_at) < ?
                       OR (COALESCE(e.published_at, e.fetched_at) = ? AND e.id < ?))",
-        );
-        values.push(Value::Integer(sortkey));
-        values.push(Value::Integer(sortkey));
-        values.push(Value::Integer(sortkey));
-        values.push(Value::Integer(id));
+                );
+                values.push(Value::Integer(sortkey));
+                values.push(Value::Integer(sortkey));
+                values.push(Value::Integer(sortkey));
+                values.push(Value::Integer(id));
+            }
+        }
+        ListSort::Oldest => {
+            if let Some((sortkey, id)) = q.cursor {
+                // 与 newest 镜像：游标是「上一页末行」，续页取排在它后面的行，而升序档的
+                // 「后面」是更大（键值更大）。冗余前导约束 `sortkey >= ?` 给反扫一个
+                // SEARCH 起点，括号内 OR 把语义收回严格大于（同值按 id 继续）。
+                sql.push_str(
+                    " AND COALESCE(e.published_at, e.fetched_at) >= ?
+                 AND (COALESCE(e.published_at, e.fetched_at) > ?
+                      OR (COALESCE(e.published_at, e.fetched_at) = ? AND e.id > ?))",
+                );
+                values.push(Value::Integer(sortkey));
+                values.push(Value::Integer(sortkey));
+                values.push(Value::Integer(sortkey));
+                values.push(Value::Integer(id));
+            }
+        }
+        ListSort::UnreadFirst => {
+            // 复合键游标 `(read, sortkey, id)`：排序键的第 1 列是先升后降的混合方向，
+            // 不能用单条行值比较表达，因此拆成 read 的范围起点 + 「同 read 内的
+            // (sortkey, id) 位置」两层；`read >= ?` 是显式的范围兜底（OR 分支里的
+            // `read > ?` 实测也能给出同样的起点）。
+            //
+            // 计划成本：read 是索引首列，SEARCH 起点落在 read 边界上，页内按索引序
+            // 往前走读到的都是 read/sortkey/id 三个索引列（不回表），命中行才取整行
+            // ——与 v6 教训里「穿正文溢出页链的全表扫」不是一回事。
+            if let (Some((sortkey, id)), Some(read)) = (q.cursor, q.cursor_read) {
+                let read = i64::from(read);
+                sql.push_str(
+                    " AND e.read >= ?
+                 AND (e.read > ? OR (e.read = ?
+                      AND (COALESCE(e.published_at, e.fetched_at) < ?
+                           OR (COALESCE(e.published_at, e.fetched_at) = ? AND e.id > ?))))",
+                );
+                values.push(Value::Integer(read));
+                values.push(Value::Integer(read));
+                values.push(Value::Integer(read));
+                values.push(Value::Integer(sortkey));
+                values.push(Value::Integer(sortkey));
+                values.push(Value::Integer(id));
+            }
+        }
     }
-    sql.push_str(" ORDER BY COALESCE(e.published_at, e.fetched_at) DESC, e.id DESC LIMIT ?");
+    sql.push_str(list_order_by(sort));
     values.push(Value::Integer(q.limit.unwrap_or(50).min(500) as i64));
     (sql, values)
 }

@@ -27,5 +27,6 @@ pub use model::{Entry, Feed, IdOrigin};
 pub use parse::{parse, ParseError};
 pub use store::backup;
 pub use store::{
-    EntryQuery, EntryRow, FeedIntervalRow, FeedRow, InsertStats, MarkScope, Store, StoreError,
+    EntryQuery, EntryRow, FeedIntervalRow, FeedRow, InsertStats, ListSort, MarkScope, Store,
+    StoreError,
 };

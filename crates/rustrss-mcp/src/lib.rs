@@ -139,6 +139,7 @@ impl RustRssMcp {
             read_later_only: false,
             // MCP 列表工具不做游标分页（响应口径：默认 10 条 / 上限 50）
             cursor: None,
+            cursor_read: None,
         };
         self.with_store(|store| match store.list_entries(&query) {
             Ok(rows) => {

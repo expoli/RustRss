@@ -41,6 +41,11 @@ const DICTS = {
     'list.searchTitle': '搜索：{q}',
     'list.feedFallback': '订阅源',
     'list.loadingMore': '加载中…',
+    'list.sortTitle': '排序与过滤',
+    'list.sortNewest': '最新在前',
+    'list.sortOldest': '最早在前',
+    'list.sortUnreadFirst': '未读优先',
+    'list.hideRead': '隐藏已读',
 
     'reader.empty': '从中间列表选一篇文章。',
     'reader.shortcuts': '快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · r 刷新 · / 搜索 · Esc 清除',
@@ -365,6 +370,11 @@ const DICTS = {
     'list.searchTitle': 'Search: {q}',
     'list.feedFallback': 'Feed',
     'list.loadingMore': 'Loading…',
+    'list.sortTitle': 'Sort & filter',
+    'list.sortNewest': 'Newest first',
+    'list.sortOldest': 'Oldest first',
+    'list.sortUnreadFirst': 'Unread first',
+    'list.hideRead': 'Hide read',
 
     'reader.empty': 'Pick an article from the list.',
     'reader.shortcuts':

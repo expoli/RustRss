@@ -961,6 +961,19 @@ async function loadAll({ reader = true } = {}) {
 /// 每批条数：与后端 list_entries 的默认值一致，也是「有没有下一页」的判据。
 const PAGE_SIZE = 200;
 
+/// 列表排序档（`list.sort` 设置）。缺省或未加载时按默认档 'newest' 处理
+/// ——与 Rust 侧 `ListSort::from_setting` 的白名单口径一致（非法值回默认档）。
+function listSortMode() {
+  const v = state.settings && state.settings.list_sort;
+  return v === 'oldest' || v === 'unread_first' ? v : 'newest';
+}
+
+/// 列表「隐藏已读」开关（`list.hide_read`）。星标 / 稍后读视图的豁免在 store 查询层，
+/// 前端不做第二套判断。
+function listHideRead() {
+  return !!(state.settings && state.settings.list_hide_read);
+}
+
 /// 列表分页状态（keyset 复合游标）。
 /// cursor 记的是「已取到的最后一行」而不是「当前列表最后一行」：未读视图里读完一篇
 /// 会把它从列表里移除，若拿剩下的末行当游标，读空一整批之后就再也取不到后面的未读
@@ -977,10 +990,12 @@ function listArgs(cursor) {
     starredOnly: kind === 'starred',
     readLaterOnly: kind === 'later',
     limit: PAGE_SIZE,
-    // 游标 = 上一页末行的 (sortkey, id)；sortkey 由后端直出，前端不按
-    // published_at/fetched_at 自己算（前端也拿不到 fetched_at）
+    // 游标 = 上一页末行的 (sortkey, id, read)；sortkey 由后端直出，前端不按
+    // published_at/fetched_at 自己算（前端也拿不到 fetched_at）。read 分量只有
+    // `unread_first` 档用得上（该档排序键是 (read, sortkey, id)），其余档传了也被忽略。
     cursorSortkey: cursor ? cursor.sortkey : null,
     cursorId: cursor ? cursor.id : null,
+    cursorRead: cursor ? cursor.read : null,
   };
 }
 
@@ -989,7 +1004,7 @@ function listArgs(cursor) {
 async function loadPage(cursor) {
   const rows = await invoke('list_entries', listArgs(cursor));
   const last = rows[rows.length - 1];
-  if (last) paging.cursor = { sortkey: last.sortkey, id: last.id };
+  if (last) paging.cursor = { sortkey: last.sortkey, id: last.id, read: last.read };
   paging.exhausted = rows.length < PAGE_SIZE;
   return rows;
 }
@@ -1013,6 +1028,24 @@ function topVisibleRowId(list) {
 /// 只动头部：append 游标、exhausted、尾部哨兵都不受影响（新条目只会让总数更多）；
 /// 已加载的行一个都不重建——重建会把滚动位置冲掉，也是打开文章时的 CPU 尖峰来源。
 async function prependFreshEntries() {
+  // 排序档门控：只有 newest 档的「更新」才在列表头部。oldest 档的新条目属于列表
+  // **尾部**、unread_first 档的新未读条目属于未读组头部（在已读组之前）——这两档把
+  // 新条目插到 DOM 头部都会让 DOM 顺序与后端顺序不一致（挤在头部的最新行会让
+  // 「最早在前」的列表实际上从最新开始），所以一律不走 prepend。
+  // 非 newest 档退化为静默 reset（loadEntries 的 reset 路径：整体重查重渲、分页状态
+  // 重置）。**滚动保持降级**：reset 重建全部行，只保留 scrollTop 像素偏移、不做锚点
+  // 补偿——新条目落在头部时（unread_first 的新未读）可见的那几行会整体位移。这是
+  // 文档化的取舍：换来列表顺序始终与排序档一致（顺序错更隐蔽也更糟）。
+  // 实测（Xvfb + 260 条库，见验证清单）：oldest 档 listScrollTop=15676→15676
+  // （新条目在尾部，视觉上不动）；unread_first 档同样是像素偏移保持、内容整体位移。
+  if (listSortMode() !== 'newest') {
+    const scrollBefore = el('entries').scrollTop;
+    await loadEntries({ reader: false });
+    log(
+      `refresh:done prepend skipped（sort=${listSortMode()}）：改走静默 reset，listScrollTop=${scrollBefore}→${el('entries').scrollTop}（reset 重建，无滚动锚点补偿）`
+    );
+    return;
+  }
   const first = state.entries[0];
   const rows = await invoke('list_entries', listArgs(null));
   // 在飞期间用户可能换了视图/筛选或手动刷新（列表已被整体重建）：这次的结果作废，
@@ -1057,6 +1090,47 @@ async function prependFreshEntries() {
   log(
     `refresh:done prepend rows=${fresh.length} ids=${fresh.map((e) => e.id).join(',')} sessionReadSkipped=${skipped} atTop=${atTop} listScrollTop=${scrollBefore}→${list.scrollTop} height=${heightBefore}→${list.scrollHeight} top=${visibleBefore}→${topVisibleRowId(list)} head=${list.firstChild?.dataset.id ?? 'none'} children=${list.children.length} total=${state.entries.length}`
   );
+}
+
+/// 列表头排序入口的菜单：三档（当前档打勾）+ 分隔线 + 隐藏已读开关。
+/// 动作分两步：写库（`set_list_*` 命令回 UiSettings 的归一值）→ reset 重建列表。
+function openListSortMenu(ev, anchor) {
+  const cur = listSortMode();
+  const pick = (value, label) => ({
+    label,
+    checked: cur === value,
+    action: () => applyListSetting(() => invoke('set_list_sort', { sort: value })),
+  });
+  openContextMenu(
+    ev,
+    [
+      pick('newest', t('list.sortNewest')),
+      pick('oldest', t('list.sortOldest')),
+      pick('unread_first', t('list.sortUnreadFirst')),
+      { separator: true },
+      {
+        label: t('list.hideRead'),
+        checked: listHideRead(),
+        action: () =>
+          applyListSetting(() => invoke('set_list_hide_read', { enabled: !listHideRead() })),
+      },
+    ],
+    anchor
+  );
+}
+
+/// 两个列表设置动作的公共收尾：落库（回显归一值）→ reset 重建列表（分页状态重置）。
+/// `reader: false`：列表整体重查重渲，但阅读区与正文滚动位置不动——换个排序不该把
+/// 用户正在读的那篇清空（换视图是 reader: true 的占位语义，两件事分开）。
+async function applyListSetting(run) {
+  try {
+    state.settings = await run();
+    await loadEntries({ reader: false });
+    log(`list settings: sort=${listSortMode()} hideRead=${listHideRead() ? 1 : 0}`);
+  } catch (err) {
+    setStatus(err.message, true);
+    log(`list settings failed: ${err.message}`);
+  }
 }
 
 /// 视图切换后不再自动打开首篇：展示但不标读会误导（正文都渲染了列表却不变灰），
@@ -1116,12 +1190,22 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   // 静默刷新（reader=false）不动 selectedId；视图切换（reader=true）也不再回退
   // 选中首行——保持「点击才算已读」，阅读区显示占位（见 renderSelectedEntry）。
   renderList();
+  // 重建路径的机器可核对诊断：档位 / 过滤 + 头部 id 序列。换排序、换过滤、刷新后的
+  // 「顺序对不对」不用只能盯着屏幕看——head 直接与库里的期望顺序对比即可。
+  log(
+    `view=${kind}${state.feedId ? '#' + state.feedId : ''} sort=${listSortMode()} hideRead=${listHideRead() ? 1 : 0} count=${state.entries.length} exhausted=${paging.exhausted} head=${headIds()}`
+  );
   // 静默模式到此为止：正文区一个 DOM 都不动
   if (!reader) return;
   await renderSelectedEntry();
-  log(
-    `view=${kind}${state.feedId ? '#' + state.feedId : ''} count=${state.entries.length} exhausted=${paging.exhausted}`
-  );
+}
+
+/// 列表头部前 5 行的 id（诊断用，见上面重建路径的日志）。
+function headIds() {
+  return state.entries
+    .slice(0, 5)
+    .map((e) => e.id)
+    .join(',');
 }
 
 /// 续页（哨兵触发）。防重入：同一时刻只允许一个请求在飞——滚动抖动会让哨兵连续触发，
@@ -2519,6 +2603,14 @@ async function boot() {
   }
 
   el('btn-refresh').onclick = doRefresh;
+  // 列表头排序入口：图标按钮 → 锚定菜单（三档 + 隐藏已读）。
+  // 必须 stopPropagation：全局 click 处理器会关掉「点击目标不在菜单里」的 ctx-menu
+  // （为右键菜单与设置下拉而设），而本菜单正是在 click 处理器里打开的——不阻断
+  // 冒泡的话菜单会闪一下就没（实测 2026-09-22，Xvfb 点击序列抓出来的）。
+  el('btn-list-sort').onclick = (ev) => {
+    ev.stopPropagation();
+    openListSortMenu(ev, el('btn-list-sort'));
+  };
   initRefreshEvents();
   initSidebarEvents();
   el('btn-add').onclick = () => {

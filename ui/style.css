@@ -286,6 +286,24 @@ main {
   font-weight: 600;
 }
 
+/* 计数 + 排序入口固定在右侧：计数是弹性宽度（长数字不挤按钮），按钮尺寸固定
+   （切换排序时不会有布局跳动）。 */
+.list-head-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+#list-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#list-count { white-space: nowrap; }
+#btn-list-sort {
+  flex: none;
+  padding: 2px 7px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--fg-dim);
+}
+
 .entries { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
 
 .entries li {

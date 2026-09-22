@@ -72,7 +72,11 @@
     <section class="list">
       <div class="list-head">
         <span id="list-title"></span>
-        <span id="list-count" class="dim"></span>
+        <span class="list-head-right">
+          <span id="list-count" class="dim"></span>
+          <!-- 排序与过滤入口：图标按钮弹 ctx-menu（三档 + 分隔 + 隐藏已读）-->
+          <button id="btn-list-sort" data-i18n-title="list.sortTitle" aria-label="sort">⇅</button>
+        </span>
       </div>
       <ul id="entries" class="entries"></ul>
     </section>
