@@ -246,3 +246,68 @@ async fn fetch_failure_keeps_the_original_reason() {
     let message = err.to_string();
     assert!(message.contains("404"), "错误应保留原始原因: {message}");
 }
+
+/// 场景 6：`rsshub://` scheme 输入不发请求、直接按存储形态返回。
+///
+/// 这个 scheme 不可直连抓取（reqwest 会报 scheme 不支持），因此发现阶段必须短路：
+/// 添加流程拿到的就是 `rsshub://path`，落库后由首次抓取经 feed_endpoint 解析到镜像。
+#[tokio::test]
+async fn rsshub_scheme_input_skips_discovery_without_network() {
+    let server = MockServer::start().await; // 只用来证明「一个请求都没发」
+    let d = discover(&fetcher(), "rsshub://test/1").await.expect("scheme 输入应直接返回");
+    assert_eq!(d.feed_url, "rsshub://test/1");
+    assert_eq!(d.via, DiscoveryVia::Direct);
+    assert!(d.alternatives.is_empty());
+    assert!(
+        server.received_requests().await.unwrap_or_default().is_empty(),
+        "scheme 输入不该产生任何网络请求"
+    );
+    // 三斜杠 / 大写 scheme 归一后返回
+    assert_eq!(
+        discover(&fetcher(), "rsshub:///gofans").await.unwrap().feed_url,
+        "rsshub://gofans"
+    );
+    assert_eq!(
+        discover(&fetcher(), "  RSSHUB://v2ex/topics/hot ").await.unwrap().feed_url,
+        "rsshub://v2ex/topics/hot"
+    );
+}
+
+/// 场景 7（添加流程全链）：scheme 输入 → 发现 → 落库 → 首次抓取打当前镜像。
+///
+/// 钉的是「输入框里粘 rsshub://path 能用」：发现短路、库里存 scheme、抓取时解析。
+#[tokio::test]
+async fn rsshub_scheme_add_flow_then_first_fetch_hits_mirror() {
+    use rustrss_core::rsshub;
+    use rustrss_core::{refresh, Store};
+
+    let mirror = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/test/1"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(RSS_DIRECT))
+        .mount(&mirror)
+        .await;
+
+    let store = Store::open_in_memory().unwrap();
+    store
+        .set_setting(rsshub::MIRROR_KEY, &mirror.uri())
+        .unwrap();
+
+    // 发现阶段（添加流程第一步）
+    let found = discover(&fetcher(), "rsshub://test/1").await.unwrap();
+    // 订阅落库（第二步）：存 scheme 形态，不实例化
+    let feed_id = store.add_feed(&found.feed_url, None).unwrap();
+    assert_eq!(store.list_feeds().unwrap()[0].url, "rsshub://test/1");
+    // 首次抓取（第三步）：经 feed_endpoint 解析到镜像
+    let report = refresh(&store, &fetcher(), &[feed_id], 1).await.unwrap();
+    assert_eq!(report.fetched, 1, "首次抓取应成功: {report:?}");
+    assert_eq!(report.inserted, 1);
+    assert_eq!(store.entry_count().unwrap(), 1);
+    assert_eq!(
+        mirror.received_requests().await.unwrap_or_default().len(),
+        1,
+        "首次抓取应打镜像"
+    );
+    // 抓取后库内仍是 scheme（update_feed_meta 不写 url）
+    assert_eq!(store.list_feeds().unwrap()[0].url, "rsshub://test/1");
+}

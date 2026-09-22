@@ -150,7 +150,7 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] MCP：stdio 与 HTTP 双传输，HTTP 仅回环 + token；应用内一键生成并复制客户端配置
 - [x] 全文搜索（接 FTS5，中文可用）、刷新全部、单源双击重试、添加订阅（首页 URL 自动发现 feed）、浏览器打开、复制链接
 - [x] 稍后读：阅读器按钮 / 列表条目 ⚑ 标记 / `l` 快捷键，与已读、星标独立；侧栏「稍后读」智能视图
-- [x] RSSHub 实例：设置里可配自建/镜像地址，rsshub.app 订阅自动改用实例抓取；存量订阅一键迁移（预览条数→确认→反馈）
+- [x] RSSHub 实例：设置里可配自建/镜像地址。`rsshub://path`（含三斜杠、大写）与 `https://rsshub.app/path` 是**同一订阅身份**，库里统一只存 `rsshub://path`（抽象地址，不绑定任何实例）——抓取时才由唯一出口 `Store::feed_endpoint` 按当前实例解析（`resolve_fetch_url`），所以**换实例零迁移**、下一次刷新即生效（库内 url 不变、OPML 导出天然可移植）；已实例化到自建实例的历史行识别不了、原样直抓（不劣化，与拆分前一致）。添加订阅输入框直接支持 `rsshub://path`（发现阶段短路不联网，首次抓取经实例解析）。设置页「归一化 RSSHub 地址」是**一次性地址整理**（存量 `rsshub.app` 行 → `rsshub://path`；预览条数与实际改写条数共用同一判据，已是 scheme 的行幂等不动），换实例不需要点它
 - [x] 正文安全渲染：白名单清洗 + 相对地址图片/链接解析（详见下）；代码块语法高亮（vendor highlight.js，`language-*` class 优先 + 自动检测，深浅双主题 token 配色；超过 16KB 的超大代码块跳过 auto-detect 以保证大文章的打开速度，显式 `language-diff` 放宽到 64KB；桌面像素效果需人工核验）
 - [x] 补丁/diff 渲染：邮件列表源（lkml 等）把补丁拆成一连串段落、没有代码块——sanitize 后做一次 diff 区域归一（连续 +/-/@@/头行段落合并成单个 `pre>code.language-diff`，保守门槛防误吞普通段落），再走 hljs：绿增红删整行底色 + 左缘强调条 + hunk 头蓝底（深浅双主题，修复过「加行配红」的错映射）
 - [x] 摘要型条目一键获取全文：正文缺失或明显偏短（阈值 500 字）、或带源端摘要标记（lkml.org 的 `某人 writes: (Summary)` 长摘要超过阈值也命中）、且未抓过又有原文地址的条目，在阅读器显示「获取全文」按钮；点击后转 loading（防重入）→ 抓原文页 → readability 提取正文 → 写回库并用返回的行重渲染；失败（非 HTML / 超时 / 超 2MB / 无正文 / **反爬质询页**）在状态栏报错，**原摘要原样保留**，可直接再点重试。反爬质询页（Anubis 等，需浏览器过 JS 验证）会被识别并拒绝写回，提示用户用「浏览器打开」；写回会打上 `fulltext_fetched` 标记：同一篇第二次打开零网络，之后 feed 刷新也不会把已抓正文覆盖回摘要（core 侧见 `crates/rustrss-core/src/fulltext.rs` 与 `fetch_fulltext` command，前端见 `ui/app.js` 的 `fetchFulltext`；手动清单第 7 节）

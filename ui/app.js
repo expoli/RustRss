@@ -2760,7 +2760,7 @@ async function boot() {
       } else {
         el('rsshub-status').textContent = t('settings.rsshub.migrateDone', { n: String(out.migrated) });
       }
-      log(`rsshub migration: migrated=${out.migrated} skipped=${out.skipped} errors=${out.errors.length}`);
+      log(`rsshub normalize: migrated=${out.migrated} skipped=${out.skipped} errors=${out.errors.length}`);
       await refreshCounts();
     } catch (err) {
       el('rsshub-status').textContent = err.message;

@@ -83,8 +83,8 @@ fn feed_state(store: &Store) -> Vec<(String, String)> {
 
 /// 往库里放一份可辨识的数据，返回两个条目 id。
 ///
-/// `slug` 只用在 URL 上（保持 ASCII：`rsshub::normalize_rsshub_url` 目前按字节切前 9 字节
-/// 判断 scheme，非 ASCII URL 会 panic——既有问题，与本任务无关，故测试绕开）；
+/// `slug` 只用在 URL 上（保持 ASCII：`rsshub::canonical_scheme_url` 目前按字节取前 9 字节
+/// 判断 scheme，非 ASCII URL 走不通，故测试绕开）；
 /// `label` 用在中文字段上，便于断言「恢复的是哪一份库」。
 fn seed(store: &Store, slug: &str, label: &str) -> (i64, i64, i64) {
     let feed = store

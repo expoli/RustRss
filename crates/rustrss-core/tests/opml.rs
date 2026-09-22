@@ -154,3 +154,43 @@ fn empty_opml_is_not_an_error() {
     let report = opml::import(&store, xml).unwrap();
     assert_eq!(report, ImportReport::default());
 }
+
+/// RSSHub scheme 订阅的 OPML 回环：导出 scheme 形态（可移植），再导入不重复。
+///
+/// 三种写法（scheme / 官方域 / www 官方域）在库内是同一个身份，导出只出 scheme；
+/// 用官方域形态的 OPML 再导入也必须判为「已存在」，否则换台机器/重导一次就会
+/// 报告新增而实际什么都没加（计数与实际不符）。
+#[test]
+fn rsshub_scheme_urls_export_as_scheme_and_reimport_as_duplicates() {
+    let store = Store::open_in_memory().unwrap();
+    store.add_feed("rsshub://test/1", Some("测试路由")).unwrap();
+    assert_eq!(store.list_feeds().unwrap()[0].url, "rsshub://test/1");
+
+    // 导出：xmlUrl 是 scheme 形态，不含任何实例域名
+    let xml = opml::export(&store).unwrap();
+    assert!(xml.contains("xmlUrl=\"rsshub://test/1\""), "{xml}");
+    assert!(!xml.contains("rsshub.app"), "导出不得绑定实例域名: {xml}");
+
+    // 自己导出的东西再导入：全部跳过，不新增
+    let again = opml::import(&store, &xml).unwrap();
+    assert_eq!(again.feeds_added, 0);
+    assert_eq!(again.feeds_skipped, 1);
+    assert_eq!(store.list_feeds().unwrap().len(), 1);
+
+    // 官方域形态的 OPML（别人导出的旧文件）导入同一路由：也是重复，不是新增
+    let legacy = r#"<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0"><head><title>s</title></head><body>
+<outline type="rss" text="X" title="X" xmlUrl="https://rsshub.app/test/1"/>
+</body></opml>"#;
+    let legacy_report = opml::import(&store, legacy).unwrap();
+    assert_eq!(legacy_report.feeds_added, 0, "官方域形态应判为同一订阅");
+    assert_eq!(legacy_report.feeds_skipped, 1);
+    assert_eq!(store.list_feeds().unwrap().len(), 1);
+
+    // 往干净库导入旧形态 OPML：落库即 scheme（此后随镜像变化，无需迁移）
+    let fresh = Store::open_in_memory().unwrap();
+    let report = opml::import(&fresh, legacy).unwrap();
+    assert_eq!(report.feeds_added, 1);
+    assert_eq!(report.added_feed_ids.len(), 1);
+    assert_eq!(fresh.list_feeds().unwrap()[0].url, "rsshub://test/1");
+}

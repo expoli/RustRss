@@ -38,7 +38,7 @@ created: 2026-09-20
 ### 订阅与抓取
 
 - [x] 输入网站首页 URL 时能自动发现 feed（解析 `<link rel="alternate">`）；输入 feed URL 直接订阅成功
-- [x] RSSHub 订阅支持自定义实例：`rsshub://` 与 `https://rsshub.app` 形态在落库时实例化为所配地址；存量订阅可在设置中批量迁移
+- [x] RSSHub 订阅支持自定义实例：`rsshub://path`（含 `rsshub:///` 三斜杠、大写 scheme）与 `https://rsshub.app/path` 落库统一归为 `rsshub://path`（不实例化；去重键就是该形态，两种写法判为同一订阅）；唯一抓取出口 `Store::feed_endpoint` 按当前实例解析（存量官方域行同样跟随实例），换实例零迁移；设置页「归一化 RSSHub 地址」把存量 `rsshub.app` 行一次性整理为 scheme（预览条数→确认→反馈）；添加订阅输入 `rsshub://path` 可用（发现阶段短路、不联网）；OPML 导出为 scheme 形态且回导判重
 - [ ] 支持 RSS 2.0 / Atom / JSON Feed 三种格式解析，含 CDATA、命名空间、多 `enclosure`、缺 `guid` 的条目
 - [ ] 单源与全源刷新可用；刷新使用 ETag / Last-Modified 条件请求，服务端返回 304 时不重复入库
 - [ ] 同一源重复刷新不产生重复条目；条目身份判定在 guid 缺失、link 缺失的退化场景下仍稳定

@@ -877,67 +877,23 @@ pub async fn test_rsshub_mirror(
     Ok("全部探测路由均未返回 2xx（实例可达但路由未覆盖，或被拦截）".into())
 }
 
-/// 迁移预览：命中 rsshub:// 与官方域的存量订阅数。
+/// 归一化预览：真正会被改写的存量订阅数（官方域 / 非规范 scheme 行）。
+///
+/// 判据在 core（与执行共用同一函数），因此预览条数必然等于执行时改写的条数；
+/// 也和镜像设置无关——归一化只动存储形态，解析是抓取时的事。
 #[tauri::command]
 pub fn preview_rsshub_migration(state: State<'_, AppState>) -> R<i64> {
-    state.with_store(|s| {
-        let mirror = crate::ai::non_empty_setting(s, rustrss_core::rsshub::MIRROR_KEY)
-            .map(|v| rustrss_core::rsshub::clean_base(&v))
-            .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string());
-        let candidates = s.list_rsshub_migration_candidates().map_err(err)?;
-        let count = candidates
-            .into_iter()
-            .filter(|(_, url)| {
-                rustrss_core::rsshub::normalize_rsshub_url(url, &mirror) != *url
-            })
-            .count() as i64;
-        Ok(count)
-    })
+    state.with_store(|s| s.count_rsshub_normalization_candidates().map_err(err))
 }
 
-/// 迁移结果：migrated=已改写；skipped=目标地址冲突跳过；errors=其它失败明细。
-#[derive(serde::Serialize)]
-pub struct MigrationOutcome {
-    pub migrated: i64,
-    pub skipped: i64,
-    pub errors: Vec<String>,
-}
-
-/// 执行迁移：把 rsshub:// 与官方域的存量订阅改写为实例地址。
-/// 冲突（目标地址已被其它订阅占用）计 skipped；其它错误收集后整体返回。
+/// 执行归一化：存量官方域（与三斜杠/大写等非规范 scheme）订阅改写为 `rsshub://path`。
+///
+/// 抓取地址不落库——由 `Store::feed_endpoint` 在抓取时按当前镜像解析，所以这个
+/// 按钮是「一次性地址整理」，不是换镜像的必经步骤。冲突行计 skipped；其它失败
+/// 收进 errors，单项失败不影响其余行。
 #[tauri::command]
-pub fn migrate_rsshub_feeds(state: State<'_, AppState>) -> R<MigrationOutcome> {
-    state.with_store(|s| {
-        let mirror = crate::ai::non_empty_setting(s, rustrss_core::rsshub::MIRROR_KEY)
-            .map(|v| rustrss_core::rsshub::clean_base(&v))
-            .unwrap_or_else(|| rustrss_core::rsshub::DEFAULT_BASE.to_string());
-        let candidates = s.list_rsshub_migration_candidates().map_err(err)?;
-        let mut outcome = MigrationOutcome {
-            migrated: 0,
-            skipped: 0,
-            errors: Vec::new(),
-        };
-        for (feed_id, url) in candidates {
-            let target = rustrss_core::rsshub::normalize_rsshub_url(&url, &mirror);
-            if target == url {
-                continue; // 已是实例地址（幂等）
-            }
-            // 目标地址冲突预检：被其它订阅占用则计 skipped
-            let conflict = s
-                .feed_id_by_url(&target)
-                .map_err(err)?
-                .is_some();
-            if conflict {
-                outcome.skipped += 1;
-                continue;
-            }
-            match s.update_feed_url(feed_id, &target) {
-                Ok(()) => outcome.migrated += 1,
-                Err(e) => outcome.errors.push(format!("feed #{feed_id}: {e}")),
-            }
-        }
-        Ok(outcome)
-    })
+pub fn migrate_rsshub_feeds(state: State<'_, AppState>) -> R<rustrss_core::store::MigrationOutcome> {
+    state.with_store(|s| s.normalize_rsshub_feeds().map_err(err))
 }
 
 // ---------------- 文件夹管理（侧栏分组） ----------------

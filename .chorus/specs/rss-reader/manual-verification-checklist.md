@@ -579,3 +579,53 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（测试进程环境，非应�
 - [ ] 英文界面下菜单四行文案（Newest first / Oldest first / Unread first / Hide read）与按钮 tooltip 的显示宽度
 - [ ] 真实长列表（8k 条）下三档切换与 oldest / unread_first 续页的手感与冷启动代价
       （本轮库内 260 条；计划正确性由 EXPLAIN 断言 + v11 索引钉住）
+
+## 16. RSSHub 抓取时解析（2026-09-22-rsshub-resolve，任务 85b991b4）
+
+> headless 跑法：自建 `Xvfb :97`（1920x1200，无窗口管理器；不动 :99 上别人的实例）+
+> `GDK_BACKEND=x11`（**测试进程环境，不是应用代码设置**）+ `HOME=/tmp/rsshub-resolve-verify/home` +
+> `RUSTSS_DB=/tmp/rsshub-resolve-verify/data/rustrss.sqlite` + 两个本地「镜像」（`python3 -m http.server`
+> 分别绑 `127.0.0.1:8931` / `8932`，`/test/1`、`/test/2`、`/legacy/1` 三份 RSS 夹具，A/B 的标题与内容不同）+
+> `xdotool` 键盘/鼠标 + `import -window root` 截图 + 应用 stdout 的 `[ui]` 行 + `sqlite3` 直查临时库。
+> 镜像设置用 `sqlite3` 外部改（等价于点「保存」：`feed_endpoint` 每次抓取现读设置），
+> 这样绕开「headless 里点头部按钮会触发窗口拖拽」的干扰（见下）。
+
+### 16.1 已机械验证的部分（stdout 自证 + 请求日志 + 库回读 + 截图）
+
+- **存量官方域行在抓取时也被改写（本轮的核心纠偏）**：库里预置 `rsshub://test/1` 与
+  `https://rsshub.app/legacy/1`（前者 scheme、后者存量官方域形态），镜像设 `8931` → 刷新后镜像 A 的
+  access log 同时出现 `GET /test/1 200` 与 `GET /legacy/1 200`（镜像 B 零请求）——两条都跟随镜像；
+  库内 url 保持原样（`SELECT id,url FROM feeds` 仍是这两种形态，刷新不写 url）。
+- **换镜像零迁移**：外部把 `rsshub.mirror` 从 `8931` 改成 `8932`（应用不重启）→ 下一次刷新镜像 B 收到
+  `GET /legacy/1` + `GET /test/1`（304，条件请求生效），镜像 A 的日志不再增长；再改回 A 并把 A 的夹具
+  `touch` 成新 mtime → 刷新后 A 返回 200、源标题与条目标题从「镜像B-*」变回「镜像A-*」
+  （`镜像A-new` / `A-new-第一条`），证明真的抓的是新镜像而不是缓存。
+- **输入框直接收 `rsshub://`（N2，走真实 UI）**：设置页 `Tab` 到「添加订阅」打开输入行后
+  `xdotool type "rsshub://test/2"` + `Enter` →
+  `discover_feed rsshub://test/2 -> rsshub://test/2 via=Direct alternatives=0`（**不发发现请求**）→
+  `add_feed id=3 url=rsshub://test/2`（库内 scheme 形态）→ 首次抓取打当前镜像 B 的 `GET /test/2 200`，
+  条目 `B-new-第一条` 入库、源标题学到 `镜像B-new`。
+- **「归一化 RSSHub 地址」按钮语义与文案**（截图 `20-rsshub-nav.png` / `23-normalize-click.png` / `25-crop2.png`）：
+  设置 → RSSHub 面板显示新文案（实例地址 hint「RSSHub 订阅（rsshub:// 与存量 rsshub.app）抓取时改用此实例；
+  留空用官方」、分组「地址整理」+ 按钮「归一化 RSSHub 地址」）；点按钮 → 确认框
+  「将把 **1** 条订阅地址改写成 rsshub:// 形态，确定执行？」（预览恰好数出那一条官方域存量）→ 回车确认 →
+  `rsshub normalize: migrated=1 skipped=0 errors=0`，库内该行变 `rsshub://legacy/1`，两条 scheme 行不动；
+  再点一次 → 状态栏「没有需要归一化的订阅」（**幂等**，无确认框）。
+- **归一化后抓取口径不变**：`rsshub://legacy/1` 仍解析到镜像 A 的 `/legacy/1`（`GET /legacy/1 304`），
+  即「归一化只改存储形态、不改抓取地址」。
+- **i18n**：启动自检 `i18n selftest ok (keys=306)`（`data-i18n*` 引用全部存在）；
+  node 侧核对 zh/en 各 306 个 key 一一对应，改动的 5 个 key 双语都已更新。
+- **单测**：core 新增/改写 8 例（canonical/resolve 两套语义、add 不实例化 + 两形态判重、
+  endpoint 随镜像变化（含存量官方域行）、归一化幂等与冲突 skipped、scheme 输入零网络、
+  添加流程全链、wiremock 抓取端到端（换镜像重抓）、OPML scheme 回环），
+  `cargo test --workspace` 全绿（194 例）。
+
+### 16.2 环境限制与仍需真机核验
+
+- **headless 下点头部按钮会拖窗**：无窗口管理器时，点击 `header`（`data-tauri-drag-region`）附近的按钮会被
+  当成窗口拖拽——本轮实测点击坐标被「吞掉」甚至把窗口挪走（`xdotool getwindowgeometry` 从 `0,0` 变 `-664,45`）。
+  绕过办法：头部按钮改用 `Tab` + `Space`（键盘可达），或先 `xdotool windowmove <win> 0 0` 归位再点；
+  对话框内部的点击（导航、按钮）正常。**这条只是 headless 自动化限制，不是应用缺陷**。
+- [ ] 真实桌面会话（X11 / Wayland 各一）下：设置页 RSSHub 面板的输入 + 「保存 / 测试连接 / 归一化」按钮观感与点击
+- [ ] 真实桌面会话下粘 `rsshub://path` 到添加框的完整手感（含发现阶段状态栏文案「正在发现…」→「已订阅 N 篇」）
+- [ ] 断网 / 镜像 5xx 时 scheme 源的失败标记与错误文案（本轮夹具都是 200/304）

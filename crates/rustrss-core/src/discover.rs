@@ -1,6 +1,10 @@
 //! Feed 自动发现：先看输入 URL 本身是不是 feed，不是再从 HTML 里找
 //! `<link rel="alternate">` 指向的 feed。
 //!
+//! `rsshub://path` 这类自定义 scheme **不联网发现**：它不可直连抓取，存储时保持
+//! scheme 形态（`canonical_scheme_url` 归一），首次抓取由 `Store::feed_endpoint`
+//! 解析到当前镜像（见 `rsshub.rs` 的两套语义）。
+//!
 //! 判定依据是**内容**而不是 Content-Type：真实站点的 mime 经常与内容不符
 //! （同 `parse.rs` 的取舍），而且抓取层本来就只回传字节。
 //! HTTP 细节（UA、超时、重定向、压缩）全部复用 `fetch::Fetcher`，不另起一套。
@@ -55,7 +59,18 @@ pub enum DiscoverError {
 ///
 /// 只发一次 GET：既判断「这个地址本身是不是 feed」，也拿到页面 head 里的候选。
 /// 不做路径猜测（`/feed`、`/rss.xml` 探测会对不存在的路径发额外请求）。
+///
+/// `rsshub://path`（含三斜杠/大写）直接返回归一后的 scheme 形态，不发请求——
+/// 这个 scheme 不可抓取，走网络只会得到「URL scheme 不支持」。归一化与
+/// `Store::add_feed` 同源，所以「发现出来的地址」与「落库地址」永远一致。
 pub async fn discover(fetcher: &Fetcher, url: &str) -> Result<Discovery, DiscoverError> {
+    if crate::rsshub::is_scheme_url(url) {
+        return Ok(Discovery {
+            feed_url: crate::rsshub::canonical_scheme_url(url),
+            via: DiscoveryVia::Direct,
+            alternatives: Vec::new(),
+        });
+    }
     let (body, page_url) = match fetcher.fetch(url, CacheHeaders::default()).await {
         FetchResult::Fetched {
             body, final_url, ..

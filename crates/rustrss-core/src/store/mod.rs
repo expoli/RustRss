@@ -189,6 +189,19 @@ pub struct InsertStats {
     pub unchanged: usize,
 }
 
+/// 存量 RSSHub 地址归一化的结果（[`Store::normalize_rsshub_feeds`]）。
+///
+/// 字段名沿用历史上的「迁移」口径，界面的结果文案键不动；语义已改为一次性归一化。
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+pub struct MigrationOutcome {
+    /// 已改写为 `rsshub://path` 的行数
+    pub migrated: i64,
+    /// 目标地址已被其它订阅占用而跳过的行数
+    pub skipped: i64,
+    /// 其它失败明细（单项失败不影响其余行）
+    pub errors: Vec<String>,
+}
+
 /// 条目列表查询条件
 #[derive(Debug, Clone, Default)]
 pub struct EntryQuery {
@@ -394,7 +407,10 @@ impl Store {
         Ok(())
     }
 
-    /// RSSHub 迁移候选：rsshub:// scheme 与官方域两种存量。
+    /// RSSHub 归一化候选：`rsshub://` scheme 与官方域两种存量。
+    ///
+    /// scheme 行也在候选里（`rsshub:///path` 三斜杠、大写 scheme 这类非规范写法需要
+    /// 归一），但规范化后等于自身，因此幂等跳过——判定统一用 `canonical_scheme_url`。
     pub fn list_rsshub_migration_candidates(&self) -> Result<Vec<(i64, String)>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, url FROM feeds
@@ -407,7 +423,45 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
-    /// 更新订阅抓取地址（迁移用）。目标 URL 已被其它订阅占用时报可读错误。
+    /// 归一化预览：真正会被改写的存量条数（规范化后与自身不同的行）。
+    ///
+    /// 与 [`Store::normalize_rsshub_feeds`] 共用同一判据，因此「预览说几条」
+    /// 与「执行改几条」不可能漂移。
+    pub fn count_rsshub_normalization_candidates(&self) -> Result<i64> {
+        let n = self
+            .list_rsshub_migration_candidates()?
+            .into_iter()
+            .filter(|(_, url)| crate::rsshub::canonical_scheme_url(url) != *url)
+            .count();
+        Ok(n as i64)
+    }
+
+    /// 存量归一化：官方域行（以及三斜杠/大写等非规范 scheme 行）→ `rsshub://path`。
+    ///
+    /// 一次性整理，不绑定镜像实例——抓取地址由 [`Store::feed_endpoint`] 解析。
+    /// 已是规范 scheme 的行天然幂等跳过；目标地址被其它订阅占用计 `skipped`，
+    /// 其它错误进 `errors`，单项失败不影响其余行。
+    pub fn normalize_rsshub_feeds(&self) -> Result<MigrationOutcome> {
+        let mut outcome = MigrationOutcome::default();
+        for (feed_id, url) in self.list_rsshub_migration_candidates()? {
+            let target = crate::rsshub::canonical_scheme_url(&url);
+            if target == url {
+                continue; // 已规范化（幂等）
+            }
+            // 目标地址冲突预检：被其它订阅占用则计 skipped
+            if self.feed_id_by_url(&target)?.is_some() {
+                outcome.skipped += 1;
+                continue;
+            }
+            match self.update_feed_url(feed_id, &target) {
+                Ok(()) => outcome.migrated += 1,
+                Err(e) => outcome.errors.push(format!("feed #{feed_id}: {e}")),
+            }
+        }
+        Ok(outcome)
+    }
+
+    /// 更新订阅地址（存量归一化落库用）。目标 URL 已被其它订阅占用时报可读错误。
     pub fn update_feed_url(&self, feed_id: i64, new_url: &str) -> Result<()> {
         let dup: Option<i64> = self
             .conn
@@ -437,13 +491,10 @@ impl Store {
         if url.is_empty() {
             return Err(StoreError::Invalid("订阅地址不能为空".into()));
         }
-        // RSSHub 归一化收口：rsshub:// 与官方域统一实例化为实际抓取地址，
-        // 库内 URL 永远等于真实抓取地址（OPML 导入与手动添加都走这里）。
-        let mirror = self
-            .setting(crate::rsshub::MIRROR_KEY)
-            .unwrap_or_default()
-            .unwrap_or_default();
-        let url = crate::rsshub::normalize_rsshub_url(url, &mirror);
+        // RSSHub 归一化收口（**存储形态**）：rsshub:// 保留为抽象身份，官方域转 scheme，
+        // 其它原样。这里**不读镜像设置**——解析推迟到抓取时（feed_endpoint），
+        // 于是换镜像零迁移；去重键即「同一条路由的两种写法」的共同形态。
+        let url = crate::rsshub::canonical_scheme_url(url);
         let url = url.trim();
         if let Some(id) = self
             .conn
@@ -582,13 +633,25 @@ impl Store {
             .execute("DELETE FROM feeds WHERE id = ?1", params![feed_id])?)
     }
 
-    /// 抓取所需的元信息：地址 + 上次留下的条件请求凭据。
+    /// 抓取所需的元信息：**解析后的抓取地址** + 上次留下的条件请求凭据。
+    ///
+    /// 库内 URL 是存储形态（scheme / 存量官方域 / 普通 URL），这里是唯一的解析出口，
+    /// 按当前镜像设置（`rsshub.mirror`）解析成实际抓取地址——改镜像后下一次刷新
+    /// 即生效，无需任何迁移。
     pub fn feed_endpoint(&self, feed_id: i64) -> Result<(String, Option<String>, Option<String>)> {
-        Ok(self.conn.query_row(
-            "SELECT url, etag, last_modified FROM feeds WHERE id = ?1",
-            params![feed_id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-        )?)
+        let (url, etag, last_modified): (String, Option<String>, Option<String>) = self
+            .conn
+            .query_row(
+                "SELECT url, etag, last_modified FROM feeds WHERE id = ?1",
+                params![feed_id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )?;
+        let mirror = self.setting(crate::rsshub::MIRROR_KEY)?.unwrap_or_default();
+        Ok((
+            crate::rsshub::resolve_fetch_url(&url, &mirror),
+            etag,
+            last_modified,
+        ))
     }
 
     /// 全部订阅源 id（用于「刷新全部」）
@@ -598,13 +661,17 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
-    /// 按地址查源 id（OPML 导入去重用；地址按 trim 后比较，与 add_feed 一致）
+    /// 按地址查源 id（OPML 导入去重用）。查询键先做**存储形态归一**，与 `add_feed`
+    /// 的比较口径一致——否则同一路由的 scheme 写法与官方域写法会各算一条，导入计数
+    /// 就会说「新增」而实际上被 add_feed 判重返回了既有 id。
     pub fn feed_id_by_url(&self, url: &str) -> Result<Option<i64>> {
+        let key = crate::rsshub::canonical_scheme_url(url);
+        let key = key.trim();
         Ok(self
             .conn
             .query_row(
                 "SELECT id FROM feeds WHERE url = ?1",
-                params![url.trim()],
+                params![key],
                 |r| r.get::<_, i64>(0),
             )
             .ok())

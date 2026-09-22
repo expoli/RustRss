@@ -708,7 +708,7 @@ fn folder_rename_delete_and_reassign() {
 }
 
 #[test]
-fn add_feed_rewrites_rsshub_urls_via_mirror_setting() {
+fn add_feed_stores_scheme_identity_and_dedupes_both_forms() {
     let dir = std::env::temp_dir().join(format!(
         "rustrss-mirror-add-{}-{}.sqlite",
         std::process::id(),
@@ -718,18 +718,30 @@ fn add_feed_rewrites_rsshub_urls_via_mirror_setting() {
             .as_nanos()
     ));
     let store = Store::open(&dir).expect("打开应成功");
-    // 未配置镜像：rsshub:// 落库为官方实例
+    // 未配置镜像：rsshub:// 原样落库（存储形态 = 抽象身份，不实例化）
     let id1 = store.add_feed("rsshub://telegram/channel/x", None).unwrap();
     let feeds = store.list_feeds().unwrap();
-    assert_eq!(feeds[0].url, "https://rsshub.app/telegram/channel/x");
-    // 配置自建镜像：rsshub:// 与官方 https 都落库为镜像地址
+    assert_eq!(feeds[0].url, "rsshub://telegram/channel/x");
+    assert_eq!(feeds[0].id, id1);
+    // 配置自建镜像后添加：库内 url 仍是 scheme——add_feed 不读镜像设置
     store.set_setting(rsshub::MIRROR_KEY, "https://rsshub.example.com").unwrap();
     let id2 = store.add_feed("rsshub://v2ex/topics/hot", None).unwrap();
     let id3 = store.add_feed("https://rsshub.app/36kr/newsflashes", None).unwrap();
     let feeds = store.list_feeds().unwrap();
     let url_of = |id: i64| feeds.iter().find(|f| f.id == id).map(|f| f.url.clone()).unwrap();
-    assert_eq!(url_of(id2), "https://rsshub.example.com/v2ex/topics/hot");
-    assert_eq!(url_of(id3), "https://rsshub.example.com/36kr/newsflashes");
+    assert_eq!(url_of(id2), "rsshub://v2ex/topics/hot", "scheme 不实例化");
+    assert_eq!(url_of(id3), "rsshub://36kr/newsflashes", "官方域转 scheme");
+    // 两形态判重：同一路由的 scheme 与官方域写法是同一个订阅
+    assert_eq!(
+        store.add_feed("https://rsshub.app/v2ex/topics/hot", None).unwrap(),
+        id2,
+        "scheme 与官方域形态应判重为同一订阅"
+    );
+    assert_eq!(
+        store.add_feed("https://www.rsshub.app/v2ex/topics/hot", None).unwrap(),
+        id2,
+        "www 官方域也是同一订阅"
+    );
     // 非 RSSHub 域不受影响；去重幂等（同 URL 再加返回既有 id）
     let id4 = store.add_feed("https://example.com/feed.xml", None).unwrap();
     let feeds_after = store.list_feeds().unwrap(); // 重新拉取后再断言（url_of 闭包捕获的是旧列表）
@@ -738,61 +750,113 @@ fn add_feed_rewrites_rsshub_urls_via_mirror_setting() {
         "https://example.com/feed.xml"
     );
     assert_eq!(store.add_feed("rsshub://v2ex/topics/hot", None).unwrap(), id2);
+    // 非规范 scheme 归一（三斜杠 / 大写）后同样判重
+    assert_eq!(store.add_feed("rsshub:///v2ex/topics/hot", None).unwrap(), id2);
+    assert_eq!(store.add_feed("RSSHUB://v2ex/topics/hot", None).unwrap(), id2);
     let _ = std::fs::remove_file(&dir);
 }
 
 #[test]
-fn migration_covers_both_legacy_forms_and_is_idempotent() {
-    let dir = std::env::temp_dir().join(format!(
-        "rustrss-mirror-migrate-{}-{}.sqlite",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
-    let store = Store::open(&dir).expect("打开应成功");
-    // 旧库存量形态：镜像未配置时，rsshub:// 无法被 add_feed 实例化吗？
-    // —— add_feed 收口在无镜像时会实例化为官方 URL；因此 rsshub:// 存量
-    // 实际落库为官方地址，官方地址是候选；纯 rsshub:// 残留只在直接改库时出现。
-    // 为覆盖"两种存量"，直接用 update_feed_url 构造 rsshub:// 存量。
-    let scheme = store.add_feed("rsshub://telegram/channel/x", None).unwrap();
-    let official = store.add_feed("https://rsshub.app/36kr/newsflashes", None).unwrap();
+fn feed_endpoint_resolves_scheme_and_legacy_rows_against_mirror() {
+    let store = Store::open_in_memory().expect("内存库应能打开");
+    let scheme = store.add_feed("rsshub://test/1", None).unwrap();
+    // 存量官方域行（没跑过归一化迁移的老库）+ 已实例化到自建镜像的历史行 + 普通源
+    let legacy = store.add_feed("https://rsshub.app/legacy/1", None).unwrap();
+    let frozen = store.add_feed("https://old.example.com/frozen/1", None).unwrap();
     let plain = store.add_feed("https://example.com/feed.xml", None).unwrap();
-    // 构造一条真正的 rsshub:// 存量（模拟直接改库/外部写入）
-    store.update_feed_url(scheme, "rsshub://telegram/channel/x").unwrap();
+    // add_feed 已把官方域转成 scheme；直接改库模拟「迁移前的老库」
+    store
+        .update_feed_url(legacy, "https://rsshub.app/legacy/1?limit=10")
+        .unwrap();
+
+    let endpoint = |id: i64| store.feed_endpoint(id).unwrap().0;
+    // 无镜像：scheme 与存量官方域都落到官方实例
+    assert_eq!(endpoint(scheme), "https://rsshub.app/test/1");
+    assert_eq!(endpoint(legacy), "https://rsshub.app/legacy/1?limit=10");
+    assert_eq!(endpoint(frozen), "https://old.example.com/frozen/1");
+    assert_eq!(endpoint(plain), "https://example.com/feed.xml");
+
+    // 改镜像：下一次抓取立刻走新实例，零迁移；已实例化的历史行保持直抓不劣化
+    store.set_setting(rsshub::MIRROR_KEY, "https://rsshub.example.com/").unwrap();
+    assert_eq!(endpoint(scheme), "https://rsshub.example.com/test/1");
+    assert_eq!(endpoint(legacy), "https://rsshub.example.com/legacy/1?limit=10");
+    assert_eq!(endpoint(frozen), "https://old.example.com/frozen/1");
+    assert_eq!(endpoint(plain), "https://example.com/feed.xml");
+
+    // 再改一次镜像：库内 url 不变（解析只在抓取出口发生）
+    store.set_setting(rsshub::MIRROR_KEY, "http://127.0.0.1:1200").unwrap();
+    assert_eq!(endpoint(scheme), "http://127.0.0.1:1200/test/1");
+    let stored = store.list_feeds().unwrap();
+    assert_eq!(
+        stored.iter().find(|f| f.id == scheme).unwrap().url,
+        "rsshub://test/1",
+        "镜像变化不得改写库内 url（否则又回到绑定实例的老问题）"
+    );
+    // 条件请求凭据照旧随行返回
+    store.record_fetch(scheme, "ok", None, Some("\"v1\""), None).unwrap();
+    let (url, etag, _) = store.feed_endpoint(scheme).unwrap();
+    assert_eq!(url, "http://127.0.0.1:1200/test/1");
+    assert_eq!(etag.as_deref(), Some("\"v1\""));
+}
+
+#[test]
+fn normalization_rewrites_official_rows_and_keeps_scheme_rows() {
+    let store = Store::open_in_memory().expect("内存库应能打开");
+    // 模拟老库（归一化之前）：官方域行与纯 scheme 行并存；再加一条普通源与三斜杠 scheme
+    let official = store.add_feed("https://rsshub.app/36kr/newsflashes?limit=10", None).unwrap();
+    let scheme = store.add_feed("rsshub://telegram/channel/x", None).unwrap();
+    let triple = store.add_feed("rsshub://gofans", None).unwrap();
+    let plain = store.add_feed("https://example.com/feed.xml", None).unwrap();
+    store.update_feed_url(official, "https://rsshub.app/36kr/newsflashes?limit=10").unwrap();
+    store.update_feed_url(triple, "rsshub:///gofans").unwrap();
     store.set_setting(rsshub::MIRROR_KEY, "https://rsshub.example.com").unwrap();
 
-    // 候选：rsshub:// 存量 + 官方域（普通源不算）
+    // 候选：scheme 与官方域都进候选，普通源不进
     let candidates = store.list_rsshub_migration_candidates().unwrap();
-    assert_eq!(candidates.len(), 2, "rsshub:// 与官方域应为候选");
+    assert_eq!(candidates.len(), 3, "官方域 + scheme + 三斜杠 scheme");
+    // 预览只数真正会被改写的行（三斜杠 + 官方域），已规范的 scheme 行不算
+    assert_eq!(store.count_rsshub_normalization_candidates().unwrap(), 2);
 
-    // 迁移：store 层只有方法，组合逻辑在命令层——这里直接模拟命令行为
-    let mirror = "https://rsshub.example.com";
-    let mut migrated = 0;
-    for (feed_id, url) in store.list_rsshub_migration_candidates().unwrap() {
-        let target = rustrss_core::rsshub::normalize_rsshub_url(&url, mirror);
-        if target != url {
-            store.update_feed_url(feed_id, &target).unwrap();
-            migrated += 1;
-        }
-    }
-    assert_eq!(migrated, 2);
-
-    // 幂等：再跑一遍无变化
-    let again: usize = store
-        .list_rsshub_migration_candidates()
-        .unwrap()
-        .into_iter()
-        .filter(|(_, url)| rustrss_core::rsshub::normalize_rsshub_url(url, mirror) != *url)
-        .count();
-    assert_eq!(again, 0);
+    let outcome = store.normalize_rsshub_feeds().unwrap();
+    assert_eq!(outcome.migrated, 2, "官方域与三斜杠行被改写");
+    assert_eq!(outcome.skipped, 0);
+    assert!(outcome.errors.is_empty());
 
     let feeds = store.list_feeds().unwrap();
-    assert_eq!(feeds.iter().find(|f| f.id == scheme).unwrap().url, "https://rsshub.example.com/telegram/channel/x");
-    assert_eq!(feeds.iter().find(|f| f.id == official).unwrap().url, "https://rsshub.example.com/36kr/newsflashes");
-    assert_eq!(feeds.iter().find(|f| f.id == plain).unwrap().url, "https://example.com/feed.xml");
-    let _ = std::fs::remove_file(&dir);
+    let url_of = |id: i64| feeds.iter().find(|f| f.id == id).map(|f| f.url.clone()).unwrap();
+    assert_eq!(url_of(official), "rsshub://36kr/newsflashes?limit=10", "官方域 → scheme");
+    assert_eq!(url_of(scheme), "rsshub://telegram/channel/x", "已是 scheme 的行不动");
+    assert_eq!(url_of(triple), "rsshub://gofans", "三斜杠归一");
+    assert_eq!(url_of(plain), "https://example.com/feed.xml");
+
+    // 幂等：再跑一遍零改动、零计数（这是「按钮可反复点」的保证）
+    assert_eq!(store.count_rsshub_normalization_candidates().unwrap(), 0);
+    assert_eq!(store.normalize_rsshub_feeds().unwrap().migrated, 0);
+
+    // 冲突：目标地址已被其它订阅占用时计 skipped，不报错、不改写
+    // 构造：一条已是 scheme 的行 + 一条被改写成该 scheme「官方域形态」的行（同路由两种写法）
+    let holder = store.add_feed("rsshub://telegram/channel/x", None).unwrap();
+    let clash = store.add_feed("https://example.com/to-be-legacy", None).unwrap();
+    store
+        .update_feed_url(clash, "https://rsshub.app/telegram/channel/x")
+        .unwrap();
+    assert_eq!(store.count_rsshub_normalization_candidates().unwrap(), 1);
+    let outcome = store.normalize_rsshub_feeds().unwrap();
+    assert_eq!(outcome.migrated, 0);
+    assert_eq!(outcome.skipped, 1, "目标已被占用应跳过而不是报错");
+    assert!(outcome.errors.is_empty());
+    assert_eq!(url_of_via(&store, clash), "https://rsshub.app/telegram/channel/x", "冲突行保持原样");
+    assert_eq!(url_of_via(&store, holder), "rsshub://telegram/channel/x");
+}
+
+fn url_of_via(store: &Store, id: i64) -> String {
+    store
+        .list_feeds()
+        .unwrap()
+        .into_iter()
+        .find(|f| f.id == id)
+        .map(|f| f.url)
+        .unwrap()
 }
 
 #[test]

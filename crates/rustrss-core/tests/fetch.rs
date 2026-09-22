@@ -387,3 +387,89 @@ async fn refresh_keeps_custom_title_and_tracks_source_title() {
     let row = store.set_feed_custom_title(feed_id, None).unwrap();
     assert_eq!(row.title, "测试源（改版）");
 }
+
+/// RSSHub 抓取时解析的端到端：库里存 `rsshub://path`，抓取经 feed_endpoint 解析到
+/// **当前镜像**；改镜像后下一次刷新打新实例，库内 url 不变（零迁移）。
+#[tokio::test]
+async fn rsshub_scheme_feed_resolves_through_mirror_at_fetch_time() {
+    let first = MockServer::start().await;
+    let second = MockServer::start().await;
+    for server in [&first, &second] {
+        Mock::given(method("GET"))
+            .and(path("/test/1"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(RSS_TWO_ITEMS))
+            .mount(server)
+            .await;
+    }
+
+    let store = Store::open_in_memory().unwrap();
+    let feed_id = store.add_feed("rsshub://test/1", None).unwrap();
+    assert_eq!(store.list_feeds().unwrap()[0].url, "rsshub://test/1");
+
+    // 镜像 A：抓取地址 = {A}/test/1
+    store
+        .set_setting(rustrss_core::rsshub::MIRROR_KEY, &first.uri())
+        .unwrap();
+    let report = refresh(&store, &fetcher(), &[feed_id], 1).await.unwrap();
+    assert_eq!(report.fetched, 1, "scheme 源应能经镜像抓到");
+    assert_eq!(report.inserted, 2);
+    assert_eq!(
+        hit_count(&first, "/test/1").await,
+        1,
+        "第一次抓取应打镜像 A"
+    );
+    assert_eq!(hit_count(&second, "/test/1").await, 0, "未配置的镜像不该被打");
+    // 库内身份不变：仍然只有 scheme 形态（刷新不写 url）
+    assert_eq!(store.list_feeds().unwrap()[0].url, "rsshub://test/1");
+
+    // 换镜像 B：**不跑任何迁移**，下一次刷新直接打 B
+    store
+        .set_setting(rustrss_core::rsshub::MIRROR_KEY, &second.uri())
+        .unwrap();
+    refresh(&store, &fetcher(), &[feed_id], 1).await.unwrap();
+    assert_eq!(
+        hit_count(&second, "/test/1").await,
+        1,
+        "换镜像后下一次刷新应打镜像 B（零迁移）"
+    );
+    assert_eq!(hit_count(&first, "/test/1").await, 1, "镜像 A 不再被打");
+    assert_eq!(store.list_feeds().unwrap()[0].url, "rsshub://test/1");
+}
+
+/// 存量官方域行（未跑归一化）也要跟随镜像——否则换镜像后老行仍抓旧实例。
+#[tokio::test]
+async fn legacy_official_host_row_follows_mirror_at_fetch_time() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/legacy/1"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(RSS_TWO_ITEMS))
+        .mount(&server)
+        .await;
+
+    let store = Store::open_in_memory().unwrap();
+    let feed_id = store.add_feed("https://example.com/pad", None).unwrap();
+    // 直接改库构造老库存量形态（add_feed 会把官方域转成 scheme）
+    store
+        .update_feed_url(feed_id, "https://rsshub.app/legacy/1")
+        .unwrap();
+    store
+        .set_setting(rustrss_core::rsshub::MIRROR_KEY, &server.uri())
+        .unwrap();
+
+    let report = refresh(&store, &fetcher(), &[feed_id], 1).await.unwrap();
+    assert_eq!(report.fetched, 1);
+    assert_eq!(report.inserted, 2);
+    assert_eq!(hit_count(&server, "/legacy/1").await, 1);
+    assert_eq!(store.list_feeds().unwrap()[0].url, "https://rsshub.app/legacy/1");
+}
+
+/// 某个 mock server 上某个 path 被请求了几次（用收到的请求记录，而不是靠断言时序）
+async fn hit_count(server: &MockServer, want_path: &str) -> usize {
+    server
+        .received_requests()
+        .await
+        .unwrap_or_default()
+        .iter()
+        .filter(|r| r.url.path() == want_path)
+        .count()
+}

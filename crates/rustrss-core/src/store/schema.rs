@@ -15,7 +15,7 @@ pub const MIGRATIONS: &[&str] = &[
 
     CREATE TABLE feeds (
         id              INTEGER PRIMARY KEY,
-        url             TEXT NOT NULL UNIQUE,   -- 规范化后的抓取地址
+        url             TEXT NOT NULL UNIQUE,   -- 归一化后的订阅身份（RSSHub 存 rsshub://path，抓取时解析）
         title           TEXT NOT NULL,
         site_url        TEXT,
         description     TEXT,
