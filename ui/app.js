@@ -1330,6 +1330,10 @@ function followGlobalLabel() {
 
 function openFeedMenu(ev, feed) {
   const items = [];
+  // 立即刷新置顶：原先只能双击源标题触发（可发现性差，实测用户不知道）；
+  // 与移动/刷新间隔组用分隔线隔开
+  items.push({ label: t('menu.refreshNow'), action: () => refreshOne(feed.id) });
+  items.push({ separator: true });
   for (const folder of state.folders) {
     if (folder.id === feed.folder_id) continue;
     items.push({
