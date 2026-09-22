@@ -320,6 +320,10 @@ const state = {
   view: { kind: 'unread' },
   feedId: null,
   selectedId: null,
+  // 阅读区当前展示的条目对象（就是 renderReader 的入参）。它与列表里的行是**两个**
+  // 对象（list_entries 的行 / get_entry 的详情），行还可能因当前视图的过滤离开列表
+  // 而正文仍在屏幕上——标记翻转要找得到「用户正在看的那篇」，见 toggleTarget。
+  readerEntry: null,
   // 正文区当前展示条目所属的源 id：改源名后只更新该源的元信息（正文不重渲染）
   readerFeedId: null,
   query: '',
@@ -694,8 +698,10 @@ function buildEntryRow(e) {
   if (mark) {
     mark.onclick = (ev) => {
       ev.stopPropagation();
-      state.selectedId = e.id;
-      toggleReadLater().catch((err) => setStatus(err.message, true));
+      // 只切这一行的稍后读标记：不动选中项、不换阅读区正文——用户可能正在读另一篇
+      // （审计 P2-6：先前这里先改选中项再全量重渲正文，顺手给 B 打标记会把正在读的 A
+      // 换成 B）。toggleReadLater 按传入的 id 定位行，缺省才用选中项。
+      toggleReadLater(e.id).catch((err) => setStatus(err.message, true));
     };
   }
   return li;
@@ -757,6 +763,52 @@ function markRowRead(id) {
   }
 }
 
+/** 列表里某 id 的行元素（行级 patch 用）；行不在当前列表里时返回 null。 */
+function rowEl(id) {
+  for (const li of el('entries').children) {
+    if (li.dataset.id === String(id)) return li;
+  }
+  return null;
+}
+
+/**
+ * 待翻转的条目对象：优先列表行对象（列表计数与后续整表重建都读它），行已因当前视图的
+ * 过滤离开列表时（星标视图里取消星标、稍后读视图里取消标记）退回阅读区仍在展示的那个
+ * 对象——正文还在屏幕上，动作按钮不能变成哑巴（否则再按一次 s/l 撤不回来）。
+ */
+function toggleTarget(id = state.selectedId) {
+  if (id == null) return null;
+  const row = state.entries.find((e) => e.id === id);
+  if (row) return row;
+  const shown = state.readerEntry;
+  return shown && shown.id === id ? shown : null;
+}
+
+/** 把标志位写进**所有**持有该条目的对象：同一 id 可能有两个（list_entries 的行对象 /
+ *  get_entry 的详情对象），只写一处会让另一处留着旧值。 */
+function setEntryFlag(id, key, value) {
+  for (const e of state.entries) {
+    if (e.id === id) e[key] = value;
+  }
+  if (state.readerEntry && state.readerEntry.id === id) state.readerEntry[key] = value;
+}
+
+/**
+ * 标记类动作（u/s/l）后的同一行诊断：正文区走局部 patch 时，**scrollTop 与 AI 面板状态**
+ * 就是「正文 DOM 没被重渲染」的直接证据（审计 P1-2 的验收点）——Xvfb 下无人值守核对可
+ * 只 grep 这一行，不必只靠肉眼比图；面板正文长度用来区分「面板还开着且内容没丢」与
+ * 「被重置成 hidden 空体」。
+ */
+function logReaderState(action, id) {
+  const panel = el('ai-panel');
+  const panelState = !panel
+    ? 'none'
+    : panel.classList.contains('hidden')
+      ? 'hidden'
+      : `open:${el('ai-panel-body').textContent.length}`;
+  log(`${action} id=${id} readerScrollTop=${el('reader').scrollTop} aiPanel=${panelState}`);
+}
+
 // ------------------------------------------- 列表续页（尾部哨兵 + IntersectionObserver）
 
 /// 尾部哨兵：滚到接近底部（rootMargin 600px）就自动续下一页。
@@ -790,6 +842,7 @@ function onSentinel(records) {
 
 function renderReaderEmpty() {
   state.readerFeedId = null;
+  state.readerEntry = null;
   el('reader').innerHTML = `<div class="reader-empty">
       <p>${t('reader.empty')}</p>
       <p class="dim">${t('reader.shortcuts')}</p>
@@ -798,6 +851,7 @@ function renderReaderEmpty() {
 
 function renderReader(entry) {
   state.readerFeedId = entry.feed_id;
+  state.readerEntry = entry;
   const __t = [{ tag: 'start', ms: performance.now() }];
   const mark = (tag) => __t.push({ tag, ms: performance.now() });
   const reader = el('reader');
@@ -1848,21 +1902,26 @@ function jump(toEnd) {
 }
 
 async function toggleRead() {
-  const row = state.entries.find((e) => e.id === state.selectedId);
+  const row = toggleTarget();
   if (!row) return;
   const read = !row.read;
   await invoke('set_read', { ids: [row.id], read });
   if (read) state.readSessionIds.add(row.id);
   else state.readSessionIds.delete(row.id);
-  row.read = read;
+  setEntryFlag(row.id, 'read', read);
   // 未读视图同样只灰显不删行：按钮切换后留在原文章（不未经请求地跳到下一篇），
   // 双向都生效（读→灰、取消未读→恢复），计数口径同步更新。
-  const fresh = await invoke('get_entry', { id: row.id });
-  if (fresh) renderReader(fresh);
-  // 只改那一行的已读样式，不重建列表
-  for (const li of el('entries').children) {
-    if (li.dataset.id === String(row.id)) li.classList.toggle('read', read);
+  const li = rowEl(row.id);
+  if (li) li.classList.toggle('read', read);
+  // 阅读区只改动作按钮的文案：正文 DOM（含滚动位置与 AI 面板内容）一个字节都不动。
+  // 先前这里走 renderReader 全量重建——renderReader 内 `reader.scrollTop = 0` 加上
+  // 重建 `ai-panel`（初始 class=hidden、空 body），按 u 就是「正文跳回顶部 + 已生成的
+  // 摘要消失」（审计 P1-2）。
+  if (state.readerEntry && state.readerEntry.id === row.id) {
+    const readBtn = el('act-read');
+    if (readBtn) readBtn.textContent = read ? t('reader.markUnread') : t('reader.markRead');
   }
+  logReaderState('toggleRead', row.id);
   if (state.view.kind === 'unread') {
     el('list-count').textContent = t('list.count', { n: listCountN() });
   }
@@ -1870,32 +1929,79 @@ async function toggleRead() {
 }
 
 async function toggleStar() {
-  const row = state.entries.find((e) => e.id === state.selectedId);
+  const row = toggleTarget();
   if (!row) return;
   const starred = !row.starred;
   await invoke('set_starred', { ids: [row.id], starred });
-  row.starred = starred;
-  const fresh = await invoke('get_entry', { id: row.id });
-  if (fresh) renderReader(fresh);
-  renderList();
+  setEntryFlag(row.id, 'starred', starred);
+  // 行级 patch：★ 标记就地增删（与 buildEntryRow 同一处结构），不重建列表——
+  // renderList 会把列表滚动位置冲掉，也不该为一次标记重排 200 行 DOM。
+  const li = rowEl(row.id);
+  if (li) {
+    const meta = li.querySelector('.meta');
+    const star = meta.querySelector('.star');
+    if (starred && !star) {
+      const span = document.createElement('span');
+      span.className = 'star';
+      span.textContent = '★';
+      meta.insertBefore(span, meta.querySelector('.later-mark'));
+    } else if (!starred && star) {
+      star.remove();
+    }
+  }
+  // 阅读区只改按钮文案，正文 DOM 不动（同 toggleRead）
+  if (state.readerEntry && state.readerEntry.id === row.id) {
+    const starBtn = el('act-star');
+    if (starBtn) starBtn.textContent = starred ? t('reader.removeStar') : t('reader.addStar');
+  }
+  // 星标视图里取消星标 → 该行不再属于本视图：定向移除该行（先前是 renderList 整表重建）
+  if (state.view.kind === 'starred' && !starred) dropRowFromList(row.id);
+  logReaderState('toggleStar', row.id);
   await refreshCounts();
 }
 
-/// 稍后读：与已读/星标独立；当前视图是稍后读时，取消标记要从列表移除该行
-async function toggleReadLater() {
-  const row = state.entries.find((e) => e.id === state.selectedId);
+/// 稍后读：与已读/星标独立；当前视图是稍后读时，取消标记要从列表移除该行。
+/// `id` 由列表行的 ⚑ 点击显式传入（只切那一行）；缺省 = 当前选中的那行（按钮/快捷键）。
+async function toggleReadLater(id = state.selectedId) {
+  const row = toggleTarget(id);
   if (!row) return;
   const readLater = !row.read_later;
   await invoke('set_read_later', { ids: [row.id], readLater });
-  row.read_later = readLater;
-  const fresh = await invoke('get_entry', { id: row.id });
-  if (fresh) renderReader(fresh);
-  if (state.view.kind === 'later' && !readLater) {
-    await loadAll();
-  } else {
-    renderList();
-    await refreshCounts();
+  setEntryFlag(row.id, 'read_later', readLater);
+  // 行级 patch：⚑ 激活态就地切换，不重建列表
+  const mark = rowEl(row.id)?.querySelector('.later-mark');
+  if (mark) mark.classList.toggle('on', readLater);
+  // 阅读区按钮只在「操作的就是阅读区正在展示的那篇」时才动：读 A 时给列表行 B 打 ⚑
+  // 是合法操作，不能把 A 的按钮改成 B 的状态（阅读区本身同样一个 DOM 都不动）。
+  if (state.readerEntry && state.readerEntry.id === row.id) {
+    const laterBtn = el('act-later');
+    if (laterBtn) {
+      laterBtn.textContent = readLater ? t('reader.removeLater') : t('reader.markLater');
+      laterBtn.classList.toggle('later-active', readLater);
+    }
   }
+  // 稍后读视图里取消标记 → 该行离开视图：定向移除（先前走 loadAll 整体重载）
+  if (state.view.kind === 'later' && !readLater) dropRowFromList(row.id);
+  logReaderState('toggleReadLater', row.id);
+  await refreshCounts();
+}
+
+/**
+ * 当前视图里「已不再属于本视图」的行：定向移除该行 + 同步 state.entries 与列表头计数，
+ * 不整表重建（重建会把列表滚动位置冲掉，也是审计 P1-2 的同一类损耗）。正文与选中项都
+ * 不动：用户正在读的那篇还留在屏幕上，再按一次 s/l 还能撤回来。
+ * 行对象必须从 state.entries 摘掉：listCountN 与后续整表重建都按它算，留着会多算一行。
+ * 摘到空则交给 renderList 画空态（这时没有别的行可重建）。
+ */
+function dropRowFromList(id) {
+  rowEl(id)?.remove();
+  state.entries = state.entries.filter((e) => e.id !== id);
+  log(`row dropped id=${id} view=${state.view.kind} rows=${state.entries.length}`);
+  if (!state.entries.length) {
+    renderList();
+    return;
+  }
+  el('list-count').textContent = t('list.count', { n: listCountN() });
 }
 
 async function doRefresh() {
@@ -2602,6 +2708,22 @@ function openSettings() {
   el('settings-overlay').classList.remove('hidden');
 }
 
+/**
+ * 自绘标题栏三键（窗口无系统装饰）的最小绑定集。
+ *
+ * 这组绑定**必须在初始化失败路径也生效**：`loadAll()` 失败时 boot 会 return，其后的
+ * 全部绑定（刷新/设置/列表/全局快捷键）都被跳过——若三键也在那时才绑，用户看到的就是
+ * 一个「显示了错误状态、但没有任何可用出口」的死窗：窗口无系统装饰，只能去系统级杀进程
+ * （审计 P1-1）。所以它单独成函数、放在 try 之外调用，与初始化成败无关。
+ */
+function bindWindowControls() {
+  el('btn-win-min').onclick = () => invoke('window_minimize').catch(() => {});
+  el('btn-win-max').onclick = () => invoke('window_toggle_maximize').catch(() => {});
+  el('btn-win-close').onclick = () => invoke('window_close').catch((e) => {
+    setStatus(t('status.settingFailed', { error: e.message }), true);
+  });
+}
+
 async function boot() {
   // 点击右键菜单以外的区域时关闭菜单（菜单内部点击不受影响）。
   // 下拉触发按钮同样不算「外面」：否则开菜单的那一次点击冒泡到这里就把它关掉了
@@ -2620,6 +2742,8 @@ async function boot() {
       : `i18n selftest FAILED: ${i18n.problems.join('; ')}`
   );
   selfTestSanitizer();
+  // 最小绑定集先绑、且无条件执行：下面的 catch 会 return，跳过其后的全部绑定
+  bindWindowControls();
   try {
     await loadAll();
   } catch (e) {
@@ -2734,13 +2858,8 @@ async function boot() {
     log(`settings pane=${currentPane}`);
   });
 
-  // 自绘标题栏三键（窗口无系统装饰）
+  // 自绘标题栏三键的绑定已在 boot 开头的 bindWindowControls() 里完成（无条件执行）
   el('btn-new-folder').onclick = () => createFolder();
-  el('btn-win-min').onclick = () => invoke('window_minimize').catch(() => {});
-  el('btn-win-max').onclick = () => invoke('window_toggle_maximize').catch(() => {});
-  el('btn-win-close').onclick = () => invoke('window_close').catch((e) => {
-    setStatus(t('status.settingFailed', { error: e.message }), true);
-  });
   // RSSHub 设置
   el('btn-rsshub-save').onclick = async () => {
     try {
