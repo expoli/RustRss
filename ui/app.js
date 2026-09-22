@@ -201,6 +201,86 @@ function applyTheme(pref) {
   }
 }
 
+// ---------------------------------------------------------------- 字体配置
+
+/// 正文字号 / 行高的区间、步长与默认值：与 Rust 侧 clamp 区间同源
+/// （HTML 的 min/max/step 只是静态兜底，真正的判据在这里 + Rust）。
+const FONT_SIZE = { min: 13, max: 18, step: 1, fallback: 14 };
+const FONT_LINE = { min: 1.5, max: 1.8, step: 0.05, fallback: 1.55 };
+
+/// 数值兜底：非有限值回默认，越界夹回区间（库里被写坏也不让排版崩）
+function clampNumber(value, { min, max, fallback }) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+/// 数值显示口径：字号取整、行高两位小数（与落库口径一致，标签不跳字）
+const fontSizeText = (v) => String(clampNumber(v, FONT_SIZE));
+const fontLineText = (v) => clampNumber(v, FONT_LINE).toFixed(2);
+
+/// 单个字体族名 → CSS `font-family` 值。
+/// 只有「简单标识符」能裸写；含空格 / CJK / 逗号 / 引号的一律加引号并转义——
+/// 否则 CSS 会把 "Noto Sans CJK SC" 拆成三个家族名（自定义属性不会被当字符串）。
+/// 通用族（sans-serif 等）走裸写分支：加引号就变成名叫 "sans-serif" 的具体家族了。
+const CSS_IDENT_FAMILY = /^[A-Za-z][A-Za-z0-9_-]*$/;
+function cssFamily(name) {
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return '';
+  if (CSS_IDENT_FAMILY.test(trimmed)) return trimmed;
+  return `"${trimmed.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+/// 已写入内联样式的变量值：同值短路，重复应用（启动 / 切换 / 滑块松手）零 DOM 写入
+/// （性能红线 #7）。值 `undefined` 表示从未写过，`''` 表示已清除。
+const appliedFontVars = {};
+
+/// 写 / 清一个 CSS 变量：空值 = 清除 → 回落到 :root 的内置字体栈（「跟随系统」）
+function setFontVar(name, value) {
+  if (appliedFontVars[name] === value) return;
+  appliedFontVars[name] = value;
+  const style = document.documentElement.style;
+  if (value) style.setProperty(name, value);
+  else style.removeProperty(name);
+}
+
+/// 拖动预览的覆盖值：拖动期间（input 事件）累积在这里，落库（change）后清掉。
+/// 这样「先拖字号再拖行高」不会因为合并了没入库的 state 而把前一项预览抖回旧值。
+const fontPreview = {};
+
+/// 应用字体设置：`state.settings`（Rust 侧权威值）+ 正在拖动中的预览覆盖。
+/// **只写 CSS 变量，不动滑块位置**——预览若顺手把控件按已保存值重画，
+/// 另一个滑块会被拽回它的旧值（两个滑块互相干扰），控件同步单独走 paintFontControls。
+function applyFontConfig() {
+  const s = { ...state.settings, ...fontPreview };
+  setFontVar('--font-ui', cssFamily(s.font_ui));
+  setFontVar('--font-read', cssFamily(s.font_read));
+  setFontVar('--font-mono', cssFamily(s.font_mono));
+  setFontVar('--font-read-size', `${fontSizeText(s.font_read_size)}px`);
+  setFontVar('--font-read-line', fontLineText(s.font_read_line));
+}
+
+/// 滑块位置与数值标签对齐给定设置。只在「拿到完整权威值」时调：
+/// 启动 / 打开设置页 / 保存成功 / 保存失败回滚。同值短路（拖动一秒几十个事件）。
+function paintFontControls(s) {
+  const size = clampNumber(s.font_read_size, FONT_SIZE);
+  const line = clampNumber(s.font_read_line, FONT_LINE);
+  const sizeInput = el('set-font-size');
+  const lineInput = el('set-font-line');
+  // 位置只在真的不同时才写：拖动中不能跟用户的手抢滑块
+  if (sizeInput && Number(sizeInput.value) !== size) sizeInput.value = String(size);
+  if (lineInput && Number(lineInput.value) !== line) lineInput.value = String(line);
+  paintFontValueLabel('font_read_size', size);
+  paintFontValueLabel('font_read_line', line);
+}
+
+/// 只刷新某一个滑块的数值标签（拖动预览路径用：不碰位置，也不碰另一个滑块）
+function paintFontValueLabel(field, value) {
+  const label = el(field === 'font_read_size' ? 'set-font-size-value' : 'set-font-line-value');
+  if (!label) return;
+  setText(label, field === 'font_read_size' ? `${fontSizeText(value)}px` : fontLineText(value));
+}
+
 async function invoke(cmd, args = {}) {
   if (!window.__TAURI__ || !window.__TAURI__.core) {
     throw new Error('IPC 不可用（不在 Tauri 中运行？）');
@@ -233,6 +313,9 @@ const state = {
   query: '',
   // 权威值在 Rust 侧（get_ui_settings），这里只是启动前的占位
   settings: { mark_read_on_navigate: true },
+  // 系统字体族（设置页打开时预取一次并缓存；空 = 未取到/非 Linux → 只剩「跟随系统」）
+  fontFamilies: [],
+  fontFamiliesLoaded: false,
   ai: null,
   mcp: null,
 };
@@ -849,12 +932,15 @@ async function loadAll({ reader = true } = {}) {
   setLocale(settings.locale || 'auto');
   // 主题同理：渲染前先设好 data-theme，避免启动时闪错色
   applyTheme(settings.theme || 'system');
+  // 字体同理：先把 CSS 变量设好再渲染（跨会话保持的字体在首帧就生效）
+  applyFontConfig();
+  bindFontControls();
   bindSettingDropdowns();
   applyStaticI18n();
   renderSidebar();
   await loadEntries({ reader });
   log(
-    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} notifyNewArticles=${settings.notify_new_articles} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}${reader ? '' : ' silent（正文未重渲染）'}`
+    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} notifyNewArticles=${settings.notify_new_articles} fonts ui=${settings.font_ui || 'default'} read=${settings.font_read || 'follow-ui'} mono=${settings.font_mono || 'default'} size=${fontSizeText(settings.font_read_size)}px line=${fontLineText(settings.font_read_line)} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}${reader ? '' : ' silent（正文未重渲染）'}`
   );
 }
 
@@ -1928,6 +2014,29 @@ const SETTING_DROPDOWNS = [
     current: () => state.settings.close_action || 'exit',
     apply: (v) => invoke('set_ui_close_action', { action: v }),
   },
+  // 字体：choices 来自 `list_font_families`（设置页打开时预取并缓存，见 prefetchFontFamilies）。
+  // 只传自己那一个参数：Rust 侧 `set_font_config` 对 `null` 的项不动库里原有值。
+  {
+    id: 'set-font-ui',
+    choices: () => fontChoices('font_ui'),
+    current: () => state.settings.font_ui || '',
+    apply: (v) => invoke('set_font_config', { fontUi: v }),
+    after: () => applyFontConfig(),
+  },
+  {
+    id: 'set-font-read',
+    choices: () => fontChoices('font_read'),
+    current: () => state.settings.font_read || '',
+    apply: (v) => invoke('set_font_config', { fontRead: v }),
+    after: () => applyFontConfig(),
+  },
+  {
+    id: 'set-font-mono',
+    choices: () => fontChoices('font_mono'),
+    current: () => state.settings.font_mono || '',
+    apply: (v) => invoke('set_font_config', { fontMono: v }),
+    after: () => applyFontConfig(),
+  },
   {
     id: 'set-refresh-interval',
     choices: () => [
@@ -1954,6 +2063,100 @@ const SETTING_DROPDOWNS = [
 function settingDropdownLabel(d) {
   const cur = d.current();
   return (d.choices().find((c) => c.value === cur) || d.choices()[0]).label;
+}
+
+/// 字体下拉的候选：首项「跟随系统」（value = ''），其余是系统字体族（取不到就只有首项）。
+/// 当前值不在列表里时补一项：换了机器 / 卸了字体后标签要如实显示真实值，
+/// 而不是静默显示「跟随系统」（那会让用户以为设置丢了）。
+function fontChoices(settingKey) {
+  const cur = String(state.settings[settingKey] || '').trim();
+  const choices = [{ value: '', label: t('settings.fontFollowSystem') }];
+  for (const name of state.fontFamilies) choices.push({ value: name, label: name });
+  if (cur && !state.fontFamilies.includes(cur)) choices.push({ value: cur, label: cur });
+  return choices;
+}
+
+/// 预取系统字体族：**只在第一次打开设置页时**跑（fc-list 是子进程，不进启动路径）；
+/// 结果缓存在 state.fontFamilies，取到后重画三个下拉的标签。
+/// 失败与空表都不是错误：字体下拉仍有「跟随系统」，只是把原因挂到 tooltip 上。
+function prefetchFontFamilies() {
+  if (state.fontFamiliesLoaded) {
+    syncFontListHints();
+    return;
+  }
+  state.fontFamiliesLoaded = true; // 先置位：多次打开不重复 spawn
+  invoke('list_font_families')
+    .then((families) => {
+      state.fontFamilies = Array.isArray(families) ? families : [];
+      syncFontListHints();
+      refreshSettingDropdowns();
+      log(
+        state.fontFamilies.length
+          ? `font families=${state.fontFamilies.length}`
+          : 'font families=0（只有「跟随系统」可选）'
+      );
+    })
+    .catch((e) => {
+      state.fontFamilies = [];
+      syncFontListHints();
+      log(`list_font_families failed: ${e.message}（字体下拉只有「跟随系统」）`);
+    });
+}
+
+/// 字体列表为空时把原因写到三个下拉的 tooltip：不新增可见元素，因此不会引起布局跳动
+/// （性能红线 #8）。列表非空时清掉 tooltip。
+function syncFontListHints() {
+  if (!state.fontFamiliesLoaded) return;
+  const hint = state.fontFamilies.length ? '' : t('settings.fontListEmpty');
+  for (const id of ['set-font-ui', 'set-font-read', 'set-font-mono']) {
+    const btn = el(id);
+    if (btn) btn.title = hint;
+  }
+}
+
+/// 设置字段 → `set_font_config` 的 IPC 参数名（Tauri 侧 camelCase → snake_case）
+const FONT_SETTING_ARGS = { font_read_size: 'readSize', font_read_line: 'readLine' };
+
+/// 字号 / 行高滑块：
+/// - `input`（拖动中）只写 CSS 变量做实时预览，不碰库、不发 IPC；
+/// - `change`（松手）才调 `set_font_config` 落库，拿返回值回刷（Rust 是权威值）。
+/// 拖动一秒会打出几十个 input 事件，其中绝大部分是同一个 step 值——同值直接 return
+/// （性能红线 #7 的同值短路；日志也因此每个档位只有一行，可当预览证据用）。
+function bindFontControls() {
+  const bind = (inputId, key, spec) => {
+    const input = el(inputId);
+    if (!input) return;
+    let lastPreview = null;
+    input.oninput = () => {
+      const value = clampNumber(input.value, spec);
+      if (value === lastPreview) return;
+      lastPreview = value;
+      fontPreview[key] = value;
+      applyFontConfig();
+      paintFontValueLabel(key, value);
+      log(`font ${key}=${value} preview（仅 CSS 变量）`);
+    };
+    input.onchange = () => {
+      const value = clampNumber(input.value, spec);
+      invoke('set_font_config', { [FONT_SETTING_ARGS[key]]: value })
+        .then((settings) => {
+          state.settings = settings;
+          delete fontPreview[key];
+          applyFontConfig();
+          paintFontControls(state.settings);
+          log(`font ${key}=${value} saved`);
+        })
+        .catch((e) => {
+          // 没写进库就把界面退回已保存值：不留下「看着生效了、重启又变回去」的偏差
+          delete fontPreview[key];
+          applyFontConfig();
+          paintFontControls(state.settings);
+          setStatus(t('status.settingFailed', { error: e.message }), true);
+        });
+    };
+  };
+  bind('set-font-size', 'font_read_size', FONT_SIZE);
+  bind('set-font-line', 'font_read_line', FONT_LINE);
 }
 
 /// 打开/关闭某个下拉：再点同一下拉 = 关闭（菜单源标记防「关了叉开」）
@@ -2001,6 +2204,9 @@ function bindSettingDropdowns() {
 function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
   refreshSettingDropdowns();
+  // 字体：滑块位置/标签对齐已保存值（启动时已应用过，弹层里再对一次不会闪）
+  paintFontControls(state.settings);
+  prefetchFontFamilies();
   el('set-refresh-on-start').checked = !!state.settings.refresh_on_start;
   el('set-notify-new-articles').checked = !!state.settings.notify_new_articles;
   el('set-rsshub-mirror').value = state.settings.rsshub_mirror || '';

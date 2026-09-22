@@ -154,6 +154,61 @@
             </div>
           </div>
 
+          <!-- 字体（外观分区）：三类字体族名 + 正文字号/行高，改完即时生效 -->
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.fonts"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.fontUi"></b>
+                <small data-i18n="settings.fontUiHint"></small>
+              </div>
+              <button type="button" id="set-font-ui" class="setting-dropdown" aria-haspopup="menu"></button>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.fontRead"></b>
+                <small data-i18n="settings.fontReadHint"></small>
+              </div>
+              <button type="button" id="set-font-read" class="setting-dropdown" aria-haspopup="menu"></button>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.fontMono"></b>
+                <small data-i18n="settings.fontMonoHint"></small>
+              </div>
+              <button type="button" id="set-font-mono" class="setting-dropdown" aria-haspopup="menu"></button>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.fontSize"></b>
+                <small data-i18n="settings.fontSizeHint"></small>
+              </div>
+              <input type="range" id="set-font-size" min="13" max="18" step="1" />
+              <span class="setting-value" id="set-font-size-value"></span>
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.fontLine"></b>
+                <small data-i18n="settings.fontLineHint"></small>
+              </div>
+              <input type="range" id="set-font-line" min="1.5" max="1.8" step="0.05" />
+              <span class="setting-value" id="set-font-line-value"></span>
+            </div>
+            <!-- 实时预览：设置弹层盖住了正文区，没有这块就只能看右侧数值。
+                 它直接消费 --font-read / --font-read-size / --font-read-line / --font-mono，
+                 所以拖动滑块/切换字体时它和正文一模一样地变。 -->
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.fontPreview"></b>
+                <small data-i18n="settings.fontPreviewHint"></small>
+              </div>
+            </div>
+            <div class="font-preview">
+              <p data-i18n="settings.fontPreviewSample"></p>
+              <p><code>fn main() { println!("RustRss"); }</code></p>
+            </div>
+          </div>
+
           <div class="setting-block">
             <h4 data-i18n="settings.section.refresh"></h4>
             <div class="setting-item">

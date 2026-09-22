@@ -230,6 +230,22 @@ const DEFAULT_REFRESH_ON_START: bool = true;
 pub(crate) const KEY_NOTIFY_NEW_ARTICLES: &str = "notify.new_articles";
 const DEFAULT_NOTIFY_NEW_ARTICLES: bool = false;
 
+/// 字体族设置（设置 → 外观 → 字体）。空串 = 跟随内置字体栈（前端清除对应 CSS 变量）。
+const KEY_FONT_UI: &str = "ui.font_ui";
+const KEY_FONT_READ: &str = "ui.font_read";
+const KEY_FONT_MONO: &str = "ui.font_mono";
+/// 正文字号（px）与行高。白名单之外的值一律 clamp 回区间（滑块区间 13-18 / 1.5-1.8）。
+const KEY_FONT_READ_SIZE: &str = "ui.font_read_size";
+const KEY_FONT_READ_LINE: &str = "ui.font_read_line";
+const DEFAULT_FONT_READ_SIZE: f64 = 14.0;
+const DEFAULT_FONT_READ_LINE: f64 = 1.55;
+const FONT_READ_SIZE_RANGE: (f64, f64) = (13.0, 18.0);
+const FONT_READ_LINE_RANGE: (f64, f64) = (1.5, 1.8);
+/// 字体族名长度上限：坏数据不该把 CSS 值撑成天文数字（下拉标签也放不下）。
+const MAX_FONT_FAMILY_LEN: usize = 100;
+/// 字体枚举超时：fc-list 正常在几十毫秒返回，装了上千字体的机器也就几百毫秒。
+const FONT_LIST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+
 #[derive(Serialize)]
 pub struct UiSettings {
     pub mark_read_on_navigate: bool,
@@ -241,6 +257,13 @@ pub struct UiSettings {
     pub refresh_interval_minutes: String,
     pub refresh_on_start: bool,
     pub notify_new_articles: bool,
+    /// 字体族（空串 = 跟随系统/内置字体栈）
+    pub font_ui: String,
+    pub font_read: String,
+    pub font_mono: String,
+    /// 正文字号 px 与行高（已 clamp 回 13-18 / 1.5-1.8，前端直接当滑块值用）
+    pub font_read_size: f64,
+    pub font_read_line: f64,
 }
 
 /// 间隔白名单归一化：`off` 或 `15/30/60/120/360`；其余（含拼错值、负数、空串）一律归默认 30。
@@ -291,6 +314,64 @@ pub(crate) fn refresh_interval_from_store(store: &rustrss_core::Store) -> String
         .unwrap_or_else(|| DEFAULT_REFRESH_INTERVAL.to_string())
 }
 
+/// 字体族名归一化：trim + 折叠空白 + 去控制字符 + 截断到 [`MAX_FONT_FAMILY_LEN`]；
+/// 空串 = 跟随内置字体栈（前端清除对应 CSS 变量）。
+///
+/// 不在这里剥引号/逗号这类「CSS 里有含义」的字符：写入 CSS 变量时由前端统一
+/// 加引号并转义（`cssFamily`），在这里改动反而会把真实存在的族名改错。
+pub(crate) fn normalize_font_family(value: &str) -> String {
+    let cleaned: String = value
+        .trim()
+        .chars()
+        .filter_map(|c| {
+            if !c.is_control() {
+                Some(c)
+            } else if c.is_whitespace() {
+                // 制表/换行这类空白控制字符当成词间空格（否则 "Foo\tBar" 会粘成 "FooBar"）
+                Some(' ')
+            } else {
+                None
+            }
+        })
+        .take(MAX_FONT_FAMILY_LEN)
+        .collect();
+    cleaned.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// 字号/行高的数值归一化：非有限值回默认，越界 clamp 回区间，固定两位小数。
+///
+/// 两位小数是为了库里的值干净（滑块步长 0.05，浮点乘加会带出 1.5500000000000003）。
+fn clamp_font_number(value: f64, default: f64, (min, max): (f64, f64)) -> f64 {
+    if !value.is_finite() {
+        return default;
+    }
+    (value.clamp(min, max) * 100.0).round() / 100.0
+}
+
+/// 字体设置的读取：缺失/空串 → 空字体族（前端清除变量 → 回内置字体栈）。
+fn font_family_setting(store: &rustrss_core::Store, key: &str) -> String {
+    normalize_font_family(&crate::ai::non_empty_setting(store, key).unwrap_or_default())
+}
+
+/// 字体设置的读取：缺失、非数字、非有限值都回默认；越界值 clamp 回区间
+/// （与 locale/theme 的白名单同一口径：库里被写坏也不让字号把正文排版搞崩）。
+fn font_number_setting(
+    store: &rustrss_core::Store,
+    key: &str,
+    default: f64,
+    range: (f64, f64),
+) -> f64 {
+    crate::ai::non_empty_setting(store, key)
+        .and_then(|v| v.trim().parse::<f64>().ok())
+        .map(|v| clamp_font_number(v, default, range))
+        .unwrap_or(default)
+}
+
+/// 数字 → 库内字符串：`14.0` 存 "14"（而不是 "14.0"），`1.55` 存 "1.55"。
+fn font_number_text(value: f64) -> String {
+    format!("{value}")
+}
+
 fn ui_settings(state: &AppState) -> R<UiSettings> {
     state.with_store(|s| {
         Ok(UiSettings {
@@ -318,6 +399,21 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
             notify_new_articles: s
                 .bool_setting(KEY_NOTIFY_NEW_ARTICLES, DEFAULT_NOTIFY_NEW_ARTICLES)
                 .map_err(err)?,
+            font_ui: font_family_setting(s, KEY_FONT_UI),
+            font_read: font_family_setting(s, KEY_FONT_READ),
+            font_mono: font_family_setting(s, KEY_FONT_MONO),
+            font_read_size: font_number_setting(
+                s,
+                KEY_FONT_READ_SIZE,
+                DEFAULT_FONT_READ_SIZE,
+                FONT_READ_SIZE_RANGE,
+            ),
+            font_read_line: font_number_setting(
+                s,
+                KEY_FONT_READ_LINE,
+                DEFAULT_FONT_READ_LINE,
+                FONT_READ_LINE_RANGE,
+            ),
         })
     })
 }
@@ -718,6 +814,142 @@ pub fn set_ui_close_action(state: State<'_, AppState>, action: String) -> R<UiSe
     ui_settings(&state)
 }
 
+/// 字体配置：一次可写 5 个 key，`None` = 该项不动（下拉只改自己那一项；滑块只写自己的值）。
+///
+/// - 字体族：空串 = 恢复跟随系统（清除 CSS 变量）；
+/// - 字号 clamp 13-18、行高 clamp 1.5-1.8：越界值不报错，直接夹回区间后落库——
+///   滑块是唯一写入方，夹回比报错更贴近用户意图（而库里因此不会出现 9px 这种值）。
+///
+/// 返回值是归一化后的完整设置：前端拿同一份回读值刷 CSS 变量，两边不各算一份。
+#[tauri::command]
+pub fn set_font_config(
+    state: State<'_, AppState>,
+    font_ui: Option<String>,
+    font_read: Option<String>,
+    font_mono: Option<String>,
+    read_size: Option<f64>,
+    read_line: Option<f64>,
+) -> R<UiSettings> {
+    set_font_config_core(&state, font_ui, font_read, font_mono, read_size, read_line)
+}
+
+/// `set_font_config` 的本体：不依赖 Tauri（`State` 不好在单测里构造），
+/// 归一化 + 落库 + 回读三段与命令完全同源。
+pub(crate) fn set_font_config_core(
+    state: &AppState,
+    font_ui: Option<String>,
+    font_read: Option<String>,
+    font_mono: Option<String>,
+    read_size: Option<f64>,
+    read_line: Option<f64>,
+) -> R<UiSettings> {
+    state.with_store(|s| {
+        for (key, value) in [
+            (KEY_FONT_UI, font_ui.as_deref()),
+            (KEY_FONT_READ, font_read.as_deref()),
+            (KEY_FONT_MONO, font_mono.as_deref()),
+        ] {
+            if let Some(raw) = value {
+                s.set_setting(key, &normalize_font_family(raw)).map_err(err)?;
+            }
+        }
+        // 数值项：只有显式给值才写（None 表示「这次不改字号」）
+        if let Some(raw) = read_size {
+            let size = clamp_font_number(raw, DEFAULT_FONT_READ_SIZE, FONT_READ_SIZE_RANGE);
+            s.set_setting(KEY_FONT_READ_SIZE, &font_number_text(size))
+                .map_err(err)?;
+        }
+        if let Some(raw) = read_line {
+            let line = clamp_font_number(raw, DEFAULT_FONT_READ_LINE, FONT_READ_LINE_RANGE);
+            s.set_setting(KEY_FONT_READ_LINE, &font_number_text(line))
+                .map_err(err)?;
+        }
+        Ok(())
+    })?;
+    ui_settings(state)
+}
+
+/// 系统字体族列表（按名字排序、去重）。
+///
+/// 平台口径：**只有 Linux 枚举**（`fc-list`，fontconfig 在 deb 依赖里已声明）；
+/// Windows / macOS 返回空表，界面在那两个平台的字体下拉只显示「跟随系统」——
+/// 为字体枚举引入 font-kit / DWrite / CoreText 绑定的依赖成本高于收益（后续可增强）。
+///
+/// 性能红线 #12：子进程是重活，整段交给 tokio 的进程 API + 超时，命令的 async 主线上
+/// 没有任何阻塞等待，也不碰数据库锁；拿不到就是空表，不让「打开设置页」失败。
+#[tauri::command]
+pub async fn list_font_families() -> R<Vec<String>> {
+    Ok(probe_font_families().await)
+}
+
+/// `list_font_families` 的本体（不依赖 Tauri，单测直接跑真机路径）。
+///
+/// Linux 走 `fc-list --format=%{family[0]}`；其余平台空表（见上）。
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))] // 非 Linux 只有测试引用
+pub(crate) async fn probe_font_families() -> Vec<String> {
+    #[cfg(target_os = "linux")]
+    {
+        // `--format` 的长写法比 `-f` 在旧版 fontconfig 上更稳；`%{family[0]}` = 首个族名
+        run_font_command("fc-list", &["--format=%{family[0]}\n"], FONT_LIST_TIMEOUT).await
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        Vec::new()
+    }
+}
+
+/// 解析 fc-list 输出（每行一个族名）→ 排序去重的族名表。
+///
+/// 纯函数：真机装了哪些字体不可控，解析/去重/排序用固定输入单测。
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))] // 非 Linux 只有测试引用
+fn parse_font_families(raw: &str) -> Vec<String> {
+    let mut families: Vec<String> = raw
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(str::to_string)
+        .collect();
+    families.sort();
+    families.dedup();
+    families
+}
+
+/// 跑一条「输出字体族」的外部命令：成功 → 解析后的族名表；
+/// spawn 失败、超时、非零退出、非 UTF-8 输出一律降级为空表（并留一行 stderr 便于诊断）。
+///
+/// `kill_on_drop`：超时后子进程真被杀掉，不留一个还在跑 fc-list 的孤儿。
+/// （`std::process` 没有带超时的 `wait`，自己轮询 `try_wait` 在子进程写满管道时会死锁。）
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))] // 非 Linux 只有测试引用
+async fn run_font_command(bin: &str, args: &[&str], timeout: std::time::Duration) -> Vec<String> {
+    let run = tokio::process::Command::new(bin)
+        .args(args)
+        .stdin(std::process::Stdio::null())
+        .kill_on_drop(true)
+        .output();
+    match tokio::time::timeout(timeout, run).await {
+        Ok(Ok(out)) if out.status.success() => parse_font_families(&String::from_utf8_lossy(&out.stdout)),
+        Ok(Ok(out)) => {
+            eprintln!(
+                "[rustrss][fonts] {bin} 退出码 {:?}，字体列表降级为空",
+                out.status.code()
+            );
+            Vec::new()
+        }
+        // spawn 失败（未装 fontconfig）：正常降级，不当作错误
+        Ok(Err(e)) => {
+            eprintln!("[rustrss][fonts] 无法执行 {bin}: {e}（字体列表降级为空）");
+            Vec::new()
+        }
+        Err(_) => {
+            eprintln!(
+                "[rustrss][fonts] {bin} 超过 {}ms 未返回，已终止（字体列表降级为空）",
+                timeout.as_millis()
+            );
+            Vec::new()
+        }
+    }
+}
+
 fn scope_of(feed_id: Option<i64>) -> MarkScope {
     match feed_id {
         Some(id) => MarkScope::Feed(id),
@@ -820,6 +1052,193 @@ mod tests {
             refresh_interval_duration(""),
             Some(Duration::from_secs(30 * 60))
         );
+    }
+
+    #[test]
+    fn font_family_normalization_trims_collapses_and_bounds() {
+        assert_eq!(normalize_font_family("  Noto Sans CJK SC "), "Noto Sans CJK SC");
+        assert_eq!(normalize_font_family("Foo\tBar"), "Foo Bar", "制表/换行不该进 CSS 值");
+        assert_eq!(normalize_font_family("\n  "), "", "纯空白 = 跟随系统");
+        assert_eq!(normalize_font_family("霞鹜文楷"), "霞鹜文楷", "CJK 族名原样保留");
+        // 控制字符被剔除（换行会把设置页下拉标签撑成两行）
+        assert_eq!(normalize_font_family("Inter\r\n  UI"), "Inter UI");
+        // 超长值截断：坏数据不该把 CSS 值/标签撑爆
+        let long = "A".repeat(500);
+        assert_eq!(normalize_font_family(&long).chars().count(), MAX_FONT_FAMILY_LEN);
+        // 引号/逗号不在这里剥（前端加引号并转义），否则会把真实族名改错
+        assert_eq!(normalize_font_family("Foo, Bar"), "Foo, Bar");
+    }
+
+    #[test]
+    fn font_numbers_clamp_to_slider_ranges() {
+        let size = FONT_READ_SIZE_RANGE;
+        let line = FONT_READ_LINE_RANGE;
+        assert_eq!(clamp_font_number(14.0, DEFAULT_FONT_READ_SIZE, size), 14.0);
+        assert_eq!(clamp_font_number(9.0, DEFAULT_FONT_READ_SIZE, size), 13.0, "低于区间夹回下限");
+        assert_eq!(clamp_font_number(99.0, DEFAULT_FONT_READ_SIZE, size), 18.0, "高于区间夹回上限");
+        assert_eq!(clamp_font_number(1.55, DEFAULT_FONT_READ_LINE, line), 1.55);
+        assert_eq!(clamp_font_number(0.5, DEFAULT_FONT_READ_LINE, line), 1.5);
+        assert_eq!(clamp_font_number(3.0, DEFAULT_FONT_READ_LINE, line), 1.8);
+        // 非有限值回默认（而不是把 NaN 落库）
+        for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert_eq!(clamp_font_number(bad, DEFAULT_FONT_READ_SIZE, size), DEFAULT_FONT_READ_SIZE);
+        }
+        // 两位小数：滑块步长 0.05，浮点尾噪不许进库
+        assert_eq!(clamp_font_number(1.5500000000000003, DEFAULT_FONT_READ_LINE, line), 1.55);
+        assert_eq!(clamp_font_number(1.5999999, DEFAULT_FONT_READ_LINE, line), 1.6);
+    }
+
+    #[test]
+    fn ui_settings_reads_font_defaults_and_survives_broken_values() {
+        let state = AppState::for_test();
+
+        // 全新库：三类字体都跟随系统，字号/行高回默认
+        let fresh = ui_settings(&state).unwrap();
+        assert_eq!(fresh.font_ui, "");
+        assert_eq!(fresh.font_read, "");
+        assert_eq!(fresh.font_mono, "");
+        assert_eq!(fresh.font_read_size, DEFAULT_FONT_READ_SIZE);
+        assert_eq!(fresh.font_read_line, DEFAULT_FONT_READ_LINE);
+
+        // 库里被写坏：非数字/超区间值都得夹回或回默认，而不是让正文排版崩掉
+        state
+            .with_store(|s| {
+                s.set_setting(KEY_FONT_READ_SIZE, "9").map_err(err)?;
+                s.set_setting(KEY_FONT_READ_LINE, "not-a-number").map_err(err)?;
+                s.set_setting(KEY_FONT_UI, "  Inter  ").map_err(err)
+            })
+            .unwrap();
+        let broken = ui_settings(&state).unwrap();
+        assert_eq!(broken.font_read_size, 13.0, "9 夹回下限");
+        assert_eq!(broken.font_read_line, DEFAULT_FONT_READ_LINE, "非数字回默认");
+        assert_eq!(broken.font_ui, "Inter", "读取时同样 trim");
+    }
+
+    /// 命令体 = 「归一 + 落库 + 回读」：只写显式给值的项，None 不动库里原有的值。
+    #[test]
+    fn set_font_config_writes_only_given_keys_and_clamps() {
+        let state = AppState::for_test();
+
+        // 第一次：只设 UI 字体（下拉只改自己那一项）
+        let after_ui = set_font_config_core(
+            &state,
+            Some("Noto Sans CJK SC".into()),
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+        assert_eq!(after_ui.font_ui, "Noto Sans CJK SC");
+        assert_eq!(after_ui.font_read, "", "没传的项不该被写");
+        assert_eq!(after_ui.font_read_size, DEFAULT_FONT_READ_SIZE);
+
+        // 第二次：滑块只写字号，越界值夹回上限；已设的字体族不被冲掉
+        let after_size = set_font_config_core(&state, None, None, None, Some(99.0), Some(0.4)).unwrap();
+        assert_eq!(after_size.font_read_size, 18.0);
+        assert_eq!(after_size.font_read_line, 1.5);
+        assert_eq!(after_size.font_ui, "Noto Sans CJK SC", "滑块不该动字体族");
+
+        // 第三次：三类字体互不影响，等等宽字体只改 code 那一项
+        let after_mono = set_font_config_core(&state, None, None, Some("JetBrains Mono".into()), None, None)
+            .unwrap();
+        assert_eq!(after_mono.font_mono, "JetBrains Mono");
+        assert_eq!(after_mono.font_ui, "Noto Sans CJK SC");
+        assert_eq!(after_mono.font_read, "", "正文字体仍是跟随 UI 字体");
+
+        // 库内数值是干净字符串（14.0 存 "14"，不带 \".0\"）
+        let stored: Vec<(String, String)> = state
+            .with_store(|s| Ok(s.all_settings().unwrap()))
+            .unwrap();
+        let get = |key: &str| {
+            stored
+                .iter()
+                .find(|(k, _)| k == key)
+                .map(|(_, v)| v.clone())
+                .unwrap_or_default()
+        };
+        assert_eq!(get(KEY_FONT_READ_SIZE), "18");
+        assert_eq!(get(KEY_FONT_READ_LINE), "1.5");
+
+        // 空串 = 恢复跟随系统（清除变量走前端，库里存空值）
+        let cleared = set_font_config_core(&state, Some(String::new()), None, None, None, None).unwrap();
+        assert_eq!(cleared.font_ui, "", "空串应恢复「跟随系统」");
+        assert_eq!(cleared.font_mono, "JetBrains Mono", "清一个不该动另一个");
+    }
+
+    #[test]
+    fn parse_font_families_sorts_dedups_and_drops_blanks() {
+        let raw = "Noto Sans CJK SC\nDejaVu Sans\n\n  Noto Sans CJK SC  \nInter\n";
+        assert_eq!(
+            parse_font_families(raw),
+            vec![
+                "DejaVu Sans".to_string(),
+                "Inter".to_string(),
+                "Noto Sans CJK SC".to_string()
+            ]
+        );
+        assert!(parse_font_families("").is_empty(), "空输出 → 空表");
+        assert!(parse_font_families("\n \n").is_empty(), "只有空白行 → 空表");
+    }
+
+    /// 环境相关的两条分支都要成立：装了 fc-list 就有非空有序列表，
+    /// 没装（或非 Linux）就是空表 —— 后者是「降级而不是报错」的那条验收点。
+    #[tokio::test]
+    async fn probe_font_families_matches_environment() {
+        let families = probe_font_families().await;
+        if fc_list_available() {
+            assert!(!families.is_empty(), "有 fc-list 时应枚举出字体族");
+            assert!(
+                families.windows(2).all(|w| w[0] < w[1]),
+                "应已排序且无重复"
+            );
+        } else {
+            assert!(families.is_empty(), "拿不到字体列表时必须降级为空表");
+        }
+    }
+
+    /// spawn 失败（未装 fontconfig 的机器）：空表，不报错、不 panic。
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn run_font_command_degrades_when_binary_missing() {
+        let families = run_font_command("rustrss-definitely-no-such-binary", &[], std::time::Duration::from_secs(1)).await;
+        assert!(families.is_empty(), "二进制不存在 → 空表");
+    }
+
+    /// 超时：卡住的子进程被放弃并杀掉，调用方在超时后立刻拿到空表（而不是无限等）。
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn run_font_command_times_out_and_kills_child() {
+        let started = std::time::Instant::now();
+        let families = run_font_command(
+            "sh",
+            &["-c", "sleep 30"],
+            std::time::Duration::from_millis(200),
+        )
+        .await;
+        let elapsed = started.elapsed();
+        assert!(families.is_empty(), "超时 → 空表");
+        assert!(
+            elapsed < std::time::Duration::from_secs(10),
+            "必须在超时后马上返回，实际等了 {elapsed:?}"
+        );
+    }
+
+    /// fc-list 是否可用（测试环境相关，两条分支都断言）。
+    #[cfg(target_os = "linux")]
+    fn fc_list_available() -> bool {
+        std::process::Command::new("fc-list")
+            .arg("--version")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    fn fc_list_available() -> bool {
+        false
     }
 
     #[test]

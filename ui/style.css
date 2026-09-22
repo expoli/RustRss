@@ -22,6 +22,19 @@
   --code-fn: #61afef;
   --code-type: #e5c07b;
   --code-var: #e06c75;
+  /* 字体配置（设置 → 外观 → 字体）。前三个是字体族，后两个是正文字号/行高——
+     设置页改了字体只改这层变量，规则本身不重新解析。
+     「跟随系统」= JS 清除内联变量 → 回落到这里的内置字体栈（不是 inherit：
+     显式引用让「正文默认跟随 UI 字体」这条关系写在纸上，也免得 .article
+     将来被换个父元素就默默变了字体）。
+     等宽栈长写而非简写、真实等宽家族前置：ui-monospace 在 WebKitGTK 会解析成
+     比例字体（家族链在第一个可用家族处停下），通用 monospace 兜底轮不到。 */
+  --font-ui: -apple-system, "Noto Sans CJK SC", "Source Han Sans SC", "Segoe UI", sans-serif;
+  --font-read: var(--font-ui);
+  --font-mono: "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono",
+    "Liberation Mono", "Noto Sans Mono", monospace;
+  --font-read-size: 14px;
+  --font-read-line: 1.55;
   /* diff 行底色（半透明，深浅两套都各自调） */
   --diff-add-bg: rgba(63, 185, 80, 0.13);
   --diff-add-fg: #7ee787;
@@ -101,7 +114,8 @@ html, body { height: 100%; margin: 0; }
 body {
   background: var(--bg);
   color: var(--fg);
-  font: 14px/1.55 -apple-system, "Noto Sans CJK SC", "Source Han Sans SC", "Segoe UI", sans-serif;
+  /* 字号/行高仍是 UI 固定值（可调的是正文），字体族走 --font-ui */
+  font: 14px/1.55 var(--font-ui);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -454,6 +468,57 @@ main {
 }
 .setting-item input:focus, .setting-item select:focus, .setting-item .setting-dropdown:focus { outline: 2px solid var(--accent); }
 
+/* 设置页滑块（字号 / 行高）：轨道与滑块自绘，跟三态主题同一套变量——
+   WebKitGTK 对原生 range 的绘制同样吃系统主题，深浅色下会混出两套观感 */
+.setting-item input[type="range"] {
+  flex: 0 0 auto;
+  width: min(280px, 42%);
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.setting-item input[type="range"]:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+.setting-item input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-active);
+}
+.setting-item input[type="range"]::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--accent);
+  appearance: none;
+  -webkit-appearance: none;
+}
+/* 滑块当前值：等宽数字 —— 拖动时数字宽度不变，右侧不抖（性能红线 #8 同一口径） */
+.setting-value {
+  flex: 0 0 auto;
+  min-width: 40px;
+  text-align: right;
+  color: var(--fg-dim);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 字体分区内的实时预览块：消费与正文完全相同的变量，因此拖动滑块 / 切换字体
+   时它和正文一模一样地变（设置弹层遮住了正文区，否则「实时预览」看不到） */
+.font-preview {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  font-family: var(--font-read);
+  font-size: var(--font-read-size);
+  line-height: var(--font-read-line);
+}
+.font-preview p { margin: 0 0 .6em; }
+.font-preview p:last-child { margin-bottom: 0; }
+.font-preview code { font-family: var(--font-mono); font-size: calc(var(--font-read-size) * 0.89); }
+
 /* MCP 客户端配置片段等只读文本域：同主题配色（此前完全无样式，深色下白底） */
 .setting-item textarea {
   width: 100%;
@@ -584,7 +649,14 @@ main {
 
 .reader-actions { display: flex; gap: 8px; margin-bottom: 18px; }
 
-.article { max-width: 74ch; }
+.article {
+  max-width: 74ch;
+  /* 正文排版三件套走 CSS 变量：正文字体默认跟随 --font-ui；字号/行高由设置页滑块
+     实时改写（input 事件只改变量做预览，change 事件才落库，见 ui/app.js） */
+  font-family: var(--font-read);
+  font-size: var(--font-read-size);
+  line-height: var(--font-read-line);
+}
 .article h2 { font-size: 19px; margin: 1.4em 0 .5em; }
 .article h3 { font-size: 16px; margin: 1.3em 0 .4em; }
 .article p { margin: 0 0 1em; }
@@ -603,13 +675,11 @@ main {
   padding: 12px;
   overflow-x: auto;
 }
-/* 长写而非简写 + 真实等宽家族前置：ui-monospace 在 WebKitGTK 会解析成比例
-   字体（家族链在第一个可用家族处停止，实测 2026-09-22 两台环境代码块全是
-   比例字体），通用 monospace 兑底永远轮不到 */
+/* 等宽栈来自 --font-mono（:root，含上面那条 ui-monospace 的教训）；
+   字号随正文字号缩放，保持代码块与正文的比例 */
 .article code {
-  font-family: "JetBrains Mono", "Cascadia Mono", Menlo, Consolas,
-    "DejaVu Sans Mono", "Liberation Mono", "Noto Sans Mono", monospace;
-  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-size: calc(var(--font-read-size) * 0.89);
   line-height: 1.5;
 }
 .article table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 13px; }
@@ -703,6 +773,10 @@ li.folder-feed .name { font-size: 13px; }
   z-index: 1000;
   min-width: 160px;
   max-width: 260px;
+  /* 长菜单（字体列表动辄几百项）必须可滚：菜单贴不住视口时定位会把 top 钳成负数，
+     超出视口的那部分既看不见也点不到——字体下拉因此需要一个高度上限。 */
+  max-height: min(70vh, 460px);
+  overflow-y: auto;
   background: var(--bg-panel);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -724,13 +798,15 @@ li.folder-feed .name { font-size: 13px; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* 不被压缩：菜单设了 max-height 后，可压缩的 flex 子项会把行高挤塌而不是滚动 */
+  flex: 0 0 auto;
 }
 #ctx-menu button:hover { background: var(--bg-hover); }
 #ctx-menu button.danger { color: var(--danger); }
 #ctx-menu button.danger:hover { background: var(--bg-hover); }
 /* 分组分隔线 / 分组小标题 / 勾选标记（未勾选项留同宽占位，标签左对齐） */
-#ctx-menu .ctx-sep { height: 1px; margin: 4px 6px; background: var(--line); }
-#ctx-menu .ctx-head { padding: 4px 10px 2px; font-size: 11px; color: var(--fg-dim); }
+#ctx-menu .ctx-sep { height: 1px; margin: 4px 6px; background: var(--line); flex: 0 0 auto; }
+#ctx-menu .ctx-head { padding: 4px 10px 2px; font-size: 11px; color: var(--fg-dim); flex: 0 0 auto; }
 #ctx-menu button .mark { display: inline-block; width: 15px; color: var(--accent); }
 #ctx-menu button.checked .label { font-weight: 600; }
 

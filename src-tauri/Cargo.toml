@@ -24,7 +24,9 @@ tauri-plugin-single-instance = "2"
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+# `process`：字体枚举要跑 fc-list，且需要「超时即杀掉」的语义
+# （std::process 没有带超时的等待，自己轮询 try_wait 会在子进程写满管道时死锁）。
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "process"] }
 
 [features]
 default = []

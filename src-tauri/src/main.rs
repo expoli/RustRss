@@ -196,6 +196,8 @@ fn main() {
             commands::set_ui_locale,
             commands::set_ui_theme,
             commands::set_ui_close_action,
+            commands::set_font_config,
+            commands::list_font_families,
             commands::get_rsshub_mirror,
             commands::set_rsshub_mirror,
             commands::test_rsshub_mirror,
