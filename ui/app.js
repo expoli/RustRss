@@ -308,6 +308,18 @@ function log(line) {
   invoke('ui_log', { line }).catch(() => {});
 }
 
+// CSP 违规探针：常驻监听，被 CSP 拦下的指令逐条上报（含被拒指令与来源）。
+// 装它的理由：CSP 是纵深防线，静默生效就没有验收手段——配置漏放行某个资源类型时，
+// 应该是日志里的一行（可机械核对「零违规」），而不是「图片莫名其妙不显示」。
+// 注：本文件在 body 末尾加载，此前解析期的违规（如外链脚本被拒）由 index.html
+// 的内联探针（script load error / js error）覆盖。
+document.addEventListener('securitypolicyviolation', (e) => {
+  log(
+    `securitypolicyviolation: ${e.violatedDirective} blocked=${e.blockedURI || '-'} ` +
+      `source=${e.sourceFile || '-'}:${e.lineNumber || 0}`
+  );
+});
+
 const state = {
   db: null,
   feeds: [],

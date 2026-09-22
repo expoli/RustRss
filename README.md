@@ -152,6 +152,7 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 稍后读：阅读器按钮 / 列表条目 ⚑ 标记 / `l` 快捷键，与已读、星标独立；侧栏「稍后读」智能视图
 - [x] RSSHub 实例：设置里可配自建/镜像地址。`rsshub://path`（含三斜杠、大写）与 `https://rsshub.app/path` 是**同一订阅身份**，库里统一只存 `rsshub://path`（抽象地址，不绑定任何实例）——抓取时才由唯一出口 `Store::feed_endpoint` 按当前实例解析（`resolve_fetch_url`），所以**换实例零迁移**、下一次刷新即生效（库内 url 不变、OPML 导出天然可移植）；已实例化到自建实例的历史行识别不了、原样直抓（不劣化，与拆分前一致）。添加订阅输入框直接支持 `rsshub://path`（发现阶段短路不联网，首次抓取经实例解析）。设置页「归一化 RSSHub 地址」是**一次性地址整理**（存量 `rsshub.app` 行 → `rsshub://path`；预览条数与实际改写条数共用同一判据，已是 scheme 的行幂等不动），换实例不需要点它
 - [x] 正文安全渲染：白名单清洗 + 相对地址图片/链接解析（详见下）；代码块语法高亮（vendor highlight.js，`language-*` class 优先 + 自动检测，深浅双主题 token 配色；超过 16KB 的超大代码块跳过 auto-detect 以保证大文章的打开速度，显式 `language-diff` 放宽到 64KB；桌面像素效果需人工核验）
+- [x] 渲染层最小 CSP 纵深（`app.security.csp`，编译期嵌入）：`default-src 'self'` + 逐类最小放行——脚本只允许自身（Tauri 构建时把 `ui/` 内联脚本与 JS 资产哈希注入 `script-src`，故 `index.html` 的内联诊断脚本照常执行）、样式放行 `'unsafe-inline'`（自绘菜单/字体实时预览靠内联样式）、图片额外放行 `data:` 与 `http(s):`（feed 正文图 / 图标）、连接只放行 Tauri IPC（`ipc:` + Windows 的 `http://ipc.localhost`）、字体只放行自身与 `data:`。`withGlobalTauri` 因「UI 无构建链」保持 `true`（无打包器就 import 不了 `@tauri-apps/api`，原生 JS 只能经全局 `window.__TAURI__` 调命令）——所以 CSP 是 sanitize 之外的**纵深**，不是它的替代；`ui/app.js` 常驻 `securitypolicyviolation` 探针，每次违规经 `ui_log` 打一行（含被拒指令与来源），主流程回归后核对日志为「零违规」即通过（见审计修复批次一 T5）
 - [x] 补丁/diff 渲染：邮件列表源（lkml 等）把补丁拆成一连串段落、没有代码块——sanitize 后做一次 diff 区域归一（连续 +/-/@@/头行段落合并成单个 `pre>code.language-diff`，保守门槛防误吞普通段落），再走 hljs：绿增红删整行底色 + 左缘强调条 + hunk 头蓝底（深浅双主题，修复过「加行配红」的错映射）
 - [x] 摘要型条目一键获取全文：正文缺失或明显偏短（阈值 500 字）、或带源端摘要标记（lkml.org 的 `某人 writes: (Summary)` 长摘要超过阈值也命中）、且未抓过又有原文地址的条目，在阅读器显示「获取全文」按钮；点击后转 loading（防重入）→ 抓原文页 → readability 提取正文 → 写回库并用返回的行重渲染；失败（非 HTML / 超时 / 超 2MB / 无正文 / **反爬质询页**）在状态栏报错，**原摘要原样保留**，可直接再点重试。反爬质询页（Anubis 等，需浏览器过 JS 验证）会被识别并拒绝写回，提示用户用「浏览器打开」；写回会打上 `fulltext_fetched` 标记：同一篇第二次打开零网络，之后 feed 刷新也不会把已抓正文覆盖回摘要（core 侧见 `crates/rustrss-core/src/fulltext.rs` 与 `fetch_fulltext` command，前端见 `ui/app.js` 的 `fetchFulltext`；手动清单第 7 节）
 - [x] OPML 导入 / 导出（嵌套文件夹压平成 `父/子`；按 `xmlUrl` 去重；导入后自动只抓新增的那批源，`feeds_added=0` 的重复导入不抓）
@@ -166,7 +167,7 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 单实例锁：用**默认库**时第二次启动会在毫秒级被已有实例接管（唤出主窗口后新进程自退）——避免两进程抢同一个 MCP 端口、双写同一个 SQLite。注意：新进程在被接管前有短暂启动期（历史行为是先开库再被退出，现已把开库/拉起 MCP 全部移到单实例判定之后，新进程不再触碰库与端口）；`RUSTSS_DB`/参数把库指到别处时**不注册锁**，多开诊断副本不受影响
 - [x] Linux 打包：产出 `.deb`（**8.1MB，不打包 WebKit**，依赖声明 `libwebkit2gtk-4.1-0, libgtk-3-0, libayatana-appindicator3-1`）
 - [x] i18n：zh-CN / en（306 个 key；启动时比对两份字典的 key 集合并把结果打到 stdout，缺 key 数为 0 可机械核对）
-- [ ] 便携模式（`portable.txt`）、CSP 收紧（当前 `csp: null`）
+- [ ] 便携模式（`portable.txt`）
 - [ ] 超长列表的 DOM 上限：渐进加载会把已加载的行全部留在 DOM 里（8k 库全扫后约 8k 行，实测滚动与 j/k 均无卡顿），如需更激进的取舍可再做虚拟滚动
 - [ ] 发布构建开 `strip`（当前未开，`Installed-Size` 25MB 偏大）、rpm/Windows/macOS 打包
 
