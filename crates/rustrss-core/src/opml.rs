@@ -186,12 +186,12 @@ fn parse(xml: &str) -> Result<Vec<Outline>, ImportError> {
     loop {
         match reader.read_event() {
             Ok(Event::Start(e)) => match e.name().as_ref() {
-                b"opml" => saw_opml = true,
-                b"outline" => stack.push(outline_from(&e)),
+                "opml" => saw_opml = true,
+                "outline" => stack.push(outline_from(&e)),
                 _ => {}
             },
             Ok(Event::Empty(e)) => {
-                if e.name().as_ref() == b"outline" {
+                if e.name().as_ref() == "outline" {
                     let node = outline_from(&e);
                     match stack.last_mut() {
                         Some(parent) => parent.children.push(node),
@@ -200,7 +200,7 @@ fn parse(xml: &str) -> Result<Vec<Outline>, ImportError> {
                 }
             }
             Ok(Event::End(e)) => {
-                if e.name().as_ref() == b"outline" {
+                if e.name().as_ref() == "outline" {
                     if let Some(node) = stack.pop() {
                         match stack.last_mut() {
                             Some(parent) => parent.children.push(node),
@@ -226,15 +226,17 @@ fn outline_from(e: &quick_xml::events::BytesStart<'_>) -> Outline {
     for attr in e.attributes().flatten() {
         // 必须解码实体：OPML 里的标题常常长成 "LWN &amp; friends"，
         // 直接拿原始字节会把 &amp; 原样显示给用户（测试拓出了这条）。
+        // quick-xml ≥0.42 起属性值本身就是 UTF-8 字符串，`unescape_value()` 已废弃，
+        // 改用等价的 `normalized_value()`（同样是 Implicit1_0 + 预定义实体解析）。
         let value = attr
-            .unescape_value()
+            .normalized_value(quick_xml::XmlVersion::Implicit1_0)
             .map(|v| v.to_string())
-            .unwrap_or_else(|_| String::from_utf8_lossy(&attr.value).to_string());
+            .unwrap_or_else(|_| attr.value.to_string());
         match attr.key.as_ref() {
-            b"text" => node.text = Some(value),
-            b"title" => node.title = Some(value),
-            b"xmlUrl" | b"xmlurl" => node.xml_url = Some(value),
-            b"htmlUrl" | b"htmlurl" => node.html_url = Some(value),
+            "text" => node.text = Some(value),
+            "title" => node.title = Some(value),
+            "xmlUrl" | "xmlurl" => node.xml_url = Some(value),
+            "htmlUrl" | "htmlurl" => node.html_url = Some(value),
             _ => {}
         }
     }

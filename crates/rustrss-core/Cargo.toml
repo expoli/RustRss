@@ -6,7 +6,7 @@ license.workspace = true
 
 [dependencies]
 feed-rs = "2.4"
-quick-xml = "0.38"
+quick-xml = "0.42"
 chrono = { version = "0.4", features = ["serde"] }
 sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }
