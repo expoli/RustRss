@@ -37,6 +37,7 @@ documentUuid: 0ffb9733-14fa-4dfa-a5ea-7e167666763e
 | 保留参数 | `keep_files = 20`，`max_total_bytes = 50 * 1024 * 1024` |
 | panic hook | `logging::install_panic_hook()`：先 `log::error!`（含 payload + location），再调用原 hook（保留 stderr 默认行为）；安装失败忽略 |
 | 级别语义 | `log.level` 白名单 `["info", "debug"]`（默认 `info`）；持久化值非法时回落 `info`；变更时 `log::set_max_level()` 即时生效 |
+| debug 目标过滤 | debug/trace 级仅收录 target 以 `rustrss` 开头或等于 `ui` 的记录；info/warn/error 不限 target（依赖库错误信息仍有价值）；过滤在 writer 的 `enabled()`/`log()` 侧实现（全局 max_level 无法按 target 区分） |
 | debug 内容 | 迁移时给 HTTP 请求/刷新等关键路径补 `log::debug!`（如请求 URL、状态码、耗时）；info 级保持现有输出语义 |
 | `open_logs_dir` 命令 | 确保 `logs_dir()` 存在 → 平台启动器：Linux `xdg-open` / macOS `open` / Windows `explorer`，**目录路径作为独立进程参数**（不经 shell）；失败返回可读错误 |
 | 敏感信息 | 迁移点逐处审查：key/token 不得进入任何日志行；复用现有 scrub（`scrub`/错误打码）口径；补测试断言 scrub 后不含 key 形态 |
@@ -65,6 +66,7 @@ documentUuid: 0ffb9733-14fa-4dfa-a5ea-7e167666763e
 - store 键 `log.level`（`info`/`debug`，默认 `info`，非法回落）；
 - 设置页控件（下拉）+ i18n 双语；
 - 变更即时生效：设置保存路径里调用 `log::set_max_level()`；重启后从设置读取；
+- **debug 目标过滤（T2 评审 N2 转入）**：debug/trace 级只收录本应用（target 以 `rustrss` 开头）与 `ui` 的日志——第三方依赖（h2/hyper/reqwest 等）的 debug 不写文件（实测占 2207 行中的 2186 行，且绕过 `scrub_log_line`）；info 及以上级别仍全量收录；有测试覆盖（依赖 target 的 debug 被丢弃、本应用 debug 保留、第三方 error/warn 仍收录）；
 - 测试：钳位/非法值回落/默认值。
 
 ### T4 关于页入口 + 收口
