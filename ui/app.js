@@ -1055,22 +1055,12 @@ async function prependFreshEntries() {
   );
 }
 
-/// 选中项不在新列表里时回退到首行（视图切换/首屏加载）
-function selectFallback() {
-  if (!state.entries.some((e) => e.id === state.selectedId)) {
-    state.selectedId = state.entries.length ? state.entries[0].id : null;
-  }
-}
-
-/// 列表加载完后重渲染右侧正文（视图切换只加载，不标记已读）
-async function renderSelectedEntry() {
-  if (!state.selectedId) {
-    renderReaderEmpty();
-    return;
-  }
-  const entry = await invoke('get_entry', { id: state.selectedId });
-  if (entry) renderReader(entry);
-  focusRow(state.selectedId, { follow: false });
+/// 视图切换后不再自动打开首篇：展示但不标读会误导（正文都渲染了列表却不变灰），
+/// 自动标读又违背「点击才算已读」的预期（实测反馈 2026-09-22 两轮）。
+/// 清空选中 + 阅读区占位；首次点击列表行或键盘 j/k 才打开并按设置标读。
+function renderSelectedEntry() {
+  state.selectedId = null;
+  renderReaderEmpty();
 }
 
 /// 读数据并渲染列表。
@@ -1087,9 +1077,8 @@ async function loadEntries({ reader = true, reset = true } = {}) {
     paging.exhausted = true;
     paging.error = false;
     state.entries = state.query ? await invoke('search', { query: state.query, limit: PAGE_SIZE }) : [];
-    selectFallback();
     renderList();
-    if (reader) await renderSelectedEntry();
+    if (reader) renderSelectedEntry();
     log(`view=${kind} count=${state.entries.length} exhausted=true`);
     return;
   }
@@ -1120,8 +1109,8 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   // 静默刷新（reader=false）不动 selectedId：正文区一个 DOM 都不动，选中态也
   // 保持——否则重指到首行后，操作按钮（标已读/星标/稍后读）会作用于用户没在看的
   // 文章（实测 2026-09-22：后台刷新把 selected 挪到 9320 而正文还是 9135）。
-  // 视图切换（reader=true）才重新回退到首行并同步重渲染正文。
-  if (reader) selectFallback();
+  // 静默刷新（reader=false）不动 selectedId；视图切换（reader=true）也不再回退
+  // 选中首行——保持「点击才算已读」，阅读区显示占位（见 renderSelectedEntry）。
   renderList();
   // 静默模式到此为止：正文区一个 DOM 都不动
   if (!reader) return;
@@ -1167,6 +1156,30 @@ async function setView(view) {
   await loadEntries();
 }
 
+/** 打开即已读的公共落地：set_read + 灰显该行 + 计数/按钮文案/侧栏刷新。
+ *  列表点击（openEntry）与视图切换自动展示首篇（renderSelectedEntry）共用，
+ *  保证两条路径的已读表现完全一致。 */
+async function markViewedRead(id) {
+  await invoke('set_read', { ids: [id], read: true });
+  state.readSessionIds.add(id);
+  const row = state.entries.find((e) => e.id === id);
+  if (row) row.read = true;
+  // 未读视图里读过的文章**灰显而非立即删行**：立即删行会把高亮/键盘锚点/操作
+  // 按钮的目标一起挪到下一篇，而阅读区还停在刚点开的文章——三者互相脱钩
+  // （实测 2026-09-22：高亮在下一篇、正文还是被点的这篇）。灰显让「显示 =
+  // 高亮 = 操作目标」保持同一篇，行在下次列表重建时自然离开，零重建。
+  markRowRead(id);
+  if (state.view.kind === 'unread') {
+    el('list-count').textContent = t('list.count', { n: listCountN() });
+  }
+  // renderReader 用的是 set_read 前取的 entry：按钮文案会滞后一拍（已读却写着
+  // 「标为已读」）。只改这一个按钮的文本，不重渲染整个阅读区。
+  const readBtn = el('act-read');
+  if (readBtn) readBtn.textContent = t('reader.markUnread');
+  // 计数刷新节流：连续快速阅读时合并为一次全量刷新（600ms 去抖）
+  refreshCountsSoon();
+}
+
 /** 打开某篇文章；markRead=true 表示这是用户主动打开的动作 */
 async function openEntry(id, { markRead, follow = true } = {}) {
   const entry = await invoke('get_entry', { id });
@@ -1177,28 +1190,7 @@ async function openEntry(id, { markRead, follow = true } = {}) {
   renderReader(entry);
 
   if (markRead && !entry.read) {
-    await invoke('set_read', { ids: [id], read: true });
-    state.readSessionIds.add(id);
-    const row = state.entries.find((e) => e.id === id);
-    if (row) row.read = true;
-
-    if (state.view.kind === 'unread') {
-      // 未读视图里读过的文章**灰显而非立即删行**：立即删行会把高亮/键盘锚点/操作
-      // 按钮的目标一起挪到下一篇，而阅读区还停在刚点开的文章——三者互相脱钩
-      // （实测 2026-09-22：高亮在下一篇、正文还是被点的这篇，且「标为已读」会
-      // 错误作用于高亮行而非正文行）。灰显让「显示 = 高亮 = 操作目标」保持同一篇，
-      // 行在下次列表整体重建（换视图/搜索/刷新）时自然离开，打开路径上零重建。
-      markRowRead(id);
-      el('list-count').textContent = t('list.count', { n: listCountN() });
-    } else {
-      markRowRead(id);
-    }
-    // renderReader 用的是 set_read 前取的 entry：按钮文案会滞后一拍（已读却写着
-    // 「标为已读」）。只改这一个按钮的文本，不重渲染整个阅读区。
-    const readBtn = el('act-read');
-    if (readBtn) readBtn.textContent = t('reader.markUnread');
-    // 计数刷新节流：连续快速阅读时合并为一次全量刷新（600ms 去抖）
-    refreshCountsSoon();
+    await markViewedRead(id);
   }
   log(`open id=${id} markRead=${markRead} read=${entry.read}`);
 }
