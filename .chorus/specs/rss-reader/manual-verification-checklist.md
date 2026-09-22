@@ -325,3 +325,74 @@ headless 已机械验证（P0-5 任务报告）：默认库二次启动 264ms �
 - [ ] 英文界面（Settings → Language = English）下右键菜单与 tooltip 文案；切换语言后重开菜单文案跟着变
 - [ ] 全局档从「关闭」改成 30 分钟：下一 tick 里「跟随全局」的源按新档补刷，已覆盖的源不受影响（后端 `due_feed_ids` 纯函数单测已覆盖该分支）
 - [ ] Wayland 会话（KDE / GNOME 各一）下右键菜单定位与点击命中（本次是 X11/Xvfb）
+
+## 12. 后台刷新保持列表滚动位置（2026-09-22-scroll-preserve，前端任务 c891f49f）
+
+> headless 跑法：`Xvfb :99`（1920x1200，**无窗口管理器**）+ `GDK_BACKEND=x11`（**测试进程环境，不是应用代码设置**）+
+> `HOME`/`XDG_DATA_HOME` 隔离到 `/tmp/rustrss-scroll/home` + `RUSTSS_DB=/tmp/rustrss-scroll/db.sqlite`（真库
+> `~/.local/share/rustrss/rustrss.sqlite` 的 mtime 全程停在 09-21 18:59，未被触碰）+ 本地夹具 feed
+> （`/tmp/rustrss-scroll/fixture_server.py`，只绑 `127.0.0.1:8799`：`new3` = 300 条已入库种子 + 3 条更新的条目、
+> `base300` = 与库内逐条一致的 300 条、`small6` = 5 条 + 1 条新的；**响应前刻意 sleep 12s**，把「启动首刷（10s）→
+> fetch → refresh:done」的时点推后到约 t+22s，留出滚到目标位置的窗口）+ `xdotool` 驱动真实 GUI
+> （滚轮 400 格触发尾部哨兵续页；`G`/`g` 跳末行/首行）。驱动器 `/tmp/rustrss-scroll/run_scenario.py`（自带断言，
+> 逐场景证据 `/tmp/rustrss-scroll/run-<场景>.out` + 截图 `/tmp/rustrss-scroll/shot-<场景>.png`）。
+> 库内种子：1 个源 + 未读条目（`published_at` 递减，id 1..300）、`refresh.interval_minutes=off`、`refresh.on_start=true`、
+> `ui.mark_read_on_navigate=false`；后台刷新由**启动首刷**触发（定时档最小 15 分钟，headless 里等不起）。
+
+### 12.1 已机械验证的部分（日志 + 截图 + 库回读自证）
+
+刷新分支的自证日志（`refresh:done prepend …`）：`rows` 新增条数 · `ids` 插入顺序 · `sessionReadSkipped` 被会话已读集合
+挡下的候选数 · `atTop` 是否在顶部 · `listScrollTop` 前后 · `height` 前后 · `top` 视口顶部第一条可见行 id ·
+`head` 列表首行 id · `children` 列表 DOM 行数 · `total` 状态行数。
+
+- **场景 1 · 深滚动保住视口（已加载 2 页，且 `exhausted=true` 也走 prepend——评审 B1 的那条）**：
+  未读视图滚轮 400 格 → `append rows=100 total=300 dup=0 exhausted=true`；启动首刷插入 3 条新条目后
+  `prepend rows=3 ids=301,302,303 atTop=false listScrollTop=23873→24119 height=24600→24846 top=292→292 head=301
+  children=303 total=303`。即：`scrollTop` 的位移恰好等于 `scrollHeight` 的增量（像素守恒 246 = 3×82），
+  视口顶部仍是同一行（id 292），新条目按 sortkey DESC 排在最上（head=301，ids 301,302,303 而非反序）；
+  同一次刷新的 `refresh:done 静默完成 selected=1→1 正文=1078→1078字 scrollTop=0→0` 说明正文与选中行没动；
+  整份日志只有首屏那一次 `renderList`（8k 行的全量重建是打开文章时的 CPU 尖峰来源，prepend 一个都不重建）——
+  截图 `shot-deep.png` 与刷新前一样停在 Item 291..299。库侧 `inserted=3 updated=300`。
+- **场景 2 · 在顶部（scrollTop=0）不补偿、新条目立即可见**：`G` 跳末行（哨兵续页，`append rows=100 … exhausted=true`）
+  再 `g` 跳回首行 → `atTop=true listScrollTop=0→0 top=1→301 head=301 children=303 total=303`：
+  视口顶部从 id 1 变成 id 301（最新那条新条目），列表没有为了压住视口而往下顶——
+  截图 `shot-top.png` 顶栏下方依次是 New 1 / New 2 / New 3 / Item 000（原首行仍在原位、仍是选中行）。
+- **场景 3 · 零新增 = 空操作**：夹具返回与库内逐条一致的 300 条（`inserted=0 updated=300`）→
+  `prepend rows=0 listScrollTop=23873→23873 top=292→292 head=1 children=300 total=300`：
+  `scrollTop` 逐像素不变、视口行不变、DOM 行数与首行不变；整份日志在 refresh 之后**没有任何 `renderList`**
+  （全量重建的唯一入口），代码在 `fresh.length === 0` 时于任何 DOM 操作之前 return——即列表 DOM 一个写都没有，
+  侧栏计数仍走原来的 `refreshCounts()`（日志里能看到 `renderSidebar`）。
+- **场景 4/5 · 未读视图的会话已读行不回插（openEntry 与 toggleRead 两条路径各一次）**：
+  两条路径都是「深滚到第 2 页后把首行（id 1 `Item 000`）标已读」——openEntry 走 `Enter`（日志
+  `open id=1 markRead=true read=false`），toggleRead 走 `u`（日志 `renderList rows=299` + `open id=2 markRead=false`）；
+  读后 `sqlite3` 读回 `entries.id=1 read=1`。随后把该行在库里翻回 `read=0`（`flip … changed=1 read=0`）——
+  **这就是那个竞态窗口**：未读视图里该行已被删掉，而刷新查询仍会把它当成首页候选。
+  刷新日志两条路径都是 `prepend rows=3 ids=301,302,303 sessionReadSkipped=1 children=302 total=302 head=301`：
+  被挡下的候选恰好 1 条，DOM/状态行数 302（299+3）而不是 303，首行是最新的新条目——即该行没有回插。
+  刷新后库内它仍是 `read=0`（`[(1,'Item 000',0), (2,'Item 001',0)]`），说明这是**前端会话集合**挡下的，
+  而不是靠服务端 unread 过滤。相同条件下的 3 条新条目照常出现在顶部。
+- **场景 6 · 单页库走原来的 reset 路径（评审范围条件 `length > PAGE_SIZE` 的另一侧）**：库内 5 条 + 夹具 1 条新的 →
+  日志里**没有** `prepend` 行，`refresh:done` 之后是 `renderList rows=6`（整列重建）、
+  且没有 `renderReader`（正文仍不重渲染）；`inserted=1`。
+- **场景 7 · 续页失败（`paging.error`）走 reset，不与 append 竞态**：先 `DROP INDEX idx_entries_sortkey` 让
+  续页必失败 → 滚轮触发 → `loadMore failed view=unread: 数据库错误: no such index: idx_entries_sortkey`（`paging.error=true`）；
+  随后的启动首刷不走 prepend，而是 `renderList rows=200`（回首页、清掉错误态），避免了「prepend 头部 + 同时续页**
+  append 尾部」两处同时改列表。
+- **i18n / 测试**：本次未新增用户可见文案（i18n key 仍 249，启动自检 `i18n selftest ok (keys=249)`）；
+  `cargo test --workspace` 全绿（152 例，纯前端改动不涉及 Rust 断言）。
+
+### 12.2 已知取舍
+
+- **prepend 不重建已加载行**：源站改了已加载条目的标题/摘要时，行内内容要等下一次整列重建（换视图 / 换筛选 /
+  手动刷新 / 单页视图）才可见；新条目、未读计数、侧栏不受影响。这是「深滚动不能被重建打断」的必然代价。
+- **`paging.error` / 续页在飞时退回整列重建**：这两种情况下列表会回到顶部（错误态优先于位置保持），
+  与「刷新不该打断滚动」的取舍相反，但避免了与 `loadMore` 的游标/append 竞态。
+
+### 12.3 仍需真实桌面会话人工核验
+
+- [ ] 高 DPI（125% / 150% / 170%）下补偿的像素守恒：`scrollHeight` 增量与 `scrollTop` 位移在非整数 DPR 下是否仍严丝合缝（本次 Xvfb DSF=1）
+- [ ] Wayland 会话（KDE / GNOME 各一）下深滚动 + 定时刷新到点：列表不跳、新条目在顶部（本次是 X11/Xvfb）
+- [ ] 真等到定时档到点（15/30 分钟）时的体感：新条目出现的位置、侧栏计数、状态栏提示（本次用启动首刷 + 夹具延迟复现）
+- [ ] 触控板惯性滚动尚未停下时刷新到点：补偿会不会造成可见跳动（本次只有离散滚轮事件）
+- [ ] 大库（8k 行）深滚动下的刷新开销：`topVisibleRowId` 与 prepend 遍历的是列表 DOM 子节点（本次 303 行，实测 refresh 期间无可感卡顿）
+- [ ] 长列表里行高差异很大（含 2 行摘要 / 无摘要混排）时，`top`（视口顶部行）是否仍逐次一致

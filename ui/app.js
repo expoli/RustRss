@@ -83,6 +83,9 @@ const state = {
   folders: [],
   collapsedFolders: [],
   entries: [],
+  // 会话内已读的条目 id：未读视图里读过一行就从列表删掉，后台刷新 prepend 时不能再把它
+  // 插回来（服务端 unread 过滤在竞态下会漏——刷新的查询可能先于 set_read 提交）。
+  readSessionIds: new Set(),
   view: { kind: 'unread' },
   feedId: null,
   selectedId: null,
@@ -721,11 +724,11 @@ const PAGE_SIZE = 200;
 /// 条目——游标是结果流里的位置，不随某行被移出列表而后退。
 const paging = { cursor: null, exhausted: false, loading: false, error: false };
 
-/// 取一页并记下游标与「有没有下一页」。判据是「返回不足一批」：满批也可能是最后一页，
-/// 多请求一次空页的代价可以接受，换来的是不必猜。
-async function loadPage(cursor) {
+/// 当前视图对应的 `list_entries` 参数（`cursor: null` = 取首页）。
+/// 首页与续页必须用同一套筛选，抽出来避免后台刷新的 prepend 比对另抄一份漂移。
+function listArgs(cursor) {
   const kind = state.view.kind;
-  const rows = await invoke('list_entries', {
+  return {
     feedId: kind === 'feed' ? state.feedId : null,
     unreadOnly: kind === 'unread',
     starredOnly: kind === 'starred',
@@ -735,11 +738,82 @@ async function loadPage(cursor) {
     // published_at/fetched_at 自己算（前端也拿不到 fetched_at）
     cursorSortkey: cursor ? cursor.sortkey : null,
     cursorId: cursor ? cursor.id : null,
-  });
+  };
+}
+
+/// 取一页并记下游标与「有没有下一页」。判据是「返回不足一批」：满批也可能是最后一页，
+/// 多请求一次空页的代价可以接受，换来的是不必猜。
+async function loadPage(cursor) {
+  const rows = await invoke('list_entries', listArgs(cursor));
   const last = rows[rows.length - 1];
   if (last) paging.cursor = { sortkey: last.sortkey, id: last.id };
   paging.exhausted = rows.length < PAGE_SIZE;
   return rows;
+}
+
+/// 诊断用（只读）：列表视口顶部第一条可见行的 id。
+/// 后台刷新前后各取一次，两次相同才真正证明「看到的内容没被新条目顶走」——
+/// scrollTop 相等只是必要条件，行高不一致时它并不充分。
+function topVisibleRowId(list) {
+  const rows = [...list.children].filter((li) => li.dataset.id);
+  if (!rows.length) return 'none';
+  const base = rows[0].offsetTop;
+  const top = list.scrollTop;
+  for (const li of rows) {
+    if (li.offsetTop + li.offsetHeight - base > top) return li.dataset.id;
+  }
+  return 'none';
+}
+
+/// 后台刷新时把「比已加载首行更新」的条目插到列表最前面，并保持滚动态的视口不动。
+/// 只在多页已加载时调用（单页/首屏列表本来就该从新行开始，走 reset 路径）。
+/// 只动头部：append 游标、exhausted、尾部哨兵都不受影响（新条目只会让总数更多）；
+/// 已加载的行一个都不重建——重建会把滚动位置冲掉，也是打开文章时的 CPU 尖峰来源。
+async function prependFreshEntries() {
+  const first = state.entries[0];
+  const rows = await invoke('list_entries', listArgs(null));
+  // 在飞期间用户可能换了视图/筛选或手动刷新（列表已被整体重建）：这次的结果作废，
+  // 否则会把旧筛选下的条目插进新列表。重建出来的是新对象，用对象标识就能认出来；
+  // 续页 append 不动头部，所以不影响判据。
+  if (state.entries[0] !== first) {
+    log(`refresh:done prepend skipped（列表在飞期间被重建）total=${state.entries.length}`);
+    return;
+  }
+  const newer = rows.filter(
+    (r) => r.sortkey > first.sortkey || (r.sortkey === first.sortkey && r.id > first.id)
+  );
+  // 会话内已读的不回插：未读视图里读过的那行已从列表删掉，但刷新查询可能先于
+  // set_read 提交（竞态），服务端那条 unread 过滤这时还认为它是未读。
+  const fresh = newer.filter((r) => !state.readSessionIds.has(r.id));
+  const skipped = newer.length - fresh.length;
+  const list = el('entries');
+  const scrollBefore = list.scrollTop;
+  const visibleBefore = topVisibleRowId(list);
+  if (!fresh.length) {
+    log(
+      `refresh:done prepend rows=0 sessionReadSkipped=${skipped} listScrollTop=${scrollBefore}→${list.scrollTop} top=${visibleBefore}→${topVisibleRowId(list)} head=${list.firstChild?.dataset.id ?? 'none'} children=${list.children.length} total=${state.entries.length}`
+    );
+    return;
+  }
+  // 在顶部（scrollTop === 0）不补偿：用户正看着顶部，新条目应当直接可见；
+  // 滚动态才按 scrollHeight 增量把视口钉回原处（否则新行会把内容整体顶下去）。
+  const atTop = scrollBefore === 0;
+  const heightBefore = list.scrollHeight;
+  let ref = list.firstChild;
+  // 倒序（旧→新）插到「上一次插入的那行」之前：最新的排在最上，DOM 顺序与
+  // state.entries 的后端顺序（sortkey DESC）完全一致——锚点固定在原首行上的话，
+  // 每次 insertBefore 都落在同一位置，DOM 会变成升序（最旧的新条在最上）。
+  for (let i = fresh.length - 1; i >= 0; i--) {
+    const row = buildEntryRow(fresh[i]);
+    list.insertBefore(row, ref);
+    ref = row;
+  }
+  state.entries = fresh.concat(state.entries);
+  if (!atTop) list.scrollTop += list.scrollHeight - heightBefore;
+  el('list-count').textContent = t('list.count', { n: state.entries.length });
+  log(
+    `refresh:done prepend rows=${fresh.length} ids=${fresh.map((e) => e.id).join(',')} sessionReadSkipped=${skipped} atTop=${atTop} listScrollTop=${scrollBefore}→${list.scrollTop} height=${heightBefore}→${list.scrollHeight} top=${visibleBefore}→${topVisibleRowId(list)} head=${list.firstChild?.dataset.id ?? 'none'} children=${list.children.length} total=${state.entries.length}`
+  );
 }
 
 /// 选中项不在新列表里时回退到首行（视图切换/首屏加载）
@@ -801,6 +875,8 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   paging.cursor = null;
   paging.exhausted = false;
   paging.error = false;
+  // 列表要整体重建（换视图/换筛选/手动刷新）：会话已读集合对应的「已删除行」没了，清空
+  state.readSessionIds.clear();
   state.entries = await loadPage(null);
   selectFallback();
   renderList();
@@ -863,6 +939,7 @@ async function openEntry(id, { markRead, follow = true } = {}) {
 
   if (markRead && !entry.read) {
     await invoke('set_read', { ids: [id], read: true });
+    state.readSessionIds.add(id);
     const row = state.entries.find((e) => e.id === id);
     if (row) row.read = true;
 
@@ -1193,6 +1270,8 @@ async function toggleRead() {
   if (!row) return;
   const read = !row.read;
   await invoke('set_read', { ids: [row.id], read });
+  if (read) state.readSessionIds.add(row.id);
+  else state.readSessionIds.delete(row.id);
   row.read = read;
   // 未读视图下标记已读后，该条应从列表消失
   if (state.view.kind === 'unread' && read) {
@@ -1320,7 +1399,9 @@ let backgroundRefreshHint = null;
 
 /// 后台刷新（定时 / 启动首刷）由 Rust 侧 emit `refresh:start` / `refresh:done`。
 /// 手动刷新是同步等待且不发事件，所以这里只会收到后台刷新，不会出现双提示。
-/// done 走静默 loadAll：侧栏与列表刷新，正文不重渲染，阅读焦点与滚动位置保持原位。
+/// done 分两支：多页已加载走 prepend（新条目插到头部 + 补偿滚动位置，见
+/// `prependFreshEntries`），其余场景沿用静默 `loadAll({reader:false})`——
+/// 两支都不重渲染正文，阅读焦点与正文滚动位置保持原位。
 function initRefreshEvents() {
   const events = window.__TAURI__ && window.__TAURI__.event;
   if (!events || !events.listen) {
@@ -1348,7 +1429,15 @@ function initRefreshEvents() {
       const scrollBefore = reader.scrollTop;
       const htmlBefore = reader.innerHTML.length;
       try {
-        await loadAll({ reader: false });
+        // 多页已加载时只 prepend 新条目并补偿滚动位置（exhausted 不参与判据：小库/星标
+        // 这类已耗尽的多页视图同样要保持位置）；续页在飞或上批失败时走 reset，避免与
+        // loadMore 的游标/append 竞态。首屏/单页本来就没有位置要保，维持 reset 语义。
+        if (state.entries.length > PAGE_SIZE && !paging.loading && !paging.error) {
+          await prependFreshEntries();
+          await refreshCounts(); // 侧栏计数照旧走现有路径；正文一个 DOM 都不动
+        } else {
+          await loadAll({ reader: false });
+        }
       } catch (e) {
         log(`refresh:done reload failed: ${e.message}`);
       }
@@ -1444,6 +1533,12 @@ async function markAll(read) {
   const cmd = read ? 'mark_all_read' : 'mark_all_unread';
   try {
     const n = await invoke(cmd, { feedId });
+    // 批量标记同样算「会话内读过」：prepend 不回插（紧随其后的 loadAll 会重建列表并
+    // 清空集合，这里跟上单条路径的语义，不让两条路径对不上）
+    for (const e of state.entries) {
+      if (read) state.readSessionIds.add(e.id);
+      else state.readSessionIds.delete(e.id);
+    }
     setStatus(t(read ? 'status.markedRead' : 'status.markedUnread', { n }));
     log(`${cmd} scope=${feedId ?? 'all'} changed=${n}`);
     el('settings-overlay').classList.add('hidden');
