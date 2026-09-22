@@ -42,15 +42,22 @@ pub(crate) const FOLDERS_COLLAPSED_KEY: &str = "ui.folders_collapsed";
 
 /// 订阅源行查询的共同部分：列清单与聚合口径只写一份，`list_feeds` / `feed_row`
 /// 共用（新增列时只改这里，避免两处 SQL 漂移）。
+///
+/// `title` 一列出的是**显示名**（`COALESCE(custom_title, title)`），源站原名
+/// 另出一列 `source_title`——编辑对话框要拿它当 placeholder（见 `FeedRow`）。
+/// 条目表的 `feed_title` 列用同一个表达式（见 `ENTRY_SELECT` / `ENTRY_LIST_COLUMNS`）。
+const FEED_DISPLAY_TITLE: &str = "COALESCE(f.custom_title, f.title)";
+
 const FEED_ROW_SELECT: &str = "\
-    SELECT f.id, f.url, f.title, f.site_url, f.folder_id,
+    SELECT f.id, f.url, COALESCE(f.custom_title, f.title) AS title, f.site_url, f.folder_id,
            COALESCE(SUM(CASE WHEN e.read = 0 THEN 1 ELSE 0 END), 0) AS unread,
-           f.last_status, f.last_error, f.last_fetched_at, f.refresh_interval_minutes
+           f.last_status, f.last_error, f.last_fetched_at, f.refresh_interval_minutes,
+           f.custom_title, f.title
       FROM feeds f LEFT JOIN entries e ON e.feed_id = f.id";
 
 const FEED_ROW_GROUP_BY: &str = "\
-    GROUP BY f.id, f.url, f.title, f.site_url, f.folder_id, f.last_status, f.last_error,
-             f.last_fetched_at, f.refresh_interval_minutes";
+    GROUP BY f.id, f.url, f.title, f.custom_title, f.site_url, f.folder_id, f.last_status,
+             f.last_error, f.last_fetched_at, f.refresh_interval_minutes";
 
 fn feed_row_from(r: &rusqlite::Row<'_>) -> rusqlite::Result<FeedRow> {
     Ok(FeedRow {
@@ -64,6 +71,8 @@ fn feed_row_from(r: &rusqlite::Row<'_>) -> rusqlite::Result<FeedRow> {
         last_error: r.get(7)?,
         last_fetched_at: r.get(8)?,
         refresh_interval_minutes: r.get(9)?,
+        custom_title: r.get(10)?,
+        source_title: r.get(11)?,
     })
 }
 
@@ -72,6 +81,7 @@ fn feed_row_from(r: &rusqlite::Row<'_>) -> rusqlite::Result<FeedRow> {
 pub struct FeedRow {
     pub id: i64,
     pub url: String,
+    /// **显示名**：`COALESCE(custom_title, title)`。侧栏 / 列表 / 阅读区都用它。
     pub title: String,
     pub site_url: Option<String>,
     pub folder_id: Option<i64>,
@@ -81,6 +91,12 @@ pub struct FeedRow {
     pub last_fetched_at: Option<i64>,
     /// 每源刷新间隔覆盖（分钟）；`None` = 跟随全局档。
     pub refresh_interval_minutes: Option<i64>,
+    /// 用户自定义标题；`None` = 没设过（显示跟随源站名）。
+    /// 编辑对话框拿它回填输入框，空输入框 = 清除自定义。
+    pub custom_title: Option<String>,
+    /// 源站原始标题（会被抓取刷新覆盖）。编辑对话框把它当 placeholder，
+    /// 让用户随时看得见「清除自定义后会显示成什么」。
+    pub source_title: String,
 }
 
 /// 调度扫描行：`(feed_id, 覆盖分钟, 上次抓取时刻)`。
@@ -403,7 +419,10 @@ impl Store {
     }
 
     pub fn list_feeds(&self) -> Result<Vec<FeedRow>> {
-        let sql = format!("{FEED_ROW_SELECT} {FEED_ROW_GROUP_BY} ORDER BY f.title COLLATE NOCASE");
+        // 排序用显示名：自定义名改了要立刻重排，否则侧栏名字变了位置不动。
+        let sql = format!(
+            "{FEED_ROW_SELECT} {FEED_ROW_GROUP_BY} ORDER BY {FEED_DISPLAY_TITLE} COLLATE NOCASE"
+        );
         let mut stmt = self.conn.prepare(&sql)?;
         let rows = stmt.query_map([], feed_row_from)?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -431,6 +450,18 @@ impl Store {
             .ok_or_else(|| StoreError::Invalid(format!("订阅 #{feed_id} 不存在")))
     }
 
+    /// 设置用户自定义标题（`None` = 清除自定义、显示回退源站名），返回更新后的行。
+    /// 归一化（trim / 空串=清除）在命令层；这里只落列。
+    /// 注意：自定义名不会被抓取刷新覆盖——`update_feed_meta` 只写 `title`。
+    pub fn set_feed_custom_title(&self, feed_id: i64, custom_title: Option<&str>) -> Result<FeedRow> {
+        self.conn.execute(
+            "UPDATE feeds SET custom_title = ?1 WHERE id = ?2",
+            params![custom_title, feed_id],
+        )?;
+        self.feed_row(feed_id)?
+            .ok_or_else(|| StoreError::Invalid(format!("订阅 #{feed_id} 不存在")))
+    }
+
     /// 调度扫描用：全部源的 `(id, 覆盖分钟, 上次抓取时刻)`。只读三列，扫描很轻，
     /// 供宿主侧的 tick 在**一次短锁**里拿到「谁到点了」的全部输入。
     pub fn feeds_with_interval(&self) -> Result<Vec<FeedIntervalRow>> {
@@ -442,6 +473,9 @@ impl Store {
     }
 
     /// 抓取成功后写回源元信息（标题 / 站点 / 语言）。
+    ///
+    /// 只写 `title`（**源站名**），绝不碰 `custom_title`——用户改的名要在刷新后保留，
+    /// 显示层的 `COALESCE(custom_title, title)` 自然会继续用自定义名。
     pub fn update_feed_meta(
         &self,
         feed_id: i64,
@@ -960,7 +994,8 @@ const COUNTS_SQL: &str = "SELECT (SELECT COUNT(*) FROM entries),
        (SELECT COUNT(*) FROM entries WHERE starred = 1),
        (SELECT COUNT(*) FROM entries WHERE read_later = 1)";
 
-const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
+const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, COALESCE(f.custom_title, f.title) AS feed_title,
+        e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, e.content_html, e.content_text,
         e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey,
         e.fulltext_fetched
@@ -973,7 +1008,9 @@ const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_o
 ///
 /// （原本是一整条 `ENTRY_SELECT_LIST`，拆成「列 + `entry_list_sql` 拼 FROM」是为了
 /// 续扫时能在 FROM 上带索引提示，而列只保留一份。）
-const ENTRY_LIST_COLUMNS: &str = "SELECT e.id, e.feed_id, f.title, e.stable_id, e.id_origin, e.title,
+const ENTRY_LIST_COLUMNS: &str =
+    "SELECT e.id, e.feed_id, COALESCE(f.custom_title, f.title) AS feed_title,
+        e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, NULL, NULL,
         e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey";
 

@@ -331,3 +331,59 @@ async fn fetch_jobs_progress_counts_match_outcomes() {
     let last = seen.last().unwrap();
     assert_eq!((last.done, last.ok, last.failed), (3, 2, 1));
 }
+
+/// 用户改过自定义标题后走**完整刷新管线**（fetch → parse → apply_results）：
+/// 源站改名只更新 source_title，自定义名与显示名都不被覆盖。
+/// 与 store 层的 update_feed_meta 单测互补——这条钉的是「刷新真的不会把用户改的名洗掉」。
+#[tokio::test]
+async fn refresh_keeps_custom_title_and_tracks_source_title() {
+    let v1 = RSS_TWO_ITEMS.to_string();
+    let v2 = RSS_TWO_ITEMS.replace("<title>测试源</title>", "<title>测试源（改版）</title>");
+    let hits = Arc::new(AtomicUsize::new(0));
+    let counter = hits.clone();
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/feed.xml"))
+        .respond_with(move |_req: &Request| {
+            // 第一次给 v1，之后给 v2（无 ETag/Last-Modified → 不会走 304 分支，
+            // 每次都真解析一遍 body）
+            let body = if counter.fetch_add(1, Ordering::SeqCst) == 0 { v1.clone() } else { v2.clone() };
+            ResponseTemplate::new(200).set_body_string(body)
+        })
+        .mount(&server)
+        .await;
+
+    let store = Store::open_in_memory().unwrap();
+    let feed_id = store
+        .add_feed(&format!("{}/feed.xml", server.uri()), Some("旧名"))
+        .unwrap();
+    store.set_feed_custom_title(feed_id, Some("我的贴名")).unwrap();
+
+    refresh(&store, &fetcher(), &[feed_id], 4).await.unwrap();
+    let row = store
+        .list_feeds()
+        .unwrap()
+        .into_iter()
+        .find(|f| f.id == feed_id)
+        .unwrap();
+    assert_eq!(row.title, "我的贴名", "刷新不得覆盖用户自定义名");
+    assert_eq!(row.source_title, "测试源", "源站名照常学到");
+    assert!(
+        store
+            .list_entries(&EntryQuery::default())
+            .unwrap()
+            .iter()
+            .all(|e| e.feed_title == "我的贴名"),
+        "列表/阅读区显示的也是自定义名"
+    );
+
+    // 源站改版：源站名跟着刷新走，自定义名与显示名都不动
+    refresh(&store, &fetcher(), &[feed_id], 4).await.unwrap();
+    let row = store.feed_row(feed_id).unwrap().unwrap();
+    assert_eq!(row.title, "我的贴名");
+    assert_eq!(row.source_title, "测试源（改版）");
+
+    // 清除自定义后才跟着源站走（用户主动选择回退）
+    let row = store.set_feed_custom_title(feed_id, None).unwrap();
+    assert_eq!(row.title, "测试源（改版）");
+}

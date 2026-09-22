@@ -5,7 +5,7 @@
 //! - 参数名在 JS 侧用 camelCase（Tauri 会自动映射到 snake_case）；
 //! - 异步命令**不在 await 期间持有数据库锁**——抓取与写库分成两段。
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::State;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 
@@ -490,6 +490,111 @@ pub fn set_feed_refresh_interval(
 ) -> R<FeedRow> {
     let minutes = normalize_feed_refresh_interval(value.as_deref())?;
     state.with_store(|s| s.set_feed_refresh_interval(feed_id, minutes).map_err(err))
+}
+
+/// 订阅源配置补丁（`set_feed_config` 的参数对象）。
+///
+/// 每个字段都区分「不动」与「清除」：键缺省 / `null` = 不动（不落库）；
+/// 显式给值才写。平铺三个参数做不出这个语义（`Option<i64>` 的 `null`
+/// 到底是「不动」还是「移出到未分组」无法区分），所以用对象补丁。
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedConfigPatch {
+    /// 自定义标题：键缺省/`null` = 不动；`""`（或纯空白）= 清除（回退源站名）；
+    /// 其它 = 设自定义标题。
+    pub custom_title: Option<String>,
+    /// 文件夹：键缺省 = 不动；`null` = 移出到未分组；数字 = 移入该文件夹。
+    /// 用 `deserialize_with` 是因为 `Option<FolderPatch>` 会把 `null` 吃成
+    /// 「不动」（见 `folder_patch`），那样就没有写法能表达「移出到未分组」。
+    #[serde(default, deserialize_with = "folder_patch")]
+    pub folder_id: Option<FolderPatch>,
+    /// 刷新间隔：键缺省/`null` = 不动；`"global"` = 跟随全局；白名单档位 = 覆盖。
+    /// 归一化复用 `normalize_feed_refresh_interval`（与右键菜单同一条白名单）。
+    pub refresh_interval: Option<String>,
+}
+
+/// 文件夹补丁：`null` 与数字都合法，缺键不合法（缺键由 `Option` 层表达「不动」）。
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+#[serde(untagged)]
+pub enum FolderPatch {
+    /// JSON `null`：移出到未分组（与 `assign_feed_folder(feedId, null)` 同义）
+    Ungrouped,
+    /// JSON 数字：移入该文件夹
+    Id(i64),
+}
+
+/// `folderId` 字段的自定义解析：`null` → `Some(Ungrouped)`，数字 → `Some(Id)`。
+/// 键缺省时 serde 不走这里（`#[serde(default)]` 直接给 `None` = 不动）。
+fn folder_patch<'de, D>(de: D) -> Result<Option<FolderPatch>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    FolderPatch::deserialize(de).map(Some)
+}
+
+/// 自定义标题归一化：trim 后为空 = 清除（`None`）；过长截断到 [`MAX_CUSTOM_TITLE_LEN`]
+/// 个字符（侧栏行与 tooltip 都是单行，不截断会让布局被一段长标题撑坏）。
+/// 截断按字符（不是字节）——中文标题不会被截成半个字。
+pub(crate) fn normalize_custom_title(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(trimmed.chars().take(MAX_CUSTOM_TITLE_LEN).collect())
+}
+
+/// 侧栏/对话框输入的标题上限；界面侧 `maxlength` 用同一个数，正常操作摸不到上限。
+pub(crate) const MAX_CUSTOM_TITLE_LEN: usize = 200;
+
+/// 保存订阅源编辑对话框的三个可改字段：None/缺键 = 不动，只写用户真改过的字段。
+/// 返回更新后的 FeedRow（显示名 + 源站名 + 自定义值 + 文件夹 + 间隔，前端不用重拉侧栏）。
+///
+/// 文件夹落库复用 `assign_folder`（与 `assign_feed_folder` 同一条存储路径），
+/// 间隔归一化复用 `normalize_feed_refresh_interval`（与右键菜单同一张白名单）。
+#[tauri::command]
+pub fn set_feed_config(
+    state: State<'_, AppState>,
+    feed_id: i64,
+    patch: FeedConfigPatch,
+) -> R<FeedRow> {
+    set_feed_config_core(&state, feed_id, &patch)
+}
+
+/// `set_feed_config` 的本体：不依赖 Tauri（`State` 不好在单测里构造），
+/// 归一化 + 落库 + 回读三段与命令完全同源。
+pub(crate) fn set_feed_config_core(
+    state: &AppState,
+    feed_id: i64,
+    patch: &FeedConfigPatch,
+) -> R<FeedRow> {
+    // 先归一化全部字段再落库：任何一个字段非法时一个字段都不写（不留半套修改），
+    // 且用户拿到的是可读错误而不是写了一半的状态。
+    // 两处双层 Option：外层 None = 不动（不落库），内层 None = 清除/跟随全局。
+    let custom_title = patch.custom_title.as_deref().map(normalize_custom_title);
+    let folder = match patch.folder_id {
+        None => None,
+        Some(FolderPatch::Ungrouped) => Some(None),
+        Some(FolderPatch::Id(id)) => Some(Some(id)),
+    };
+    let minutes = match &patch.refresh_interval {
+        None => None,
+        Some(v) => Some(normalize_feed_refresh_interval(Some(v))?),
+    };
+
+    state.with_store(|s| {
+        if let Some(title) = custom_title.as_ref() {
+            s.set_feed_custom_title(feed_id, title.as_deref()).map_err(err)?;
+        }
+        if let Some(folder_id) = folder {
+            s.assign_folder(feed_id, folder_id).map_err(err)?;
+        }
+        if let Some(minutes) = minutes {
+            s.set_feed_refresh_interval(feed_id, minutes).map_err(err)?;
+        }
+        s.feed_row(feed_id)
+            .map_err(err)?
+            .ok_or_else(|| format!("订阅 #{feed_id} 不存在"))
+    })
 }
 
 /// 启动时是否自动刷新一次。调度器在启动首 tick 时读这个值。
@@ -1399,6 +1504,167 @@ mod tests {
             .with_store(|s| s.set_feed_refresh_interval(feed_id, minutes).map_err(err))
             .unwrap();
         assert_eq!(row.refresh_interval_minutes, None, "「跟随全局」恢复 NULL");
+    }
+
+    // ------------------------------------------------- 订阅源编辑（set_feed_config）
+
+    /// 补丁对象的解析口径：键缺省与 `null` 都不是「清除」——只有显式给值才写。
+    /// 这是「部分写入不动其它字段」的前置条件，所以逐字段验一遍。
+    #[test]
+    fn feed_config_patch_distinguishes_absent_from_clear() {
+        // 空对象：三个字段都「不动」
+        let empty: FeedConfigPatch = serde_json::from_str("{}").unwrap();
+        assert!(empty.custom_title.is_none());
+        assert!(empty.folder_id.is_none());
+        assert!(empty.refresh_interval.is_none());
+
+        // 显式 null：customTitle / refreshInterval 仍是不动；folderId 的 null 是「移出到未分组」
+        let nulls: FeedConfigPatch =
+            serde_json::from_str(r#"{"customTitle":null,"folderId":null,"refreshInterval":null}"#)
+                .unwrap();
+        assert_eq!(nulls.custom_title, None, "null = 不动");
+        assert_eq!(nulls.refresh_interval, None, "null = 不动");
+        assert_eq!(
+            nulls.folder_id,
+            Some(FolderPatch::Ungrouped),
+            "folderId=null 是移出到未分组（与 assign_feed_folder 同义）"
+        );
+
+        // 显式值（camelCase 键名，与 JS 侧一致）
+        let full: FeedConfigPatch = serde_json::from_str(
+            r#"{"customTitle":"我的名","folderId":7,"refreshInterval":"30"}"#,
+        )
+        .unwrap();
+        assert_eq!(full.custom_title.as_deref(), Some("我的名"));
+        assert_eq!(full.folder_id, Some(FolderPatch::Id(7)));
+        assert_eq!(full.refresh_interval.as_deref(), Some("30"));
+
+        // 空串 = 显式清除自定义名（与 null 区分）
+        let clear: FeedConfigPatch = serde_json::from_str(r#"{"customTitle":""}"#).unwrap();
+        assert_eq!(clear.custom_title.as_deref(), Some(""));
+    }
+
+    #[test]
+    fn custom_title_normalization_trims_clears_and_caps() {
+        assert_eq!(normalize_custom_title(""), None, "空串 = 清除");
+        assert_eq!(normalize_custom_title("   \t "), None, "纯空白 = 清除");
+        assert_eq!(normalize_custom_title("  我的贴名  ").as_deref(), Some("我的贴名"));
+        let long = "字".repeat(MAX_CUSTOM_TITLE_LEN + 50);
+        let capped = normalize_custom_title(&long).unwrap();
+        assert_eq!(capped.chars().count(), MAX_CUSTOM_TITLE_LEN, "按字符截断");
+    }
+
+    /// 命令体走 `AppState::for_test`（真实内存库）：只写补丁里给出的字段，
+    /// 其余字段一个都不动；不存在的源给可读错误。
+    #[test]
+    fn set_feed_config_writes_only_patched_fields() {
+        let state = AppState::for_test();
+        let (feed_id, other) = state
+            .with_store(|s| {
+                let a = s.add_feed("https://example.com/f.xml", Some("源站名")).map_err(err)?;
+                let b = s.add_feed("https://example.com/g.xml", Some("另一源")).map_err(err)?;
+                let folder = s.add_folder("开发").map_err(err)?;
+                s.assign_folder(a, Some(folder)).map_err(err)?;
+                s.set_feed_refresh_interval(a, Some(60)).map_err(err)?;
+                Ok((a, b))
+            })
+            .unwrap();
+
+        // 只改标题：文件夹/间隔原样不动
+        let row = set_feed_config_core(
+            &state,
+            feed_id,
+            &FeedConfigPatch {
+                custom_title: Some("  我的贴名  ".to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.title, "我的贴名", "空白应被 trim");
+        assert_eq!(row.source_title, "源站名");
+        assert_eq!(row.custom_title.as_deref(), Some("我的贴名"));
+        assert!(row.folder_id.is_some(), "未给的 folderId 不该被清掉");
+        assert_eq!(row.refresh_interval_minutes, Some(60), "未给的间隔不该被清掉");
+        // 别的源不受影响
+        let other_row = state.with_store(|s| s.feed_row(other).map_err(err)).unwrap().unwrap();
+        assert_eq!(other_row.title, "另一源");
+        assert_eq!(other_row.custom_title, None);
+
+        // 只改间隔：自定义名与文件夹不动
+        let row = set_feed_config_core(
+            &state,
+            feed_id,
+            &FeedConfigPatch {
+                refresh_interval: Some("global".to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.refresh_interval_minutes, None, "global = 恢复跟随全局");
+        assert_eq!(row.custom_title.as_deref(), Some("我的贴名"), "自定义名不该被清掉");
+        assert!(row.folder_id.is_some(), "文件夹不该被清掉");
+
+        // 只改文件夹到未分组：自定义名保留
+        let row = set_feed_config_core(
+            &state,
+            feed_id,
+            &FeedConfigPatch {
+                folder_id: Some(FolderPatch::Ungrouped),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.folder_id, None, "null = 移出到未分组");
+        assert_eq!(row.custom_title.as_deref(), Some("我的贴名"));
+
+        // 空串 = 清除自定义：显示名回退源站名
+        let row = set_feed_config_core(
+            &state,
+            feed_id,
+            &FeedConfigPatch {
+                custom_title: Some(String::new()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.custom_title, None);
+        assert_eq!(row.title, "源站名", "清除后显示名回退源站名");
+
+        // 非法间隔：可读错误，且一个字段都不写（先把自定义名设回去再试）
+        set_feed_config_core(
+            &state,
+            feed_id,
+            &FeedConfigPatch {
+                custom_title: Some("还在".to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let msg = set_feed_config_core(
+            &state,
+            feed_id,
+            &FeedConfigPatch {
+                custom_title: Some("新的名".to_string()),
+                refresh_interval: Some("7".to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(msg.contains("7"), "错误信息该点名非法值: {msg}");
+        let row = state.with_store(|s| s.feed_row(feed_id).map_err(err)).unwrap().unwrap();
+        assert_eq!(row.custom_title.as_deref(), Some("还在"), "非法间隔时不该写一半");
+
+        // 不存在的源：可读错误
+        let err = set_feed_config_core(
+            &state,
+            9999,
+            &FeedConfigPatch {
+                custom_title: Some("x".to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("不存在"), "实际: {err}");
     }
 
     #[test]

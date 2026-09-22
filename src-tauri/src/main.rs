@@ -191,6 +191,7 @@ fn main() {
             commands::set_mark_read_on_navigate,
             commands::set_refresh_interval,
             commands::set_feed_refresh_interval,
+            commands::set_feed_config,
             commands::set_refresh_on_start,
             commands::set_refresh_concurrency,
             commands::set_notify_new_articles,

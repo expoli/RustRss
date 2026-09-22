@@ -555,6 +555,44 @@
     </div>
   </div>
 
+  <!-- 重置订阅源：标题/文件夹/刷新间隔 + 只读地址。字段先在本地暂存，点「保存」
+       才一次落库（取消/Esc/点遮罩都无副作用） -->
+  <div id="feed-edit-overlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-sheet edit-sheet">
+      <h3 data-i18n="feedEdit.title"></h3>
+      <div class="setting-item">
+        <div class="text">
+          <b data-i18n="feedEdit.name"></b>
+          <small data-i18n="feedEdit.nameHint"></small>
+        </div>
+        <input type="text" id="feed-edit-name" autocomplete="off" maxlength="200" />
+      </div>
+      <div class="setting-item">
+        <div class="text">
+          <b data-i18n="feedEdit.folder"></b>
+          <small data-i18n="feedEdit.folderHint"></small>
+        </div>
+        <button type="button" id="feed-edit-folder" class="setting-dropdown" aria-haspopup="menu"></button>
+      </div>
+      <div class="setting-item">
+        <div class="text">
+          <b data-i18n="feedEdit.interval"></b>
+          <small data-i18n="feedEdit.intervalHint"></small>
+        </div>
+        <button type="button" id="feed-edit-interval" class="setting-dropdown" aria-haspopup="menu"></button>
+      </div>
+      <div class="confirm-section">
+        <h4 data-i18n="feedEdit.url"></h4>
+        <code id="feed-edit-url"></code>
+      </div>
+      <div class="confirm-actions">
+        <span class="spacer"></span>
+        <button id="feed-edit-cancel" type="button" data-i18n="feedEdit.cancel"></button>
+        <button id="feed-edit-save" type="button" class="primary" data-i18n="feedEdit.save"></button>
+      </div>
+    </div>
+  </div>
+
   <script src="vendor/highlight.min.js"></script>
   <script src="i18n.js"></script>
   <script src="app.js"></script>

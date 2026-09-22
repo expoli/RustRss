@@ -242,6 +242,27 @@ fn list_entries_filters_and_limits() {
     assert_eq!(only_f1.len(), 2);
     assert!(only_f1.iter().all(|e| e.feed_id == f1));
     assert_eq!(only_f1[0].feed_title, "A");
+    // 改名后列表里的 feed_title 也跟着变（同一个 COALESCE 显示口径）
+    store.set_feed_custom_title(f1, Some("A 自定义")).unwrap();
+    let renamed = store
+        .list_entries(&EntryQuery {
+            feed_id: Some(f1),
+            ..Default::default()
+        })
+        .unwrap();
+    assert!(
+        renamed.iter().all(|e| e.feed_title == "A 自定义"),
+        "列表需要显示名而不是源站名: {:?}",
+        renamed.iter().map(|e| &e.feed_title).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        store.get_entry(renamed[0].id).unwrap().unwrap().feed_title,
+        "A 自定义",
+        "阅读区（get_entry）同一口径"
+    );
+    let hits = store.search("A1", 10).unwrap();
+    assert!(!hits.is_empty(), "搜索应命中");
+    assert_eq!(hits[0].feed_title, "A 自定义", "搜索结果同一口径");
 
     let limited = store
         .list_entries(&EntryQuery {
@@ -554,6 +575,109 @@ fn feed_refresh_interval_round_trip_and_scan() {
     // 不存在的源：可读错误，不静默成功
     let err = store.set_feed_refresh_interval(9999, Some(30)).unwrap_err();
     assert!(err.to_string().contains("不存在"), "实际: {err}");
+}
+
+#[test]
+fn custom_title_is_display_name_and_survives_refresh() {
+    // 自定义标题的全部语义都在这条：设/清/刷新不覆盖/排序跟着显示名。
+    let (store, feed_id) = setup();
+    let other = store.add_feed("https://example.com/z.xml", Some("源 ZZ")).unwrap();
+
+    // 未设自定义：显示名 = 源站名，source_title 同样，custom_title 为 NULL
+    let row = store.feed_row(feed_id).unwrap().unwrap();
+    assert_eq!(row.title, "示例源");
+    assert_eq!(row.source_title, "示例源");
+    assert_eq!(row.custom_title, None);
+
+    // 设自定义：显示名换成它，源站名保留（对话框 placeholder 要的就是它）
+    let row = store.set_feed_custom_title(feed_id, Some("我的贴名")).unwrap();
+    assert_eq!(row.title, "我的贴名");
+    assert_eq!(row.source_title, "示例源");
+    assert_eq!(row.custom_title.as_deref(), Some("我的贴名"));
+
+    // 刷新源元信息（源站改名）不动自定义名，但源站名要按新值存下
+    store
+        .update_feed_meta(feed_id, Some("示例源（改版）"), None, None, None)
+        .unwrap();
+    let row = store.feed_row(feed_id).unwrap().unwrap();
+    assert_eq!(row.title, "我的贴名", "刷新不得覆盖用户自定义名");
+    assert_eq!(
+        row.source_title, "示例源（改版）",
+        "源站名该跟着刷新更新（只影响清除自定义后的回退值）"
+    );
+
+    // 清除自定义：显示名回退到源站名
+    let row = store.set_feed_custom_title(feed_id, None).unwrap();
+    assert_eq!(row.title, "示例源（改版）");
+    assert_eq!(row.custom_title, None);
+
+    // 侧栏顺序跟着**显示名**走：把排在后面的源改成排最前的自定义名 → 它排第一
+    store.set_feed_custom_title(other, Some("000 排前面")).unwrap();
+    let listed = store.list_feeds().unwrap();
+    assert_eq!(listed[0].id, other, "自定义名改了侧栏要立刻重排: {listed:?}");
+    // 清除自定义 → 恢复按源站名排序（不写死 CJK 顺序，用同一套 ASCII NOCASE 口径算期望值）
+    store.set_feed_custom_title(other, None).unwrap();
+    let listed = store.list_feeds().unwrap();
+    let names: Vec<String> = listed.iter().map(|f| f.title.clone()).collect();
+    let mut expected = names.clone();
+    expected.sort_by_key(|n| n.to_lowercase());
+    assert_eq!(names, expected, "侧栏顺序应等于按显示名排序: {listed:?}");
+
+    // 不存在的源：可读错误，不静默成功
+    let err = store.set_feed_custom_title(9999, Some("x")).unwrap_err();
+    assert!(err.to_string().contains("不存在"), "实际: {err}");
+}
+
+#[test]
+fn migration_v9_to_v10_adds_custom_title_on_real_file() {
+    // 真文件走一次 v9→v10：v9 库升级后既有订阅/条目与状态全部保留，新列 NULL
+    // （存量源继续显示源站名）、可写且重启后仍在、二次打开幂等。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-v10-test-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute_batch(&MIGRATIONS[..9].join(";")).unwrap();
+        conn.execute_batch(
+            "INSERT INTO feeds (id, url, title, created_at) VALUES (1, 'https://a', '源 A', 0);
+             INSERT INTO entries (id, feed_id, stable_id, id_origin, title, url, summary,
+                                  search_tokens, content_hash, read, starred, fetched_at, read_later)
+               VALUES (1, 1, 'm1', 'source_data', '迁移保留', 'https://a/1', '摘要', '迁移保留', 'h', 1, 1, 0, 0);
+             PRAGMA user_version = 9;",
+        )
+        .unwrap();
+    }
+
+    let store = Store::open(&db_path).expect("打开应自动跑 v10 迁移");
+    assert_eq!(store.schema_version().unwrap() as usize, MIGRATIONS.len());
+    let feeds = store.list_feeds().unwrap();
+    assert_eq!(feeds.len(), 1, "既有订阅应保留");
+    assert_eq!(feeds[0].custom_title, None, "升级后新列为 NULL＝继续显示源站名");
+    assert_eq!(feeds[0].title, "源 A");
+    assert_eq!(feeds[0].source_title, "源 A");
+    let row = store.get_entry(1).unwrap().expect("既有条目应保留");
+    assert_eq!(row.feed_title, "源 A");
+    assert!(row.read && row.starred, "既有阅读状态应保留");
+
+    // 新列随即可写：自定义名落库，重启后仍在，列表/条目两处都按显示名出
+    store.set_feed_custom_title(1, Some("改过的名")).unwrap();
+    drop(store);
+    let store = Store::open(&db_path).expect("二次打开应成功");
+    assert_eq!(store.schema_version().unwrap() as usize, MIGRATIONS.len());
+    let feeds = store.list_feeds().unwrap();
+    assert_eq!(feeds[0].title, "改过的名", "自定义名应持久化（重启保留）");
+    assert_eq!(feeds[0].custom_title.as_deref(), Some("改过的名"));
+    assert_eq!(
+        store.get_entry(1).unwrap().unwrap().feed_title,
+        "改过的名",
+        "条目行同步显示自定义名"
+    );
+    let _ = std::fs::remove_file(&db_path);
 }
 
 #[test]

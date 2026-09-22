@@ -605,6 +605,8 @@ main {
 .confirm-sheet h4 { margin: 0 0 4px; font-size: 12px; color: var(--fg-dim); }
 /* 通用确认弹窗的小尺寸变体：一句话 + 两个按钮，不需要 780px 宽 */
 .confirm-sheet.small-sheet { width: min(420px, 88vw); max-height: none; }
+/* 订阅源编辑：三行字段（标签 + 控件）+ 只读地址，比确认弹窗宽一点才放得下 */
+.confirm-sheet.edit-sheet { width: min(560px, 92vw); max-height: none; }
 .confirm-sheet button.danger { color: var(--danger); border-color: var(--danger); }
 .confirm-section { display: flex; flex-direction: column; min-height: 0; }
 .confirm-section.grow { flex: 1; }

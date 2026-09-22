@@ -320,6 +320,8 @@ const state = {
   view: { kind: 'unread' },
   feedId: null,
   selectedId: null,
+  // 正文区当前展示条目所属的源 id：改源名后只更新该源的元信息（正文不重渲染）
+  readerFeedId: null,
   query: '',
   // 权威值在 Rust 侧（get_ui_settings），这里只是启动前的占位
   settings: { mark_read_on_navigate: true },
@@ -787,6 +789,7 @@ function onSentinel(records) {
 }
 
 function renderReaderEmpty() {
+  state.readerFeedId = null;
   el('reader').innerHTML = `<div class="reader-empty">
       <p>${t('reader.empty')}</p>
       <p class="dim">${t('reader.shortcuts')}</p>
@@ -794,6 +797,7 @@ function renderReaderEmpty() {
 }
 
 function renderReader(entry) {
+  state.readerFeedId = entry.feed_id;
   const __t = [{ tag: 'start', ms: performance.now() }];
   const mark = (tag) => __t.push({ tag, ms: performance.now() });
   const reader = el('reader');
@@ -1326,6 +1330,8 @@ function openFeedMenu(ev, feed) {
   // 与移动/刷新间隔组用分隔线隔开
   items.push({ label: t('menu.refreshNow'), action: () => refreshOne(feed.id) });
   items.push({ separator: true });
+  // 编辑：标题/文件夹/间隔三件套的收敛入口（与下面的快捷项同一落库路径）
+  items.push({ label: t('menu.editFeed'), action: () => openFeedEditDialog(feed) });
   for (const folder of state.folders) {
     if (folder.id === feed.folder_id) continue;
     items.push({
@@ -1440,6 +1446,169 @@ function reassignFeed(feedId, folderId) {
   invoke('assign_feed_folder', { feedId, folderId })
     .then(() => refreshCounts())
     .catch((err) => setStatus(err.message, true));
+}
+
+// ---------------- 订阅源编辑对话框 ----------------
+// 三字段先在本地暂存，点「保存」才一次落库：取消 / Esc / 点遮罩都不产生任何写入。
+// 侧栏与右键菜单的快捷项仍旧保留，两条路径共用同一套归一化与落库（set_feed_config
+// 复用 assign_folder 与刷新间隔白名单）。
+
+/// 当前正在编辑的暂存值；`null` = 对话框未打开
+let feedEdit = null;
+
+function feedEditIntervalValue(feed) {
+  return feed.refresh_interval_minutes == null ? null : String(feed.refresh_interval_minutes);
+}
+
+/// 源间隔值 → 界面文案（`null` = 跟随全局；档位文案与右键菜单同源）
+function feedIntervalText(value) {
+  return value == null ? followGlobalLabel() : feedIntervalLabel(Number(value));
+}
+
+/// 对话框字段描述：id / 选项 / 当前值 / 写入暂存 / 触发按钮文案
+function feedEditField(kind) {
+  if (kind === 'folder') {
+    return {
+      id: 'feed-edit-folder',
+      choices: () => [
+        { value: null, label: t('feedEdit.ungrouped') },
+        ...(state.folders || []).map((f) => ({ value: f.id, label: f.name })),
+      ],
+      current: () => feedEdit.folderId,
+      set: (v) => {
+        feedEdit.folderId = v;
+      },
+      text: () => {
+        if (feedEdit.folderId == null) return t('feedEdit.ungrouped');
+        const folder = (state.folders || []).find((f) => f.id === feedEdit.folderId);
+        return folder ? folder.name : String(feedEdit.folderId);
+      },
+    };
+  }
+  return {
+    id: 'feed-edit-interval',
+    choices: () => FEED_REFRESH_CHOICES.map((c) => ({ value: c.value, label: c.label() })),
+    current: () => feedEdit.interval,
+    set: (v) => {
+      feedEdit.interval = v;
+    },
+    text: () => feedIntervalText(feedEdit.interval),
+  };
+}
+
+/// 打开编辑对话框：用 FeedRow 的现有值预填（源站名当 placeholder，
+/// 让用户随时看得见「清空输入框会显示成什么」）
+function openFeedEditDialog(feed) {
+  feedEdit = {
+    feed,
+    name: feed.custom_title || '',
+    folderId: feed.folder_id ?? null,
+    interval: feedEditIntervalValue(feed),
+  };
+  const input = el('feed-edit-name');
+  input.value = feedEdit.name;
+  input.placeholder = feed.source_title || feed.title;
+  const url = el('feed-edit-url');
+  url.textContent = feed.url;
+  url.title = feed.url; // 长地址截断时悬停可看全（只读，不可改）
+  paintFeedEditLabels();
+  el('feed-edit-overlay').classList.remove('hidden');
+  input.focus();
+  input.select();
+}
+
+function paintFeedEditLabels() {
+  for (const kind of ['folder', 'interval']) {
+    const field = feedEditField(kind);
+    setText(el(field.id), field.text());
+  }
+}
+
+/// 关闭对话框：下拉菜单是挂在 body 上的，弹窗关了它不能留在屏幕上
+function closeFeedEditDialog() {
+  el('feed-edit-overlay').classList.add('hidden');
+  closeContextMenu();
+  feedEdit = null;
+}
+
+/// 打开某个字段的选项菜单：只改本地暂存值（不打库），「保存」才落库。
+/// 触发按钮带 `.setting-dropdown` 类——boot 的「点菜单外面就关」监听只豁免这个
+/// 类，否则开菜单的那一次点击会把它在同一事件里建了又删（设置页五个下拉踩过
+/// 同一个坑，见 openContextMenu 的锚定模式）。
+function toggleFeedEditDropdown(kind) {
+  if (!feedEdit) return;
+  const field = feedEditField(kind);
+  const menu = el('ctx-menu');
+  if (menu && menu.dataset.dropdown === field.id) {
+    closeContextMenu();
+    return;
+  }
+  const current = field.current();
+  openContextMenu(
+    { clientX: 0, clientY: 0 },
+    field.choices().map((c) => ({
+      label: c.label,
+      checked: c.value === current,
+      action: () => {
+        field.set(c.value);
+        paintFeedEditLabels();
+      },
+    })),
+    el(field.id)
+  );
+  el('ctx-menu').dataset.dropdown = field.id;
+}
+
+/// 保存：只把**改过的**字段放进补丁（键缺省 = 后端不动那个字段）。
+/// 清除自定义名 = 送空串（`null` 是「不动」，两者在协议层必须区分）。
+/// 「跟随全局」同理送 `"global"` 而不是 `null`。
+async function saveFeedEdit() {
+  if (!feedEdit) return;
+  const { feed } = feedEdit;
+  const patch = {};
+  const name = el('feed-edit-name').value.trim();
+  if (name !== (feed.custom_title || '').trim()) patch.customTitle = name;
+  if (feedEdit.folderId !== (feed.folder_id ?? null)) patch.folderId = feedEdit.folderId;
+  if (feedEdit.interval !== feedEditIntervalValue(feed)) {
+    patch.refreshInterval = feedEdit.interval ?? 'global';
+  }
+  closeFeedEditDialog();
+  if (!Object.keys(patch).length) return; // 三字段都没改：不打库
+  try {
+    const row = await invoke('set_feed_config', { feedId: feed.id, patch });
+    // 侧栏走 sidebar_data 重拉：改名后要按**新显示名**重排，本地就地改字段做不到重排
+    await refreshCounts();
+    syncFeedTitle(row);
+    setStatus(t('status.feedSaved', { name: row.title }));
+    log(
+      `feed ${row.id} config saved name="${row.title}" source="${row.source_title}" folder=${
+        row.folder_id ?? 'none'
+      } interval=${row.refresh_interval_minutes ?? 'global'}`
+    );
+  } catch (err) {
+    setStatus(err.message, true);
+    log(`set_feed_config failed: ${err.message}`);
+  }
+}
+
+/// 改名后同步已渲染的文本：列表行的源名 + 阅读区元信息。
+/// 只改文本节点，不重建列表/正文（滚动位置、选中态、正文 DOM 都保持原位；
+/// 侧栏由 refreshCounts → renderSidebar 的 keyed reconcile 负责）。
+function syncFeedTitle(row) {
+  for (const li of el('entries').children) {
+    const entry = state.entries.find((e) => e.id === Number(li.dataset.id));
+    if (!entry || entry.feed_id !== row.id) continue;
+    entry.feed_title = row.title;
+    const meta = li.querySelector('.meta span');
+    if (meta) setText(meta, row.title);
+  }
+  if (state.readerFeedId === row.id) {
+    const meta = document.querySelector('#reader .reader-head .meta span');
+    if (meta) setText(meta, row.title);
+  }
+  if (state.view.kind === 'feed' && state.feedId === row.id) {
+    el('list-title').textContent = viewTitle();
+  }
 }
 
 /// 内联文本输入对话框（Tauri 禁用 window.prompt）：resolve(null)=取消
@@ -2358,6 +2527,24 @@ async function boot() {
     if (!row.classList.contains('hidden')) el('add-url').focus();
   };
   el('btn-settings').onclick = openSettings;
+  // 订阅源编辑弹窗：取消/保存 + 两个自绘下拉 + 回车即存（与其它弹窗的键盘习惯一致）
+  el('feed-edit-cancel').onclick = () => closeFeedEditDialog();
+  el('feed-edit-save').onclick = () => saveFeedEdit();
+  el('feed-edit-name').onkeydown = (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      saveFeedEdit();
+    }
+  };
+  el('feed-edit-folder').onclick = () => toggleFeedEditDropdown('folder');
+  el('feed-edit-interval').onclick = () => toggleFeedEditDropdown('interval');
+  // Esc 关弹窗（与确认框同一口径；下拉菜单同时被全局 Esc 处理器关掉是无害的，
+  // 两者都是「取消」语义）
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !el('feed-edit-overlay').classList.contains('hidden')) {
+      closeFeedEditDialog();
+    }
+  });
   el('ai-save').onclick = async () => {
     const key = el('ai-key').value;
     // 空值不传：后端不动这个设置（保持原值），非法值后端 clamp
@@ -2688,6 +2875,8 @@ async function boot() {
     if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
     // 设置面板开着时，导航类快捷键同样让位（否则 j/k 会在面板背后换文章）
     if (!el('settings-overlay').classList.contains('hidden')) return;
+    // 编辑弹窗同理：背后的列表/阅读区不该被快捷键推动（Esc 在上面已处理）
+    if (!el('feed-edit-overlay').classList.contains('hidden')) return;
 
     if (e.key === 'Escape' && el('ctx-menu')) {
       closeContextMenu();

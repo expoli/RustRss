@@ -138,4 +138,10 @@ pub const MIGRATIONS: &[&str] = &[
     r#"
     CREATE INDEX idx_entries_starred ON entries(starred) WHERE starred = 1;
     "#,
+    // v10：用户自定义订阅源标题。feeds.title 是**源站名**，每次抓取 success 都会被
+    // update_feed_meta 覆盖（源站改名跟着变）；用户改名必须另存一列，否则下次刷新即丢。
+    // 显示层统一读 COALESCE(custom_title, title)，NULL = 跟随源站名。
+    r#"
+    ALTER TABLE feeds ADD COLUMN custom_title TEXT;
+    "#,
 ];
