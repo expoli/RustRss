@@ -105,16 +105,26 @@ function isStrongDiffSignature(marked, adds, dels, hunksOrHeads) {
 /// 保守门槛：至少 4 个标记行（+/-/@@/头行），且同时含 + 行与（- 行或 @@/头行），
 /// 避免把普通列表/破折号段落误吞。
 function normalizeDiffBlocks(root) {
-  // 快速预筛：没有 @@ 或 diff --git 头的正文直接跳过（绝大多数文章零成本）
-  const whole = root.textContent || '';
-  if (!whole.includes('@@') && !whole.includes('diff --git ')) return;
-
   const blocks = [...root.children];
   const kinds = blocks.map((b) => {
     if (b.tagName === 'PRE') return 'pre';
     const t = (b.textContent || '').trim();
     return t === '' ? 'blank' : diffLineKind(t);
   });
+
+  // 预筛（廉价必要条件）：要么出现 hunk/头行（完整补丁形态），要么 +/- 行
+  // 都存在（截断片段形态——lkml 摘要把 @@ 头切掉只留 +/- 行，实测 2026-09-22
+  // k3-udma 补丁摘要 11- / 7+ 行被旧预筛整体跳过，无配色无等宽）；含 <pre> 的
+  // 正文交给第二阶段逐块判定，不在预筛里下结论。预筛成本与旧版同阶（children
+  // 级而非 textContent 级，多数文章零分配）。
+  let cheapHunk = false, cheapAdds = 0, cheapDels = 0, cheapPre = false;
+  for (const k of kinds) {
+    if (k === 'pre') { cheapPre = true; continue; }
+    if (k === 'hunk' || k === 'head') { cheapHunk = true; break; }
+    if (k === 'add') cheapAdds++;
+    else if (k === 'del') cheapDels++;
+  }
+  if (!cheapPre && !cheapHunk && !(cheapAdds >= 1 && cheapDels >= 1)) return;
 
   let i = 0;
   while (i < blocks.length) {
