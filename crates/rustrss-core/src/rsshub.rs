@@ -25,8 +25,14 @@ pub fn normalize_rsshub_url(url: &str, base: &str) -> String {
     let base = clean_base(base);
 
     // 形态 1：自定义 scheme（rsshub://path / rsshub:///path）；
-    // scheme 大小写不敏感（RSSHUB:// 也识别），path 保持原样
-    if url.len() >= 9 && url[..9].to_ascii_lowercase() == "rsshub://" {
+    // scheme 大小写不敏感（RSSHUB:// 也识别），path 保持原样。
+    // 用 get(..9) 而非切片：多字节字符开头（如中文 https 地址）落在前 9 字节内时，
+    // 字节切片会 panic；get 在非字符边界返回 None（回归：非 ASCII 开头的地址带进来就崩）
+    if url.len() >= 9
+        && url
+            .get(..9)
+            .is_some_and(|p| p.eq_ignore_ascii_case("rsshub://"))
+    {
         let path = url[9..].trim_start_matches('/');
         if !path.is_empty() {
             return format!("{base}/{path}");
@@ -88,6 +94,17 @@ pub async fn probe_url(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn multibyte_url_does_not_panic_in_scheme_check() {
+        // 回归：url[..9] 字节切片在多字节字符落在前 9 字节时 panic（如中文开头地址）。
+        // get(..9) 在非字符边界返回 None，正常落入形态 2 的 Url::parse 分支。
+        let out = normalize_rsshub_url(
+            "中文地址不是合法 URL 也会被 parse 拒绝",
+            "https://rsshub.example.com",
+        );
+        assert_eq!(out, "中文地址不是合法 URL 也会被 parse 拒绝");
+    }
 
     #[test]
     fn custom_scheme_is_instantiated() {
