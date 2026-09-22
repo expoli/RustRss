@@ -12,7 +12,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use rustrss_core::ai::prompt::{AiTask, SummaryLength};
 use rustrss_core::ai::{AiClient, AiRequest, AiTaskPlan, CachePolicy};
 use rustrss_core::discover::{discover, Discovery};
-use rustrss_core::fetch::{CacheHeaders, FetchResult, RefreshReport};
+use rustrss_core::fetch::RefreshReport;
 use rustrss_core::fulltext;
 use rustrss_core::{EntryQuery, EntryRow, FeedRow, MarkScope};
 
@@ -150,19 +150,14 @@ pub(crate) async fn fetch_fulltext_core(state: &AppState, entry_id: i64) -> R<En
         return Ok(slim_entry(entry));
     }
 
-    // ② 抓取：网络阶段不持库锁（与 refresh_core 同一口径）
-    let body = match state.fetcher.fetch(&url, CacheHeaders::default()).await {
-        FetchResult::Fetched { body, .. } => body,
-        FetchResult::NotModified { .. } => {
-            return Err("原文页返回 304（内容未变），无需写回".to_string())
-        }
-        FetchResult::Failed { status, error } => {
-            return Err(match status {
-                Some(code) => format!("获取原文失败（HTTP {code}）: {error}"),
-                None => format!("获取原文失败: {error}"),
-            })
-        }
-    };
+    // ② 抓取：网络阶段不持库锁（与 refresh_core 同一口径）。
+    // 用带体积上限的流式抓取：Content-Length 预检 + 下载中累计超限即中止，
+    // 不再把超限页面整个缓冲（follow-up：原先闸门在整包后才判，白流量白内存）。
+    let body = state
+        .fetcher
+        .fetch_bytes_limited(&url, fulltext::MAX_BYTES)
+        .await
+        .map_err(|e| format!("获取原文失败: {e}"))?;
 
     // ③ 提取（体积闸门/非 HTML/空正文都在 core 里把关）后写回，写回只在锁内做
     let extracted = fulltext::extract_bytes(&body, &url).map_err(err)?;

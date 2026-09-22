@@ -238,3 +238,37 @@ async fn bounded_map_caps_concurrency() {
     assert!(peak <= 3, "并发上限被突破：同时 {peak} 个（上限 3）");
     assert!(peak > 1, "并发完全没生效（退化成串行）：峰值 {peak}");
 }
+
+// ---------------------------------------------------------------- 体积上限抓取
+
+#[tokio::test]
+async fn fetch_bytes_limited_rejects_oversized_content_length() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET")).and(path("/big"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(vec![b'x'; 64]))
+        .expect(1)
+        .mount(&server)
+        .await;
+    // Content-Length=64 > 4：在下载前就拒绝
+    let fetcher = Fetcher::new("test").unwrap();
+    let err = fetcher
+        .fetch_bytes_limited(&format!("{}/big", server.uri()), 4)
+        .await
+        .unwrap_err();
+    assert!(err.contains("超过上限"), "实际错误: {err}");
+}
+
+#[tokio::test]
+async fn fetch_bytes_limited_streams_and_returns_small_body() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET")).and(path("/small"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("hello"))
+        .mount(&server)
+        .await;
+    let fetcher = Fetcher::new("test").unwrap();
+    let body = fetcher
+        .fetch_bytes_limited(&format!("{}/small", server.uri()), 1024)
+        .await
+        .unwrap();
+    assert_eq!(body, b"hello");
+}

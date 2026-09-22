@@ -144,6 +144,34 @@ impl Fetcher {
             },
         }
     }
+
+    /// 带体积上限的抓取（全文获取用）：Content-Length 预检 + 流式累计双重限制，
+    /// 超限在下载完成前就放弃——不再把 2MB+ 的页面整个缓冲进内存（网关 follow-up：
+    /// 原先闸门在整包缓冲后才判，白流量白内存）。
+    pub async fn fetch_bytes_limited(&self, url: &str, max_bytes: usize) -> Result<Vec<u8>, String> {
+        let mut resp = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| describe_error(&e))?;
+        if !resp.status().is_success() {
+            return Err(format!("HTTP {}", resp.status().as_u16()));
+        }
+        if let Some(len) = resp.content_length() {
+            if len as usize > max_bytes {
+                return Err(format!("页面体积 {len} 超过上限 {}，已中止下载", max_bytes));
+            }
+        }
+        let mut body: Vec<u8> = Vec::new();
+        while let Some(chunk) = resp.chunk().await.map_err(|e| format!("读取响应体失败: {e}"))? {
+            if body.len() + chunk.len() > max_bytes {
+                return Err(format!("页面体积超过上限 {max_bytes}，已中止下载"));
+            }
+            body.extend_from_slice(&chunk);
+        }
+        Ok(body)
+    }
 }
 
 /// 有界并发执行：最多同时运行 `concurrency` 个任务。
