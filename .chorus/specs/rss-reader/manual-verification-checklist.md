@@ -396,3 +396,73 @@ headless 已机械验证（P0-5 任务报告）：默认库二次启动 264ms �
 - [ ] 触控板惯性滚动尚未停下时刷新到点：补偿会不会造成可见跳动（本次只有离散滚轮事件）
 - [ ] 大库（8k 行）深滚动下的刷新开销：`topVisibleRowId` 与 prepend 遍历的是列表 DOM 子节点（本次 303 行，实测 refresh 期间无可感卡顿）
 - [ ] 长列表里行高差异很大（含 2 行摘要 / 无摘要混排）时，`top`（视口顶部行）是否仍逐次一致
+
+## 13. 字体配置（2026-09-22-font-config，任务 d27f1965）
+
+> 纯函数（字号/行高 clamp、字体族归一化、fc-list 输出解析）与命令体（5 个 key 的部分写入、
+> 越界夹回、空串=跟随系统）由 `src-tauri` 单测覆盖（8 个新用例）；`fc-list` 超时/spawn 失败
+> 两条降级路径有真实子进程的测试（`sh -c 'sleep 30'` + 200ms 超时）。
+> 本节记录**真实应用**（Xvfb + 隔离 HOME + 临时库 + xdotool 真实点击/拖动）与
+> **真实浏览器引擎**（Chromium 加载 `ui/index.html`、桩掉 IPC 边界）的自证。
+
+### 13.1 已机械验证的部分
+
+headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（测试进程环境，非应用代码设置）+ `HOME=/tmp/rustrss-font/home`
+（隔离，不碰真实数据目录）+ `RUSTSS_DB` 指向临时库；库内播种 1 个订阅 + 1 个富正文条目
+（中文段落 / 英文 / `pre>code`）；xdotool 送真实鼠标事件（本轮实测**能**送进窗口，与第 8 节记录的
+「XTEST 送不进」不同——那轮用的是 `visible:false` + 合成事件，本轮是窗口显示后按窗口坐标点击）。
+
+- **字体枚举与降级（Linux / 无 fontconfig 两条分支）**：日志 `font families=336`
+  （隔离 HOME 下 `fc-list --format=$'%{family[0]}\n' | sort -u | wc -l` 同为 336；真实 HOME 下 383，
+  差的 47 个是用户自装字体——即枚举结果跟着进程环境走）。单测另一侧：不存在的二进制 → 空表、
+  `sh -c 'sleep 30'` + 200ms 超时 → 空表且立刻返回（子进程被 kill_on_drop 杀掉）。
+- **启动即恢复（跨会话保持）**：库里预置 `ui.font_read_size=17` 后重启，启动日志
+  `fonts ui=default read=follow-ui mono=default size=17px line=1.55`；改成三条字体 + 13px/1.8 后再重启，
+  日志 `fonts ui=AR PL UKai CN read=AR PL UMing CN mono=Andale Mono size=13px line=1.80`，
+  截图 `shot-17-restart.png` 与重启前逐像素同观感（侧栏 Kai、正文 Ming、代码块 Andale Mono）。
+- **滑块：input 只改 CSS 变量、change 才写库（真实应用 + 真实点击拖动）**：按住字号滑块从 17 拖到 13
+  的过程中日志逐档打印 `font font_read_size=14 preview（仅 CSS 变量）` → `=13 preview`，
+  同时 `sqlite3` 读回 `ui.font_read_size=17`（**没写库**）；松手后日志 `=13 saved`、库里变成 `13`。
+  行高同理（拖动中 1.7/1.8 preview + 库内无 `ui.font_read_line` 行 → 松手后 `1.8`）。
+  拖动中截图 `shot-6-drag-13.png`（仍按住）显示数值标签 13px 且预览块字号明显小于 17px 那张。
+- **三类字体独立（Chromium 真实引擎 + 真实应用）**：Chromium 计算样式 —
+  `body` = `"Noto Sans CJK SC"`（界面字体）、`.article` = `"DejaVu Sans"`（正文字体）、
+  `.article code` = `sans-serif`（等宽字体）+ 三个下拉标签各自回显；真实应用里改成
+  UI=AR PL UKai CN / 正文=AR PL UMing CN / 等宽=Andale Mono 后截图 `shot-16-article-three-fonts.png`：
+  侧栏是 Kai、正文是 Ming、代码块是 Andale Mono，且改正文/等宽时侧栏字体不动。
+- **「跟随系统」= 清除变量**：Chromium 里选「跟随系统」后内联样式里 `--font-ui` 被 `removeProperty`
+  移除、计算值回落到 `:root` 的内置栈；真实应用里把正文字体选回「跟随系统」→ 库里 `ui.font_read` 为空、
+  正文重新跟随界面字体、代码块仍是 Andale Mono（截图 `shot-18-follow-system.png`）。
+- **CJK / 空格族名的 CSS 引号**：Chromium 计算样式与内联样式双证 —— 含空格名写入为
+  `--font-ui: "Noto Sans CJK SC"`、`--font-ui: "DejaVu Sans"`，`body` 的实际 font-family 就是该值
+  （不引号会被 CSS 拆成多个家族名）；`sans-serif` 这类通用族保持裸写（加引号会变成具体家族名）；
+  真实应用选 CJK 名 `AR PL UKai CN` 后整个界面确实换成了该字体（截图 `shot-10-ui-font-picked.png`）。
+- **预览块与正文同源**：Chromium 里 `.font-preview` 的计算 font-family / font-size / line-height
+  分别等于 `--font-read` / `--font-read-size`（17×1.7=28.9px）/ `--font-read-line`，
+  `code` 等于 `--font-mono`、字号 = 正文 × 0.89（17→15.13px）。
+- **无越界值入库**：单测断言 `set_font_config` 落库前 clamp（99→18、0.4→1.5、NaN→默认）且库内是
+  `18` / `1.5` 这种干净字符串；读取路径对 `9` / `not-a-number` 同样夹回或回默认。
+- **i18n**：启动自检 `i18n selftest ok (keys=265)`；node/python 侧等价核对 zh/en 各 265 个 key
+  一一对应、`index.html` 130 处 `data-i18n*` 与 `app.js` 的 `t()` key 全部存在。
+- **`cargo test --workspace` 全绿**（162 例，含本次新增 8 例）；`cargo clippy --workspace --all-targets`
+  的告警全在 `rustrss-core`（与本次无关，CI 既知现状）。
+- **并入本功能的 UI 修复（独立 commit）**：设置页自绘下拉此前**开不出来**——打开菜单的那一次点击
+  继续冒泡到 `document` 上的「点外面就关」监听器，菜单在同一事件里被创建又被删除。语言 / 主题 /
+  关闭行为 / 刷新间隔 / 字体五个下拉全中招（Chromium 侧复现：`btn.click()` 后 `#ctx-menu` 立即为 null）。
+  修法是让监听器把 `.setting-dropdown` 上的点击不算「外面」。修后 Chromium 与真实应用都能开菜单
+  （截图 `shot-9-menu-open.png`、`shot-23-dark-menu.png`），「再点同一个下拉 = 关闭」「点外面关闭」
+  均保持原语义。
+- **长菜单可滚动**：字体列表 336 项，`#ctx-menu` 增加 `max-height: min(70vh, 460px) + overflow-y: auto`
+  且菜单项 `flex: 0 0 auto`（不设高度上限时定位会把 `top` 钳成负数，超出视口的部分点不到）。
+  深色/浅色两套主题下菜单、滑块、预览块配色都走变量（截图 `shot-20/22`）。
+
+### 13.2 仍需真实桌面会话人工核验
+
+- [ ] 真机（非 Xvfb）下拖动滑块的手感：预览帧率、是否有可见延迟（本轮只验了语义与最终像素）
+- [ ] Windows / macOS 上字体分区只显示「跟随系统」+ tooltip 提示（本轮只有 Linux 环境；代码是
+      `#[cfg(target_os = "linux")]` 分支，非 Linux 返回空表，未在真机跑过）
+- [ ] 高分屏（125% / 150% / 170%）下滑块 thumb 与数值标签的像素对齐（本轮 DSF=1）
+- [ ] 装了上千字体的机器上 `fc-list` 的实测耗时与 3s 超时的余量（本轮 336 个字体 / 18ms）
+- [ ] 中文输入法激活时在下拉菜单里的键盘操作（本轮只用鼠标）
+- [ ] 弹层遮住触发按钮时的菜单定位观感：菜单高于视口可用空间时会被向上钳位、盖住触发按钮本身
+      （点外面或选中条目都能关，但「再点同一个下拉关闭」在该位置够不到按钮）——是否需要改成向上展开待定
