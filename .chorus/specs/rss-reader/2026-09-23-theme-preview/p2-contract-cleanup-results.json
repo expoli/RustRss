@@ -1,0 +1,43 @@
+{
+  "baseline": "8d386e2",
+  "rust": {
+    "passed": 405,
+    "failed": 0,
+    "result_sections": 26
+  },
+  "node": {
+    "passed": 40,
+    "failed": 0
+  },
+  "clippy": {
+    "exit_code": 0,
+    "existing_warnings": [
+      "fulltext.rs:130",
+      "store/mod.rs:478",
+      "store/mod.rs:697"
+    ]
+  },
+  "desktop": {
+    "output": "/tmp/rustrss-theme-desktop-zoi7tmzz",
+    "keyboard_categories": 7,
+    "focus_wrap": true,
+    "aa_draft_no_write": true,
+    "read_size": 23,
+    "revision": 1,
+    "article_renders": [
+      1,
+      1
+    ],
+    "restart_preserved": true
+  },
+  "mutation_controls": {
+    "javascript_files": 8,
+    "deleted_reference_shapes": 10,
+    "removed_runtime_creators": true,
+    "data_id_is_not_dom_id": true,
+    "unserved_added_script_and_stylesheet": true,
+    "removed_script_and_stylesheet_routes": true,
+    "entrypoint_replacement_must_match_actual_adapter": true
+  },
+  "native_wayland_input": "not run; existing open item unchanged"
+}
