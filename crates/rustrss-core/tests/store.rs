@@ -6,7 +6,7 @@
 
 use rustrss_core::store::schema::MIGRATIONS;
 use rustrss_core::store::{LIST_HIDE_READ_KEY, LIST_SORT_KEY};
-use rustrss_core::{Entry, EntryQuery, IdOrigin, ListSort, MarkScope, Store};
+use rustrss_core::{Entry, EntryQuery, IdOrigin, ListSort, MarkScope, Store, UnreadGroupBy};
 use rustrss_core::rsshub;
 
 fn mk_entry(stable_id: &str, title: &str, text: &str) -> Entry {
@@ -1671,4 +1671,409 @@ fn migration_v8_to_v9_adds_starred_partial_index_on_real_file() {
         "升级后即走索引: {plan}"
     );
     let _ = std::fs::remove_file(&db_path);
+}
+
+// ------------------------------------- 读侧扩展：since / until / feed_ids / unread_summary
+
+/// 多源 + 时间范围夹具：
+/// - 两个源 f1 / f2（f2 在分组里），各 6 条；
+/// - `t0..t3` 有 published_at；`np0/np1` 无 published_at（sortkey 由 fetched_at 补位）；
+/// - 状态：f1 的首条（最新那条）已读，其余未读。
+fn setup_range_fixture() -> (Store, i64, i64, i64) {
+    let (store, f1) = setup();
+    let f2 = store.add_feed("https://example.com/feed2.xml", Some("源二")).unwrap();
+    let folder = store.add_folder("分组").unwrap();
+    store.assign_folder(f2, Some(folder)).unwrap();
+    let base = 1_700_000_000_i64;
+    let mk = |id: &str, published: Option<i64>| mk_entry_published(id, id, published);
+    store
+        .upsert_entries(
+            f1,
+            &[
+                mk("a0", Some(base)),
+                mk("a1", Some(base + 10)),
+                mk("a2", Some(base + 20)),
+                mk("a_np", None),
+            ],
+        )
+        .unwrap();
+    store
+        .upsert_entries(
+            f2,
+            &[
+                mk("b0", Some(base + 5)),
+                mk("b1", Some(base + 15)),
+                mk("b2", Some(base + 25)),
+                mk("b_np", None),
+            ],
+        )
+        .unwrap();
+    let mut rows = store.list_entries(&EntryQuery { limit: Some(500), ..Default::default() }).unwrap();
+    // 只把 f1 里 published = base + 20 的那条标已读（区分「源内最新」与普通行）
+    let read_id = rows
+        .iter()
+        .find(|r| r.title == "a2")
+        .map(|r| r.id)
+        .unwrap();
+    store.set_read(&[read_id], true).unwrap();
+    rows.clear();
+    (store, f1, f2, folder)
+}
+
+fn titles_of(store: &Store, q: EntryQuery) -> Vec<String> {
+    store
+        .list_entries(&EntryQuery { limit: Some(500), ..q })
+        .unwrap()
+        .into_iter()
+        .map(|r| r.title)
+        .collect()
+}
+
+#[test]
+fn time_range_is_closed_and_measures_the_sortkey_expression() {
+    let (store, _f1, _f2, _folder) = setup_range_fixture();
+    let base = 1_700_000_000_i64;
+
+    // 闭区间：>= since 且 <= until（边界值本身都在内）
+    assert_eq!(
+        titles_of(&store, EntryQuery { since: Some(base + 10), until: Some(base + 20), ..Default::default() }),
+        ["a2", "b1", "a1"],
+        "since/until 都是闭区间：base+10（a1/b1）与 base+20（a2）都应命中"
+    );
+    // 单边。注意：缺 published_at 的两条（a_np / b_np）的 sortkey 是入库时刻 fetched_at
+    // （远大于 base），所以只要下界超过 base，它们就会和边界内的带时间条目一起出现。
+    assert_eq!(
+        titles_of(&store, EntryQuery { since: Some(base + 25), ..Default::default() }),
+        ["b_np", "a_np", "b2"],
+        "只要 since 时只卡下界；缺 published_at 的条目按 fetched_at 参与比较"
+    );
+    assert_eq!(
+        titles_of(&store, EntryQuery { until: Some(base), ..Default::default() }),
+        ["a0"],
+        "只要 until 时只卡上界"
+    );
+    // since > until 自然匹配零条（不是报错）
+    assert!(titles_of(&store, EntryQuery { since: Some(base + 30), until: Some(base), ..Default::default() }).is_empty());
+
+    // published_at 缺失的条目参与过滤（sortkey 由 fetched_at 补位）：
+    // 它的 fetched_at 是「入库当下」，必然 > base，因此 since=base 时它必须出现，
+    // 而 since = 未来时刻时不会出现。这就是「口径是 COALESCE 而不是裸 published_at」的证据。
+    let with_missing = titles_of(&store, EntryQuery { since: Some(base), ..Default::default() });
+    assert!(with_missing.iter().any(|t| t == "a_np"), "缺 published_at 的条目应按 fetched_at 参与时间过滤：{with_missing:?}");
+    assert!(titles_of(&store, EntryQuery { since: Some(i64::MAX - 1), ..Default::default() }).is_empty(), "未来时刻之后没有任何条目");
+}
+
+#[test]
+fn feed_ids_filters_multi_source_and_empty_list_matches_nothing() {
+    let (store, f1, f2, _folder) = setup_range_fixture();
+
+    let two = titles_of(&store, EntryQuery { feed_ids: Some(vec![f1, f2]), ..Default::default() });
+    assert_eq!(two.len(), 8, "两个源合起来 8 条：{two:?}");
+
+    let only_second = titles_of(&store, EntryQuery { feed_ids: Some(vec![f2]), ..Default::default() });
+    assert_eq!(only_second.len(), 4);
+    assert!(only_second.iter().all(|t| t.starts_with('b')), "{only_second:?}");
+
+    // 与其它条件叠加（AND 语义）
+    let filtered = titles_of(
+        &store,
+        EntryQuery {
+            feed_ids: Some(vec![f1, f2]),
+            unread_only: true,
+            limit: Some(500),
+            ..Default::default()
+        },
+    );
+    assert_eq!(filtered.len(), 7, "a2 已读，其余 7 条未读：{filtered:?}");
+
+    // 未知 id：匹配零条
+    assert!(titles_of(&store, EntryQuery { feed_ids: Some(vec![9999]), ..Default::default() }).is_empty());
+
+    // 空列表 = 匹配零条（**不是**不过滤）：这是「某分组下没有订阅」的安全语义，
+    // 写错方向就会把全库倒给调用方。
+    assert!(
+        titles_of(&store, EntryQuery { feed_ids: Some(vec![]), ..Default::default() }).is_empty(),
+        "空 feed_ids 必须匹配零条，而不是退化成不过滤"
+    );
+    // None 才是不过滤
+    assert_eq!(titles_of(&store, EntryQuery { feed_ids: None, ..Default::default() }).len(), 8);
+
+    // 分组 → 源 id 解析（MCP 的 folder_id 走这条）
+    let folder_ids = store.feed_ids_in_folder(_folder_of(&store, f2)).unwrap();
+    assert_eq!(folder_ids, vec![f2]);
+    assert!(store.feed_ids_in_folder(9999).unwrap().is_empty(), "不存在的分组解析出空列表");
+}
+
+fn _folder_of(store: &Store, feed_id: i64) -> i64 {
+    store
+        .list_feeds()
+        .unwrap()
+        .into_iter()
+        .find(|f| f.id == feed_id)
+        .unwrap()
+        .folder_id
+        .expect("夹具里 f2 应已归组")
+}
+
+#[test]
+fn time_range_and_feed_ids_page_without_duplicates_or_gaps() {
+    let (store, f1, f2, _folder) = setup_range_fixture();
+    let base = 1_700_000_000_i64;
+    let shapes = [
+        (
+            "时间范围",
+            EntryQuery { since: Some(base - 1), until: Some(base + 20), ..Default::default() },
+        ),
+        (
+            "多源 IN",
+            EntryQuery { feed_ids: Some(vec![f1, f2]), ..Default::default() },
+        ),
+        (
+            "多源 + 时间范围 + 未读",
+            EntryQuery {
+                feed_ids: Some(vec![f1, f2]),
+                since: Some(base - 1),
+                until: Some(base + 20),
+                unread_only: true,
+                ..Default::default()
+            },
+        ),
+    ];
+    for (label, base_q) in shapes {
+        let full = store
+            .list_entries(&EntryQuery { limit: Some(500), ..base_q.clone() })
+            .unwrap();
+        assert!(!full.is_empty(), "{label} 应有数据，否则本用例无约束力");
+        let paged = page_through(&store, &base_q, 2);
+        assert_eq!(
+            paged,
+            full.iter().map(|r| r.id).collect::<Vec<_>>(),
+            "{label} 逐页续扫应与一次取全完全一致"
+        );
+        let mut dedup = paged.clone();
+        dedup.dedup();
+        assert_eq!(dedup.len(), paged.len(), "{label} 续扫不得重复");
+    }
+}
+
+#[test]
+fn time_range_and_multi_source_plans_ride_indexes_not_table_btree() {
+    let (store, f1, f2, _folder) = setup_range_fixture();
+    let base = 1_700_000_000_i64;
+
+    // 时间范围（首屏）：范围条件直接吃 v6 表达式索引（同一 COALESCE 表达式），
+    // 且 ORDER BY 由索引序满足（不得出现临时排序树）。
+    let time_q = EntryQuery { since: Some(base), until: Some(base + 20), limit: Some(20), ..Default::default() };
+    let plan = store.explain_list_entries(&time_q).unwrap().join(" | ");
+    assert!(
+        plan.contains("SEARCH e USING INDEX idx_entries_sortkey"),
+        "时间范围应按表达式索引定位（range seek），实际计划: {plan}"
+    );
+    assert!(!plan.to_lowercase().contains("temp b-tree"), "时间范围不得临时排序: {plan}");
+
+    // 多源 IN：钉排序索引按序扫 + 逐行过滤 feed_id，不得退化成等值索引 + 临时排序
+    let multi_q = EntryQuery { feed_ids: Some(vec![f1, f2]), limit: Some(20), ..Default::default() };
+    let plan = store.explain_list_entries(&multi_q).unwrap().join(" | ");
+    assert!(
+        plan.contains("USING INDEX idx_entries_sortkey"),
+        "多源 IN 应走排序索引按序取，实际计划: {plan}"
+    );
+    assert!(!plan.to_lowercase().contains("temp b-tree"), "多源 IN 不得临时排序: {plan}");
+
+    // 组合形态也不得出现裸表扫描（正文大列的溢出页链代价）
+    let combo = EntryQuery {
+        feed_ids: Some(vec![f1, f2]),
+        since: Some(base),
+        until: Some(base + 25),
+        limit: Some(20),
+        ..Default::default()
+    };
+    let plan = store.explain_list_entries(&combo).unwrap().join(" | ");
+    assert!(
+        !plan.split(" | ").any(|l| l.contains("SCAN entries") && !l.contains("USING")),
+        "组合过滤同样不得裸扫 entries：{plan}"
+    );
+}
+
+#[test]
+fn time_range_plan_assertion_turns_red_without_sortkey_index() {
+    // 变异校验：把 v6 表达式索引拿掉，上面那条「时间范围走 idx_entries_sortkey」的
+    // 断言必须真的转红（否则断言只是恰好成立，而不是在守索引）。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-range-plan-mutation-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+    ));
+    let base = 1_700_000_000_i64;
+    {
+        let store = Store::open(&db_path).unwrap();
+        let feed_id = store.add_feed("https://example.com/feed.xml", Some("示例源")).unwrap();
+        store
+            .upsert_entries(feed_id, &[mk_entry_published("a", "A", Some(base))])
+            .unwrap();
+    }
+    {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute_batch("DROP INDEX idx_entries_sortkey;").unwrap();
+    }
+    let store = Store::open(&db_path).unwrap();
+    let plan = store
+        .explain_list_entries(&EntryQuery { since: Some(base - 1), until: Some(base + 1), limit: Some(20), ..Default::default() })
+        .unwrap()
+        .join(" | ");
+    assert!(
+        !plan.contains("idx_entries_sortkey"),
+        "索引已删，计划里不该还有它（有则说明断言指错了对象）: {plan}"
+    );
+    assert!(
+        plan.to_lowercase().contains("temp b-tree") || plan.split(" | ").any(|l| l.contains("SCAN entries") && !l.contains("USING")),
+        "掉索引后应退化成临时排序或裸扫——这正是断言要拦住的形态: {plan}"
+    );
+    // 钉索引的多源形态掉索引后直接报错（计划根本建不出来）——同为「转红」
+    let err = store.explain_list_entries(&EntryQuery { feed_ids: Some(vec![1]), limit: Some(20), ..Default::default() });
+    assert!(err.is_err(), "INDEXED BY 的索引被删后 EXPLAIN 必须报错，而不是静默换个索引");
+    let _ = std::fs::remove_file(&db_path);
+}
+
+#[test]
+fn unread_summary_groups_by_feed_and_folder() {
+    let (store, f1, f2, folder) = setup_range_fixture();
+
+    // 按源：组集合完整（每条都有自己的一组），未读为 0 的组也出
+    let by_feed = store.unread_summary(UnreadGroupBy::Feed).unwrap();
+    assert_eq!(by_feed.len(), 2, "两个源两组: {by_feed:?}");
+    let f1_group = by_feed.iter().find(|g| g.id == Some(f1)).unwrap();
+    assert_eq!(f1_group.name, "示例源");
+    assert_eq!(f1_group.unread, 3, "f1 四条里 a2 已读: {f1_group:?}");
+    let f2_group = by_feed.iter().find(|g| g.id == Some(f2)).unwrap();
+    assert_eq!((f2_group.name.as_str(), f2_group.unread), ("源二", 4));
+
+    // 多组 + 未读为 0：把 f1 全标已读，f1 组应仍在结果里且 unread = 0
+    let f1_ids: Vec<i64> = store
+        .list_entries(&EntryQuery { feed_id: Some(f1), limit: Some(500), ..Default::default() })
+        .unwrap()
+        .iter()
+        .map(|r| r.id)
+        .collect();
+    store.set_read(&f1_ids, true).unwrap();
+    let by_feed = store.unread_summary(UnreadGroupBy::Feed).unwrap();
+    assert_eq!(by_feed.len(), 2);
+    assert_eq!(by_feed.iter().find(|g| g.id == Some(f1)).unwrap().unread, 0, "未读为 0 的源也要出现");
+
+    // 按分组：命中的分组 + 未分组（id = None，垫最后）；空组 unread = 0
+    let empty_folder = store.add_folder("空组").unwrap();
+    let by_folder = store.unread_summary(UnreadGroupBy::Folder).unwrap();
+    assert_eq!(by_folder.iter().filter(|g| g.id == Some(folder)).count(), 1, "已知分组应恰好一组: {by_folder:?}");
+    assert_eq!(by_folder.iter().find(|g| g.id == Some(folder)).unwrap().unread, 4);
+    let empty = by_folder.iter().find(|g| g.id == Some(empty_folder)).expect("空组也要出现在结果里");
+    assert_eq!((empty.name.as_str(), empty.unread), ("空组", 0));
+    let ungrouped = by_folder.iter().find(|g| g.id.is_none()).expect("有未分组订阅就该出这一组");
+    assert_eq!((ungrouped.name.as_str(), ungrouped.unread), ("未分组", 0), "f1 已全部已读");
+
+    // 合计：各组合计应等于全库未读总数
+    let total: i64 = by_folder.iter().map(|g| g.unread).sum();
+    assert_eq!(total, store.unread_total().unwrap());
+
+    // 空库：没有任何源 → 没有任何组（不报错）
+    let empty_store = Store::open_in_memory().unwrap();
+    assert!(empty_store.unread_summary(UnreadGroupBy::Feed).unwrap().is_empty());
+    assert!(empty_store.unread_summary(UnreadGroupBy::Folder).unwrap().is_empty());
+}
+
+#[test]
+fn unread_summary_rides_covering_index_never_table_btree() {
+    // 回归口径同 counts()：聚合不得触碰正文大列所在的表 B 树（读未读就够，
+    // 一旦回表就是每行穿 11KB 正文的溢出页链）。断言与线上 SQL 同源
+    // （explain_unread_summary 走的就是那两个常量）。
+    let (store, _f1, _f2, _folder) = setup_range_fixture();
+    for (label, by) in [
+        ("by feed", UnreadGroupBy::Feed),
+        ("by folder", UnreadGroupBy::Folder),
+    ] {
+        let plan = store.explain_unread_summary(by).unwrap().join(" | ");
+        assert!(
+            !plan.split(" | ").any(|l| l.contains("SCAN entries") && !l.contains("USING")),
+            "{label}: 不得裸扫 entries 表 B 树: {plan}"
+        );
+        assert!(
+            plan.contains("COVERING INDEX idx_entries_feed_read"),
+            "{label}: 应走 (feed_id, read) 覆盖索引: {plan}"
+        );
+    }
+
+    // 变异校验：把覆盖索引删掉，断言（经 INDEXED BY）必须转红——证明断言确实钉在
+    // 那个索引上，而不是恰好成立。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-unread-summary-mutation-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+    ));
+    {
+        let store = Store::open(&db_path).unwrap();
+        let feed_id = store.add_feed("https://example.com/feed.xml", Some("示例源")).unwrap();
+        store.upsert_entries(feed_id, &[mk_entry("a", "A", "正文")]).unwrap();
+        assert!(store.explain_unread_summary(UnreadGroupBy::Feed).is_ok());
+    }
+    {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute_batch("DROP INDEX idx_entries_feed_read;").unwrap();
+    }
+    let store = Store::open(&db_path).unwrap();
+    assert!(
+        store.explain_unread_summary(UnreadGroupBy::Feed).is_err(),
+        "覆盖索引被删后计划必须建不出来（转红），而不是静默换一个可能穿表 B 树的索引"
+    );
+    let _ = std::fs::remove_file(&db_path);
+}
+
+#[test]
+fn entry_query_explicit_sort_and_hide_read_override_settings() {
+    // MCP 侧「默认口径固定为 newest + 不隐藏已读」靠的就是这两个显式覆盖：
+    // None = 跟随界面设置（界面路径不变），Some = 以显式值为准（MCP 路径不吃界面设置）。
+    let (store, _feed) = setup_sort_fixture();
+
+    // 界面设置：最早在前 + 隐藏已读
+    store.set_setting(LIST_SORT_KEY, "oldest").unwrap();
+    store.set_setting(LIST_HIDE_READ_KEY, "true").unwrap();
+    assert_eq!(
+        list_titles(&store, all_entries()),
+        ["e1", "e3", "e4", "tie0", "tie1"],
+        "不传覆盖时仍跟随设置（界面行为不变）"
+    );
+
+    // 显式覆盖 sort=newest + hide_read=false（= MCP 默认口径），设置被完全绕过
+    assert_eq!(
+        list_titles(
+            &store,
+            EntryQuery { sort: Some(ListSort::Newest), hide_read: Some(false), ..Default::default() }
+        ),
+        ["tie1", "tie0", "e5", "e4", "e3", "e2", "e1", "e0"],
+        "显式 newest + 不隐藏已读：设置里的 oldest/hide_read 都不生效"
+    );
+
+    // 反向：设置是 newest + 不隐藏已读时，显式 oldest + hide_read=true 也要生效
+    store.set_setting(LIST_SORT_KEY, "newest").unwrap();
+    store.set_setting(LIST_HIDE_READ_KEY, "false").unwrap();
+    assert_eq!(
+        list_titles(
+            &store,
+            EntryQuery { sort: Some(ListSort::Oldest), hide_read: Some(true), ..Default::default() }
+        ),
+        ["e1", "e3", "e4", "tie0", "tie1"],
+        "显式 oldest + 隐藏已读应生效"
+    );
+
+    // EXPLAIN 与线上 SQL 同源 → 覆盖同样生效：设置是 newest，显式 unread_first 必须钉 v11 索引
+    let plan = store
+        .explain_list_entries(&EntryQuery {
+            sort: Some(ListSort::UnreadFirst),
+            limit: Some(3),
+            ..Default::default()
+        })
+        .unwrap()
+        .join(" | ");
+    assert!(
+        plan.contains("idx_entries_unread_sortkey"),
+        "显式排序档在 EXPLAIN 路径也要生效（与线上同一份 SQL），实际计划: {plan}"
+    );
 }

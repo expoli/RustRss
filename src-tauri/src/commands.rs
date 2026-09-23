@@ -104,6 +104,8 @@ pub async fn list_entries(
         cursor: cursor_pair(cursor_sortkey, cursor_id),
         // 只有 unread_first 档用得上（store 侧只在该档读它）；其他档传了也被忽略
         cursor_read,
+        // 界面路径不传新过滤/覆盖（follow 设置），机械补全使新字段走默认值
+        ..Default::default()
     };
     let t = std::time::Instant::now();
     let rows = state.with_store(|s| s.list_entries(&query).map_err(err));

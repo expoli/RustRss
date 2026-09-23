@@ -34,11 +34,13 @@ ui/                    桌面应用前端（当前为探针页面）
 
 ### MCP 服务器（stdio + HTTP 两种传输，已接真实库）
 
-工具集（**只读**，写入类属 P1）：`list_feeds` / `list_articles` / `get_article` / `search_articles` / `db_stats`。
+工具集（**只读**，写入类属 P1）：`list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats`。
 
 口径：**列表只回元数据 + 短摘要（≤140 字），正文必须用 `get_article` 单独取**；所有列表有上限（默认 10、上限 50）。这是为了不让单次响应撑爆 agent 上下文（见 PRD §6 风险 3）。
 
-列表口径与界面**同源**：`list_articles` / `search_articles` 走 core 的同一条查询路径，因此跟随用户当前的列表设置——排序档（`list.sort`）取的就是用户在列表头选的那一档，「隐藏已读」（`list.hide_read`）开着时也已关的已读条目（星标 / 稍后读视图的豁免照旧）。理由是硬约束 1（共享数据路径，不存在两套查询逻辑）；若以后需要「agent 不受界面过滤影响」，应在 EntryQuery 上开显式参数而不是让两条路径各读一份设置。
+`list_articles` 的默认口径**固定**为 `sort=newest` + 不隐藏已读，**不继承界面设置**（`list.sort` / `list.hide_read`）——agent 拿到的默认视图不该被用户此刻的界面选择左右。可用参数：`feed_id` / `folder_id`（二选一）、`unread_only`、`starred_only`、`read_later_only`、`since` / `until`（对 `COALESCE(published_at, fetched_at)` 的**闭区间**，Unix 秒）、`sort`（`newest` / `oldest` / `unread_first`）、`hide_read`、`page_size`（别名 `limit`）。翻页是 keyset 游标：把上一页返回的 `next_cursor` 原样回传给 `cursor`，不重不漏（游标带排序档、`unread_first` 档还带 `read` 分量——换档复用旧游标会明确报错，而不是翻出错页）；不满页时 `next_cursor` 为 `null`。
+
+`list_folders` 给分组 + 每组未读合计（未分组单列 `ungrouped_unread`），`get_unread_summary`（`by=feed|folder`）给完整的未读分组清单（未读为 0 的组也出现）。三者与界面走 core 的同一条数据路径（硬约束 1）：`EntryQuery` 上的 `since` / `until` / `feed_ids` / `sort` / `hide_read` 只是**显式传参**——界面路径不传（继续跟随设置），MCP 路径全传（默认口径因此与界面设置解耦），不存在第二套查询逻辑。
 
 两种传输：
 

@@ -12,6 +12,7 @@ pub mod backup;
 pub mod schema;
 pub mod tokens;
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::time::Duration;
 
@@ -206,9 +207,23 @@ pub struct MigrationOutcome {
 #[derive(Debug, Clone, Default)]
 pub struct EntryQuery {
     pub feed_id: Option<i64>,
+    /// 多源过滤（`feed_id IN (…)`）。语义：
+    /// - `None` = 不过滤（全部源）；
+    /// - `Some(非空)` = 只取这些源的条目（未知 id 自然匹配零条）；
+    /// - `Some(空)` = **匹配零条**（不是「不过滤」）——「某分组下没有订阅」这类
+    ///   上游解析结果直接传空列表时，绝不能反过来把全库倒出去。
+    pub feed_ids: Option<Vec<i64>>,
     pub unread_only: bool,
     pub starred_only: bool,
     pub read_later_only: bool,
+    /// 时间下界（含）：对 `COALESCE(published_at, fetched_at)`（即列表排序键
+    /// `EntryRow::sortkey`）比较，`>=`。`None` = 不过滤。
+    /// 用 COALESCE 而不是裸 `published_at`：源站不给时间时条目按抓取时刻参与
+    /// 时间过滤，与列表排序键是同一个值，口径不会两套。
+    pub since: Option<i64>,
+    /// 时间上界（**含**）：同 [`EntryQuery::since`] 的表达式，`<=`。
+    /// `since` / `until` 都是闭区间；`since > until` 自然匹配零条。
+    pub until: Option<i64>,
     pub limit: Option<u32>,
     /// keyset 续扫游标：上一页末行的 `(sortkey, id)`（`EntryRow::sortkey` 直出）。
     /// `None` = 取首页；只返回排在游标之后的行，因此与 `limit` 一起构成稳定分页
@@ -221,6 +236,14 @@ pub struct EntryQuery {
     /// 设置一律由 [`Store::list_entries`] 在查询时从库里读，故此处没有对应字段。
     /// `UnreadFirst` 档下给了 `cursor` 却没给这一位时按首页处理（半截游标不静默翻错页）。
     pub cursor_read: Option<bool>,
+    /// 显式排序档覆盖：`None` = 跟随界面设置（`list.sort`），`Some` = 用这一档。
+    ///
+    /// 界面走 `None`（设置是单一事实源）；MCP 列表工具走 `Some`——agent 的默认
+    /// 口径固定为 `newest`，不被用户此刻的界面选择左右。
+    pub sort: Option<ListSort>,
+    /// 显式「隐藏已读」覆盖：`None` = 跟随界面设置（`list.hide_read`）。
+    /// 语义同 [`EntryQuery::sort`]：MCP 侧固定传 `Some(false)` 作为默认。
+    pub hide_read: Option<bool>,
 }
 
 /// 「全部标记已读」的作用域
@@ -368,6 +391,18 @@ impl Store {
         self.conn
             .execute("DELETE FROM folders WHERE id = ?1", params![folder_id])?;
         Ok(())
+    }
+
+    /// 某个文件夹里的订阅源 id（MCP 的 `folder_id` 过滤解析成 `feed_ids IN (…)` 用）。
+    ///
+    /// 空组返回空列表——调用方必须把空列表当作「匹配零条」传递（见
+    /// [`EntryQuery::feed_ids`] 的语义），不能当成「不过滤」。
+    pub fn feed_ids_in_folder(&self, folder_id: i64) -> Result<Vec<i64>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM feeds WHERE folder_id = ?1 ORDER BY id")?;
+        let rows = stmt.query_map(params![folder_id], |r| r.get::<_, i64>(0))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
     /// 分组排序（侧栏组顺序）。
@@ -798,10 +833,21 @@ impl Store {
     // ---------------------------------------------------------------- 条目查询
 
     pub fn list_entries(&self, q: &EntryQuery) -> Result<Vec<EntryRow>> {
-        // 排序档与「隐藏已读」在查询时从设置读（单一事实源）：界面与 MCP 共用这条
-        // 路径，谁都不用自己带一份副本，也就不会与库里真正的设置漂移。
-        let (sql, values) = list_entries_sql(q, self.list_sort(), self.list_hide_read());
+        // 排序档与「隐藏已读」的默认值在查询时从设置读（单一事实源）：界面不往
+        // EntryQuery 里塞副本，也就不会与库里真正的设置漂移。查询自带覆盖
+        // （`q.sort` / `q.hide_read`，MCP 用）时以显式值为准。
+        let (sql, values) = list_entries_sql(q, self.effective_sort(q), self.effective_hide_read(q));
         self.query_entries(&sql, values, map_entry_row_list)
+    }
+
+    /// 本次查询实际生效的排序档：显式覆盖 → 设置。
+    fn effective_sort(&self, q: &EntryQuery) -> ListSort {
+        q.sort.unwrap_or_else(|| self.list_sort())
+    }
+
+    /// 本次查询实际生效的「隐藏已读」：显式覆盖 → 设置。
+    fn effective_hide_read(&self, q: &EntryQuery) -> bool {
+        q.hide_read.unwrap_or_else(|| self.list_hide_read())
     }
 
     /// 诊断/测试用：`list_entries` 实际 SQL 的 EXPLAIN QUERY PLAN。
@@ -812,7 +858,7 @@ impl Store {
     /// 再断言计划，验的就是用户真会跑到的那个形态。
     #[doc(hidden)]
     pub fn explain_list_entries(&self, q: &EntryQuery) -> Result<Vec<String>> {
-        let (sql, values) = list_entries_sql(q, self.list_sort(), self.list_hide_read());
+        let (sql, values) = list_entries_sql(q, self.effective_sort(q), self.effective_hide_read(q));
         let mut stmt = self.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
         let rows = stmt.query_map(params_from_iter(values), |r| r.get::<_, String>(3))?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -1030,6 +1076,84 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
+    /// 未读聚合：按 [`UnreadGroupBy::Feed`] 或 [`UnreadGroupBy::Folder`] 出每组未读数。
+    ///
+    /// 口径：
+    /// - 组集合是**完整**的：全部订阅源（或全部分组，含没订阅的空组）都在结果里，
+    ///   未读为 0 也照出——调用方不必自己补齐空组，也不会因为「没出现在结果里」
+    ///   而误判成「不存在」；
+    /// - `Folder` 档把 `folder_id IS NULL` 的订阅合成「未分组」一组，垫在最后
+    ///   （与侧栏顺序一致），空组也出（unread = 0）；
+    /// - 计数走覆盖索引（见 `UNREAD_COUNT_BY_FEED_SQL` / `UNREAD_COUNT_BY_FOLDER_SQL`），
+    ///   绝不碰正文大列所在的表 B 树——这是 `counts()` 那条教训的同一口径。
+    pub fn unread_summary(&self, by: UnreadGroupBy) -> Result<Vec<UnreadGroup>> {
+        let counts: HashMap<Option<i64>, i64> = self.unread_counts(by)?.into_iter().collect();
+        let count_of = |key: Option<i64>| counts.get(&key).copied().unwrap_or(0);
+        match by {
+            UnreadGroupBy::Feed => {
+                let mut stmt = self.conn.prepare(FEED_NAMES_SQL)?;
+                let rows = stmt.query_map([], |r| {
+                    Ok(UnreadGroup {
+                        id: Some(r.get(0)?),
+                        name: r.get(1)?,
+                        unread: 0,
+                    })
+                })?;
+                let mut groups = rows.collect::<rusqlite::Result<Vec<_>>>()?;
+                for g in &mut groups {
+                    g.unread = count_of(g.id);
+                }
+                Ok(groups)
+            }
+            UnreadGroupBy::Folder => {
+                let mut groups: Vec<UnreadGroup> = self
+                    .list_folders_ordered()?
+                    .into_iter()
+                    .map(|f| UnreadGroup {
+                        unread: count_of(Some(f.id)),
+                        id: Some(f.id),
+                        name: f.name,
+                    })
+                    .collect();
+                // 未分组是「始终存在」的一类：只要库里有未分组订阅就出这一组
+                let has_ungrouped: bool = self.conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM feeds WHERE folder_id IS NULL)",
+                    [],
+                    |r| r.get(0),
+                )?;
+                if has_ungrouped {
+                    groups.push(UnreadGroup {
+                        id: None,
+                        name: UNGROUPED_LABEL.to_string(),
+                        unread: count_of(None),
+                    });
+                }
+                Ok(groups)
+            }
+        }
+    }
+
+    /// `unread_summary` 的 EXPLAIN 断言入口（与线上 SQL 同源：走的还是那两个常量）。
+    ///
+    /// 只解释**计数** SQL——名字来自 `feeds` / `folders` 两张小表（自身不带正文大列），
+    /// 需要防退化的就是这里。
+    #[doc(hidden)]
+    pub fn explain_unread_summary(&self, by: UnreadGroupBy) -> Result<Vec<String>> {
+        let sql = unread_count_sql(by);
+        let mut stmt = self.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
+        let rows = stmt.query_map([], |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// 未读计数：`(分组键, 未读数)`。分组键的 `None` 只在 folder 档出现（未分组）。
+    fn unread_counts(&self, by: UnreadGroupBy) -> Result<Vec<(Option<i64>, i64)>> {
+        let mut stmt = self.conn.prepare(unread_count_sql(by))?;
+        let rows = stmt.query_map([], |r| {
+            Ok((r.get::<_, Option<i64>>(0)?, r.get::<_, i64>(1)?))
+        })?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     /// 未读总数
     pub fn unread_total(&self) -> Result<i64> {
         Ok(self
@@ -1129,6 +1253,57 @@ const COUNTS_SQL: &str = "SELECT (SELECT COUNT(*) FROM entries),
        (SELECT COUNT(*) FROM entries WHERE starred = 1),
        (SELECT COUNT(*) FROM entries WHERE read_later = 1)";
 
+/// 未读聚合（[`Store::unread_summary`]）的分组维度。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnreadGroupBy {
+    /// 按订阅源
+    Feed,
+    /// 按文件夹（未分组的订阅合并为 `id = None` 的一组）
+    Folder,
+}
+
+/// 未读聚合的一行（[`Store::unread_summary`]）。
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct UnreadGroup {
+    /// 分组身份：`Feed` 档是订阅源 id；`Folder` 档是文件夹 id，`None` = 未分组
+    pub id: Option<i64>,
+    /// 显示名（源口径 `COALESCE(custom_title, title)`，与界面同一个表达式）
+    pub name: String,
+    /// 该组未读数（0 也照出：组集合完整，调用方不补空组）
+    pub unread: i64,
+}
+
+/// 未分组订阅那一组的显示名（与界面 `menu.ungrouped` / `feedEdit.ungrouped` 同词）。
+const UNGROUPED_LABEL: &str = "未分组";
+
+/// 源显示名清单（未读聚合只借它取名字；`feeds` 是小表，不涉正文大列）。
+/// 排序口径与 `list_feeds` 一致（显示名不区分大小写）。
+const FEED_NAMES_SQL: &str = "SELECT f.id, COALESCE(f.custom_title, f.title) AS name
+      FROM feeds f ORDER BY name COLLATE NOCASE";
+
+/// 按源聚合未读的计数 SQL。用到的列（feed_id / read）都在 `idx_entries_feed_read (feed_id, read)`
+/// 里 → 覆盖索引扫描，绝不碰正文大列所在的表 B 树（`counts()` 那条教训的同一口径）。
+///
+/// 为什么钉 `INDEXED BY` 而不是交给 planner：
+/// - 本程序从不 ANALYZE，计划不该看统计脸色；
+/// - 实测（无统计的新库）planner 会选同样覆盖的 `idx_entries_unread_sortkey`，
+///   虽然也不碰表 B 树，但排序键不是分组键，要多一次 `USE TEMP B-TREE FOR GROUP BY`；
+///   钉住本索引后索引序就是 GROUP BY 键，免掉那次重排。
+const UNREAD_COUNT_BY_FEED_SQL: &str = "SELECT e.feed_id, COUNT(*) FROM entries e INDEXED BY idx_entries_feed_read
+      WHERE e.read = 0 GROUP BY e.feed_id";
+
+/// 按文件夹聚合未读的计数 SQL。同样钉 `idx_entries_feed_read`：先按 (feed_id, read)
+/// 覆盖索引扫出未读行，再拿 feed_id 回 `feeds` 查（小表，PK 查）要 folder_id。
+const UNREAD_COUNT_BY_FOLDER_SQL: &str = "SELECT f.folder_id, COUNT(*) FROM entries e INDEXED BY idx_entries_feed_read
+      JOIN feeds f ON f.id = e.feed_id WHERE e.read = 0 GROUP BY f.folder_id";
+
+fn unread_count_sql(by: UnreadGroupBy) -> &'static str {
+    match by {
+        UnreadGroupBy::Feed => UNREAD_COUNT_BY_FEED_SQL,
+        UnreadGroupBy::Folder => UNREAD_COUNT_BY_FOLDER_SQL,
+    }
+}
+
 const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, COALESCE(f.custom_title, f.title) AS feed_title,
         e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, e.content_html, e.content_text,
@@ -1195,9 +1370,19 @@ fn list_entries_sql(q: &EntryQuery, sort: ListSort, hide_read: bool) -> (String,
     // - `unread_first`：首屏也钉。它的 ORDER BY 只有 v11 复合索引能同时满足顺序与
     //   `read` 等值筛选；不钉的话 feed 视图退化成 idx_entries_feed_read +
     //   `USE TEMP B-TREE FOR LAST 2 TERMS OF ORDER BY`（每页重排一遍筛选集合）。
+    // - `newest`/`oldest` + 多源 `IN`：同样钉住。实测（sqlite 3.x，无 ANALYZE 的新库）
+    //   feed_ids 会把 planner 引到 `idx_entries_feed_read (feed_id=?)` +
+    //   `USE TEMP B-TREE FOR ORDER BY`——每页把筛选集合重排一遍；钉排序索引后变成
+    //   按序 SEARCH + 逐行过滤 feed_id（同游标续扫的道理）。
     let pin = match sort {
         ListSort::UnreadFirst => Some(sort),
-        ListSort::Newest | ListSort::Oldest => q.cursor.map(|_| sort),
+        ListSort::Newest | ListSort::Oldest => {
+            if q.cursor.is_some() || q.feed_ids.is_some() {
+                Some(sort)
+            } else {
+                None
+            }
+        }
     };
     let mut sql = entry_list_sql(pin);
     let mut values: Vec<Value> = Vec::new();
@@ -1205,6 +1390,27 @@ fn list_entries_sql(q: &EntryQuery, sort: ListSort, hide_read: bool) -> (String,
     if let Some(feed_id) = q.feed_id {
         sql.push_str(" AND e.feed_id = ?");
         values.push(Value::Integer(feed_id));
+    }
+    if let Some(feed_ids) = &q.feed_ids {
+        if feed_ids.is_empty() {
+            // 空列表 = 匹配零条（"某分组下没有订阅"不能让查询退化成"不过滤"）。
+            // 用常量假条件而不是 `IN ()`：后者是 SQL 语法错，且这样 EXPLAIN 仍可跑。
+            sql.push_str(" AND 0");
+        } else {
+            let placeholders = vec!["?"; feed_ids.len()].join(",");
+            sql.push_str(&format!(" AND e.feed_id IN ({placeholders})"));
+            values.extend(feed_ids.iter().map(|id| Value::Integer(*id)));
+        }
+    }
+    // 时间范围：对排序键同一个表达式（COALESCE(published_at, fetched_at)）比较，
+    // 闭区间（since 含 / until 含）。绑定顺序与上面出现顺序逐一对齐。
+    if let Some(since) = q.since {
+        sql.push_str(" AND COALESCE(e.published_at, e.fetched_at) >= ?");
+        values.push(Value::Integer(since));
+    }
+    if let Some(until) = q.until {
+        sql.push_str(" AND COALESCE(e.published_at, e.fetched_at) <= ?");
+        values.push(Value::Integer(until));
     }
     if q.unread_only {
         sql.push_str(" AND e.read = 0");

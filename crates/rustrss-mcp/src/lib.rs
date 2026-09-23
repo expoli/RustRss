@@ -20,7 +20,7 @@ use rmcp::{
     handler::server::wrapper::Parameters, tool, tool_handler, tool_router, transport::stdio,
     ServerHandler, ServiceExt,
 };
-use rustrss_core::{EntryQuery, Store};
+use rustrss_core::{EntryQuery, ListSort, Store, UnreadGroupBy};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -29,18 +29,40 @@ const MAX_LIMIT: u32 = 50;
 /// 列表里的摘要截断长度：够判断「要不要点进去看」，又不至于撑爆上下文
 const SUMMARY_CHARS: usize = 140;
 
-#[derive(Debug, Deserialize, JsonSchema)]
+/// `list_articles` 的参数。
+///
+/// **默认口径固定**：`sort = newest`、`hide_read = false`——不继承用户此刻的界面
+/// 设置（`list.sort` / `list.hide_read`）。显式传参才会偏离默认。
+/// 分页：`page_size`（别名 `limit`）默认 10、上限 50；翻页把上一页的
+/// `next_cursor` 原样回传给 `cursor`。
+#[derive(Debug, Default, Deserialize, JsonSchema)]
+#[serde(default)]
 pub struct ListArticlesParams {
-    /// 只看某个订阅源（feed id，来自 list_feeds）
+    /// 只看某个订阅源（feed id，来自 list_feeds）；与 folder_id 二选一
     pub feed_id: Option<i64>,
+    /// 只看某个分组下的订阅源（folder id，来自 list_folders）；与 feed_id 二选一
+    pub folder_id: Option<i64>,
     /// 只看未读
-    #[serde(default)]
     pub unread_only: bool,
     /// 只看星标
-    #[serde(default)]
     pub starred_only: bool,
-    /// 最多返回多少条（默认 10，上限 50）
+    /// 只看「稍后读」
+    pub read_later_only: bool,
+    /// 只看该时刻（含）之后的条目；比较的是列表排序键
+    /// `COALESCE(published_at, fetched_at)`（Unix 秒）
+    pub since: Option<i64>,
+    /// 只看该时刻（含）之前的条目；闭区间，口径同 since
+    pub until: Option<i64>,
+    /// 每页条数（默认 10，上限 50）；与 limit 同义，page_size 优先
+    pub page_size: Option<u32>,
+    /// page_size 的兼容别名（旧调用方用）；两者都给时 page_size 生效
     pub limit: Option<u32>,
+    /// 上一页返回的 `next_cursor` 原样回传；不传 = 取首页
+    pub cursor: Option<String>,
+    /// 排序档：`newest`（默认）/ `oldest` / `unread_first`；与 cursor 必须同一档
+    pub sort: Option<String>,
+    /// 是否隐藏已读（默认 false = 不隐藏；与界面设置无关）
+    pub hide_read: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -58,6 +80,77 @@ pub struct SearchParams {
     pub query: String,
     /// 最多返回多少条（默认 10，上限 50）
     pub limit: Option<u32>,
+}
+
+/// `get_unread_summary` 的参数
+#[derive(Debug, Default, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct UnreadSummaryParams {
+    /// 聚合维度：`feed`（默认，按订阅源）或 `folder`（按分组，未分组单列一组）
+    pub by: Option<String>,
+}
+
+/// 列表分页游标：`<sort>:<sortkey>:<id>`（`unread_first` 档多一位 `:<read>`）。
+///
+/// 带上排序档是**故意的**：换了排序档却复用旧游标，keyset 定位到的是另一套顺序里
+/// 的坐标，会翻出乱序/重复页。此处直接报错比静默出错好。
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Cursor {
+    sort: ListSort,
+    sortkey: i64,
+    id: i64,
+    read: Option<bool>,
+}
+
+impl Cursor {
+    fn encode(&self) -> String {
+        let base = format!("{}:{}:{}", self.sort.as_str(), self.sortkey, self.id);
+        match (self.sort, self.read) {
+            (ListSort::UnreadFirst, Some(read)) => {
+                format!("{base}:{}", if read { 1 } else { 0 })
+            }
+            _ => base,
+        }
+    }
+
+    /// 解析并校验游标。`expected` 是本次请求的排序档：不一致即报错。
+    fn parse(raw: Option<&str>, expected: ListSort) -> std::result::Result<Option<Self>, String> {
+        let Some(text) = raw.map(str::trim).filter(|t| !t.is_empty()) else {
+            return Ok(None);
+        };
+        let shape_err = || {
+            format!(
+                "cursor 不合法（{text:?}）：请把上一页的 next_cursor 原样回传，不要自己拼"
+            )
+        };
+        let parts: Vec<&str> = text.split(':').collect();
+        let sort = match parts.first().copied() {
+            Some("newest") => ListSort::Newest,
+            Some("oldest") => ListSort::Oldest,
+            Some("unread_first") => ListSort::UnreadFirst,
+            _ => return Err(shape_err()),
+        };
+        if sort != expected {
+            return Err(format!(
+                "cursor 属于 sort={} 的翻页结果，与本次 sort={} 不匹配",
+                sort.as_str(),
+                expected.as_str()
+            ));
+        }
+        let need = if sort == ListSort::UnreadFirst { 4 } else { 3 };
+        if parts.len() != need {
+            return Err(shape_err());
+        }
+        let sortkey = parts[1].parse::<i64>().map_err(|_| shape_err())?;
+        let id = parts[2].parse::<i64>().map_err(|_| shape_err())?;
+        let read = match parts.get(3).copied() {
+            None => None,
+            Some("0") => Some(false),
+            Some("1") => Some(true),
+            Some(_) => return Err(shape_err()),
+        };
+        Ok(Some(Self { sort, sortkey, id, read }))
+    }
 }
 
 #[derive(Serialize)]
@@ -82,6 +175,13 @@ struct ArticleMetaOut {
     read: bool,
     starred: bool,
     summary: Option<String>,
+}
+
+#[derive(Serialize)]
+struct FolderOut {
+    id: i64,
+    name: String,
+    unread: i64,
 }
 
 #[derive(Clone)]
@@ -131,23 +231,130 @@ impl RustRssMcp {
     }
 
     pub fn list_articles_json(&self, p: &ListArticlesParams) -> String {
-        let query = EntryQuery {
-            feed_id: p.feed_id,
-            unread_only: p.unread_only,
-            starred_only: p.starred_only,
-            limit: Some(clamp_limit(p.limit)),
-            read_later_only: false,
-            // MCP 列表工具不做游标分页（响应口径：默认 10 条 / 上限 50）
-            cursor: None,
-            cursor_read: None,
+        // 两个源过滤是两种口径（单源 / 多源），同时给无从裁决 → 直接报错
+        if p.feed_id.is_some() && p.folder_id.is_some() {
+            return error_json("feed_id 与 folder_id 只能用一个（二者互斥）");
+        }
+        let sort = match parse_sort(p.sort.as_deref()) {
+            Ok(s) => s,
+            Err(e) => return error_json(&e),
         };
-        self.with_store(|store| match store.list_entries(&query) {
-            Ok(rows) => {
-                let items: Vec<ArticleMetaOut> = rows.iter().map(meta_out).collect();
+        let cursor = match Cursor::parse(p.cursor.as_deref(), sort) {
+            Ok(c) => c,
+            Err(e) => return error_json(&e),
+        };
+        let page_size = clamp_limit(p.page_size.or(p.limit));
+        self.with_store(|store| {
+            // 分组过滤：先把 folder_id 解析成该分组下全部源 id，再走 core 的多源 IN。
+            // 空分组解析出空列表，core 对空列表的语义是「匹配零条」
+            // （绝不能退化成「不过滤」把全库倒给 agent）。
+            let feed_ids = match p.folder_id {
+                Some(folder_id) => match store.feed_ids_in_folder(folder_id) {
+                    Ok(ids) => Some(ids),
+                    Err(e) => return error_json(&e.to_string()),
+                },
+                None => None,
+            };
+            let query = EntryQuery {
+                feed_id: p.feed_id,
+                feed_ids,
+                unread_only: p.unread_only,
+                starred_only: p.starred_only,
+                read_later_only: p.read_later_only,
+                since: p.since,
+                until: p.until,
+                limit: Some(page_size),
+                cursor: cursor.map(|c| (c.sortkey, c.id)),
+                cursor_read: cursor.and_then(|c| c.read),
+                // MCP 默认口径固定（不继承界面设置）：显式传参才偏离默认
+                sort: Some(sort),
+                hide_read: Some(p.hide_read.unwrap_or(false)),
+            };
+            match store.list_entries(&query) {
+                Ok(rows) => {
+                    let items: Vec<ArticleMetaOut> = rows.iter().map(meta_out).collect();
+                    // 只在「满页」时给下一页游标：不满页说明已到底，
+                    // 再给游标会让客户端多翻一页空的（对 agent 是浪费一轮）
+                    let next_cursor = if items.len() == page_size as usize {
+                        rows.last().map(|r| {
+                            Cursor {
+                                sort,
+                                sortkey: r.sortkey,
+                                id: r.id,
+                                read: match sort {
+                                    ListSort::UnreadFirst => Some(r.read),
+                                    _ => None,
+                                },
+                            }
+                            .encode()
+                        })
+                    } else {
+                        None
+                    };
+                    to_json(&serde_json::json!({
+                        "count": items.len(),
+                        "page_size": page_size,
+                        "articles": items,
+                        "next_cursor": next_cursor,
+                        "hint": "正文请用 get_article(id) 单独取；翻页把 next_cursor 原样回传",
+                    }))
+                }
+                Err(e) => error_json(&e.to_string()),
+            }
+        })
+    }
+
+    /// 分组清单 + 每组未读合计（未分组单列）
+    pub fn list_folders_json(&self) -> String {
+        self.with_store(|store| match store.unread_summary(UnreadGroupBy::Folder) {
+            Ok(groups) => {
+                let folders: Vec<FolderOut> = groups
+                    .iter()
+                    .filter_map(|g| {
+                        g.id.map(|id| FolderOut {
+                            id,
+                            name: g.name.clone(),
+                            unread: g.unread,
+                        })
+                    })
+                    .collect();
+                let ungrouped_unread = groups
+                    .iter()
+                    .find(|g| g.id.is_none())
+                    .map(|g| g.unread)
+                    .unwrap_or(0);
+                let total_unread: i64 = groups.iter().map(|g| g.unread).sum();
                 to_json(&serde_json::json!({
-                    "count": items.len(),
-                    "articles": items,
-                    "hint": "正文请用 get_article(id) 单独取",
+                    "count": folders.len(),
+                    "folders": folders,
+                    "ungrouped_unread": ungrouped_unread,
+                    "total_unread": total_unread,
+                }))
+            }
+            Err(e) => error_json(&e.to_string()),
+        })
+    }
+
+    /// 未读聚合（按源或按分组）
+    pub fn unread_summary_json(&self, p: &UnreadSummaryParams) -> String {
+        let by = match p.by.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+            None | Some("feed") => UnreadGroupBy::Feed,
+            Some("folder") => UnreadGroupBy::Folder,
+            Some(other) => {
+                return error_json(&format!("by 只支持 feed / folder，收到 {other:?}"))
+            }
+        };
+        self.with_store(|store| match store.unread_summary(by) {
+            Ok(groups) => {
+                let total_unread: i64 = groups.iter().map(|g| g.unread).sum();
+                to_json(&serde_json::json!({
+                    "by": match by {
+                        UnreadGroupBy::Feed => "feed",
+                        UnreadGroupBy::Folder => "folder",
+                    },
+                    "count": groups.len(),
+                    "total_unread": total_unread,
+                    "groups": groups,
                 }))
             }
             Err(e) => error_json(&e.to_string()),
@@ -225,7 +432,14 @@ impl RustRssMcp {
     }
 
     #[tool(
-        description = "列出条目元数据（不含正文）。默认 10 条、上限 50；正文用 get_article 单独取。"
+        description = "列出分组（文件夹）及其未读合计；未分组订阅的未读单列（ungrouped_unread）、合计 total_unread"
+    )]
+    fn list_folders(&self) -> String {
+        self.list_folders_json()
+    }
+
+    #[tool(
+        description = "列出条目元数据（不含正文）。默认口径固定：sort=newest 且不隐藏已读（不跟随界面设置，显式传参才覆盖）；每页默认 10 条、上限 50，翻页把 next_cursor 回传给 cursor；可用 feed_id / folder_id（二选一）、unread_only、starred_only、read_later_only、since / until（对 COALESCE(published_at,fetched_at) 的闭区间，Unix 秒）、sort（newest/oldest/unread_first）、hide_read。正文用 get_article 单独取。"
     )]
     fn list_articles(&self, Parameters(p): Parameters<ListArticlesParams>) -> String {
         self.list_articles_json(&p)
@@ -239,6 +453,13 @@ impl RustRssMcp {
     #[tool(description = "全文搜索标题与正文（中文需两字及以上）")]
     fn search_articles(&self, Parameters(p): Parameters<SearchParams>) -> String {
         self.search_articles_json(&p)
+    }
+
+    #[tool(
+        description = "未读聚合：by = feed（默认，按订阅源）或 folder（按分组，未分组单列一组），返回每组的未读数与 total_unread"
+    )]
+    fn get_unread_summary(&self, Parameters(p): Parameters<UnreadSummaryParams>) -> String {
+        self.unread_summary_json(&p)
     }
 
     #[tool(description = "库的总体统计：订阅源数、条目数、未读数")]
@@ -288,6 +509,20 @@ fn truncate(text: &str) -> String {
 
 fn clamp_limit(limit: Option<u32>) -> u32 {
     limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT)
+}
+
+/// 排序档参数解析：`None`/空串 = 默认 `newest`；其它不合法值**报错**，
+/// 不静默回默认（agent 写错档位时希望被告知，而不是拿到它没要的顺序）。
+fn parse_sort(raw: Option<&str>) -> std::result::Result<ListSort, String> {
+    match raw.map(str::trim).filter(|v| !v.is_empty()) {
+        None => Ok(ListSort::Newest),
+        Some("newest") => Ok(ListSort::Newest),
+        Some("oldest") => Ok(ListSort::Oldest),
+        Some("unread_first") => Ok(ListSort::UnreadFirst),
+        Some(other) => Err(format!(
+            "sort 只支持 newest / oldest / unread_first，收到 {other:?}"
+        )),
+    }
 }
 
 fn to_json<T: Serialize>(value: &T) -> String {

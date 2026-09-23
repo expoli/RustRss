@@ -29,5 +29,5 @@ pub use parse::{parse, ParseError};
 pub use store::backup;
 pub use store::{
     EntryQuery, EntryRow, FeedIntervalRow, FeedRow, InsertStats, ListSort, MarkScope, Store,
-    StoreError,
+    StoreError, UnreadGroup, UnreadGroupBy,
 };

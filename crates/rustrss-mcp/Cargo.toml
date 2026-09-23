@@ -19,3 +19,6 @@ anyhow = "1"
 [dev-dependencies]
 # 测试里当 HTTP 客户端用（与 rustrss-core 用的是同一个客户端）
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "json"] }
+# 测试夹具要造带 published_at 的条目（core 公开模型 `Entry.published` 就是 chrono 类型）；
+# 仅测试用，不进产物，也不引入新的依赖树节点（core 已依赖同版本）。
+chrono = "0.4"
