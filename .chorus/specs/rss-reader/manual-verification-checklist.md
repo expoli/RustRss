@@ -817,3 +817,18 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - Note-1（单分组视图无入口）/ Note-2（真冷盘未测，红线 #3 允许「明确标注热缓存」分支）：评审裁定非阻塞，维持现状并在上面「尚未覆盖」里记明。
 - Note-3（PRD 说改第 70 条但实际未动）：已补——spec.md 第 70 条尾部加上指向第 71 / 72 条的指针，与「结构重组、语义无损」的裁定一致。
 - Note-4（评审称「仓库无 invoke 漂移守卫」）：**该 note 本身不准确**。守卫确实存在：文档在 `src-tauri/src/main.rs:403`、提取器 `invoked_commands()` 在 `main.rs:552`、断言 `missing.is_empty()` 在 `main.rs:446-452`。做了一次变异校验：向 `ui/app.js` 里临时插入 `invoke('definitely_not_registered')` → `cargo test -p rustrss-desktop mcp_write_settings_controls_and_commands_are_wired` 在 `main.rs:450` panic（守卫真的会拦）；还原后该测试通过。
+
+### 22.2 T2 常驻「只看未读」开关 + 快捷键 `U` · 提交 `待填`
+
+**机制证据**：`cargo test --workspace` 全绿（store 侧豁免语义的既有测试保持绿——本批没动 core 查询）；启动日志 `shortcut selftest ok (keys=j ArrowDown k ArrowUp Enter u s l t U r g G ; 输入区/覆盖层里一律不触发)`（`U` 已登记、无重复键位、`t` 未丢）、`i18n selftest ok (keys=383)`。
+
+**实机证据**（Xvfb `:99` + `GDK_BACKEND=x11` + 真库副本，跑完已清理）
+
+- 常驻开关渲染：列表头右侧出现「只看未读」；未开启时灰框，开启后 `aria-pressed=true` → 强调色文字 + 蓝边框（截图逐项核对）。
+- 点击切换：`list settings: sort=newest hideRead=1` → 立即重查重渲（`view=unread ... hideRead=1 count=200 loaded=200 header=已加载 200 / 共 13386 未读`），库内 `settings.list.hide_read` 同步为 `true`；再点一次回到 `hideRead=0` / 库内 `false`。
+- 快捷键 `U`：`xdotool key U` → `list settings: sort=newest hideRead=1`（与点击走同一动作、同一日志口径）。
+- 与排序菜单同源：开启状态下打开排序菜单 →「隐藏已读」项带勾选 ✓（截图核对）；两处读的是同一个 `list.hide_read`，无第二份状态。
+- 重启保留：库内 `hide_read=true` 时重启 → 启动日志 `view=unread ... hideRead=1`，且按钮为按下态（截图：按钮带强调色边框 + 头部写「共 13386 未读」）。
+- 未回归：星标 / 稍后读视图豁免「隐藏已读」、搜索不豁免（store 层既有测试覆盖，本批未改查询路径）。
+
+**环境备注（下次省时间）**：Xvfb 下窗口须先 `xdotool windowraise` + `windowfocus` 才接收指针事件（本次首轮点击全无效即此因，键盘事件不受影响）；列表头按钮的实际屏幕坐标与目测估计差约 90px——先截图量位置再点。

@@ -821,10 +821,25 @@ function invalidateViewTotal() {
   viewTotalCache = { key: null, n: null };
 }
 
+/// 常驻「只看未读」开关的状态：与排序菜单里的「隐藏已读」同源（同一个
+/// `list.hide_read` 设置、同一个 `set_list_hide_read` 命令）——两处只是同一动作的
+/// 两个入口，不新增设置键、不各存一份副本。同值短路：未变则零写入。
+function renderUnreadOnlyButton() {
+  const btn = el('btn-unread-only');
+  if (!btn) return;
+  const pressed = listHideRead() ? 'true' : 'false';
+  if (btn.getAttribute('aria-pressed') !== pressed) btn.setAttribute('aria-pressed', pressed);
+}
+
+/// 切换「只看未读」。按钮点击与快捷键 `U` 共用这一个动作（含 reset 语义：
+/// applyListSetting 会重新查库并重建列表，分页状态一并重置）。
+function toggleUnreadOnly() {
+  return applyListSetting(() => invoke('set_list_hide_read', { enabled: !listHideRead() }));
+}
+
 /// 列表头计数：「已加载 M / 共 N」；有效筛选是未读时写「共 N 未读」；
 /// N 未知（搜索视图或查询降级）时只写「已加载 M 篇」——宁可少写，不虚报。
-function renderListCount() {
-  const target = el('list-count');
+function renderListCount() {  const target = el('list-count');
   if (!state.entries.length) {
     target.textContent = '';
     return;
@@ -844,6 +859,7 @@ function renderList() {
   const __t0 = performance.now();
   el('list-title').textContent = viewTitle();
   renderListCount();
+  renderUnreadOnlyButton();
   void fetchViewTotal();
 
   const list = el('entries');
@@ -1464,7 +1480,7 @@ function selfTestShortcutKeys() {
     seen.add(k);
   }
   if (!seen.has('t')) problems.push('缺少 t 快捷键');
-  for (const k of ['j', 'k', 'u', 's', 'l', 'r', 'g', 'G']) {
+  for (const k of ['j', 'k', 'u', 's', 'l', 'r', 'g', 'G', 'U']) {
     if (!seen.has(k)) problems.push(`既有键位丢失: ${k}`);
   }
   log(
@@ -3995,6 +4011,10 @@ async function boot() {
     ev.stopPropagation();
     openListSortMenu(ev, el('btn-list-sort'));
   };
+  // 常驻「只看未读」开关与快捷键 U 共用同一个动作（见 toggleUnreadOnly）
+  el('btn-unread-only').onclick = () => {
+    toggleUnreadOnly().catch((err) => setStatus(err.message, true));
+  };
   initRefreshEvents();
   initSidebarEvents();
   initTagEvents();
@@ -4474,6 +4494,8 @@ function onGlobalKeydown(e) {
       // 列表态（还没选行/正文区是占位）时退到首行——选择器头部会写明是给哪篇打标，
       // 且只有 Enter/点击才会写入，所以不是「静默改了用户没选的文章」。
       case 't': e.preventDefault(); openTagPicker(state.readerEntry?.id ?? state.selectedId ?? state.entries[0]?.id).catch((err) => setStatus(err.message, true)); break;
+      // 大写 U = 「只看未读」列表总开关（小写 u 是切换当前这篇的已读态，两者语义正交）
+      case 'U': e.preventDefault(); toggleUnreadOnly().catch((err) => setStatus(err.message, true)); break;
       case 'r': e.preventDefault(); doRefresh(); break;
       case 'g': e.preventDefault(); jump(false); break;
       case 'G': e.preventDefault(); jump(true); break;

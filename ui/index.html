@@ -86,6 +86,9 @@
           <span id="list-count" class="dim"></span>
           <!-- 排序与过滤入口：图标按钮弹 ctx-menu（三档 + 分隔 + 隐藏已读）-->
           <button id="btn-list-sort" data-i18n-title="list.sortTitle" aria-label="sort">⇅</button>
+          <!-- 常驻「只看未读」：与排序菜单里的「隐藏已读」同一设置（list.hide_read），
+               只是把入口提到显眼处（用户实测找不到菜单里的那项）；快捷键 U -->
+          <button id="btn-unread-only" data-i18n="list.unreadOnly" data-i18n-title="list.unreadOnlyTitle" aria-label="unread only" aria-pressed="false"></button>
         </span>
       </div>
       <ul id="entries" class="entries"></ul>
