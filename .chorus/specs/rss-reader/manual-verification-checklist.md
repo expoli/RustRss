@@ -742,3 +742,44 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - **`import_opml` 未提供 `dry_run`**：tech_design 的 `dry_run` 举例提过「import 的新增/跳过数」，但 core 的 `opml::import` 没有预览模式；为不让预览变成第二套遍历逻辑（预览与执行漂移），本批次只给两个危险工具做 dry_run。若确需，正确做法是在 core 侧重构出可预览的导入。
 - **未对真实 RSSHub 实例做端到端抓取**：只验证了 scheme 归一、等价形态去重与「不联网落库」；`rsshub://` 的抓取解析（按镜像解析实际地址）在既有批次与 `refresh` 的实机里覆盖，本批次未重测。
 - **界面入口未新增**：订阅 / 分组的界面路径本来就存在（侧栏菜单 / 编辑对话框 / OPML 按钮），MCP 只是同一数据层的第二个调用方；本批次未改 UI 文案，因此没有 i18n key 变化。
+
+## 21. 标签批次（2026-09-23-tags；T1 `73a4433` / T2 `4bee3cf` / T3 `f397762` / T4 `14ac1a0`）
+
+### 21.1 已机械验证的部分（core 单测 + Xvfb 实机 + 真 HTTP e2e + 真二进制实机）
+
+**T1 core 数据层（`73a4433`）**：迁移 v12（`tags` + `entry_tags` + `idx_entry_tags_tag` + 覆盖索引 `idx_entries_unread_id`）幂等且有旧库升级路径测试（数据不丢）；store API create / rename / set_color / set_pinned / delete(`dry_run` 与实际共用 `tag_entry_count`) / list(`list_tags` 侧栏序 + `list_tags_recent_first` 选择器序) / assign / unassign(`TagTarget::Entries` ≤100 或条件级)/ reorder；级联零孤儿（`remove_feed` 路径显式删除 + FK 双保险，`orphan_entry_tag_count` 断言）；EXPLAIN 断言 + 删索引变异校验（标签筛选走 `idx_entry_tags_tag`、未读计数走覆盖索引，不穿正文大列所在表 B 树）；`EntryQuery.tag_id` 默认口径不变。`crates/rustrss-core/tests/tags.rs` 17 条通过（T3 评审独立复跑 `cargo test --workspace` 341 passed / 0 failed）。
+
+**T2 UI 交互（`4bee3cf`）**：阅读器 meta 行 chips（点击 = 标签视图）＋选择器（type-ahead、↑↓/Enter/Esc、Enter 新建并附加、候选在新建行之前、已附加行 ✓ 可取消、最近使用优先直接来自 core 的 `list_tags_recent_first`）；`t` 快捷键（列表态退到首行 / 阅读器态，`tagPicker:open/close reason=esc` 证明 Esc 无副作用）；列表行 ≤2 chips + `+N`（行级 patch，不重建列表/正文）；标签视图 `{kind:'tag'}`（列表头「标签：<名>」，与未读/星标/稍后读并存）；语义分工文案双语 + i18n key-set 348=348。Xvfb :107 实机 15 张截图（`/tmp/rustrss-tags-verify/EVIDENCE.md`，临时产物，跑完清理）；新增键位测试做变异校验（注入重复 `case 'u'` → FAILED，还原 → ok）；`cargo test --workspace` 339 passed / 0 failed。
+
+**T3 UI 管理（`f397762`）**：侧栏可折叠「标签」区（`sidebar_data.tags` 直出 core `list_tags`，一次锁一次 IPC，前端不排序不数数；折叠状态 `ui.tags_collapsed` 跨会话保持）；原生拖拽排序（整份可见顺序交 `reorder_tags` 单事务，DOM 只挪被拖节点，`tagReorder: created=0 removed=0` 作不重建的证据；置顶组与普通组不混排，跨组落点直接拒绝）；右键菜单（重命名 / 颜色 8 色预设 + 默认，当前项打勾 / 置顶切换 / 删除），重名报 core 的可读错误；删除先 `dry_run` 拿「将影响 N 篇」再确认，确认后标签消失、文章仍在、行 chips 就地更新。Xvfb :109 实机 26 张截图 + 5 份日志（`/tmp/rustrss-tags-t3/EVIDENCE.md`，临时产物，跑完清理）；`tagPalette selftest` 对比度 light 3.07 / dark 3.24（≥3:1）；i18n 375=375；`cargo test --workspace` 341 passed / 0 failed。
+
+**T4 MCP 工具（`14ac1a0`）**：
+
+- 新增 `crates/rustrss-mcp/src/tag_tools.rs`：`list_tags`（read）+ `create_tag` / `rename_tag` / `assign_tags` / `unassign_tags` / `delete_tag`（write，全部 `dangerous=false`）；注册表登记后自动获得 `tools/list` 过滤 + 调用闸门 + `target=mcp` 审计（与既有基建同一条路径，无新机制）。
+- `list_articles` 增 `tag_id` / `tag_name`（互斥 → `invalid_argument`；未知标签 → `tag_not_found`，不静默空列表）且每条带 `tags`（名称数组，≤20 个，超出置 `tags_truncated`）。
+- 错误码按 `StoreError` 变体映射（不解析文案）：`tag_not_found` / `duplicate_tag_name` / `invalid_argument`；沿用 `write_scope_required` / `write_disabled` / `confirm_required`。
+- 单元测试 10 条（`tag_tools` 模块内：批量闸门、清单元数据与上限、排序档、错误码映射、目标形态、条目存在性、delete 的 confirm/dry_run 同源）+ 真 HTTP e2e 8 条（`crates/rustrss-mcp/tests/tag_tools.rs`）：读 token 可见性/写 token 可用、写调用落库回读、读 token 与关写开关两种拒绝（`write_scope_required` / `write_disabled`，库不变）、`delete_tag` 缺 confirm、`dry_run` 影响数与真删相等且 dry_run 后库不变、`list_articles` 过滤与 `tags` 字段、注入界面设置后默认口径不变、审计行含 dry_run/被拒且参数过 scrub。
+- 批次收口修正（core 一行条件 + 一个测试）：`last_used_at` 只由**打标**推进（`tag_link` 的 `changed > 0 && link`），取消打标不推进——PRD FR-1 / tech_design schema 注释 / `Store::create_tag` 文档 / `schema.rs` 注释四处口径一致；T2 评审 Note-2 与 T3 评审 Note-4 均点名留 T4 裁定。
+- 门禁：`cargo test --workspace` **359 passed / 0 failed**；`cargo clippy --workspace --all-targets` 仅 3 条既有 rustrss-core 基线警告（`fulltext.rs:130` redundant closure、`store/mod.rs:461`/`:680` matching on `Some` with `ok()`），无新增。
+
+### 21.2 实机快照（T4；真二进制 + 真库 + 本地 HTTP 源，`mktemp -d` 隔离 HOME）
+
+跑法：`rustrss-mcp --print-config` 建库并迁移 → `sqlite3` 写入读/写 token 与写开关（危险开关**不开**，用于证明 tag 写工具不受它约束）→ `python3 -m http.server`（随机端口）提供 3 条 RSS → `rustrss-mcp --http 127.0.0.1:<随机端口>` → curl 走 MCP JSON-RPC。脚本与完整 transcript 为临时产物，跑完已清理。关键行：
+
+- 读 token `tools/list` = 8 个只读工具（含 `list_tags`，不含任何写工具）；`list_tags` 返回 `count=0`（空库）；读 token 调 `create_tag` / `assign_tags` → `isError=true` + `write_scope_required`，库不变。
+- 写 token `subscribe` + `refresh` → 夹具源入库 3 条（源标题 `实机标签源`）；`create_tag{"Live","#3E63DD"}` → `affected=1`、颜色归一为 `#3e63dd`、`last_used_at=null`；重名（`live`）→ `duplicate_tag_name`；`color:"blue"` → `invalid_argument`。
+- `assign_tags(ids=[1,2])` → `affected=2` / `detail.changed=2`，`sqlite3` 回读 `entry_tags=2`、`tags=1|Live|#3e63dd`。
+- **`last_used_at` 哨兵**：`sqlite3` 置 `last_used_at=1000` → `unassign_tags(ids=[1])` 后回读仍为 `1000`（取消不推进）；再 `assign_tags` 后变为真实时间戳（打标才推进）。
+- `list_articles(tag_name=live)`（小写 → 命中 `Live`，大小写不敏感）→ 2 条且每条 `tags: ["Live"]`；`tag_id`+`tag_name` 同传 → `invalid_argument`；`tag_name="不存在"` → `tag_not_found`；`unread_only` 与 tag 过滤可叠加。
+- `rename_tag` → 库回读 `1|Live 改名`；rename 不存在的 id → `tag_not_found`；`unassign_tags` 库回读 `entry_tags 2→1`。
+- `delete_tag` 缺 `confirm` → `confirm_required`（库不变）；`dry_run` → `affected=2` 且回读 `tags=1 / entry_tags=2 / entries=3`（未落库）；`confirm` → `affected=2`（与预览相等，同源）、回读 `tags=0 / entry_tags=0 / entries=3`（标签消失、文章保留）；删不存在的 id → `tag_not_found`。
+- 审计：日志 16 行 `mcp-write tool=…`，覆盖 5 个 tag 写工具 + dry_run 行（`dry_run=true`）+ 被拒/失败行（`write_scope_required` / `duplicate_tag_name` / `invalid_argument` / `confirm_required` / `tag_not_found`）；凭据串 `hunter2` / `SECRET-TOKEN` / 读写 token 0 命中，`token=***` 打码行保留。
+
+### 21.3 环境限制与仍需核验
+
+- **Windows / macOS 未实测**：MCP 是独立进程（不依赖 Tauri），本批次只在 Linux 上跑过 HTTP。真机核验步骤：构建后 `rustrss-mcp --http`，按 21.2 跑一遍 `create_tag → assign_tags → list_articles(tag) → delete_tag(dry_run/confirm)` 闭环。
+- **T3 遗留（跨组拖放拒绝）**：置顶组与普通组的落点被直接拒绝（T3 实机 `0 次 reorder`、库不变）——core 的 `ORDER BY` 恒把 `pinned` 排前，跨组落库也不会生效；若将来要支持「拖成置顶/取消置顶」，需要在 core 侧定义语义（当前不在范围内）。
+- **T3 遗留（Xvfb 陈旧绘制）**：原生 DnD 在 WebKitGTK + 无 WM 环境下会把拖拽终点行的 hover 底色留在画面上（DOM/类名核对无残留，判定为环境重绘怪癖）；T2 也记录过「WebKit 停在旧帧，需 resize 回弹触发重画」。真实桌面有 WM 时未复现，未在真实桌面会话复核。
+- **T3 评审 Note-1（颜色子菜单点击）**：reviewer 未亲自点穿颜色子菜单（父项 + chevron、`set_tag_color` 命令测试、库存色圆点渲染已验）；本次亦未补点击（无 Xvfb 会话），留待真实桌面会话。
+- **MCP 与界面并发写**：两者共用同一库文件与同一 core API（WAL + 锁），`create_tag` 的跨进程重名冲突在 core 侧有 `unique_violation` 映射测试；但**未做**「界面与 MCP 同时打标同一批条目」的并发实机压测（单写者场景，core 事务保证原子性）。
+- **未对真实 RSSHub 实例做标签端到端**：标签与 RSSHub 解析无交集，本批次未重测 RSSHub 抓取（既有批次覆盖）。
