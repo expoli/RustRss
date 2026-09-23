@@ -748,6 +748,52 @@ mod tests {
         let _ = std::fs::remove_file(&path);
     }
 
+    /// 条件级命中集超过 100 条：`results` 只列前 100（有界采样）+ `results_truncated`，
+    /// 但 `affected` 仍是完整命中数（与 `set_read` 的条件级口径一致）。
+    #[test]
+    fn scoped_assign_samples_the_hit_set_and_flags_truncation() {
+        let server = server();
+        let feed = server.with_store(|s| s.add_feed("https://e.test/big.xml", Some("B")).unwrap());
+        server.with_store(|s| {
+            let entries: Vec<Entry> = (1..=101)
+                .map(|i| Entry {
+                    stable_id: format!("b{i}"),
+                    id_origin: IdOrigin::SourceData,
+                    source_id: format!("b{i}"),
+                    title: format!("t{i}"),
+                    url: None,
+                    author: None,
+                    published: None,
+                    updated: None,
+                    summary: None,
+                    content_html: None,
+                    content_text: None,
+                    categories: Vec::new(),
+                })
+                .collect();
+            s.upsert_entries(feed, &entries).unwrap()
+        });
+        let tag = parse(&server.create_tag_json(&CreateTagParams {
+            name: "Rust".into(),
+            color: None,
+        }))["detail"]["id"]
+            .as_i64()
+            .unwrap();
+
+        let out = parse(&server.assign_tags_json(&AssignTagsParams {
+            feed_id: Some(feed),
+            tag_ids: vec![tag],
+            ..Default::default()
+        }));
+        assert_eq!(out["ok"], true, "{out}");
+        assert_eq!(out["affected"], 101, "affected 是完整命中数");
+        assert_eq!(out["results"].as_array().unwrap().len(), MAX_BATCH_IDS);
+        assert_eq!(out["detail"]["results_truncated"], true);
+        assert_eq!(out["detail"]["target"]["feed_id"], feed);
+        // 库内确实 101 条关联（采样只影响响应体积，不影响写入）
+        assert_eq!(server.with_store(|s| s.tag_entry_count(tag).unwrap()), 101);
+    }
+
     /// `delete_tag`：缺 `confirm` → `confirm_required`；`dry_run` 不打 confirm 也放行，
     /// 且预览与实际共用 core 同一个计数函数（同一数字）
     #[test]
