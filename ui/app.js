@@ -991,12 +991,8 @@ function installSentinel() {
   sentinel = document.createElement('li');
   sentinel.className = 'load-sentinel dim';
   if (paging.exhausted || state.view.kind === 'search') {
-    // 终止态：明确写出来，避免「没有尾部行 = 还有更多」的歧义。
-    // 搜索本版一次性 200 条、不分页：如实写「已加载 M 篇」，不声称 FTS 总数。
-    sentinel.textContent =
-      state.view.kind === 'search'
-        ? t('list.loadedOnly', { m: loadedCount() })
-        : t('list.allLoaded', { n: viewTotalSync() ?? loadedCount() });
+    // 终止态：明确写出来，避免「没有尾部行 = 还有更多」的歧义
+    sentinel.textContent = sentinelTerminalText();
     list.appendChild(sentinel);
     return;
   }
@@ -1029,12 +1025,26 @@ function sentinelLabel() {
   return n == null ? t('list.loadMoreNoTotal', { m }) : t('list.loadMore', { m, n });
 }
 
-/// 在飞态：按钮禁用 + 文案「加载中…」（同一时刻只允许一个请求在飞）
-function setSentinelLoading(loading) {
-  const btn = sentinel ? sentinel.querySelector('button') : null;
-  if (!btn) return;
-  btn.disabled = loading;
-  btn.textContent = loading ? t('list.loadingMore') : sentinelLabel();
+/// 终止行文案：已到末尾（共 N 篇）。搜索本版一次性 200 条、不分页——
+/// 如实写「已加载 M 篇」，不声称 FTS 总数。
+function sentinelTerminalText() {
+  return state.view.kind === 'search'
+    ? t('list.loadedOnly', { m: loadedCount() })
+    : t('list.allLoaded', { n: viewTotalSync() ?? loadedCount() });
+}
+
+/// 尾部行按最新状态重算：按钮态（含在飞禁用）与终止行文本都从同一批函数取值。
+/// 计数刷新（refreshCounts）与续页开始时都调它——否则会话内标读后尾部会停在旧数字上，
+/// 尤其终止行没有按钮、以前根本没人重算它（聚合复核 B1 的同类残留）。
+function refreshSentinelFooter() {
+  if (!sentinel) return;
+  const btn = sentinel.querySelector('button');
+  if (btn) {
+    btn.disabled = paging.loading;
+    btn.textContent = paging.loading ? t('list.loadingMore') : sentinelLabel();
+    return;
+  }
+  sentinel.textContent = sentinelTerminalText();
 }
 
 function onSentinel(records) {
@@ -2290,7 +2300,7 @@ async function loadMore({ manual = false } = {}) {
   }
   const kind = state.view.kind;
   paging.loading = true;
-  setSentinelLoading(true);
+  refreshSentinelFooter();
   try {
     await loadEntries({ reader: false, reset: false });
   } catch (err) {
@@ -2386,7 +2396,7 @@ async function refreshCounts() {
   // 侧栏未读已经变了、头部「共 N」与尾部进度还是旧值，要等下次列表重建才追上。
   // 两者都是同值短路（未变零写入）。
   renderListCount();
-  if (sentinel) setSentinelLoading(paging.loading);
+  refreshSentinelFooter();
 }
 
 // ---------------- 侧栏文件夹：折叠与右键管理 ----------------

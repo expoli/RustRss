@@ -881,3 +881,9 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - **回归**：`cargo test --workspace` 全绿；分页三态、只看未读开关、末尾终止态行为未变。
 
 **踩坑记录（给下次）**：Tauri 把 `ui/` 编译期嵌入，改完前端必须先 `cargo build -p rustrss-desktop` 再启动验证（仓库红线 #10）——本次首轮验证误跑了旧二进制，看到的仍是修复前行为，重建后复测才对。另：截图核对数字时头部/侧栏要同屏裁一张图（分开裁会看不到"同刻一致性"）。
+
+**任务复核残留的修复（任务复核评论 `6531779c` Note-3，PASS WITH NOTES）**
+
+- 残留（与 B1 同类）：终止行（`exhausted` / 搜索）是静态文本，而 `refreshCounts` 原来调用的 `setSentinelLoading` 在没有按钮时提前返回——标读后终止行的 N 会滞后到下次列表重建。
+- 修：抽出 `sentinelTerminalText()`（终止行文案）与 `refreshSentinelFooter()`（按钮态含在飞禁用 + 终止行文本，统一重算），`refreshCounts()` 与 `loadMore()` 都改调它，删掉只服务按钮的 `setSentinelLoading`。
+- 实机证据：feed#93 + 只看未读（47 条未读、`exhausted=true`、终止行「已到末尾（共 47 篇）」）→ 点开一篇（日志 `open id=9489 markRead=true read=false`）→ 出现 `renderSidebar`、**0 条 `view=`**（未重建）→ 同位置截图终止行变为「已到末尾（共 46 篇）」。提交 `待填`。
