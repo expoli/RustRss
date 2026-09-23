@@ -865,3 +865,19 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - **Blocker-1（AC-8 声称已勾选第 73 条、实际仍为 `- [ ]`）**：属实。我在 T3 的两个提交里只改了第 73 条的**文本**（加「T3 交付 …」说明）而没有真正把复选框改成 `[x]`，devEvidence 却写了「勾选第 73 条」——验收证据失实。已修正：`spec.md` 第 73 条改为 `- [x]`（提交 `d93d308`）。教训已记：交付前先 `grep -n "^- \[ \]" .chorus/specs/rss-reader/spec.md` 自查，再写 devEvidence。
 - **Note-1（在飞态无逐帧截图）/ Note-2（失败注入用 DDL 改表名）**：评审裁定不阻塞；对应说明保留在本节。
 - **Note-3（`loadMore` 上方旧 2 行注释未删、新旧重复）**：已删除旧注释，只留与当前实现一致的一份（提交 `d93d308`）。
+
+### 22.4 聚合复核 B1 修复（任务 `bcb9f341`，idea 评论 `705e9600` 判 FAIL）· 提交 `待填`
+
+**修复内容**
+
+- **B1（阻塞，跨任务缝隙）**：`refreshCounts()` 末尾补 `renderListCount()` + 尾部文案刷新（`setSentinelLoading(paging.loading)`，两者都同值短路）——此前 `state.db` 更新后没有人重渲 `#list-count`，会话内标读时侧栏未读已变、头部「共 N」与尾部进度仍是旧值，直到下次列表重建才追上。
+- **NOTE-1（缓存 key 未校验）**：`viewTotalSync()` 只在 `viewTotalCache.key === viewTotalKey()` 时返回缓存值，否则返回 null（避免拿到其他视图的陈旧总数）。
+- **NOTE-3（搜索缺终止行）**：搜索视图也画终止行，文案用既有 `list.loadedOnly`（「已加载 M 篇」），不声称 FTS 总数。
+
+**实机证据**（Xvfb `:99` + 真库副本；Xvfb 下窗口先 `windowraise` + `windowfocus`）
+
+- **B1**：标读前头部「已加载 200 / 共 13371 未读」与侧栏「全部未读 13371」一致；点开一篇（日志 `open id=13866 markRead=true read=false`）→ 出现 `renderSidebar feeds=120`、**0 条 `view=`**（列表未重建）→ 截图同刻头部「已加载 199 / 共 13370 未读」+ 侧栏「13370」——口径一致，滞后消失。
+- **NOTE-3**：搜索 `Ubuntu` → `view=search count=42 exhausted=true`；滚到底部终止行显示「已加载 42 篇」（截图），与头部计数一致且不声称总数。
+- **回归**：`cargo test --workspace` 全绿；分页三态、只看未读开关、末尾终止态行为未变。
+
+**踩坑记录（给下次）**：Tauri 把 `ui/` 编译期嵌入，改完前端必须先 `cargo build -p rustrss-desktop` 再启动验证（仓库红线 #10）——本次首轮验证误跑了旧二进制，看到的仍是修复前行为，重建后复测才对。另：截图核对数字时头部/侧栏要同屏裁一张图（分开裁会看不到"同刻一致性"）。

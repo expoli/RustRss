@@ -792,7 +792,9 @@ function viewTotalSync() {
     case 'later':
       return state.db ? state.db.later : null;
     default:
-      return viewTotalCache.n; // feed / tag：等 fetchViewTotal 查回来
+      // feed / tag：只有缓存 key 与当前（视图 + 有效筛选）一致时才用它——
+      // 否则会拿到别的视图的陈旧总数（例如刚切到「全部」却沿用上一个源的 N）
+      return viewTotalCache.key === viewTotalKey() ? viewTotalCache.n : null;
   }
 }
 
@@ -983,14 +985,18 @@ function installSentinel() {
   if (listObserver && sentinel) listObserver.unobserve(sentinel);
   if (sentinel) sentinel.remove();
   sentinel = null;
-  // 搜索本版不分页；空列表交给空态占位，不画尾部行
-  if (state.view.kind === 'search' || !state.entries.length) return;
+  // 空列表交给空态占位，不画尾部行
+  if (!state.entries.length) return;
 
   sentinel = document.createElement('li');
   sentinel.className = 'load-sentinel dim';
-  if (paging.exhausted) {
-    // 终止态：明确写出来，避免「没有哨兵 = 还有更多」的歧义
-    sentinel.textContent = t('list.allLoaded', { n: viewTotalSync() ?? loadedCount() });
+  if (paging.exhausted || state.view.kind === 'search') {
+    // 终止态：明确写出来，避免「没有尾部行 = 还有更多」的歧义。
+    // 搜索本版一次性 200 条、不分页：如实写「已加载 M 篇」，不声称 FTS 总数。
+    sentinel.textContent =
+      state.view.kind === 'search'
+        ? t('list.loadedOnly', { m: loadedCount() })
+        : t('list.allLoaded', { n: viewTotalSync() ?? loadedCount() });
     list.appendChild(sentinel);
     return;
   }
@@ -2376,6 +2382,11 @@ async function refreshCounts() {
   // 侧栏标签区（顺序 + 未读计数）与聚合计数同一把锁、同一次 IPC 回来
   state.sidebarTags = data.tags || [];
   renderSidebar();
+  // 计数变了要同时刷新列表头与尾部（两处都读这些数字，见 T1/T3）：不重渲的话，
+  // 侧栏未读已经变了、头部「共 N」与尾部进度还是旧值，要等下次列表重建才追上。
+  // 两者都是同值短路（未变零写入）。
+  renderListCount();
+  if (sentinel) setSentinelLoading(paging.loading);
 }
 
 // ---------------- 侧栏文件夹：折叠与右键管理 ----------------
