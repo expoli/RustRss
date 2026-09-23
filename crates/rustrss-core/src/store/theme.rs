@@ -20,6 +20,40 @@ struct Envelope {
 }
 
 impl Store {
+    /// Current and bounded history from the same consistent database snapshot.
+    pub fn theme_state(&self) -> Result<(ThemeSnapshot, Vec<ThemeConfig>)> {
+        let tx = self.conn.unchecked_transaction()?;
+        let envelope = read_envelope(&tx)?;
+        let result = (envelope.current.resolve()?, envelope.history);
+        tx.commit()?;
+        Ok(result)
+    }
+
+    /// Foreground polling reads only the small settings row, never article data.
+    /// Unchanged revisions skip history validation and effective-theme resolution.
+    pub fn theme_snapshot_if_changed(
+        &self,
+        known_revision: Option<u64>,
+    ) -> Result<Option<ThemeSnapshot>> {
+        let tx = self.conn.unchecked_transaction()?;
+        let revision: Option<i64> = tx
+            .query_row(
+                "SELECT json_extract(value, '$.current.revision') FROM settings WHERE key = ?1",
+                [KEY],
+                |row| row.get(0),
+            )
+            .optional()?;
+        let revision = u64::try_from(revision.unwrap_or(0))
+            .map_err(|_| ThemeError::Corrupt("negative revision".into()))?;
+        if known_revision == Some(revision) {
+            tx.commit()?;
+            return Ok(None);
+        }
+        let snapshot = read_envelope(&tx)?.current.resolve()?;
+        tx.commit()?;
+        Ok(Some(snapshot))
+    }
+
     /// Pure read: absent versioned config maps existing settings without writing.
     pub fn theme_snapshot(&self) -> Result<ThemeSnapshot> {
         let tx = self.conn.unchecked_transaction()?;

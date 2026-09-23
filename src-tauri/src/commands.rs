@@ -832,6 +832,15 @@ pub fn set_ui_theme(state: State<'_, AppState>, theme: String) -> R<UiSettings> 
     ui_settings(&state)
 }
 
+/// Small foreground revision probe; returns a full snapshot only after a change.
+#[tauri::command]
+pub fn get_theme_update(
+    state: State<'_, AppState>,
+    known_revision: Option<u64>,
+) -> R<Option<rustrss_core::theme::ThemeSnapshot>> {
+    state.with_store(|s| s.theme_snapshot_if_changed(known_revision).map_err(err))
+}
+
 #[tauri::command]
 pub fn update_ui_theme(
     state: State<'_, AppState>,
@@ -3142,7 +3151,7 @@ pub fn get_mcp_settings(state: State<'_, AppState>) -> R<McpSettingsView> {
 }
 
 #[tauri::command]
-pub async fn set_mcp_enabled(state: State<'_, AppState>, enabled: bool) -> R<McpSettingsView> {
+pub async fn set_mcp_enabled(app: tauri::AppHandle, state: State<'_, AppState>, enabled: bool) -> R<McpSettingsView> {
     let port = state.with_store(|s| {
         s.set_bool_setting(crate::mcp_server::K_ENABLED, enabled)
             .map_err(err)?;
@@ -3152,7 +3161,7 @@ pub async fn set_mcp_enabled(state: State<'_, AppState>, enabled: bool) -> R<Mcp
         let db = state.db_path.clone();
         state
             .mcp
-            .start(&db, port, state.refresh_gate())
+            .start(&db, port, state.refresh_gate(), app.clone())
             .await
             .map_err(|e| format!("启动 MCP HTTP 服务失败: {e}"))?;
     } else {
@@ -3162,7 +3171,7 @@ pub async fn set_mcp_enabled(state: State<'_, AppState>, enabled: bool) -> R<Mcp
 }
 
 #[tauri::command]
-pub async fn set_mcp_port(state: State<'_, AppState>, port: u16) -> R<McpSettingsView> {
+pub async fn set_mcp_port(app: tauri::AppHandle, state: State<'_, AppState>, port: u16) -> R<McpSettingsView> {
     let enabled = state.with_store(|s| {
         s.set_setting(crate::mcp_server::K_PORT, &port.to_string())
             .map_err(err)?;
@@ -3173,7 +3182,7 @@ pub async fn set_mcp_port(state: State<'_, AppState>, port: u16) -> R<McpSetting
         let db = state.db_path.clone();
         state
             .mcp
-            .start(&db, port, state.refresh_gate())
+            .start(&db, port, state.refresh_gate(), app.clone())
             .await
             .map_err(|e| format!("换端口失败: {e}"))?;
     }

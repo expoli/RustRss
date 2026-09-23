@@ -1,0 +1,14 @@
+{
+  "output": "/tmp/rustrss-theme-mcp-4s6f33e9",
+  "embedded_event": true,
+  "stdio_polling": true,
+  "restore": true,
+  "read_token_rejected": true,
+  "article_renders_before_after": [
+    1,
+    1
+  ],
+  "revision": 3,
+  "pixel_checks": 2,
+  "preview_available": false
+}

@@ -3,7 +3,7 @@
   "ideaUuid": "6876476a-10ab-44c5-b12c-9e82a509fa40",
   "elaborationStatus": "resolved",
   "proposalUuid": null,
-  "stage": "shared_theme_renderer_and_ui_integrated",
+  "stage": "mcp_theme_configuration_integrated",
   "documentMirrors": {
     "prd.md": "3ffd52f8-0031-4586-89e1-750a6647d26f",
     "tech_design.md": "f9f59507-26dc-45aa-82db-9b1feaedd4e8",
@@ -11,7 +11,7 @@
   },
   "implementationTasksMaterialized": false,
   "productImplemented": false,
-  "nextTask": "T4 appearance settings and organization",
+  "nextTask": "T6 MCP preview and capture lifecycle (T4 settings organization deferred)",
   "remainingCapturePlatforms": [
     "windows",
     "macos",
@@ -19,5 +19,7 @@
   ],
   "waylandEvidence": "wayland-snapshot-results.json",
   "themeUiImplemented": true,
-  "t3Evidence": "theme-ui-results.json"
+  "t3Evidence": "theme-ui-results.json",
+  "themeMcpConfigurationImplemented": true,
+  "t5Evidence": "mcp-theme-results.json"
 }

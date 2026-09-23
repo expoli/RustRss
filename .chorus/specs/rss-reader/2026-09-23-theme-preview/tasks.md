@@ -1,6 +1,6 @@
 # 分阶段任务与依赖
 
-状态：本地任务草案；尚未物化为 Chorus 实现任务。T1 已完成 Xvfb/当前 KDE Wayland 隔离验证；T2 core 与 T3 真实 UI/共享渲染已实现，MCP 尚未接入。
+状态：本地任务草案；尚未物化为 Chorus 实现任务。T1 已完成 Xvfb/当前 KDE Wayland 隔离验证；T2 core 与 T3 真实 UI/共享渲染已实现，T5 MCP 配置已接入，T6 截图预览未实现。
 
 | 任务 | 依赖 | 交付与验收 | 主要范围 |
 | --- | --- | --- | --- |
@@ -15,11 +15,11 @@
 
 ## 执行顺序与退出条件
 
-先做 T1，尽早验证最大不确定性；T2 随后逐项实施，按 T3→T4→T5→T6→T7 串行推进。现有工作区已有其它修复，不在本批次批量提交或覆盖。
+先做 T1，尽早验证最大不确定性；T2 随后逐项实施，按用户继续 MCP 闭环的优先级，T3 后先执行 T5→T6，再补 T4 与 T7；T4 设置重组仍未完成。
 
 T1 若仅部分平台跑通，记录能力矩阵并实现明确的 unavailable；不能据此勾选三平台验收。若截图路径失败，继续完善配置模型与 UI，但 MCP 图片闭环保持未完成。不得静默换成 Chromium 或桌面截屏。
 
-后续正式提案按 chorus-feature-pipeline 进行 proposal/task/aggregate 评审，创建任务时将上表验收拆成可单独核验的 AC。目前已完成设计、Linux 隔离截图验证、T2 core 与 T3 UI 实现，MCP 接入及 Chorus 任务物化仍未完成；提交由用户单独指示，不执行自动 push/发布流程。
+后续正式提案按 chorus-feature-pipeline 进行 proposal/task/aggregate 评审，创建任务时将上表验收拆成可单独核验的 AC。目前已完成设计、Linux 隔离截图验证、T2 core 与 T3 UI 实现，T5 配置接入已完成；T6 图片闭环及 Chorus 任务物化仍未完成；提交由用户单独指示，不执行自动 push/发布流程。
 
 ## 回归重点
 
@@ -42,3 +42,6 @@ T1 若仅部分平台跑通，记录能力矩阵并实现明确的 unavailable�
 - [x] 当前 KDE 原生 Wayland：100 帧与 8 类边界检查；内容尺寸与 DPR 独立核对；不覆盖所有 compositor/跨屏场景。
 - [ ] Windows/macOS 与 GNOME Wayland、真实最小化/跨屏运行验证。
 - [ ] 正式提案评审、任务物化与产品实现。
+
+- [x] T5 MCP 配置五工具、权限/审计/CAS、内嵌事件与独立 stdio 前台轮询；[实现与验收](mcp-theme-config.md)。
+- [ ] T6 MCP 临时预览、图片返回、会话生命周期与渲染版本握手。

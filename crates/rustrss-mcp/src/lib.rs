@@ -23,6 +23,7 @@ pub mod feed_tools;
 pub mod http;
 pub mod registry;
 pub mod tag_tools;
+pub mod theme_tools;
 pub mod write_contract;
 pub mod write_tools;
 
@@ -223,6 +224,7 @@ pub struct RustRssMcp {
     fetcher: std::result::Result<Fetcher, String>,
     /// 测试专用桦工具（生产恒为空）。见 [`RustRssMcp::with_test_tool`]。
     test_tools: Arc<Vec<TestTool>>,
+    theme_changed: Option<Arc<dyn Fn(u64) -> bool + Send + Sync>>,
 }
 
 /// 测试专用桦工具：T3/T4 的真实写工具落地前，授权矩阵需要「已登记、可调用」的写工具。
@@ -249,7 +251,18 @@ impl RustRssMcp {
             fetcher: Fetcher::new(rustrss_core::fetch::DEFAULT_USER_AGENT)
                 .map_err(|e| format!("初始化 HTTP 客户端失败: {e}")),
             test_tools: Arc::new(Vec::new()),
+            theme_changed: None,
         }
+    }
+
+    /// Host notification only: true means queued, not rendered. Called outside store lock.
+    #[must_use]
+    pub fn with_theme_notifications(
+        mut self,
+        callback: impl Fn(u64) -> bool + Send + Sync + 'static,
+    ) -> Self {
+        self.theme_changed = Some(Arc::new(callback));
+        self
     }
 
     /// 打开（必要时创建/迁移）指定路径的库
@@ -637,6 +650,46 @@ impl RustRssMcp {
 
 #[tool_router]
 impl RustRssMcp {
+    #[tool(
+        description = "Read the current theme, effective light/dark parameters, revision, last ten history revisions and preview capability. include_schema=true returns patch constraints. Does not write or render."
+    )]
+    fn get_theme(&self, Parameters(p): Parameters<theme_tools::GetThemeParams>) -> CallToolResult {
+        self.get_theme_result(&p)
+    }
+    #[tool(
+        description = "List the three built-in theme presets (metadata only). Use validate_theme to resolve a preset without saving."
+    )]
+    fn list_theme_presets(&self) -> CallToolResult {
+        self.theme_presets_result()
+    }
+    #[tool(
+        description = "Validate a sparse theme patch against expected_revision without saving. Returns effective light/dark values, hash and contrast warnings. Get patch_schema from get_theme. Null in overrides restores inheritance."
+    )]
+    fn validate_theme(
+        &self,
+        Parameters(p): Parameters<theme_tools::ThemePatchParams>,
+    ) -> CallToolResult {
+        self.validate_theme_result(&p)
+    }
+    #[tool(
+        description = "Persist a validated theme patch using expected_revision CAS. Requires write scope. No-op leaves revision unchanged. Returns saved_revision and live_apply pending/unavailable/unchanged; pending is not a rendered-frame acknowledgement. No screenshot is returned."
+    )]
+    fn update_theme(
+        &self,
+        Parameters(p): Parameters<theme_tools::ThemePatchParams>,
+    ) -> CallToolResult {
+        self.update_theme_result(&p)
+    }
+    #[tool(
+        description = "Restore one of get_theme.history revisions using expected_revision CAS. Requires write scope. Creates a new monotonic revision; never rolls back the revision counter."
+    )]
+    fn restore_theme(
+        &self,
+        Parameters(p): Parameters<theme_tools::RestoreThemeParams>,
+    ) -> CallToolResult {
+        self.restore_theme_result(&p)
+    }
+
     #[tool(description = "列出订阅源及其未读数（含上次抓取状态；状态非 ok 的源数据可能不是最新）")]
     fn list_feeds(&self) -> String {
         self.list_feeds_json()
@@ -942,7 +995,19 @@ impl ServerHandler for RustRssMcp {
             ])),
             None => {
                 let tcc = rmcp::handler::server::tool::ToolCallContext::new(self, request, context);
-                Self::tool_router().call(tcc).await?
+                match Self::tool_router().call(tcc).await {
+                    Ok(response) => response,
+                    Err(error) => {
+                        if is_write {
+                            audit::emit(
+                                &name,
+                                args.as_ref(),
+                                &audit::AuditSummary::failed("tool_dispatch_error"),
+                            );
+                        }
+                        return Err(error);
+                    }
+                }
             }
         };
 
@@ -954,7 +1019,7 @@ impl ServerHandler for RustRssMcp {
             // 写调用失败 ⇒ 统一标成**工具级错误**（body 里仍有 error_code / 逐项结果）。
             // 这样 agent 不必分辨"失败是闸门给的还是工具体的"：规则只有一条
             // （isError=true + 信封里的 error_code），T3/T4 只要遵守写契约就自动一致。
-            if !summary.ok {
+            if !summary.ok && !matches!(&response, CallToolResponse::Complete(r) if r.is_error == Some(true)) {
                 if let Some(body) = response_text(&response) {
                     return Ok(CallToolResult::error(vec![ContentBlock::text(body.to_string())]).into());
                 }

@@ -103,6 +103,29 @@ pub fn summary_from_body(body: &str) -> AuditSummary {
     }
 }
 
+/// Theme patches are user data. Audit field names and revisions, never raw values.
+fn theme_args_summary(args: Option<&JsonObject>) -> String {
+    let Some(args) = args else {
+        return "-".into();
+    };
+    let mut safe = serde_json::Map::new();
+    for key in ["expected_revision", "historical_revision"] {
+        if let Some(value) = args.get(key).and_then(Value::as_u64) {
+            safe.insert(key.into(), value.into());
+        }
+    }
+    if let Some(patch) = args.get("patch").and_then(Value::as_object) {
+        safe.insert(
+            "patch_fields".into(),
+            serde_json::json!(["mode", "light_preset", "dark_preset", "overrides"]
+                .into_iter()
+                .filter(|k| patch.contains_key(*k))
+                .collect::<Vec<_>>()),
+        );
+    }
+    args_summary(Some(&safe))
+}
+
 /// 审计行（纯函数：日志点的内容可被逐字段断言）
 pub fn write_line(tool: &str, args: Option<&JsonObject>, summary: &AuditSummary) -> String {
     let affected = summary
@@ -112,7 +135,7 @@ pub fn write_line(tool: &str, args: Option<&JsonObject>, summary: &AuditSummary)
     let error_code = summary.error_code.as_deref().unwrap_or("-");
     format!(
         "mcp-write tool={tool} args={} affected={affected} ok={} dry_run={} error_code={error_code}",
-        args_summary(args),
+        if matches!(tool, "update_theme" | "restore_theme") { theme_args_summary(args) } else { args_summary(args) },
         summary.ok,
         summary.dry_run
     )
@@ -138,7 +161,10 @@ mod tests {
         let args = args_of(json!({"ids": [1, 2, 3], "read": true}));
         let line = write_line("set_read", Some(&args), &AuditSummary::ok(3, false));
         assert!(line.contains("tool=set_read"), "{line}");
-        assert!(line.contains(r#"args={"ids":[1,2,3],"read":true}"#), "{line}");
+        assert!(
+            line.contains(r#"args={"ids":[1,2,3],"read":true}"#),
+            "{line}"
+        );
         assert!(line.contains("affected=3"), "{line}");
         assert!(line.contains("ok=true"), "{line}");
         assert!(line.contains("error_code=-"), "{line}");
@@ -153,7 +179,10 @@ mod tests {
         }));
         let line = write_line("subscribe", Some(&args), &AuditSummary::ok(1, false));
         assert!(!line.contains("hunter2"), "密码不得进审计行: {line}");
-        assert!(!line.contains("WRITE-TOKEN-48-HEX"), "token 不得进审计行: {line}");
+        assert!(
+            !line.contains("WRITE-TOKEN-48-HEX"),
+            "token 不得进审计行: {line}"
+        );
         assert!(line.contains("token=***"), "保留参数名便于定位: {line}");
         assert!(line.contains("ids"), "非敏感参数保留: {line}");
     }
@@ -196,7 +225,9 @@ mod tests {
             }
         );
 
-        let s = summary_from_body(r#"{"ok":false,"affected":0,"results":[],"error_code":"invalid_argument"}"#);
+        let s = summary_from_body(
+            r#"{"ok":false,"affected":0,"results":[],"error_code":"invalid_argument"}"#,
+        );
         assert!(!s.ok);
         assert_eq!(s.error_code.as_deref(), Some("invalid_argument"));
 

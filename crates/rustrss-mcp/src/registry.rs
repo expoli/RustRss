@@ -117,6 +117,31 @@ impl GateError {
 /// 判成失败，所以漏登记不会悄悄溜过去（漏登记 = 默认按无权限处理）。
 pub const TOOL_SPECS: &[ToolSpec] = &[
     ToolSpec {
+        name: "get_theme",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "list_theme_presets",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "validate_theme",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "update_theme",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "restore_theme",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
         name: "list_feeds",
         scope: Scope::Read,
         dangerous: false,
@@ -434,7 +459,8 @@ mod tests {
     /// 未知工具名不越权：过滤时直接丢掉（默认不可见）
     #[test]
     fn unknown_tools_are_filtered_out() {
-        let tool = |name: &'static str| Tool::new(name, "", std::sync::Arc::new(serde_json::Map::new()));
+        let tool =
+            |name: &'static str| Tool::new(name, "", std::sync::Arc::new(serde_json::Map::new()));
         let kept = filter_visible(
             vec![tool("list_feeds"), tool("not_registered_anywhere")],
             Scope::Write,
@@ -449,8 +475,8 @@ mod tests {
     /// `unsubscribe` / `folder_delete`（**tag 删除不在其中**）。
     #[test]
     fn read_tools_are_registered() {
-        assert_eq!(TOOL_SPECS.len(), 26);
-        assert_eq!(read_tool_count(), 8);
+        assert_eq!(TOOL_SPECS.len(), 31);
+        assert_eq!(read_tool_count(), 11);
         for name in [
             "list_feeds",
             "list_folders",
@@ -477,7 +503,14 @@ mod tests {
             assert!(!spec.dangerous, "{name} 可逆且幂等，不是危险工具");
         }
         // T4：危险集合恰好只有这两个（退订级联删条目 / 删分组）
-        for name in ["subscribe", "update_feed", "folder_create", "folder_rename", "import_opml", "export_opml"] {
+        for name in [
+            "subscribe",
+            "update_feed",
+            "folder_create",
+            "folder_rename",
+            "import_opml",
+            "export_opml",
+        ] {
             let spec = spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
             assert_eq!(spec.scope, Scope::Write, "{name} 应为写工具");
             assert!(!spec.dangerous, "{name} 不删数据，不是危险工具");

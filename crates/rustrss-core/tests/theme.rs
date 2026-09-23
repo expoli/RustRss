@@ -371,3 +371,55 @@ fn existing_controls_share_versioned_store_and_preserve_other_overrides() {
         3
     );
 }
+
+#[test]
+fn revision_probe_is_read_only_and_detects_other_connections() {
+    let fixture = Fixture::new();
+    let a = Store::open(fixture.db()).unwrap();
+    let b = Store::open(fixture.db()).unwrap();
+    assert!(a.theme_snapshot_if_changed(Some(0)).unwrap().is_none());
+    assert!(a.setting("ui.theme_config").unwrap().is_none());
+    b.update_theme(0, &patch(json!({"mode":"dark"}))).unwrap();
+    let changed = a.theme_snapshot_if_changed(Some(0)).unwrap().unwrap();
+    assert_eq!(changed.config.revision, 1);
+    let before = a.all_settings().unwrap();
+    assert!(a.theme_snapshot_if_changed(Some(1)).unwrap().is_none());
+    assert_eq!(before, a.all_settings().unwrap());
+    b.set_setting("ui.theme_config", "invalid").unwrap();
+    assert!(a.theme_snapshot_if_changed(Some(1)).is_err());
+}
+
+#[test]
+fn advertised_numeric_limits_match_core_validation() {
+    let schema = rustrss_core::theme::patch_schema();
+    let groups = &schema["properties"]["overrides"]["anyOf"][0]["properties"];
+    for (group, field) in [
+        ("typography", "ui_size"),
+        ("typography", "read_size"),
+        ("typography", "mono_size"),
+        ("typography", "line_height"),
+        ("reader", "width"),
+        ("reader", "paragraph_gap"),
+        ("chrome", "radius"),
+        ("chrome", "sidebar_width"),
+        ("chrome", "list_width"),
+        ("list", "summary_lines"),
+    ] {
+        let rule = &groups[group]["anyOf"][0]["properties"][field]["anyOf"][0];
+        let lo = rule["minimum"].as_f64().unwrap();
+        let hi = rule["maximum"].as_f64().unwrap();
+        for (n, valid) in [(lo, true), (hi, true), (lo - 1., false), (hi + 1., false)] {
+            let value = if field == "summary_lines" {
+                json!(n as i64)
+            } else {
+                json!(n)
+            };
+            let p = patch(json!({"overrides":{group:{field:value}}}));
+            assert_eq!(
+                ThemeConfig::default().apply(&p).is_ok(),
+                valid,
+                "{group}.{field} {n}"
+            );
+        }
+    }
+}

@@ -55,7 +55,6 @@ impl McpRuntime {
             .and_then(|g| g.as_ref().map(|h| h.url()))
     }
 
-
     /// 停止服务（端口随之释放）
     pub fn stop(&self) {
         if let Ok(mut guard) = self.handle.lock() {
@@ -77,11 +76,16 @@ impl McpRuntime {
         db_path: &Path,
         port: u16,
         gate: std::sync::Arc<rustrss_core::RefreshGate>,
+        app: tauri::AppHandle,
     ) -> Result<SocketAddr, String> {
         self.stop();
         let server = RustRssMcp::open(db_path)
             .map_err(|e| format!("打开数据库失败: {e}"))?
-            .with_refresh_gate(gate);
+            .with_refresh_gate(gate)
+            .with_theme_notifications(move |revision| {
+                use tauri::Emitter;
+                app.emit("theme:changed", revision).is_ok()
+            });
         let bind: SocketAddr = format!("127.0.0.1:{port}")
             .parse()
             .map_err(|e| format!("端口 {port} 非法: {e}"))?;
@@ -102,4 +106,3 @@ impl McpRuntime {
         Ok(addr)
     }
 }
-

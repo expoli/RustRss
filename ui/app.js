@@ -275,6 +275,43 @@ function acceptSettings(settings) {
   state.settings = settings;
 }
 
+function acceptThemeSnapshot(snapshot) {
+  const config = snapshot.config;
+  if (config.revision < (state.settings.theme_snapshot?.config.revision ?? -1)) return;
+  const overrides = config.overrides.typography || {};
+  const dark = config.mode === 'dark' || (config.mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const typography = snapshot[dark ? 'dark' : 'light'].typography;
+  acceptSettings({ ...state.settings, theme_snapshot: snapshot, theme: config.mode,
+    font_ui: overrides.ui_family?.[0] || '', font_read: overrides.read_family?.[0] || '', font_mono: overrides.mono_family?.[0] || '',
+    font_read_size: typography.read_size, font_read_line: typography.line_height });
+  applyTheme();
+  if (!Object.keys(fontPreview).length) paintFontControls(state.settings);
+  refreshSettingDropdowns();
+  log(`theme applied revision=${config.revision} hash=${snapshot.config_hash}`);
+}
+
+async function startThemeSync() {
+  const sync = window.RustRssThemeSync.createSync({
+    read: knownRevision => invoke('get_theme_update', { knownRevision }),
+    revision: () => state.settings.theme_snapshot?.config.revision ?? null,
+    apply: acceptThemeSnapshot,
+    active: () => !document.hidden && document.hasFocus(),
+    onError: error => log(`theme sync failed: ${error.message}`),
+  });
+  // Subscribe before initial settings read; focus/polling cover independent stdio writes.
+  let unlisten;
+  try { unlisten = await window.__TAURI__?.event?.listen('theme:changed', () => sync.check(true)); }
+  catch (error) { log(`theme event unavailable; polling remains active: ${error.message}`); }
+  const focus = () => sync.check();
+  window.addEventListener('focus', focus);
+  document.addEventListener('visibilitychange', focus);
+  const timer = setInterval(() => sync.check(), 2000);
+  window.addEventListener('pagehide', () => {
+    clearInterval(timer); sync.dispose(); unlisten?.();
+    window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus);
+  }, { once: true });
+}
+
 async function invoke(cmd, args = {}) {
   if (!window.__TAURI__ || !window.__TAURI__.core) {
     throw new Error('IPC 不可用（不在 Tauri 中运行？）');
@@ -4133,6 +4170,7 @@ async function boot() {
   // 最小绑定集先绑、且无条件执行：下面的 catch 会 return，跳过其后的全部绑定
   bindWindowControls();
   try {
+    await startThemeSync();
     await loadAll();
   } catch (e) {
     setStatus(t('status.bootFailed', { error: e.message }), true);

@@ -150,7 +150,7 @@ created: 2026-09-20
 - [x] 主题/设置/MCP 预览方案与任务草案落库；Linux 独立 WebKitGTK 原生截图探针成功（6 次，固定示例；仅底层可行性，不代表 Tauri/MCP 产品交付）。
 - [x] Linux Tauri 隔离截图 example 在 Xvfb 100%/200% 各完成 100 帧像素验证，覆盖隐藏/尺寸与字节预算/超时/失效版本/并发/关闭错误；可选 feature，不接入正式产品。证据见 [T1 报告](2026-09-23-theme-preview/tauri-capture-spike.md)；Windows/macOS/Wayland 与真实 WM 最小化未验收。
 - [ ] 三套整套视觉预设与用户覆盖，统一配色/字体/列表/阅读区参数；UI/MCP 共用校验/迁移/版本/恢复。
-- [x] T2 core 数据模型与存储：三预设明暗值、严格 patch 校验、旧设置只读映射、CAS/同值零写、最近 10 份历史与单调恢复；13 项专项测试覆盖。UI/MCP 接入仍未完成，见 [core 交付](2026-09-23-theme-preview/core-theme-model.md)。
+- [x] T2 core 数据模型与存储：三预设明暗值、严格 patch 校验、旧设置只读映射、CAS/同值零写、最近 10 份历史与单调恢复；13 项专项测试覆盖。当时仅 core，后续 UI/MCP 接入见 T3/T5；见 [core 交付](2026-09-23-theme-preview/core-theme-model.md)。
 - [x] 当前 KDE 原生 Wayland 的隔离截图探针通过 100 帧与 8 类边界检查；实际 GdkWaylandDisplay，WebView 内容尺寸与 JS viewport/DPR 相符，修正装饰区域导致的尺寸误报。仅当前会话验收，跨屏/GNOME/真实最小化/生产 MCP 仍未验收，见 [Wayland 证据](2026-09-23-theme-preview/wayland-snapshot-results.json)。
 - [x] T3 UI 接入 core：现有主题/字体设置统一存储，三套预设选择、共享语义 CSS 参数与真实组件 fixture、同值零写/阅读锚点保护；Linux X11/当前 KDE Wayland 专项验证见 [T3 报告](2026-09-23-theme-preview/shared-theme-renderer.md)。
 - [ ] 真实订阅列表的缩略图元数据来源与展示（T3 仅已有图片元素样式开关和本地 fixture 验证）。
@@ -158,3 +158,5 @@ created: 2026-09-20
 - [ ] MCP 临时修改→真实组件渲染→返回 PNG 与版本→再调整→保存/取消闭环；内嵌与独立部署能力明确。
 - [ ] 预览不覆盖正式设置，CAS 防止并发覆盖，渲染版本一致，超时/失权/退出可回收，阅读位置保留。
 - [ ] Windows/macOS/Linux X11/Wayland 原生截图及真实客户端闭环完成运行验证；图片尺寸/体积有界。
+
+- [x] T5 MCP 主题配置五工具：共用 core 校验/CAS/历史；默认权限、轮换、审计；内嵌事件与独立 stdio 前台轮询同步，Linux Xvfb 真产物验证见 [T5 报告](2026-09-23-theme-preview/mcp-theme-config.md)。本项不代表截图接口或跨平台验收。

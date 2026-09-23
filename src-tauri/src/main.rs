@@ -161,7 +161,10 @@ fn main() {
             // 启用了 MCP HTTP 服务就在启动时拉起（只绑回环）
             let app_state = app.state::<AppState>();
             if app_state
-                .with_store(|s| Ok(s.bool_setting(mcp_server::K_ENABLED, false).unwrap_or(false)))
+                .with_store(|s| {
+                    Ok(s.bool_setting(mcp_server::K_ENABLED, false)
+                        .unwrap_or(false))
+                })
                 .unwrap_or(false)
             {
                 let db_path = app_state.db_path.clone();
@@ -177,8 +180,9 @@ fn main() {
                 // 刷新单 flight 交给人 MCP：agent 的 refresh 与界面刷新抢同一个标记。
                 // 服务不持 token 副本（鉴权每请求现读库），token 只用于这行启动日志。
                 let gate = app_state.refresh_gate();
+                let theme_app = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
-                    match runtime.start(&db_path, port, gate).await {
+                    match runtime.start(&db_path, port, gate, theme_app).await {
                         Ok(addr) => log::info!("{}", mcp_startup_line(&addr.to_string(), &token)),
                         Err(e) => log::error!("[rustrss] MCP HTTP 服务启动失败: {e}"),
                     }
@@ -245,6 +249,7 @@ fn main() {
             commands::set_ui_locale,
             commands::set_ui_theme,
             commands::update_ui_theme,
+            commands::get_theme_update,
             commands::set_list_sort,
             commands::set_list_hide_read,
             commands::set_ui_close_action,

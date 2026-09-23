@@ -964,3 +964,13 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 未验证：Windows/macOS/GNOME、真实系统明暗切换、跨屏分数缩放、逐字形回退、主题变化期间的远程图片重排。详见 [T3 报告与复现](2026-09-23-theme-preview/shared-theme-renderer.md)。
 
 - T3 脚本补验：两个 Xvfb 子进程剔除 GDK_BACKEND/WAYLAND_DISPLAY/EGL_PLATFORM；显式继承冲突值复跑仍通过（39/23/24、Paper revision=2、重启保持）。滑块字号断言为 >18 且持久化，不固定为 24；本轮读回 25。命令及日志路径见 T3 报告/结果摘要。
+
+### 24.5 T5 MCP 主题配置与同步（2026-09-23）
+
+- [x] 读取/预设/校验/保存/恢复五工具，core 共用校验和 CAS；read/write 权限、写开关、凭据轮换、同值零写、审计脱敏专项测试。
+- [x] 重建真桌面：隐藏窗口接收内嵌事件，独立 stdio 写同库由前台轮询接收；恢复历史，Slate/Paper 两次像素断言，文章渲染次数不增加。
+- [x] 新 probe 继承 GDK_BACKEND=wayland / 无效 WAYLAND_DISPLAY / EGL_PLATFORM=wayland 后仍通过私有 Xvfb 隔离。
+- [ ] T5 原生 Wayland、Windows/macOS 运行验收、冷盘与长期资源测量。
+- [ ] T6 MCP 图片响应、临时预览生命周期及真实客户端截图闭环。
+
+证据、接口与复跑方法：[T5 报告](2026-09-23-theme-preview/mcp-theme-config.md)。测试截图不代表已实现 MCP 截图接口。

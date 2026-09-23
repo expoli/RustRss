@@ -6,7 +6,7 @@
 - 当前阶段分析（竞品、风险、决策）：`.chorus/specs/rss-reader/2026-09-20-initial-requirements/prd.md`
 - 主题与 MCP 视觉预览设计（UI 主题已接入，MCP 预览未实现）：[需求与交互稿](.chorus/specs/rss-reader/2026-09-23-theme-preview/prd.md)、[技术设计](.chorus/specs/rss-reader/2026-09-23-theme-preview/tech_design.md)、[截图可行性证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/capture-feasibility.md)。
 - 开发用 Tauri 截图探针（独立 example，Linux 已验证，尚未接入主题/MCP）：[构建方式与验证证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/tauri-capture-spike.md)。
-- 主题 core API 已实现：三预设/明暗参数、局部更新、旧设置映射、CAS 版本与历史恢复；UI 已接入，MCP 尚未接入，见 [T2 说明](.chorus/specs/rss-reader/2026-09-23-theme-preview/core-theme-model.md)。
+- 主题 core API 已实现：三预设/明暗参数、局部更新、旧设置映射、CAS 版本与历史恢复；UI 与 MCP 配置工具已接入，见 [T2 说明](.chorus/specs/rss-reader/2026-09-23-theme-preview/core-theme-model.md)。
 
 - 主题 UI 已接入：设置 → 通用 → 外观可选 Clear / Paper / Slate；共享配色/字体/列表/阅读区渲染器与版本化存储，选择预设会重置外观覆盖；见 [T3 实现与验收](.chorus/specs/rss-reader/2026-09-23-theme-preview/shared-theme-renderer.md)。
 
@@ -37,9 +37,11 @@ src-tauri/             Tauri 2 桌面应用（当前为 M0 诊断探针）
 ui/                    桌面应用前端（当前为探针页面）
 ```
 
+- MCP 主题配置已接入：读取/校验/保存/历史恢复共用 core，内嵌事件与独立进程轮询同步 UI；[T5 说明与验收](.chorus/specs/rss-reader/2026-09-23-theme-preview/mcp-theme-config.md)。截图预览接口尚未实现。
+
 ### MCP 服务器（stdio + HTTP 两种传输，已接真实库）
 
-工具集：**只读** 8 个 —— `list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats` / `list_tags`；**写** 18 个 —— `set_read` / `set_starred` / `set_read_later` / `refresh` / `fetch_fulltext`（阅读状态与刷新）+ `subscribe` / `update_feed` / `folder_create` / `folder_rename` / `folder_delete` / `unsubscribe` / `import_opml` / `export_opml`（订阅管理，其中 `folder_delete` / `unsubscribe` 是**危险工具**，另受危险开关约束）+ `create_tag` / `rename_tag` / `assign_tags` / `unassign_tags` / `delete_tag`（标签，全部非危险：删标签只清关联、不删文章）。写工具默认不可用，需要写 token + 写开关，见下面的权限模型。
+工具集：**只读** 11 个 —— `list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats` / `list_tags` / `get_theme` / `list_theme_presets` / `validate_theme`；**写** 20 个 —— `set_read` / `set_starred` / `set_read_later` / `refresh` / `fetch_fulltext`（阅读状态与刷新）+ `subscribe` / `update_feed` / `folder_create` / `folder_rename` / `folder_delete` / `unsubscribe` / `import_opml` / `export_opml`（订阅管理，其中 `folder_delete` / `unsubscribe` 是**危险工具**，另受危险开关约束）+ `create_tag` / `rename_tag` / `assign_tags` / `unassign_tags` / `delete_tag`（标签，全部非危险：删标签只清关联、不删文章）。另有 `update_theme` / `restore_theme`（主题配置，非危险）。写工具默认不可用，需要写 token + 写开关，见下面的权限模型。
 
 口径：**列表只回元数据 + 短摘要（≤140 字），正文必须用 `get_article` 单独取**；所有列表有上限（默认 10、上限 50）。这是为了不让单次响应撑爆 agent 上下文（见 PRD §6 风险 3）。
 

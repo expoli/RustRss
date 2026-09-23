@@ -90,6 +90,10 @@ fn main() {
                     "text/javascript",
                     include_bytes!("../../ui/theme.js").to_vec(),
                 ),
+                "/theme-sync.js" => (
+                    "text/javascript",
+                    include_bytes!("../../ui/theme-sync.js").to_vec(),
+                ),
                 "/components.js" => (
                     "text/javascript",
                     include_bytes!("../../ui/components.js").to_vec(),

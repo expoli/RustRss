@@ -1,6 +1,6 @@
 # 技术设计：主题配置与渲染预览
 
-状态：core 主题模型/存储已实现（[T2](core-theme-model.md)）；[T3 UI/共享渲染](shared-theme-renderer.md) 已实现；MCP 接入为拟议实现。截图资源预算仍待产品集成校准。
+状态：core 主题模型/存储已实现（[T2](core-theme-model.md)）；[T3 UI/共享渲染](shared-theme-renderer.md) 已实现；[T5 MCP 配置](mcp-theme-config.md) 已接入，截图预览仍为拟议实现。截图资源预算仍待产品集成校准。
 
 ## 当前基础
 
@@ -49,8 +49,8 @@ validate 返回字段错误与已计算的色对/对比度；普通文本 4.5:1�
 | --- | --- | --- |
 | get_theme | read | 当前配置/effective/revision、可用能力与参数范围（可选 include_schema） |
 | list_theme_presets | read | 有界预设元数据与默认参数 |
-| validate_theme | read | patch/base_revision → errors/warnings/effective，不创建窗口 |
-| update_theme | write | patch/expected_revision → saved_revision，live_apply=pending/applied/unavailable；配置保存不假称已渲染 |
+| validate_theme | read | patch/expected_revision → errors/warnings/effective，不创建窗口 |
+| update_theme | write | patch/expected_revision → saved_revision，live_apply=pending/unavailable/unchanged（T5）；applied 需 T6 渲染确认；配置保存不假称已渲染 |
 | restore_theme | write | preset 或历史版本、expected_revision；原子保存 |
 | preview_theme | write | patch、base_revision、可选 preview_id/expected_preview_revision、scene/mode → 预览图及元数据 |
 | capture_theme_preview | write | preview_id/expected_preview_revision、scene/mode → 图及元数据；scene 是枚举，不接受 URL/文件路径 |

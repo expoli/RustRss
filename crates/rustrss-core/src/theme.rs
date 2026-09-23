@@ -639,3 +639,60 @@ impl ThemeSnapshot {
             .into()
     }
 }
+
+/// Discoverable sparse-patch schema. Validation remains authoritative in apply().
+pub fn patch_schema() -> Value {
+    fn node(value: &Value, path: &str) -> Value {
+        let schema = if let Some(fields) = value.as_object() {
+            let properties = fields
+                .iter()
+                .map(|(k, v)| (k.clone(), node(v, &format!("{path}.{k}"))))
+                .collect::<serde_json::Map<_, _>>();
+            json!({"type":"object","additionalProperties":false,"properties":properties})
+        } else if value.is_array() {
+            json!({"type":"array","minItems":1,"maxItems":4,"items":{"type":"string","minLength":1,"maxLength":128,"description":"Nonblank family name, no control characters; missing fonts may fall back."}})
+        } else if value.is_boolean() {
+            json!({"type":"boolean"})
+        } else if value.is_string() {
+            match path {
+                "list.density" => json!({"enum":["compact","comfortable"]}),
+                "reader.layout" => json!({"enum":["three_column","focus"]}),
+                _ => json!({"type":"string","pattern":"^#[0-9a-fA-F]{6}$"}),
+            }
+        } else {
+            let (low, high) = match path {
+                "typography.ui_size" => (12., 20.),
+                "typography.read_size" => (13., 28.),
+                "typography.mono_size" => (12., 24.),
+                "typography.line_height" => (1.3, 2.2),
+                "reader.width" => (480., 960.),
+                "reader.paragraph_gap" => (0.5, 2.),
+                "chrome.radius" => (0., 16.),
+                "chrome.sidebar_width" => (180., 300.),
+                "chrome.list_width" => (260., 460.),
+                "list.summary_lines" => (0., 3.),
+                _ => unreachable!("unknown theme numeric field"),
+            };
+            json!({"type":if path=="list.summary_lines" {"integer"} else {"number"},"minimum":low,"maximum":high})
+        };
+        json!({"anyOf":[schema,{"type":"null"}],"description":"Omit to preserve; null removes the override."})
+    }
+    let sample = serde_json::to_value(preset(PresetId::Clear, false)).unwrap();
+    let mut properties = serde_json::Map::new();
+    for (key, value) in sample.as_object().unwrap() {
+        properties.insert(
+            key.clone(),
+            if key == "colors" {
+                node(&json!({"light":value,"dark":value}), "colors")
+            } else {
+                node(value, key)
+            },
+        );
+    }
+    json!({"type":"object","additionalProperties":false,"max_serialized_bytes":MAX_PATCH_BYTES,
+    "properties":{
+        "mode":{"enum":["system","light","dark"]},
+        "light_preset":{"enum":["clear","paper","slate"]},"dark_preset":{"enum":["clear","paper","slate"]},
+        "overrides":{"anyOf":[{"type":"object","additionalProperties":false,"properties":properties},{"type":"null"}],"description":"null clears all overrides; arrays replace atomically."}
+    }})
+}
