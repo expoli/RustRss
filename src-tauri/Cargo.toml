@@ -28,16 +28,17 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # `process`：字体枚举要跑 fc-list，且需要「超时即杀掉」的语义
 # （std::process 没有带超时的等待，自己轮询 try_wait 会在子进程写满管道时死锁）。
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "process"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "process", "sync"] }
 
 [features]
 default = []
-snapshot-probe = ["dep:webkit2gtk", "dep:cairo-rs", "dep:gtk", "tokio/sync"]
+snapshot-probe = []
 
 [target.'cfg(target_os = "linux")'.dependencies]
-webkit2gtk = { version = "=2.0.2", optional = true }
-cairo-rs = { version = "0.18", features = ["png"], optional = true }
-gtk = { version = "0.18", optional = true }
+webkit2gtk = { version = "=2.0.2" }
+cairo-rs = { version = "0.18", features = ["png"] }
+gtk = { version = "0.18" }
+png = "0.17"
 
 [[example]]
 name = "theme_snapshot"

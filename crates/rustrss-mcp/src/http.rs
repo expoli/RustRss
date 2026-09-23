@@ -51,6 +51,9 @@ pub struct RequestScope {
     pub scope: Scope,
 }
 
+#[derive(Clone)]
+pub struct RequestIdentity(pub String);
+
 #[derive(Debug, thiserror::Error)]
 pub enum HttpServeError {
     #[error("HTTP 服务只允许绑定回环地址，收到 {0}")]
@@ -115,6 +118,8 @@ pub async fn serve(server: RustRssMcp, cfg: HttpConfig) -> Result<HttpHandle, Ht
         async move {
             match authenticate(&server, static_token.as_deref(), req.headers(), req.uri()) {
                 Some(scope) => {
+                    let identity = crate::preview::fingerprint(presented_token(req.headers(), req.uri()).unwrap_or_default());
+                    req.extensions_mut().insert(RequestIdentity(identity));
                     req.extensions_mut().insert(RequestScope { scope });
                     next.run(req).await
                 }

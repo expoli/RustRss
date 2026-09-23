@@ -17,6 +17,7 @@ pub mod refresh_flight;
 pub mod rsshub;
 pub mod store;
 pub mod theme;
+pub mod theme_preview;
 
 pub use ai::{AiClient, AiConfig, AiError, Provider, RequestPreview};
 pub use discover::{discover, DiscoverError, Discovery, DiscoveryVia};

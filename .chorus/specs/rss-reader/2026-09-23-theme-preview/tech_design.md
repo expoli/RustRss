@@ -1,6 +1,6 @@
 # 技术设计：主题配置与渲染预览
 
-状态：core 主题模型/存储已实现（[T2](core-theme-model.md)）；[T3 UI/共享渲染](shared-theme-renderer.md) 已实现；[T5 MCP 配置](mcp-theme-config.md) 已接入，截图预览仍为拟议实现。截图资源预算仍待产品集成校准。
+状态：core 主题模型/存储已实现（[T2](core-theme-model.md)）；[T3 UI/共享渲染](shared-theme-renderer.md) 已实现；[T5 MCP 配置](mcp-theme-config.md) 已接入，[T6 Linux 预览](mcp-theme-preview.md) 已集成并验证；Windows/macOS 未实现。下列预算已落地，跨客户端上限仍待验证。
 
 ## 当前基础
 
@@ -67,7 +67,7 @@ validate 返回字段错误与已计算的色对/对比度；普通文本 4.5:1�
 - 每个 profile 首版最多一个活动预览，绑定创建它的鉴权会话/短期能力标识；不以“知道 preview_id”替代授权。同一写 token 多客户端的持有者属于同一授权主体，不能声称已实现逐 agent 身份隔离。
 - base_revision 为创建时的正式配置版本；preview_revision 每次有效修改单调增加。修改必须携带 expected_preview_revision；并发抓图/修改采用 single flight，争用返回 preview_busy。
 - 临时配置仅驻留预览后端内存；默认空闲 10 分钟过期、上限生命周期 30 分钟。取消/过期/退出只释放临时资源，不回写旧正式配置。
-- 保存比较 base_revision；用户手动修改过正式配置则冲突，保留候选，读取新配置后显式重建预览。重复 finish(save) 用短期完成记录返回已有结果，避免重试重复提交。
+- 保存比较 base_revision；用户手动修改过正式配置则冲突，保留候选，读取新配置后显式重建预览。重复 finish(save) 用最近 16 条、10 分钟内的完成记录返回已有结果，避免重试重复提交。
 - 断开连接不立即保存；写权限撤销阻止后续操作与提交，窗口本地取消/过期清理独立可用。
 
 ## 渲染与截图握手
@@ -78,7 +78,7 @@ validate 返回字段错误与已计算的色对/对比度；普通文本 4.5:1�
 4. **两次 rAF 不保证所有平台合成器已刷新**。产品 spike 要采用连续变色/标记像素与内容对照确认新帧；必要时增加平台绘制同步，不能用固定 sleep 宣称保证。
 5. 返回 preview/config 版本、主题模式、fixture 版本、scene、逻辑/像素尺寸、缩放因子、字体回退信息、capture_ms 与 captured_at。
 
-默认固定 1280×900 CSS px；仅允许有限 viewport 档位。截图前限制 physical pixel 总量 ≤6MP；PNG 原始数据 ≤2MiB（base64 后约 2.67MiB）；一请求一图。超限优先降采样到约定输出尺寸并注明 output_scale，仍超限返回错误。需验证各客户端消息上限，预算尚未验收。
+默认请求 1280×900 CSS px；compositor 约束时协商到 960×640 并等待新的 ready，两档之外返回 viewport_mismatch。截图前限制 physical pixel 总量 ≤6MP；PNG 原始数据 ≤2MiB（base64 后约 2.67MiB）；一请求一图。首版超限直接拒绝（image_too_large），不做降采样；output_scale=1。需验证各客户端消息上限，Linux 100%/200% 与当前 KDE Wayland 已验收，见 T6 报告。
 
 首版 10 秒 deadline，超时取消原生请求（若平台支持）并以 generation 丢弃迟到回调。图像编码/缩放在允许的平台线程之外完成，store 锁不跨 await。隐藏/最小化窗口若不可可靠绘制则返回状态或使用明确可见预览窗口，不捕获桌面其它内容。
 
@@ -88,4 +88,4 @@ validate 返回字段错误与已计算的色对/对比度；普通文本 4.5:1�
 
 ## 技术证据与未决项
 
-见 [截图验证](capture-feasibility.md) 与 [T1 Tauri 探针](tauri-capture-spike.md)。已在隔离 Tauri example 中实现 Linux 原生适配器，完成 Xvfb 100%/200% 与当前 KDE 原生 Wayland 专项验证；尚未接入产品预览/MCP。Windows/macOS、其他 Wayland compositor、真实 WM 最小化、跨屏/分数缩放清晰度、客户端图片显示、标准组件复用为后续阻断式验收项。hide/show 后必须等待可绘制状态，不能把 show 返回当成绘制完成。截图 logical_size/scale 与预算必须取 WebView 内容区域，不能从带装饰的窗口尺寸推导；需要与 JS viewport/DPR 交叉核验。
+见 [截图验证](capture-feasibility.md) 与 [T1 Tauri 探针](tauri-capture-spike.md)。已在隔离 Tauri example 中实现 Linux 原生适配器，完成 Xvfb 100%/200% 与当前 KDE 原生 Wayland 专项验证；已接入 Linux 产品预览/MCP。Windows/macOS、其他 Wayland compositor、真实 WM 最小化、跨屏/分数缩放清晰度、客户端图片显示、标准组件复用为后续阻断式验收项。hide/show 后必须等待可绘制状态，不能把 show 返回当成绘制完成。截图 logical_size/scale 与预算必须取 WebView 内容区域，不能从带装饰的窗口尺寸推导；需要与 JS viewport/DPR 交叉核验。

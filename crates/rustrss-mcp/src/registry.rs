@@ -116,6 +116,10 @@ impl GateError {
 /// `every_exposed_tool_is_registered` 会把「`#[tool]` 里有、注册表里没有」
 /// 判成失败，所以漏登记不会悄悄溜过去（漏登记 = 默认按无权限处理）。
 pub const TOOL_SPECS: &[ToolSpec] = &[
+    ToolSpec { name: "preview_theme", scope: Scope::Write, dangerous: false },
+    ToolSpec { name: "capture_theme_preview", scope: Scope::Write, dangerous: false },
+    ToolSpec { name: "finish_theme_preview", scope: Scope::Write, dangerous: false },
+
     ToolSpec {
         name: "get_theme",
         scope: Scope::Read,
@@ -475,7 +479,7 @@ mod tests {
     /// `unsubscribe` / `folder_delete`（**tag 删除不在其中**）。
     #[test]
     fn read_tools_are_registered() {
-        assert_eq!(TOOL_SPECS.len(), 31);
+        assert_eq!(TOOL_SPECS.len(), 34);
         assert_eq!(read_tool_count(), 11);
         for name in [
             "list_feeds",

@@ -97,6 +97,17 @@ impl Store {
         Ok(snapshot)
     }
 
+    /// Save a complete validated in-memory preview with CAS, replacing overrides.
+    pub fn commit_theme_preview(&self, expected_revision: u64, candidate: &ThemeConfig) -> Result<ThemeSnapshot> {
+        candidate.resolve()?;
+        let tx = Transaction::new_unchecked(&self.conn, TransactionBehavior::Immediate)?;
+        let envelope = read_envelope(&tx)?;
+        check_revision(expected_revision, envelope.current.revision)?;
+        let snapshot = save(&tx, envelope, candidate.clone())?;
+        tx.commit()?;
+        Ok(snapshot)
+    }
+
     /// Existing UI controls change only their explicit fields against the latest
     /// configuration within one SQLite write transaction.
     pub fn update_theme_controls(&self, patch: &ThemePatch) -> Result<ThemeSnapshot> {

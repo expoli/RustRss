@@ -7,6 +7,8 @@
 mod ai;
 mod commands;
 mod mcp_server;
+mod preview_capture;
+mod theme_preview;
 mod notify;
 mod scheduler;
 mod state;
@@ -111,6 +113,8 @@ fn main() {
             }
         }));
     }
+
+    builder = theme_preview::register(builder);
 
     // 后续所有重活（恢复落地/开库/MCP）都在 .setup() 里做——单实例插件
     // 已在链首生效：第二个进程在跑到 setup 之前就被退出了，
@@ -250,6 +254,9 @@ fn main() {
             commands::set_ui_theme,
             commands::update_ui_theme,
             commands::get_theme_update,
+            theme_preview::preview_request,
+            theme_preview::preview_ready,
+            theme_preview::preview_cancel,
             commands::set_list_sort,
             commands::set_list_hide_read,
             commands::set_ui_close_action,

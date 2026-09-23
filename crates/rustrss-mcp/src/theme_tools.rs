@@ -11,6 +11,8 @@ use serde_json::{json, Value};
 pub struct GetThemeParams {
     /// Include the bounded JSON schema for patch parameters.
     pub include_schema: bool,
+    /// Internal bridge discovery: do not forward discovery again.
+    pub local_only: bool,
 }
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -29,7 +31,7 @@ pub struct RestoreThemeParams {
     /// A revision listed by get_theme.history. Restore creates a new revision.
     pub historical_revision: u64,
 }
-fn response(value: Value) -> CallToolResult {
+pub(crate) fn response(value: Value) -> CallToolResult {
     let error = value.get("ok") == Some(&Value::Bool(false));
     let mut result = if error {
         CallToolResult::error(vec![ContentBlock::text(value.to_string())])
@@ -39,7 +41,7 @@ fn response(value: Value) -> CallToolResult {
     result.structured_content = Some(value);
     result
 }
-fn failure(error: ThemeError) -> CallToolResult {
+pub(crate) fn failure(error: ThemeError) -> CallToolResult {
     let code = match &error {
         ThemeError::RevisionConflict { .. } => "revision_conflict",
         ThemeError::HistoryUnavailable(_) => "history_unavailable",
@@ -65,7 +67,7 @@ impl RustRssMcp {
                 })).collect::<Vec<_>>(),"capabilities":{
                     "configuration":true,
                     "change_notification":self.theme_changed.is_some(),
-                    "preview":{"available":false,"reason":"preview_backend_not_integrated"}
+                    "preview":self.preview.capability(),"profile_id":self.profile_id
                 }});
                 if p.include_schema {
                     value["patch_schema"] = rustrss_core::theme::patch_schema();

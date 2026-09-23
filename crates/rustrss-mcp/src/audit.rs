@@ -109,10 +109,13 @@ fn theme_args_summary(args: Option<&JsonObject>) -> String {
         return "-".into();
     };
     let mut safe = serde_json::Map::new();
-    for key in ["expected_revision", "historical_revision"] {
+    for key in ["expected_revision", "historical_revision", "base_revision", "expected_preview_revision"] {
         if let Some(value) = args.get(key).and_then(Value::as_u64) {
             safe.insert(key.into(), value.into());
         }
+    }
+    if let Some(action @ ("save" | "cancel")) = args.get("action").and_then(Value::as_str) {
+        safe.insert("action".into(), action.into());
     }
     if let Some(patch) = args.get("patch").and_then(Value::as_object) {
         safe.insert(
@@ -135,7 +138,7 @@ pub fn write_line(tool: &str, args: Option<&JsonObject>, summary: &AuditSummary)
     let error_code = summary.error_code.as_deref().unwrap_or("-");
     format!(
         "mcp-write tool={tool} args={} affected={affected} ok={} dry_run={} error_code={error_code}",
-        if matches!(tool, "update_theme" | "restore_theme") { theme_args_summary(args) } else { args_summary(args) },
+        if matches!(tool, "update_theme" | "restore_theme" | "preview_theme" | "capture_theme_preview" | "finish_theme_preview") { theme_args_summary(args) } else { args_summary(args) },
         summary.ok,
         summary.dry_run
     )

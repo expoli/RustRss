@@ -1,6 +1,6 @@
 # 分阶段任务与依赖
 
-状态：本地任务草案；尚未物化为 Chorus 实现任务。T1 已完成 Xvfb/当前 KDE Wayland 隔离验证；T2 core 与 T3 真实 UI/共享渲染已实现，T5 MCP 配置已接入，T6 截图预览未实现。
+状态：本地任务草案；尚未物化为 Chorus 实现任务。T1 已完成 Xvfb/当前 KDE Wayland 隔离验证；T2 core 与 T3 真实 UI/共享渲染已实现，T5 MCP 配置已接入，T6 Linux 截图预览已实现。
 
 | 任务 | 依赖 | 交付与验收 | 主要范围 |
 | --- | --- | --- | --- |
@@ -19,7 +19,7 @@
 
 T1 若仅部分平台跑通，记录能力矩阵并实现明确的 unavailable；不能据此勾选三平台验收。若截图路径失败，继续完善配置模型与 UI，但 MCP 图片闭环保持未完成。不得静默换成 Chromium 或桌面截屏。
 
-后续正式提案按 chorus-feature-pipeline 进行 proposal/task/aggregate 评审，创建任务时将上表验收拆成可单独核验的 AC。目前已完成设计、Linux 隔离截图验证、T2 core 与 T3 UI 实现，T5 配置接入已完成；T6 图片闭环及 Chorus 任务物化仍未完成；提交由用户单独指示，不执行自动 push/发布流程。
+后续正式提案按 chorus-feature-pipeline 进行 proposal/task/aggregate 评审，创建任务时将上表验收拆成可单独核验的 AC。目前已完成设计、Linux 隔离截图验证、T2 core 与 T3 UI 实现，T5 配置接入已完成；T6 Linux 图片闭环已完成；其它平台与 Chorus 任务物化仍未完成；提交由用户单独指示，不执行自动 push/发布流程。
 
 ## 回归重点
 
@@ -34,7 +34,7 @@ T1 若仅部分平台跑通，记录能力矩阵并实现明确的 unavailable�
 - [x] 已形成设计、任务草案与独立交互稿。
 - [x] Linux WebKitGTK 原生截图探针：三配色循环两轮成功，详见证据。
 - [x] T1 Linux Tauri 隔离 example：100%/200% 各 100 帧像素验证，8 类边界检查；详见 [Tauri 探针报告](tauri-capture-spike.md)。
-- [ ] Tauri 原生适配器与 MCP 集成。
+- [x] Tauri 原生适配器与 MCP 集成（Linux X11/当前 KDE Wayland）；Windows/macOS 不可用。
 - [x] T2 core 主题参数/三预设/旧设置无写映射/版本 CAS/同值零写/10 份历史/恢复，13 项专项测试；详见 [core 交付说明](core-theme-model.md)。
 - [x] T3 真实组件与 CSS token 映射，旧主题/字体设置入口统一到 core，阅读位置保护；[实现与验收](shared-theme-renderer.md)。
 - [ ] T4 设置重组、完整外观编辑与历史恢复 UI。
@@ -44,4 +44,4 @@ T1 若仅部分平台跑通，记录能力矩阵并实现明确的 unavailable�
 - [ ] 正式提案评审、任务物化与产品实现。
 
 - [x] T5 MCP 配置五工具、权限/审计/CAS、内嵌事件与独立 stdio 前台轮询；[实现与验收](mcp-theme-config.md)。
-- [ ] T6 MCP 临时预览、图片返回、会话生命周期与渲染版本握手。
+- [x] T6 MCP 临时预览、图片返回、会话生命周期与渲染版本握手（Linux）；[交付与验收](mcp-theme-preview.md)。

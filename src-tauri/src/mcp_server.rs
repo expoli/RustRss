@@ -79,13 +79,17 @@ impl McpRuntime {
         app: tauri::AppHandle,
     ) -> Result<SocketAddr, String> {
         self.stop();
-        let server = RustRssMcp::open(db_path)
+        let preview_app = app.clone();
+        let mut server = RustRssMcp::open(db_path)
             .map_err(|e| format!("打开数据库失败: {e}"))?
             .with_refresh_gate(gate)
             .with_theme_notifications(move |revision| {
                 use tauri::Emitter;
                 app.emit("theme:changed", revision).is_ok()
             });
+        if cfg!(target_os = "linux") {
+            server = server.with_preview_backend(crate::theme_preview::backend(preview_app));
+        }
         let bind: SocketAddr = format!("127.0.0.1:{port}")
             .parse()
             .map_err(|e| format!("端口 {port} 非法: {e}"))?;

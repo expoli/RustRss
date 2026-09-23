@@ -1,5 +1,5 @@
-//! Native WebView capture adapter under evaluation by the opt-in snapshot example.
-//! Not wired into the reader or MCP. No database, network, or desktop capture.
+//! Native WebView capture shared by production theme previews and opt-in probes.
+//! No database, network, or desktop capture.
 use std::time::Duration;
 use tauri::WebviewWindow;
 
@@ -9,6 +9,7 @@ pub const MAX_PNG_BYTES: usize = 2 * 1024 * 1024;
 #[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum CaptureError {
+    #[cfg_attr(target_os = "linux", allow(dead_code))]
     Unavailable,
     WindowUnavailable,
     WindowHidden,
@@ -23,6 +24,8 @@ pub struct Capture {
     pub height: u32,
     pub logical_size: [u32; 2],
     pub scale_factor: u32,
+    #[allow(dead_code)] // Standalone examples do not all consume backend metadata.
+    pub display_backend: String,
 }
 
 /// Deadlines include dispatch, native capture, and PNG encoding. Callers must
@@ -54,7 +57,7 @@ async fn platform_capture(
     max_pixels: u64,
     max_bytes: usize,
 ) -> Result<Capture, CaptureError> {
-    use gtk::prelude::WidgetExt;
+    use gtk::prelude::{ObjectExt, WidgetExt};
     use webkit2gtk::{
         gio, gio::prelude::CancellableExt, SnapshotOptions, SnapshotRegion, WebViewExt,
     };
@@ -72,6 +75,7 @@ async fn platform_capture(
     window
         .with_webview(move |platform| {
             let view = platform.inner();
+            let display_backend = WidgetExt::display(&view).type_().name().to_string();
             let logical_width = view.allocated_width().max(0) as u32;
             let logical_height = view.allocated_height().max(0) as u32;
             let scale = WidgetExt::scale_factor(&view).max(1) as u32;
@@ -135,6 +139,7 @@ async fn platform_capture(
                             image.stride(),
                             [logical_width, logical_height],
                             scale,
+                            display_backend,
                         ))
                     })();
                     let _ = tx.send(raw);
@@ -142,7 +147,7 @@ async fn platform_capture(
             );
         })
         .map_err(|_| CaptureError::WindowUnavailable)?;
-    let (data, format, width, height, stride, logical_size, scale_factor) =
+    let (data, format, width, height, stride, logical_size, scale_factor, display_backend) =
         rx.await.map_err(|_| CaptureError::WindowUnavailable)??;
     // Transfer bytes, not a GTK/Cairo handle, to the encoding worker.
     let encoding_cancel = cancel.0.clone();
@@ -173,6 +178,7 @@ async fn platform_capture(
             height,
             logical_size,
             scale_factor,
+            display_backend,
         })
     })
     .await

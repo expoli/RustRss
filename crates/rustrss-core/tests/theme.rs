@@ -423,3 +423,18 @@ fn advertised_numeric_limits_match_core_validation() {
         }
     }
 }
+
+#[test]
+fn preview_commit_replaces_overrides_and_checks_base_revision() {
+    let store = Store::open_in_memory().unwrap();
+    let patch=ThemePatch::from_json(r#"{"overrides":{"typography":{"read_size":24}}}"#).unwrap();
+    let saved=store.update_theme(0,&patch).unwrap();
+    let cleared=saved.config.apply(&ThemePatch::from_json(r#"{"overrides":null}"#).unwrap()).unwrap();
+    let before=store.all_settings().unwrap();
+    assert!(store.commit_theme_preview(0,&cleared).is_err());
+    assert_eq!(store.all_settings().unwrap(),before);
+    let result=store.commit_theme_preview(1,&cleared).unwrap();
+    assert_eq!(result.config.revision,2);
+    assert_eq!(result.config.overrides,serde_json::json!({}));
+    assert_eq!(store.commit_theme_preview(2,&cleared).unwrap().config.revision,2);
+}

@@ -4089,6 +4089,7 @@ dependencies = [
  "gtk",
  "keyring",
  "log",
+ "png 0.17.16",
  "rustrss-core",
  "rustrss-mcp",
  "serde",
@@ -4109,6 +4110,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.22.1",
  "chrono",
  "log",
  "reqwest",
@@ -4117,6 +4119,7 @@ dependencies = [
  "schemars 1.2.2",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror 2.0.20",
  "tokio",
  "uuid",

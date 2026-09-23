@@ -974,3 +974,16 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] T6 MCP 图片响应、临时预览生命周期及真实客户端截图闭环。
 
 证据、接口与复跑方法：[T5 报告](2026-09-23-theme-preview/mcp-theme-config.md)。测试截图不代表已实现 MCP 截图接口。
+
+### 24.6 T6 Linux MCP 预览闭环（2026-09-23）
+
+- [x] preview/capture/finish 三工具，11 read + 23 write；写权限/所有者/同 profile 校验、临时不落库、CAS 保存、取消与幂等完成。
+- [x] ready 元组与原生像素标记校验；失败/超时返回错误，native 取消和迟到结果丢弃；6MP/2MiB PNG/3MiB 桥接限额。
+- [x] 重建产物：Xvfb 100%/200% 各 25 张 PNG；前者 1280×900/1×，后者 1280×900/2×；临时零写、最终 revision=1、正文渲染次数 1→1、连续关闭重建、重拍、本地取消及撤权回收。
+- [x] 当前 KDE 原生 Wayland 24 张 PNG，实际 GdkWaylandDisplay，960×640 内容区/2×；HTTP/stdio 收图、保存/取消、重拍与撤权回收通过。
+- [x] 405 Rust / 25 Node 通过；397/397 i18n；Clippy 仅原有 3 告警。http.rs 四条安全测试保持通过。
+- [ ] Windows/macOS 适配器、GNOME/其它 compositor、跨屏与真实最小化。
+- [ ] Wayland 本地按钮点击、正文阅读位置；30 分钟墙钟长测、冷盘和长期资源占用。
+- [ ] 第三方 GUI MCP 客户端的图片显示与消息体上限；T7 聚合验收。
+
+报告：[T6 交付说明](2026-09-23-theme-preview/mcp-theme-preview.md)；机器证据包含二进制 SHA256、每图尺寸/字节/后端：[结果](2026-09-23-theme-preview/mcp-theme-preview-results.json)。截图为固定本地 fixture，不包含用户订阅。

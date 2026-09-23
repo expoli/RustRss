@@ -17,10 +17,13 @@ serde_json = "1"
 schemars = "1"
 thiserror = "2"
 anyhow = "1"
+base64 = "0.22"
+sha2 = "0.10"
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "json"] }
 
 [dev-dependencies]
 # stdio 冒烟测试要拉起真子进程并逐行读写协议通道
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "process", "time"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "process", "time", "test-util"] }
 # 测试里当 HTTP 客户端用（与 rustrss-core 用的是同一个客户端）
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "json"] }
 # 测试夹具要造带 published_at 的条目（core 公开模型 `Entry.published` 就是 chrono 类型）；

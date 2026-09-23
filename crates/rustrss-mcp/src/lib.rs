@@ -24,6 +24,7 @@ pub mod http;
 pub mod registry;
 pub mod tag_tools;
 pub mod theme_tools;
+pub mod preview;
 pub mod write_contract;
 pub mod write_tools;
 
@@ -225,6 +226,8 @@ pub struct RustRssMcp {
     /// 测试专用桦工具（生产恒为空）。见 [`RustRssMcp::with_test_tool`]。
     test_tools: Arc<Vec<TestTool>>,
     theme_changed: Option<Arc<dyn Fn(u64) -> bool + Send + Sync>>,
+    preview: Arc<preview::Service>,
+    profile_id: String,
 }
 
 /// 测试专用桦工具：T3/T4 的真实写工具落地前，授权矩阵需要「已登记、可调用」的写工具。
@@ -252,6 +255,8 @@ impl RustRssMcp {
                 .map_err(|e| format!("初始化 HTTP 客户端失败: {e}")),
             test_tools: Arc::new(Vec::new()),
             theme_changed: None,
+            preview: Arc::new(preview::Service::default()),
+            profile_id: uuid::Uuid::new_v4().to_string(),
         }
     }
 
@@ -267,7 +272,11 @@ impl RustRssMcp {
 
     /// 打开（必要时创建/迁移）指定路径的库
     pub fn open(path: impl AsRef<std::path::Path>) -> Result<Self, rustrss_core::StoreError> {
-        Ok(Self::new(Store::open(path)?))
+        let store = Store::open(&path)?;
+        let mut server = Self::new(store);
+        let canonical = std::fs::canonicalize(path).map_err(|e| rustrss_core::StoreError::Io(e.to_string()))?;
+        server.profile_id = preview::fingerprint(canonical.as_os_str().as_encoded_bytes());
+        Ok(server)
     }
 
     /// 注入刷新单 flight 的共享 gate（应用内托管时由 `src-tauri` 传界面的那个）。
@@ -650,11 +659,23 @@ impl RustRssMcp {
 
 #[tool_router]
 impl RustRssMcp {
+    #[tool(description = "Create or patch an in-memory theme preview and return a PNG of fixed local UI fixtures. Requires write scope. Supply base_revision from get_theme. For updates also supply preview_id and expected_preview_revision. No settings are saved until finish_theme_preview(save).")]
+    async fn preview_theme(&self, Parameters(p): Parameters<preview::PreviewParams>, context: RequestContext<RoleServer>) -> CallToolResult {
+        self.preview_call("preview_theme", serde_json::to_value(p).unwrap(), &context).await
+    }
+    #[tool(description = "Capture a fixed scene from an owned theme preview at expected_preview_revision. Returns one bounded PNG plus render/version metadata. Requires write scope.")]
+    async fn capture_theme_preview(&self, Parameters(p): Parameters<preview::CaptureParams>, context: RequestContext<RoleServer>) -> CallToolResult {
+        self.preview_call("capture_theme_preview", serde_json::to_value(p).unwrap(), &context).await
+    }
+    #[tool(description = "Save or cancel an owned preview. Save uses CAS against its base_revision; conflicts preserve the candidate. Repeating the same finish is idempotent for the last 16 finishes within ten minutes. Requires write scope.")]
+    async fn finish_theme_preview(&self, Parameters(p): Parameters<preview::FinishParams>, context: RequestContext<RoleServer>) -> CallToolResult {
+        self.preview_call("finish_theme_preview", serde_json::to_value(p).unwrap(), &context).await
+    }
     #[tool(
         description = "Read the current theme, effective light/dark parameters, revision, last ten history revisions and preview capability. include_schema=true returns patch constraints. Does not write or render."
     )]
-    fn get_theme(&self, Parameters(p): Parameters<theme_tools::GetThemeParams>) -> CallToolResult {
-        self.get_theme_result(&p)
+    async fn get_theme(&self, Parameters(p): Parameters<theme_tools::GetThemeParams>) -> CallToolResult {
+        self.theme_capabilities_result(&p).await
     }
     #[tool(
         description = "List the three built-in theme presets (metadata only). Use validate_theme to resolve a preset without saving."
