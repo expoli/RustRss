@@ -34,7 +34,7 @@ ui/                    桌面应用前端（当前为探针页面）
 
 ### MCP 服务器（stdio + HTTP 两种传输，已接真实库）
 
-工具集：**只读** 7 个 —— `list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats`；**写** 5 个 —— `set_read` / `set_starred` / `set_read_later` / `refresh` / `fetch_fulltext`（写工具默认不可用，需要写 token + 写开关，见下面的权限模型）。
+工具集：**只读** 7 个 —— `list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats`；**写** 13 个 —— `set_read` / `set_starred` / `set_read_later` / `refresh` / `fetch_fulltext`（阅读状态与刷新）+ `subscribe` / `update_feed` / `folder_create` / `folder_rename` / `folder_delete` / `unsubscribe` / `import_opml` / `export_opml`（订阅管理，其中 `folder_delete` / `unsubscribe` 是**危险工具**，另受危险开关约束）。写工具默认不可用，需要写 token + 写开关，见下面的权限模型。
 
 口径：**列表只回元数据 + 短摘要（≤140 字），正文必须用 `get_article` 单独取**；所有列表有上限（默认 10、上限 50）。这是为了不让单次响应撑爆 agent 上下文（见 PRD §6 风险 3）。
 
@@ -53,6 +53,23 @@ ui/                    桌面应用前端（当前为探针页面）
 `refresh`：`scope` = `all` / `feed_ids`（配合 `feed_ids[]`，≤100）/ `folder`（配合 `folder_id`），不传时按参数推断；与界面刷新**共用同一个单 flight**（应用内托管时是同一个 `Arc<RefreshGate>` 实例）——已有刷新在跑时本轮不执行，返回 `error_code=rate_limited`（不排队、不叠加），界面侧不受影响。返回 `affected` = 本轮入库条目数（新增+更新），`results` 只列失败源（`fetch_failed`），`detail` 给本轮摘要：`feeds` / `fetched` / `not_modified` / `inserted` / `updated` / `unchanged` / `failure_count` / `failures`（沿用 core 的刷新统计）。
 
 `fetch_fulltext`：给单篇摘要型条目补全文（抓原文页 → 提取 → 写回），复用既有全文抓取与 **2MiB 流式闸门**（Content-Length 预检 + 下载中累计超限即断）。已抓过/全文型时**零网络**返回（`affected=0` + `detail.already_fulltext=true`）。**正文不随响应返回**：写回后用 `get_article(id)` 取（与列表口径一致，避免一次响应撑爆上下文）。错误码：`invalid_url`（条目没有原文地址）/ `fulltext_too_large` / `fulltext_bot_challenge`（站点要浏览器验证）/ `fulltext_not_html` / `fulltext_no_content` / `fetch_failed`（网络或 HTTP 错，可重试）/ `article_not_found`。
+
+#### 写工具口径（订阅管理）
+
+八个订阅管理工具都走**与界面同一批 `Store` 方法**（硬约束 1：MCP 与界面是同一数据层的两个调用方）。归一化有两个跨 crate 复刻的语义（`src-tauri` 的实现 MCP 不能直接调），测试逐条钉住：
+
+- **自定义标题**：`trim` → 空串 = 清除（显示回退源站名）→ 按字符截断 200（与界面 `normalize_custom_title` 同口径）；
+- **每源刷新间隔**：只认白名单 `15/30/60/120/360`，JSON `null` = 跟随全局（界面下拉里的 `"global"`），非法值报 `invalid_argument` 而**不静默回默认档**。
+
+`subscribe`：`url` 支持站点首页（自动发现——输入本身能按 feed 解析就用输入地址，否则扫 head 里的 `<link rel="alternate">`，与界面「添加订阅」同一条 core 路径）与 `rsshub://path`（三斜杠 `rsshub:///path`、大写 scheme、官方域 `https://rsshub.app/path` 都归一为 `rsshub://path`，且**不联网**——换镜像零迁移的前提）。**幂等**：地址已在库里时不报错，返回 `ok=true`、`affected=0`、`detail.already_subscribed=true` 与既有 `feed_id`；直接给已订阅的 feed 地址时连发现请求都不发。错误码：`invalid_url`（空 / 非 http(s) / 无主机名 / 页面里没发现 feed）、`fetch_failed`（网络或 HTTP 错，可重试）。新订阅的 `title` 在首次抓取前等于地址，抓取后由源站名更新（与界面一致）。
+
+`update_feed`：`feed_id` + **tri-state patch**——键缺省 = 不动；`custom_title: ""` = 清除自定义名；`folder_id: null` = 移出到未分组；`refresh_interval_minutes: null` = 跟随全局档。三个字段一个都不给 → `invalid_argument`（空 patch 多半是参数拼错，不静默空操作）。错误码：`feed_not_found` / `folder_not_found` / `invalid_argument`。
+
+`folder_create` / `folder_rename`：同名建组返回既有 id（`detail.already_exists=true`，不报错）；重命名重名或空名 → `invalid_argument`，组不存在 → `folder_not_found`。
+
+`folder_delete`（**危险**）/ `unsubscribe`（**危险**）：先过危险开关（关着 → `dangerous_tool_disabled`，且 `tools/list` 里不出现），实际执行必须 `confirm: true`（缺 → `confirm_required`）。`dry_run: true` **不需要 confirm**（预览是只读的）且不落库；**预览与实际执行共用同一个影响面函数**，所以「预览几条就真删几条」：`unsubscribe` 用 `Store::entry_count_for_feed`（单源 COUNT 走 `(feed_id, read)` 覆盖索引，不穿正文大列的表 B 树，EXPLAIN 断言 + 变异校验在 core 测试里），`folder_delete` 用 `Store::feed_ids_in_folder`。语义与界面一致：**删组不删订阅**（组内订阅移出到未分组，并清掉侧栏折叠状态里的孤儿 id），退订则级联删除该源的全部条目。
+
+`import_opml`（`path` 本地文件或 `content` 文本，二选一；≤8 MiB）与 `export_opml`：复用 core 的 `opml::import|export`——与界面「导入 / 导出 OPML」同一条实现。导入按 `xmlUrl` 去重（已存在记 `skipped`、不移动分组），嵌套分组压平成 `父/子`；返回 `affected` = 新增数，`detail` 含 `added` / `skipped` / `errors`（成功时空数组）/ `folders_created` / `outlines_ignored`。导出把 OPML 文本放在 `detail.opml`（**不写文件**），同一个文本可原样回导（二次导入全部 `skipped`，有往返测试）。
 
 两种传输：
 
@@ -88,6 +105,14 @@ ui/                    桌面应用前端（当前为探针页面）
 - 读 token 调用 `set_read` / `refresh` / `fetch_fulltext` → 一律 `write_scope_required` 且库不变；写 token 下 `refresh(scope=all)` 抓到 2 条 → `sqlite3` 回读 `SELECT COUNT(*) FROM entries` = 2，重复刷新 `inserted=0`（源端 304，无重复条目）。
 - `set_read(ids)` → `affected=2`，`sqlite3` 回读 `read` 列 = `1,1`、未读数 0，`db_stats.unread` = 0（与 `sqlite3` 的口径一致）；重复调用 `affected` 仍为 2（幂等）；`set_read(feed_id, read=false)` 撤销后未读数回到 2。
 - `fetch_fulltext` → `fulltext_fetched=1`、`content_text` 607 字（越 500 字阈值），`get_article` 取到的正是抓回来的正文；二次调用 `already_fulltext=true` 且 `affected=0`（零网络）。错误码按类命中：`article_not_found` / `feed_not_found` / `folder_not_found` / `invalid_argument` / `write_scope_required`；审计行 grep 到 `mcp-write tool=set_read|set_starred|set_read_later|refresh|fetch_fulltext`，被拒的调用也有行（`error_code=write_scope_required`）。
+
+实测（2026-09-23，T4 订阅管理；真二进制 `rustrss-mcp --http` + 真库 + 本地 HTTP 源，`/tmp/t4-live` 隔离 HOME）：
+
+- `subscribe(首页)` → `affected=1`、`via=link_type`、落库地址是发现出来的 `/feed.xml`；同一首页再来一次 → `affected=0` + `already_subscribed=true` + 同一 id；`rsshub:///live/demo` → `RSSHUB://live/demo` → `https://rsshub.app/live/demo` 三种写法都归到同一个 `rsshub://live/demo`（后两次 `affected=0`）。
+- 读 token 的 `list_feeds` 立刻看得到新订阅；`refresh(feed_ids)` 入库 2 条（`sqlite3` 回读 `COUNT(*) entries = 2`）；`update_feed{自定义名 + 归组}` → `sqlite3` 回读 `我的实机源|1|`。
+- `folder_delete` dry_run → `feeds_affected=1`（组与订阅都不动）；confirm → 组消失、订阅仍在且 `folder_id` 变空。
+- `unsubscribe` dry_run → `affected=2` 且 `sqlite3` 回读 feeds=1 / entries=2（未落库）；confirm → `affected=2`，回读 feeds=0 / entries=0（条目级联删除），`list_feeds` 里不再出现。
+- 错误码实机命中：读 token 调 `subscribe` → `write_scope_required`；缺 `confirm` → `confirm_required`；源不存在 → `feed_not_found`。审计行 19 行（含 dry_run 与被拒），日志里凭据串 0 命中。
 
 <details>
 <summary>客户端配置片段示例（应用内可直接复制）</summary>

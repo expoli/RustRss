@@ -693,3 +693,52 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - **翻转左分支在出厂几何下不可达**（244px 侧栏 + 窗口 `minWidth 900`）：该分支由 boot 自检守护，实机取证时用了一行仅测试用的 CSS 加宽（已还原、未提交、diff 验证一致）。
 - **设置页下拉在 Xvfb 下无法点击实测**（既有 `data-tauri-drag-region` 无 WM 吞点击问题，与本改动无关），其回归以「anchor 路径等价」论证（列表菜单 + feed-edit 弹窗已覆盖同一代码路径）。
 - **未新增键盘导航**：子菜单可达性与既有菜单口径一致（Esc 关闭；无方向键导航），如需键盘完整导航建议单列需求。
+
+## 20. MCP 写能力批次（2026-09-23-mcp-write；T1 `c0e1a54d` / T2 `e9c08c82` / T3 `d6e20fb2` / T4 `880642d8`）
+
+### 20.1 已机械验证的部分（单测 + 真 HTTP e2e + 真二进制实机）
+
+**T1 读侧补齐（`c0e1a54d`）**：`list_articles` 新参（`since`/`until`/`feed_ids`/`cursor`/`page_size`/`sort`/`hide_read`）+ `list_folders` + `get_unread_summary`；默认口径固定「最新在前 + 不隐藏已读」（不继承界面设置）；core 侧 EXPLAIN 断言（含删索引变异校验）与 `unread_summary` 覆盖索引断言；e2e `tests/tools.rs`（11 条）覆盖分页不重不漏、显式参数覆盖设置、未读聚合完整分组。
+
+**T2 写能力基础设施（`e9c08c82`，`30a476c`）**：
+
+- `registry.rs`：一张表同时驱动 `tools/list` 过滤与调用闸门（`visible() == authorize().is_ok()`，同一函数）；顺序 scope → `write_enabled` → 写 token 存在性 → `dangerous_enabled`；错误码 `write_scope_required` / `write_disabled` / `dangerous_tool_disabled`；路由里存在但未登记的工具 fail-closed 拒绝（`tool_not_registered`）。
+- 每请求现读库里的 token 现算 scope（HTTP），stdio 无凭据概念 → scope 恒 write + 同一套开关；**写 token 轮换/销毁后旧值下一个请求立刻失效**（不缓存会话 scope，`write_auth.rs` 有专测）；401 与 `/health` 口径不变。
+- `write_contract.rs`：批量 ids ≤100、`confirm` 必填、`dry_run` 在结构上不落库（`apply_or_preview` 不调用落库闭包）、统一返回信封 `{ok, affected, results, error_code?, error?, dry_run?, detail?}`。
+- 审计：每次写调用（含被闸门拒掉的）一行 `target=mcp`，参数摘要先 `scrub_log_line` 再截断（300 字），不含正文与凭据。
+- 共享设施上提 core（纯搬迁，行为不变）：`scrub_log_line`、刷新单 flight（`RefreshGate`——MCP 与界面注入**同一个** `Arc`，lib 单测证明 agent refresh 不与界面刷新叠加）。
+- 设置页 MCP 区（写开关 / 危险开关 / 写 token 生成·轮换·销毁）机械接线测试通过（`cargo test -p rustrss-desktop` 56 项含 `mcp_write_settings_*`），i18n 双语 key 集合一致。
+
+**T3 阅读状态与刷新（`d6e20fb2`，`7b72463`）**：`set_read`/`set_starred`/`set_read_later`（`ids[]` ≤100 或条件级 `{feed_id, since, until}`，`affected` = 命中条数 → 幂等，逐项结果含 `article_not_found`）、`refresh`（三类 scope，与界面共用单 flight，抢不到 `rate_limited` 且一个请求都不发）、`fetch_fulltext`（复用 2MiB 流式闸门，已抓过零网络）；core 增量 `EntryFlag`/`EntryFlagScope` + `set_flag_scoped`/`entry_ids_scoped`/`existing_entry_ids`（EXPLAIN 断言 + 变异校验）。e2e `tests/write_tools.rs` 5 条 + 单测 11 条 + 授权矩阵 6 条。
+
+**T4 订阅管理（`880642d8`，`c2f7023`）**：
+
+- `subscribe`：首页自动发现（core `discover`，输入本身是 feed 时原样使用）→ 落库发现出的地址；`rsshub://path`（三斜杠 / 大写 / 官方域）归一为同一身份且**不联网**；幂等（重复 URL 返回既有 id、`affected=0`、`detail.already_subscribed=true`、库不新增；已订阅的直接 feed 地址不再发发现请求——e2e 用测试服务器的命中计数断言）；`invalid_url` / `fetch_failed` 分界有断言。
+- `update_feed`：tri-state（未传字段不动、`null` 移出分组 / 跟随全局、空串标题回退源站名）逐项 `sqlite` 回读断言；白名单外间隔 → `invalid_argument`；空 patch → `invalid_argument`；`feed_not_found` / `folder_not_found`。
+- `folder_create` / `folder_rename` / `folder_delete`：同名建组幂等、重名/空名 `invalid_argument`、**删组不删订阅**（订阅保留且 `folder_id` 置空，侧栏折叠状态的孤儿 id 一并清理）。
+- `unsubscribe`（危险）：危险开关关 → `dangerous_tool_disabled`（且 `tools/list` 不列）、缺 `confirm` → `confirm_required`、`dry_run` 返回条目数且库不变、**dry_run 与实际 `affected` 相等**（共用 `Store::entry_count_for_feed`）、执行后 `list_feeds` 不含该源且条目级联删除（`sqlite` 回读 0）。
+- `import_opml` / `export_opml`：与界面同一 core 实现；导入返回 `added`/`skipped`/`errors`（+ `folders_created`/`outlines_ignored`）、二次导入全 skipped（`xmlUrl` 去重）、`path` 与 `content` 两种入参都能用、导出文本可回导；非 XML / 缺参 / 都给 → `invalid_argument`。
+- 审计：`tests/feed_tools.rs` 的审计用例断言 8 个工具各有一行、dry_run 行带 `dry_run=true`、危险开关拒绝与读 token 拒绝都留痕、参数串里的 `hunter2` / `SECRET-TOKEN` 不落盘而 `token=***` 保留。
+- core 增量：`Store::entry_count_for_feed` + `explain_entry_count_for_feed`，`INDEXED BY idx_entries_feed_read` 钉住覆盖索引（EXPLAIN 断言 + 删索引变异校验），COUNT 不穿正文大列所在的表 B 树。
+
+**批次收口**：`cargo test --workspace` **321 passed / 0 failed**（19 个测试目标：core 186 / desktop 56 / mcp 79）；`cargo clippy --workspace --all-targets` 仅 3 条既有 core 警告（`fulltext.rs:130` redundant closure、`store/mod.rs:379` 与 `:598` matching on `Some` with `ok()`），无新增；durable spec「通道 B：对外 MCP server」的**写能力条目**已逐条对照证据勾选。
+
+### 20.2 实机快照（T4；真二进制 + 真库 + 本地 HTTP 源，`HOME` 隔离在 `/tmp/t4-live`）
+
+跑法：`rustrss-mcp --print-config` 建库并迁移（`user_version=11`）→ `sqlite3` 写入读/写 token 与两个开关（真二进制只认库里的凭据）→ `rustrss-mcp --http 127.0.0.1:18098` → curl 走 MCP JSON-RPC（`initialize` + `tools/call`）。脚本与完整 transcript 为临时产物，跑完已清理。
+
+- 首页 `subscribe` → `affected=1`、`via=link_type`、落库 `/feed.xml`；同首页与直接 feed 地址复订 → `affected=0` + `already_subscribed=true` + 同一 id；`rsshub:///live/demo` → `RSSHUB://live/demo` → `https://rsshub.app/live/demo` 三次调用只有第一次 `affected=1`，库里只有一条 `rsshub://live/demo`。
+- 读 token `list_feeds` 立刻看到新订阅；`refresh(feed_ids)` → `inserted=2`，`sqlite3` 回读 `entries=2`；`update_feed{自定义名 + 归组}` → `sqlite3` 回读 `我的实机源|1|`。
+- `folder_delete` dry_run → `feeds_affected=1`（组与订阅都不动）；confirm → 组没了、订阅还在且 `folder_id` 为空。
+- `unsubscribe` dry_run → `affected=2`，回读 feeds=1 / entries=2（未落库）；confirm → `affected=2`，回读 feeds=0 / entries=0（条目级联删除），`list_feeds` 清空。
+- 错误码实机命中：读 token 调 `subscribe` → `write_scope_required`；缺 `confirm` → `confirm_required`；源不存在 → `feed_not_found`。
+- 审计：日志文件 19 行 `mcp-write tool=…`（含 dry_run 与三条被拒），`write-tok-e2e` / `read-tok-e2e` 在日志中 0 命中。
+
+### 20.3 环境限制与仍需核验
+
+- **Windows / macOS 未实测**：MCP 是独立进程（不依赖 Tauri），但本批次只在 Linux 上跑过 HTTP/stdio。真机核验步骤：Windows/macOS 构建后 `rustrss-mcp --http`，按 20.2 跑一遍 subscribe → refresh → unsubscribe 闭环。
+- **设置页 MCP 区未做 GUI 实机**（T2 遗留）：开关 / 写 token 生成·轮换·销毁只有机械接线测试（扫 `index.html` / `app.js` / `main.rs` + 命令单测），未在 Xvfb 下点击与截图；「关掉危险开关后列表里看不到 `unsubscribe` / `folder_delete`」在 MCP 层有测试，但设置页开关的点击路径未端到端跑过。
+- **归一化是跨 crate 同语义复刻**：自定义标题与刷新间隔白名单在 `src-tauri`（界面）与 `rustrss-mcp` 各有一份实现（MCP 是独立二进制，不能跨 crate 调用）。数值与语义有测试逐条钉住（`interval_whitelist_matches_the_ui_choices`、`custom_title_normalization_matches_the_ui`），但两边仍是两份代码，改一边不会自动让另一边转红；彻底消除需要把归一化上提 `rustrss-core`（本任务范围明确禁止触碰 `src-tauri/**`，留作后续）。
+- **`import_opml` 未提供 `dry_run`**：tech_design 的 `dry_run` 举例提过「import 的新增/跳过数」，但 core 的 `opml::import` 没有预览模式；为不让预览变成第二套遍历逻辑（预览与执行漂移），本批次只给两个危险工具做 dry_run。若确需，正确做法是在 core 侧重构出可预览的导入。
+- **未对真实 RSSHub 实例做端到端抓取**：只验证了 scheme 归一、等价形态去重与「不联网落库」；`rsshub://` 的抓取解析（按镜像解析实际地址）在既有批次与 `refresh` 的实机里覆盖，本批次未重测。
+- **界面入口未新增**：订阅 / 分组的界面路径本来就存在（侧栏菜单 / 编辑对话框 / OPML 按钮），MCP 只是同一数据层的第二个调用方；本批次未改 UI 文案，因此没有 i18n key 变化。
