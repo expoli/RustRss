@@ -155,4 +155,43 @@ pub const MIGRATIONS: &[&str] = &[
     CREATE INDEX idx_entries_unread_sortkey
         ON entries(read, COALESCE(published_at, fetched_at) DESC, id);
     "#,
+    // v12：文章级标签（`tags` + `entry_tags`）
+    // - `tags.name` 是用户可见身份：`UNIQUE COLLATE NOCASE` 让「Rust」与「rust」天然
+    //   是同一个标签（重名报 duplicate_tag_name），应用层不需要再做归一化列；
+    // - `last_used_at`：打标时更新（见 `Store::assign_tags`），选择器「最近使用优先」
+    //   的唯一数据来源；`sort_order` 是侧栏手动顺序（小的在前），`pinned` 置顶优先；
+    // - `entry_tags` 两端 `ON DELETE CASCADE`：删源 / 删条目 / 删标签都必须零孤儿。
+    //   `PRAGMA foreign_keys=ON` 在 `Store::init` 里对每个连接开启（连接级设置），
+    //   写入路径（`remove_feed` / `delete_tag`）另有显式清理兜底——不变量不依赖
+    //   调用方是否记得开这个 pragma；
+    // - `idx_entry_tags_tag(tag_id, entry_id)`：按标签取条目 / 标签计数走它；反向
+    //   （按条目取标签）由主键 `(entry_id, tag_id)` 的隐式索引覆盖；
+    // - `idx_entries_unread_id(id) WHERE read = 0`：标签**未读计数**的覆盖索引
+    //   （部分索引只索引未读行，与 v4/v9 同族）。`read` 列在 entries 里排在 11.5KB
+    //   正文大列之后，按 rowid 回表取它就要穿溢出页链（counts() 教训：冷启动
+    //   83-119ms/次）；这个部分索引把「这行读过没有」变成索引里就有的判断，于是按 tag
+    //   计数全程只扫索引、不碰正文大列所在的表 B 树。之所以不用全量 `(id, read)`：
+    //   实测全量版会夺走 `counts()` 里 `COUNT(*) FROM entries` 子查询的索引选择
+    //   （两版都不碰表 B 树，但「不改既有形态」的爆炸半径更小），而部分索引只含未读行、
+    //   体积也更小。
+    r#"
+    CREATE TABLE tags (
+        id           INTEGER PRIMARY KEY,
+        name         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        color        TEXT,
+        pinned       INTEGER NOT NULL DEFAULT 0,
+        sort_order   INTEGER NOT NULL DEFAULT 0,
+        last_used_at INTEGER,
+        created_at   INTEGER NOT NULL
+    );
+
+    CREATE TABLE entry_tags (
+        entry_id INTEGER NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+        tag_id   INTEGER NOT NULL REFERENCES tags(id)    ON DELETE CASCADE,
+        PRIMARY KEY (entry_id, tag_id)
+    );
+
+    CREATE INDEX idx_entry_tags_tag ON entry_tags(tag_id, entry_id);
+    CREATE INDEX idx_entries_unread_id ON entries(id) WHERE read = 0;
+    "#,
 ];

@@ -454,6 +454,8 @@ impl RustRssMcp {
                 // MCP 默认口径固定（不继承界面设置）：显式传参才偏离默认
                 sort: Some(sort),
                 hide_read: Some(p.hide_read.unwrap_or(false)),
+                // 机械补全：T1 新加的标签过滤在 MCP 侧另行接线（T4），这里保持默认不过滤
+                tag_id: None,
             };
             match store.list_entries(&query) {
                 Ok(rows) => {

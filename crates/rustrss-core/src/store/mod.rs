@@ -35,6 +35,13 @@ pub enum StoreError {
     Io(String),
     #[error("数据不合法: {0}")]
     Invalid(String),
+    /// 标签名重复（大小写不敏感）。单独成档，MCP 侧据此回 `duplicate_tag_name`
+    /// 而不是去猜错误文案（同 folder 改名冲突的处理口径）。
+    #[error("标签名已存在: {0}")]
+    DuplicateTagName(String),
+    /// 标签 id 不存在（改名 / 改色 / 删除 / 打标的目标标签都必须真实存在）。
+    #[error("标签不存在: #{0}")]
+    TagNotFound(i64),
 }
 
 pub type Result<T, E = StoreError> = std::result::Result<T, E>;
@@ -180,6 +187,9 @@ pub struct EntryRow {
     /// 分页游标由 (sortkey, id) 组成——前端直接取末行，不自己重算表达式（重算
     /// 会与 SQL 侧漂移，且前端根本看不到 fetched_at）。
     pub sortkey: i64,
+    /// 该条目身上的标签（名称序）。列表 / 搜索 / 阅读页三条路径都在
+    /// [`Store::query_entries`] 里统一填充（一次查询覆盖整页），口径只有一份。
+    pub tags: Vec<TagBrief>,
 }
 
 /// 一次入库的统计：用于验证「重复刷新不产生重复条目」
@@ -244,6 +254,13 @@ pub struct EntryQuery {
     /// 显式「隐藏已读」覆盖：`None` = 跟随界面设置（`list.hide_read`）。
     /// 语义同 [`EntryQuery::sort`]：MCP 侧固定传 `Some(false)` 作为默认。
     pub hide_read: Option<bool>,
+    /// 按标签过滤（关联存在性）。`None` = 不过滤——**既有默认口径不变**（界面跟随
+    /// 设置、MCP 固定 newest + 不隐藏已读）。
+    ///
+    /// 走 `idx_entry_tags_tag` 取该标签的条目 id 集，再按既有排序索引取条目（排序索引
+    /// 在带标签过滤时被 `INDEXED BY` 钉住，见 `list_entries_sql`），因此**不会退化成
+    /// `SCAN entries`**——断言与变异校验见 `explain_list_entries` 的标签用例。
+    pub tag_id: Option<i64>,
 }
 
 /// 「全部标记已读」的作用域
@@ -316,6 +333,71 @@ impl EntryFlagScope {
         Some((clauses.join(" AND "), values))
     }
 }
+
+/// 条件级条目标识（`feed_id` / `since` / `until`，闭区间）——就是 [`EntryFlagScope`]，
+/// 加别名只为在标签 API 的签名上读得通：**口径只有一套**，不允许改写一份。
+pub type EntryScope = EntryFlagScope;
+
+/// 标签行（带未读计数）。
+///
+/// `color` 为 `#rrggbb` 或 `None`（默认色）；`pinned` 置顶优先；`sort_order` 是侧栏
+/// 手动顺序（小的在前）；`last_used_at` 驱动选择器「最近使用优先」（`None` = 还没用过）。
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct TagRow {
+    pub id: i64,
+    pub name: String,
+    pub color: Option<String>,
+    pub pinned: bool,
+    pub sort_order: i64,
+    pub last_used_at: Option<i64>,
+    /// 该标签下**未读**条目数（计数只扫覆盖索引，不碰正文大列所在表 B 树）。
+    pub unread: i64,
+}
+
+/// 条目身上的标签（[`EntryRow::tags`]）：只带 id + 名称，够渲染 chips 与点击筛选。
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct TagBrief {
+    pub id: i64,
+    pub name: String,
+}
+
+/// [`Store::delete_tag`] 的结果。
+///
+/// `affected_entries` 由 [`Store::tag_entry_count`] 算出：`dry_run` 预览与实际执行
+/// **共用同一个计数函数**，于是「预览说 N 篇」与「真删影响 N 篇」不可能漂移。
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct DeleteTagReport {
+    /// 将失去该标签的条目数（删除只清关联，**不删文章**）
+    pub affected_entries: i64,
+    /// 是否为预览（true = 没有落库）
+    pub dry_run: bool,
+}
+
+/// [`Store::assign_tags`] / [`Store::unassign_tags`] 的结果。
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct TagAssignReport {
+    /// 真正新增（assign）或移除（unassign）的关联行数；重复调用为 0（幂等）。
+    pub changed: usize,
+    /// 目标命中的条目数（与标签个数无关；batch 档只算库里真实存在的 id）。
+    pub entries: i64,
+    /// 本次操作的标签 id（去重升序）。
+    pub tag_ids: Vec<i64>,
+}
+
+/// 标签写操作的目标：显式条目 id 批量（≤ [`TAG_BATCH_MAX_IDS`]）或条件级范围。
+#[derive(Debug, Clone, PartialEq)]
+pub enum TagTarget {
+    /// 显式条目 id（未知 id 静默跳过——只给真实存在的条目建关联）。
+    Entries(Vec<i64>),
+    /// 条件级 `{feed_id, since, until}`（至少给一项，空范围报错而**不是**「全部」）。
+    Scope(EntryScope),
+}
+
+/// 标签批量条目 id 上限。
+///
+/// 与 MCP 写契约（`write_contract::MAX_BATCH_IDS`）同一口径：core 这里是最后一道
+/// 防线，超限明确报错而不是静默截断。
+pub const TAG_BATCH_MAX_IDS: usize = 100;
 
 pub struct Store {
     conn: Connection,
@@ -726,10 +808,20 @@ impl Store {
     }
 
     /// 删除订阅源（条目由外键级联删除，全文索引由触发器同步清理）。
+    ///
+    /// 标签关联（`entry_tags`）走两道保险：`PRAGMA foreign_keys=ON`（`Store::init`，
+    /// 连接级）已经能让 `feeds → entries → entry_tags` 逐级级联，这里再**显式**清
+    /// 一遍——不变量不该以「调用方记得开 pragma」为前提（测试断言零孤儿）。
     pub fn remove_feed(&self, feed_id: i64) -> Result<usize> {
-        Ok(self
-            .conn
-            .execute("DELETE FROM feeds WHERE id = ?1", params![feed_id])?)
+        let tx = self.conn.unchecked_transaction()?;
+        tx.execute(
+            "DELETE FROM entry_tags WHERE entry_id IN
+                (SELECT id FROM entries WHERE feed_id = ?1)",
+            params![feed_id],
+        )?;
+        let n = tx.execute("DELETE FROM feeds WHERE id = ?1", params![feed_id])?;
+        tx.commit()?;
+        Ok(n)
     }
 
     /// 抓取所需的元信息：**解析后的抓取地址** + 上次留下的条件请求凭据。
@@ -983,7 +1075,10 @@ impl Store {
     ) -> Result<Vec<EntryRow>> {
         let mut stmt = self.conn.prepare(sql)?;
         let rows = stmt.query_map(params_from_iter(values), map)?;
-        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+        let mut out = rows.collect::<rusqlite::Result<Vec<_>>>()?;
+        // 标签随行出库（三条读取路径同一个收口 → 不存在「列表有、阅读页没有」的漂移）
+        self.fill_entry_tags(&mut out)?;
+        Ok(out)
     }
 
     // ---------------------------------------------------------------- 状态
@@ -1169,6 +1264,388 @@ impl Store {
             )?,
         };
         Ok(n)
+    }
+
+    // ---------------------------------------------------------------- 标签
+
+    /// 新建标签（`color` 可空 = 默认色）。
+    ///
+    /// - 名称 trim 后非空；重名（大小写不敏感）报 [`StoreError::DuplicateTagName`]；
+    /// - `sort_order` 取「当前最大值 + 1」：新标签落在侧栏末尾，不会因为默认 0 而
+    ///   插到拖拽排序过的列表中间；
+    /// - `last_used_at` 建时为空——「用过」只由 [`Store::assign_tags`] 推进，
+    ///   于是选择器的「最近使用优先」不会被“建了一堆没用过”的标签带偏。
+    pub fn create_tag(&self, name: &str, color: Option<&str>) -> Result<TagRow> {
+        let name = normalize_tag_name(name)?;
+        let color = normalize_tag_color(color)?;
+        if self.tag_id_by_name(&name)?.is_some() {
+            return Err(StoreError::DuplicateTagName(name));
+        }
+        let inserted = self.conn.execute(
+            "INSERT INTO tags (name, color, pinned, sort_order, last_used_at, created_at)
+             VALUES (?1, ?2, 0, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tags), NULL, ?3)",
+            params![name, color, now()],
+        );
+        match inserted {
+            Ok(_) => {}
+            // 另一进程（桌面端与 MCP 共用同一个库文件）抢先建了同名标签：仍回可读错误
+            Err(e) if unique_violation(&e) => return Err(StoreError::DuplicateTagName(name)),
+            Err(e) => return Err(e.into()),
+        }
+        self.tag_row(self.conn.last_insert_rowid())?
+            .ok_or_else(|| StoreError::Invalid("新建的标签读不出来".into()))
+    }
+
+    /// 重命名标签。名称口径同 [`Store::create_tag`]：大小写不敏感唯一，
+    /// 但**只改大小写**（`rust` → `Rust`）允许（唯一约束排除自身）。
+    pub fn rename_tag(&self, tag_id: i64, name: &str) -> Result<TagRow> {
+        let name = normalize_tag_name(name)?;
+        let dup: Option<i64> = self
+            .conn
+            .query_row(
+                "SELECT id FROM tags WHERE name = ?1 AND id != ?2",
+                params![name, tag_id],
+                |r| r.get::<_, i64>(0),
+            )
+            .ok();
+        if dup.is_some() {
+            return Err(StoreError::DuplicateTagName(name));
+        }
+        match self.conn.execute(
+            "UPDATE tags SET name = ?1 WHERE id = ?2",
+            params![name, tag_id],
+        ) {
+            Ok(0) => return Err(StoreError::TagNotFound(tag_id)),
+            Ok(_) => {}
+            Err(e) if unique_violation(&e) => return Err(StoreError::DuplicateTagName(name)),
+            Err(e) => return Err(e.into()),
+        }
+        self.tag_row(tag_id)?.ok_or(StoreError::TagNotFound(tag_id))
+    }
+
+    /// 设置 / 清除颜色（`None` 或空白 = 清除，回到默认色）。
+    pub fn set_tag_color(&self, tag_id: i64, color: Option<&str>) -> Result<TagRow> {
+        let color = normalize_tag_color(color)?;
+        let value = color.map(Value::Text).unwrap_or(Value::Null);
+        self.update_tag(tag_id, "color", value)?;
+        self.tag_row(tag_id)?.ok_or(StoreError::TagNotFound(tag_id))
+    }
+
+    /// 置顶开关（侧栏置顶优先）。
+    pub fn set_tag_pinned(&self, tag_id: i64, pinned: bool) -> Result<TagRow> {
+        self.update_tag(tag_id, "pinned", Value::Integer(i64::from(pinned)))?;
+        self.tag_row(tag_id)?.ok_or(StoreError::TagNotFound(tag_id))
+    }
+
+    /// 标签清单（侧栏顺序：置顶优先 → 手动顺序 → 名称）。含未读计数、颜色、
+    /// 置顶、`sort_order`、`last_used_at`。
+    pub fn list_tags(&self) -> Result<Vec<TagRow>> {
+        self.query_tags(TAG_SIDEBAR_ORDER)
+    }
+
+    /// 标签清单（选择器顺序：`last_used_at DESC`，没记录过的垫底 → 手动顺序 → 名称）。
+    ///
+    /// 与 [`Store::list_tags`] 同一份 SQL 与字段（只有 ORDER BY 不同），因此选择器与
+    /// 侧栏不会看到两套字段口径。
+    pub fn list_tags_recent_first(&self) -> Result<Vec<TagRow>> {
+        self.query_tags(TAG_RECENT_ORDER)
+    }
+
+    /// 单个标签行（写操作后回给界面，用法同 [`Store::feed_row`]）。
+    pub fn tag_row(&self, tag_id: i64) -> Result<Option<TagRow>> {
+        let sql = format!("{TAG_ROW_SELECT} WHERE t.id = ?1");
+        let mut stmt = self.conn.prepare(&sql)?;
+        let mut rows = stmt.query_map(params![tag_id], tag_row_from)?;
+        match rows.next() {
+            Some(row) => Ok(Some(row?)),
+            None => Ok(None),
+        }
+    }
+
+    /// 删除标签：只清关联，**不删文章**。`dry_run = true` 只回报影响篇数、不落库。
+    ///
+    /// 两个分支的 `affected_entries` 都来自 [`Store::tag_entry_count`]（同源），
+    /// 所以确认弹窗上的数字与真删的影响面不可能两套。
+    pub fn delete_tag(&self, tag_id: i64, dry_run: bool) -> Result<DeleteTagReport> {
+        if self.tag_row(tag_id)?.is_none() {
+            return Err(StoreError::TagNotFound(tag_id));
+        }
+        let affected_entries = self.tag_entry_count(tag_id)?;
+        if dry_run {
+            return Ok(DeleteTagReport {
+                affected_entries,
+                dry_run: true,
+            });
+        }
+        let tx = self.conn.unchecked_transaction()?;
+        // 显式清关联（FK CASCADE 也在，但连接级 pragma 不该成为不变量的前提——
+        // 两道保险让「零孤儿」在本程序自己的删除路径上无条件成立）
+        tx.execute("DELETE FROM entry_tags WHERE tag_id = ?1", params![tag_id])?;
+        tx.execute("DELETE FROM tags WHERE id = ?1", params![tag_id])?;
+        tx.commit()?;
+        Ok(DeleteTagReport {
+            affected_entries,
+            dry_run: false,
+        })
+    }
+
+    /// 标签关联篇数：`delete_tag` 的 `dry_run` 与实际执行共用这一个函数。
+    ///
+    /// 只扫 `idx_entry_tags_tag` 覆盖索引，不碰 `entries` 表 B 树（EXPLAIN 断言与
+    /// 变异校验见 [`Store::explain_tag_entry_count`]）。
+    pub fn tag_entry_count(&self, tag_id: i64) -> Result<i64> {
+        Ok(self
+            .conn
+            .query_row(TAG_ENTRY_COUNT_SQL, params![tag_id], |r| r.get(0))?)
+    }
+
+    /// [`Store::tag_entry_count`] 的 EXPLAIN 断言入口（与线上 SQL 逐字同源）。
+    #[doc(hidden)]
+    pub fn explain_tag_entry_count(&self, tag_id: i64) -> Result<Vec<String>> {
+        let mut stmt = self
+            .conn
+            .prepare(&format!("EXPLAIN QUERY PLAN {TAG_ENTRY_COUNT_SQL}"))?;
+        let rows = stmt.query_map(params![tag_id], |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// [`Store::list_tags`] 的 EXPLAIN 断言入口（含每个标签的未读计数子查询，
+    /// 与线上 SQL 逐字同源）。
+    #[doc(hidden)]
+    pub fn explain_tag_list(&self) -> Result<Vec<String>> {
+        let sql = format!("{TAG_ROW_SELECT}{TAG_SIDEBAR_ORDER}");
+        let mut stmt = self.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
+        let rows = stmt.query_map([], |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// 给条目附加标签（批量 ≤100 或条件级；幂等；同事务推进 `last_used_at`）。
+    pub fn assign_tags(&self, target: &TagTarget, tag_ids: &[i64]) -> Result<TagAssignReport> {
+        self.tag_link(target, tag_ids, true)
+    }
+
+    /// 给条目移除标签（目标与幂等口径同 [`Store::assign_tags`]）。
+    pub fn unassign_tags(&self, target: &TagTarget, tag_ids: &[i64]) -> Result<TagAssignReport> {
+        self.tag_link(target, tag_ids, false)
+    }
+
+    /// 批量重排：列表下标即新的 `sort_order`（小的在前），**单事务**写入——
+    /// 中途碰到不存在的标签 id 则整体回滚（不允许「重排了一半」）。
+    ///
+    /// 同一 id 只认第一次出现的位置；空列表是空操作。未在列表里的标签保留原顺序值
+    /// （界面拖拽给的是整份可见列表）。
+    pub fn reorder_tags(&self, ids_in_order: &[i64]) -> Result<()> {
+        let mut ids: Vec<i64> = Vec::with_capacity(ids_in_order.len());
+        for id in ids_in_order {
+            if !ids.contains(id) {
+                ids.push(*id);
+            }
+        }
+        if ids.is_empty() {
+            return Ok(());
+        }
+        let tx = self.conn.unchecked_transaction()?;
+        for (position, tag_id) in ids.iter().enumerate() {
+            let n = tx.execute(
+                "UPDATE tags SET sort_order = ?1 WHERE id = ?2",
+                params![position as i64, tag_id],
+            )?;
+            if n == 0 {
+                return Err(StoreError::TagNotFound(*tag_id));
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// 单个条目的标签（名称序）——chips 渲染与测试的观察口。
+    pub fn entry_tags(&self, entry_id: i64) -> Result<Vec<TagBrief>> {
+        let mut map = self.entry_tags_map(&[entry_id])?;
+        Ok(map.remove(&entry_id).unwrap_or_default())
+    }
+
+    /// 测试断言口：孤儿 `entry_tags` 行数（两侧都要能在主子表里找到才算合法）。
+    ///
+    /// 直接查而不是靠 FK 报错：即使某个连接没开 `PRAGMA foreign_keys`，不变量也照样能验。
+    #[doc(hidden)]
+    pub fn orphan_entry_tag_count(&self) -> Result<i64> {
+        Ok(self.conn.query_row(
+            "SELECT COUNT(*) FROM entry_tags et
+              WHERE NOT EXISTS (SELECT 1 FROM entries e WHERE e.id = et.entry_id)
+                 OR NOT EXISTS (SELECT 1 FROM tags t WHERE t.id = et.tag_id)",
+            [],
+            |r| r.get(0),
+        )?)
+    }
+
+    /// 测试断言口：本连接是否真的开着外键（连接级 pragma，`Store::init` 里打开）。
+    #[doc(hidden)]
+    pub fn foreign_keys_enabled(&self) -> Result<bool> {
+        Ok(self
+            .conn
+            .query_row("PRAGMA foreign_keys", [], |r| r.get(0))?)
+    }
+
+    /// 单列标签字段更新（`color` / `pinned` 共用）：不存在即报 [`StoreError::TagNotFound`]。
+    /// `column` 只来自本模块内的字面量，不拼接外部输入。
+    fn update_tag(&self, tag_id: i64, column: &str, value: Value) -> Result<()> {
+        let n = self.conn.execute(
+            &format!("UPDATE tags SET {column} = ?1 WHERE id = ?2"),
+            params![value, tag_id],
+        )?;
+        if n == 0 {
+            return Err(StoreError::TagNotFound(tag_id));
+        }
+        Ok(())
+    }
+
+    fn query_tags(&self, order_by: &str) -> Result<Vec<TagRow>> {
+        let sql = format!("{TAG_ROW_SELECT}{order_by}");
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map([], tag_row_from)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    fn tag_id_by_name(&self, name: &str) -> Result<Option<i64>> {
+        Ok(self
+            .conn
+            .query_row(
+                // 列上的 COLLATE NOCASE 让比较就是「大小写不敏感」的那个口径
+                "SELECT id FROM tags WHERE name = ?1",
+                params![name],
+                |r| r.get::<_, i64>(0),
+            )
+            .ok())
+    }
+
+    fn ensure_tag_exists(&self, tag_id: i64) -> Result<()> {
+        let exists: bool = self.conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM tags WHERE id = ?1)",
+            params![tag_id],
+            |r| r.get(0),
+        )?;
+        if exists {
+            Ok(())
+        } else {
+            Err(StoreError::TagNotFound(tag_id))
+        }
+    }
+
+    /// `assign_tags` / `unassign_tags` 的共用实现（单事务）。
+    ///
+    /// - 关联写入用 `INSERT OR IGNORE`：重复附加无副作用（幂等），返回值是**真正
+    ///   新增**的行数（不是「匹配到的行数」）；
+    /// - `last_used_at` 与关联写入在**同一个事务**里推进，且只在真的改变了关联时
+    ///   才推进——于是纯重复调用是严格零副作用。这是选择器「最近使用优先」的唯一
+    ///   数据来源；
+    /// - 不存在的标签 id 直接报 [`StoreError::TagNotFound`]（静默忽略会让调用方
+    ///   以为打上了）；不存在的条目 id 静默跳过（`SELECT ... FROM entries` 只出真实
+    ///   存在的行，也顺便免掉 FK 报错）。
+    fn tag_link(&self, target: &TagTarget, tag_ids: &[i64], link: bool) -> Result<TagAssignReport> {
+        let tag_ids = dedupe_ascending(tag_ids);
+        if tag_ids.is_empty() {
+            return Err(StoreError::Invalid("至少要给一个标签 id".into()));
+        }
+        for tag_id in &tag_ids {
+            self.ensure_tag_exists(*tag_id)?;
+        }
+        let (entry_where, entry_values) = target_entry_where(target)?;
+        let tag_placeholders = vec!["?"; tag_ids.len()].join(",");
+        let tx = self.conn.unchecked_transaction()?;
+        let entries: i64 = tx.query_row(
+            &format!("SELECT COUNT(*) FROM entries e WHERE {entry_where}"),
+            params_from_iter(entry_values.iter().cloned()),
+            |r| r.get(0),
+        )?;
+        let tag_values = || -> Vec<Value> {
+            let mut values: Vec<Value> = tag_ids.iter().map(|id| Value::Integer(*id)).collect();
+            values.extend(entry_values.iter().cloned());
+            values
+        };
+        let changed = if link {
+            tx.execute(
+                &format!(
+                    "INSERT OR IGNORE INTO entry_tags (entry_id, tag_id)
+                     SELECT e.id, t.id FROM tags t CROSS JOIN entries e
+                      WHERE t.id IN ({tag_placeholders}) AND {entry_where}"
+                ),
+                params_from_iter(tag_values()),
+            )?
+        } else {
+            tx.execute(
+                &format!(
+                    "DELETE FROM entry_tags WHERE tag_id IN ({tag_placeholders})
+                       AND entry_id IN (SELECT e.id FROM entries e WHERE {entry_where})"
+                ),
+                params_from_iter(tag_values()),
+            )?
+        };
+        if changed > 0 {
+            let mut values: Vec<Value> = vec![Value::Integer(now())];
+            values.extend(tag_ids.iter().map(|id| Value::Integer(*id)));
+            tx.execute(
+                &format!("UPDATE tags SET last_used_at = ?1 WHERE id IN ({tag_placeholders})"),
+                params_from_iter(values),
+            )?;
+        }
+        tx.commit()?;
+        Ok(TagAssignReport {
+            changed,
+            entries,
+            tag_ids,
+        })
+    }
+
+    /// 给整页条目行填标签（`EntryRow::tags`）：一次查询覆盖整页，不做每行一次。
+    ///
+    /// 列表 / 搜索 / 阅读页都收口在 [`Store::query_entries`]，所以三处口径一致。
+    fn fill_entry_tags(&self, rows: &mut [EntryRow]) -> Result<()> {
+        if rows.is_empty() {
+            return Ok(());
+        }
+        let ids: Vec<i64> = rows.iter().map(|r| r.id).collect();
+        let mut map = self.entry_tags_map(&ids)?;
+        for row in rows.iter_mut() {
+            row.tags = map.remove(&row.id).unwrap_or_default();
+        }
+        Ok(())
+    }
+
+    /// `entry_id -> 标签（名称序）`。按条目取关联走主键 `(entry_id, tag_id)` 的隐式
+    /// 索引；条目多时分批绑定（SQLite 变量上限 999，取 500 留余量，同
+    /// [`Store::existing_entry_ids`]）。
+    fn entry_tags_map(&self, entry_ids: &[i64]) -> Result<HashMap<i64, Vec<TagBrief>>> {
+        let mut out: HashMap<i64, Vec<TagBrief>> = HashMap::new();
+        let mut seen = std::collections::HashSet::new();
+        let unique: Vec<i64> = entry_ids
+            .iter()
+            .copied()
+            .filter(|id| seen.insert(*id))
+            .collect();
+        for chunk in unique.chunks(500) {
+            let placeholders = vec!["?"; chunk.len()].join(",");
+            let sql = format!(
+                "SELECT et.entry_id, t.id, t.name
+                   FROM entry_tags et JOIN tags t ON t.id = et.tag_id
+                  WHERE et.entry_id IN ({placeholders})
+                  ORDER BY t.name COLLATE NOCASE, t.id"
+            );
+            let mut stmt = self.conn.prepare(&sql)?;
+            let rows = stmt.query_map(params_from_iter(chunk.iter().copied()), |r| {
+                Ok((
+                    r.get::<_, i64>(0)?,
+                    TagBrief {
+                        id: r.get(1)?,
+                        name: r.get(2)?,
+                    },
+                ))
+            })?;
+            for row in rows {
+                let (entry_id, brief) = row?;
+                out.entry(entry_id).or_default().push(brief);
+            }
+        }
+        Ok(out)
     }
 
     // ---------------------------------------------------------------- 设置
@@ -1438,6 +1915,37 @@ const COUNTS_SQL: &str = "SELECT (SELECT COUNT(*) FROM entries),
 const ENTRY_COUNT_FOR_FEED_SQL: &str =
     "SELECT COUNT(*) FROM entries INDEXED BY idx_entries_feed_read WHERE feed_id = ?1";
 
+/// 标签关联篇数的 SQL（`delete_tag` 的 dry_run 与实际执行**共用**）：
+/// `INDEXED BY` 钉住 `(tag_id, entry_id)` 覆盖索引——COUNT 只扫 entry_tags 的索引，
+/// 根本不碰 entries 表 B 树。抽成常量让 EXPLAIN 断言与线上 SQL 逐字同源。
+const TAG_ENTRY_COUNT_SQL: &str =
+    "SELECT COUNT(*) FROM entry_tags INDEXED BY idx_entry_tags_tag WHERE tag_id = ?1";
+
+/// 标签行 + 未读计数的列清单（[`Store::list_tags`] / [`Store::tag_row`] 共用，
+/// 新增列只改这里——同 `FEED_ROW_SELECT` 的道理）。
+///
+/// 未读计数子查询里的两个 `INDEXED BY` 都是性能红线的钉子：
+/// - 内层 `idx_entry_tags_tag(tag_id, entry_id)` 给出「这个标签的条目 id 集」；
+/// - 外层 `idx_entries_unread_id(id) WHERE read = 0`（部分索引，只含未读行）按 rowid
+///   走覆盖索引——「这行未读」就是索引的存在性事实，不需要回表。`read` 列在 entries 里
+///   排在 11.5KB 正文大列之后，回表取它就要穿溢出页链（counts() 教训：冷启动
+///   83-119ms/次）。两个索引任一被删，`explain_tag_list` 直接报错（变异校验）。
+const TAG_ROW_SELECT: &str = "\
+    SELECT t.id, t.name, t.color, t.pinned, t.sort_order, t.last_used_at,
+           (SELECT COUNT(*) FROM entries e INDEXED BY idx_entries_unread_id
+             WHERE e.read = 0
+               AND e.id IN (SELECT et.entry_id FROM entry_tags et
+                             INDEXED BY idx_entry_tags_tag WHERE et.tag_id = t.id)) AS unread
+      FROM tags t";
+
+/// 侧栏标签区顺序：置顶优先 → 手动顺序 → 名称（不区分大小写，与源名同口径）。
+const TAG_SIDEBAR_ORDER: &str = " ORDER BY t.pinned DESC, t.sort_order, t.name COLLATE NOCASE";
+
+/// 选择器顺序：最近使用优先（没记录过的垫底）→ 手动顺序 → 名称。
+/// `last_used_at IS NULL` 先升序把「没用过」排到后面，再按时间倒序。
+const TAG_RECENT_ORDER: &str =
+    " ORDER BY t.last_used_at IS NULL, t.last_used_at DESC, t.sort_order, t.name COLLATE NOCASE";
+
 /// 未读聚合（[`Store::unread_summary`]）的分组维度。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnreadGroupBy {
@@ -1559,10 +2067,13 @@ fn list_entries_sql(q: &EntryQuery, sort: ListSort, hide_read: bool) -> (String,
     //   feed_ids 会把 planner 引到 `idx_entries_feed_read (feed_id=?)` +
     //   `USE TEMP B-TREE FOR ORDER BY`——每页把筛选集合重排一遍；钉排序索引后变成
     //   按序 SEARCH + 逐行过滤 feed_id（同游标续扫的道理）。
+    // - `newest`/`oldest` + 标签过滤：同理钉住（否则 planner 会驱动 `idx_entry_tags_tag`
+    //   再临时排序）。标签的条目 id 集由 `idx_entry_tags_tag` 的子查询给出，外层扫的是
+    //   排序索引——不得退化成 `SCAN entries`（见 `explain_list_entries` 的标签用例）。
     let pin = match sort {
         ListSort::UnreadFirst => Some(sort),
         ListSort::Newest | ListSort::Oldest => {
-            if q.cursor.is_some() || q.feed_ids.is_some() {
+            if q.cursor.is_some() || q.feed_ids.is_some() || q.tag_id.is_some() {
                 Some(sort)
             } else {
                 None
@@ -1605,6 +2116,16 @@ fn list_entries_sql(q: &EntryQuery, sort: ListSort, hide_read: bool) -> (String,
     }
     if q.read_later_only {
         sql.push_str(" AND e.read_later = 1");
+    }
+    // 标签过滤：存在性检查。两层索引各司其职——子查询用 `idx_entry_tags_tag`
+    // 取「这个标签的条目 id 集」，外层继续按排序索引序取条目（LIMIT 一到就停）。
+    // `INDEXED BY` 钉在子查询上：索引被删/被改名时 EXPLAIN 直接报错，而不是静默
+    // 换成某个会穿正文大列表 B 树的计划（变异校验就是这么转红的）。
+    if let Some(tag_id) = q.tag_id {
+        sql.push_str(
+            " AND e.id IN (SELECT et.entry_id FROM entry_tags et\n                 INDEXED BY idx_entry_tags_tag WHERE et.tag_id = ?)",
+        );
+        values.push(Value::Integer(tag_id));
     }
     // 隐藏已读：星标/稍后读视图豁免——「星标了但读完了」还要能找到（PRD 需求 3）。
     // 未读视图本来就有 `read = 0`，重复一次无害。
@@ -1718,6 +2239,8 @@ fn map_entry_columns(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
         starred: r.get::<_, i64>(13)? != 0,
         read_later: r.get::<_, i64>(14)? != 0,
         sortkey: r.get(15)?,
+        // 先置空，由 `Store::query_entries` 统一整页填充（映射函数拿不到库连接）
+        tags: Vec::new(),
     })
 }
 
@@ -1725,6 +2248,85 @@ fn origin_str(o: IdOrigin) -> &'static str {
     match o {
         IdOrigin::SourceData => "source_data",
         IdOrigin::ContentHash => "content_hash",
+    }
+}
+
+fn tag_row_from(r: &rusqlite::Row<'_>) -> rusqlite::Result<TagRow> {
+    Ok(TagRow {
+        id: r.get(0)?,
+        name: r.get(1)?,
+        color: r.get(2)?,
+        pinned: r.get::<_, i64>(3)? != 0,
+        sort_order: r.get(4)?,
+        last_used_at: r.get(5)?,
+        unread: r.get(6)?,
+    })
+}
+
+/// 标签名归一化：trim 后非空（空串报错而不是静默建成空名标签）。
+fn normalize_tag_name(name: &str) -> Result<String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(StoreError::Invalid("标签名不能为空".into()));
+    }
+    Ok(name.to_string())
+}
+
+/// 颜色归一化：`None` / 空白 = 无颜色；否则必须是 `#RRGGBB`（大小写都收，
+/// 统一小写落库，免得 `#FFF000` 与 `#fff000` 在比较时是两种值）。
+fn normalize_tag_color(color: Option<&str>) -> Result<Option<String>> {
+    let Some(raw) = color else { return Ok(None) };
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return Ok(None);
+    }
+    let valid =
+        raw.len() == 7 && raw.starts_with('#') && raw[1..].chars().all(|c| c.is_ascii_hexdigit());
+    if !valid {
+        return Err(StoreError::Invalid(format!(
+            "颜色格式应为 #RRGGBB（实收「{raw}」）"
+        )));
+    }
+    Ok(Some(format!("#{}", raw[1..].to_ascii_lowercase())))
+}
+
+/// 唯一约束冲突判定：按错误码而不是文案（错误文案不是契约）。
+fn unique_violation(err: &rusqlite::Error) -> bool {
+    matches!(err, rusqlite::Error::SqliteFailure(e, _) if e.code == rusqlite::ErrorCode::ConstraintViolation)
+}
+
+/// 去重 + 升序：同一 id 传多次只算一次（写路径不该把重复当多次处理）。
+fn dedupe_ascending(ids: &[i64]) -> Vec<i64> {
+    let mut unique: Vec<i64> = ids.to_vec();
+    unique.sort_unstable();
+    unique.dedup();
+    unique
+}
+
+/// 标签写操作的目标 → `entries e` 的 WHERE 片段 + 参数（assign / unassign / 计数
+/// 三处共用，免得写入与计数各拼一份而漂移）。
+fn target_entry_where(target: &TagTarget) -> Result<(String, Vec<Value>)> {
+    match target {
+        TagTarget::Entries(ids) => {
+            let ids = dedupe_ascending(ids);
+            if ids.is_empty() {
+                return Err(StoreError::Invalid("批量条目 id 不能为空".into()));
+            }
+            if ids.len() > TAG_BATCH_MAX_IDS {
+                return Err(StoreError::Invalid(format!(
+                    "一次最多处理 {TAG_BATCH_MAX_IDS} 条，收到 {} 条：请分批调用（不要指望静默截断）",
+                    ids.len()
+                )));
+            }
+            let placeholders = vec!["?"; ids.len()].join(",");
+            Ok((
+                format!("e.id IN ({placeholders})"),
+                ids.into_iter().map(Value::Integer).collect(),
+            ))
+        }
+        TagTarget::Scope(scope) => scope.where_sql().ok_or_else(|| {
+            StoreError::Invalid("条件级标签操作至少需要一个条件（feed_id / since / until）".into())
+        }),
     }
 }
 

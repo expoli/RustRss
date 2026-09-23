@@ -31,6 +31,7 @@ pub use refresh_flight::{RefreshFlight, RefreshGate};
 pub use parse::{parse, ParseError};
 pub use store::backup;
 pub use store::{
-    EntryFlag, EntryFlagScope, EntryQuery, EntryRow, FeedIntervalRow, FeedRow, InsertStats,
-    ListSort, MarkScope, Store, StoreError, UnreadGroup, UnreadGroupBy,
+    DeleteTagReport, EntryFlag, EntryFlagScope, EntryQuery, EntryRow, EntryScope, FeedIntervalRow,
+    FeedRow, InsertStats, ListSort, MarkScope, Store, StoreError, TagAssignReport, TagBrief,
+    TagRow, TagTarget, UnreadGroup, UnreadGroupBy, TAG_BATCH_MAX_IDS,
 };
