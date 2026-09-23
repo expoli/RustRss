@@ -39,7 +39,7 @@ documentUuid: dac6eda0-13fc-4c47-abea-1f6dcdba7147
 
 - **凭据**：读 token = `mcp.token`（现有）；写 token = `mcp.write_token`（新，设置页生成/轮换/销毁，随机 48 hex）；两个 token 均可用于**连接认证**；
 - **HTTP**：**每个请求**按携带的 token 现算 `scope`（`read` | `write`）——**不缓存会话级 scope**，因此写 token 轮换/销毁后，旧 token 的下一个请求立即失去写权限（被拒）；`tools/list` 按**当次请求**的 scope 过滤（读 token 会话看不到写工具）；调用未授权工具返回工具级错误 `write_scope_required`；
-- **stdio**：无 token → scope 由设置开关决定（`mcp.write_enabled` 开 → `write`，否则 `read`）；
+- **stdio**：无凭据概念 → scope 恒为 `write`，写能力由同一套开关与写 token 存在性把关（关闭/缺失时报 `write_disabled`；不存在“无写权限”的 401 场景）；
 - **开关**：`mcp.write_enabled`（默认 false）总开关；`mcp.dangerous_enabled`（默认 false）危险工具开关——**两者都开**且 `confirm: true` 时 `unsubscribe` / `folder_delete` 才可执行；
 - **认证 vs 授权**：无/错 token → 401（传输层，不变）；已认证但无写权限 → 200 + 工具级错误（保持 MCP 语义，agent 能读懂原因）。
 
@@ -48,7 +48,7 @@ documentUuid: dac6eda0-13fc-4c47-abea-1f6dcdba7147
 - 批量 ≤ 100 ids，超限返回 `invalid_argument`（或 `rate_limited`）；
 - 每个写操作返回 `{ "ok": bool, "affected": n, "results": [...], "error_code"?: "..." }`（逐项结果用于部分失败的可解释性）；
 - `dry_run: true`：只计算影响面（如 `unsubscribe` 的条目数、`import_opml` 的新增/跳过数），**不落库**；
-- 审计：每次写调用一行 `log::info!(target: "mcp", "mcp-write tool=… args_summary=… affected=… ok=…")`（参数摘要需过 `scrub_log_line`；不含正文/凭据）。
+- 审计：每次写调用一行 `log::info!(target: "mcp", "mcp-write tool=… args=… affected=… ok=… dry_run=… error_code=…")`（字段名以实现为准；参数摘要需过 `scrub_log_line`；不含正文/凭据；被闸门拒掉的调用也记一行）。
 
 ### 共享设施上提 core（MCP 与界面共用）
 
