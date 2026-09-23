@@ -711,7 +711,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 **T3 阅读状态与刷新（`d6e20fb2`，`7b72463`）**：`set_read`/`set_starred`/`set_read_later`（`ids[]` ≤100 或条件级 `{feed_id, since, until}`，`affected` = 命中条数 → 幂等，逐项结果含 `article_not_found`）、`refresh`（三类 scope，与界面共用单 flight，抢不到 `rate_limited` 且一个请求都不发）、`fetch_fulltext`（复用 2MiB 流式闸门，已抓过零网络）；core 增量 `EntryFlag`/`EntryFlagScope` + `set_flag_scoped`/`entry_ids_scoped`/`existing_entry_ids`（EXPLAIN 断言 + 变异校验）。e2e `tests/write_tools.rs` 5 条 + 单测 11 条 + 授权矩阵 6 条。
 
-**T4 订阅管理（`880642d8`，`c2f7023`）**：
+**T4 订阅管理（`880642d8`，`c2f7023` + 小修 `a293b69`）**：
 
 - `subscribe`：首页自动发现（core `discover`，输入本身是 feed 时原样使用）→ 落库发现出的地址；`rsshub://path`（三斜杠 / 大写 / 官方域）归一为同一身份且**不联网**；幂等（重复 URL 返回既有 id、`affected=0`、`detail.already_subscribed=true`、库不新增；已订阅的直接 feed 地址不再发发现请求——e2e 用测试服务器的命中计数断言）；`invalid_url` / `fetch_failed` 分界有断言。
 - `update_feed`：tri-state（未传字段不动、`null` 移出分组 / 跟随全局、空串标题回退源站名）逐项 `sqlite` 回读断言；白名单外间隔 → `invalid_argument`；空 patch → `invalid_argument`；`feed_not_found` / `folder_not_found`。
