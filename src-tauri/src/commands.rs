@@ -90,6 +90,7 @@ pub async fn list_entries(
     unread_only: Option<bool>,
     starred_only: Option<bool>,
     read_later_only: Option<bool>,
+    tag_id: Option<i64>,
     limit: Option<u32>,
     cursor_sortkey: Option<i64>,
     cursor_id: Option<i64>,
@@ -100,6 +101,8 @@ pub async fn list_entries(
         unread_only: unread_only.unwrap_or(false),
         starred_only: starred_only.unwrap_or(false),
         read_later_only: read_later_only.unwrap_or(false),
+        // 标签视图 = 按标签筛选的普通列表：排序/隐藏已读仍跟随界面设置（与 feed 视图同档）
+        tag_id,
         limit: Some(limit.unwrap_or(200)),
         cursor: cursor_pair(cursor_sortkey, cursor_id),
         // 只有 unread_first 档用得上（store 侧只在该档读它）；其他档传了也被忽略
@@ -1013,6 +1016,81 @@ pub async fn list_folders(state: State<'_, AppState>) -> R<Vec<rustrss_core::sto
     let t = std::time::Instant::now();
     let r = state.with_store(|s| s.list_folders_ordered().map_err(err));
     log_slow("list_folders", t);
+    r
+}
+
+// ---------------------------------------------------------------- 标签（薄壳）
+//
+// 业务逻辑全在 rustrss-core/src/store：名称校验、大小写不敏感唯一、幂等、计数、
+// `last_used_at` 推进都在那里；这里只做 Tauri command → core 的透传（AGENTS.md 分层：
+// src-tauri 不写业务）。选择器与侧栏拿的是同一份 `TagRow`，`recent_first` 只切换 core
+// 里已定好的 ORDER BY——前端不自己排序（最近使用优先的唯一数据源是 core）。
+
+/// 标签清单。`recent_first` = 选择器口径（`last_used_at DESC`，没用过的垫底）；
+/// 缺省 = 侧栏口径（置顶优先 → 手动顺序 → 名称）。
+#[tauri::command]
+pub async fn list_tags(
+    state: State<'_, AppState>,
+    recent_first: Option<bool>,
+) -> R<Vec<rustrss_core::TagRow>> {
+    let t = std::time::Instant::now();
+    let recent = recent_first.unwrap_or(false);
+    let r = state.with_store(|s| {
+        let rows = if recent {
+            s.list_tags_recent_first()
+        } else {
+            s.list_tags()
+        };
+        rows.map_err(err)
+    });
+    log_slow("list_tags", t);
+    r
+}
+
+/// 新建标签（名称 trim / 唯一性 / 排序位置都由 core 决定；重名回可读错误）。
+#[tauri::command]
+pub async fn create_tag(state: State<'_, AppState>, name: String) -> R<rustrss_core::TagRow> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.create_tag(&name, None).map_err(err));
+    log_slow("create_tag", t);
+    r
+}
+
+/// 给单个条目打标签（阅读器/列表行的交互路径；批量 ≤100 与条件级是 MCP 的口径）。
+#[tauri::command]
+pub async fn assign_tags(
+    state: State<'_, AppState>,
+    entry_id: i64,
+    tag_ids: Vec<i64>,
+) -> R<rustrss_core::TagAssignReport> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| {
+        s.assign_tags(
+            &rustrss_core::TagTarget::Entries(vec![entry_id]),
+            &tag_ids,
+        )
+        .map_err(err)
+    });
+    log_slow("assign_tags", t);
+    r
+}
+
+/// 取消单个条目的标签（幂等口径与 [`assign_tags`] 相同）。
+#[tauri::command]
+pub async fn unassign_tags(
+    state: State<'_, AppState>,
+    entry_id: i64,
+    tag_ids: Vec<i64>,
+) -> R<rustrss_core::TagAssignReport> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| {
+        s.unassign_tags(
+            &rustrss_core::TagTarget::Entries(vec![entry_id]),
+            &tag_ids,
+        )
+        .map_err(err)
+    });
+    log_slow("unassign_tags", t);
     r
 }
 

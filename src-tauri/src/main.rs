@@ -255,6 +255,10 @@ fn main() {
             commands::preview_rsshub_migration,
             commands::migrate_rsshub_feeds,
             commands::list_folders,
+            commands::list_tags,
+            commands::create_tag,
+            commands::assign_tags,
+            commands::unassign_tags,
             commands::get_collapsed_folders,
             commands::add_folder,
             commands::rename_folder,
@@ -439,6 +443,54 @@ mod tests {
             missing.is_empty(),
             "这些命令在界面被调用但没在 main.rs 登记（点下去才会报错）: {missing:?}"
         );
+    }
+
+    /// 标签快捷键（`t`）不得与既有键位冲突：键位从**真正生效的分发函数**源码里抽
+    /// `case '<键>'`，断言 ① 无重复绑定 ② `t` 在表里且绑定到标签选择器 ③ 既有键位
+    /// 一个都没丢 ④ 保留键位（`/`、`Esc`）没被挤进 switch（它们在分发前置分支处理）。
+    ///
+    /// 与界面里 `selfTestShortcutKeys()`（真实 webview 启动自检）是同一套判据的两份
+    /// 落地：这份的价值是 `cargo test` 就能挡住「改 switch 时把两个动作绑到一个键上」。
+    #[test]
+    fn global_shortcuts_have_no_conflicts_and_t_opens_the_tag_picker() {
+        const APP_JS: &str = include_str!("../../ui/app.js");
+        let start = APP_JS
+            .find("function onGlobalKeydown(e)")
+            .expect("app.js 缺少全局快捷键分发函数 onGlobalKeydown");
+        let body = &APP_JS[start..];
+        let end = body.find("\n}").expect("分发函数没有结束（源码形状变了，测试需同步）");
+        let body = &body[..end];
+
+        let mut keys = Vec::new();
+        let mut rest = body;
+        while let Some(pos) = rest.find("case '") {
+            let after = &rest[pos + "case '".len()..];
+            if let Some(end) = after.find('\'') {
+                keys.push(after[..end].to_string());
+            }
+            rest = after;
+        }
+        assert!(!keys.is_empty(), "没从 {body:.80}… 抽到任何键位");
+
+        let mut sorted = keys.clone();
+        sorted.sort();
+        let mut dedup = sorted.clone();
+        dedup.dedup();
+        assert_eq!(sorted, dedup, "一个键被绑定了多次: {keys:?}");
+
+        for key in ["j", "k", "u", "s", "l", "r", "g", "G", "t", "Enter"] {
+            assert!(keys.iter().any(|k| k == key), "快捷键表缺少 {key}: {keys:?}");
+        }
+        assert!(
+            body.contains("case 't':") && body.contains("openTagPicker"),
+            "t 未绑定到标签选择器"
+        );
+        for key in ["/", "Escape"] {
+            assert!(
+                !keys.iter().any(|k| k == key),
+                "{key} 不该进 switch：它在分发前置分支里处理（搜索聚焦 / 关菜单退视图）"
+            );
+        }
     }
 
     /// 抽出 app.js 里 `invoke('命令名')` 的命令名（允许换行/空白）。

@@ -346,6 +346,10 @@ const state = {
   fontFamiliesLoaded: false,
   ai: null,
   mcp: null,
+  // 标签缓存（core 的 TagRow 原样，含未读计数/颜色/`last_used_at`）：chips 渲染、
+  // 选择器与标签视图标题共用一份；打标后调 refreshTagCache() 整体刷新（最近使用
+  // 顺序与计数都在里面）。chips 自身的来源是 EntryRow.tags，不从这里反查。
+  tags: [],
 };
 
 const VIEWS = [
@@ -690,6 +694,9 @@ function viewTitle() {
     const feed = state.feeds.find((f) => f.id === state.feedId);
     return feed ? feed.title : t('list.feedFallback');
   }
+  if (state.view.kind === 'tag') {
+    return t('tags.viewTitle', { name: state.view.tagName || tagLabel(state.view.tagId) });
+  }
   const view = VIEWS.find((v) => v.kind === state.view.kind);
   return view ? t(view.key) : t('list.all');
 }
@@ -701,9 +708,12 @@ function buildEntryRow(e) {
   li.dataset.id = String(e.id);
   const star = e.starred ? '<span class="star">★</span>' : '';
   const laterMark = `<span class="later-mark ${e.read_later ? 'on' : ''}" data-later-id="${e.id}" title="${t('list.later')}">⚑</span>`;
+  // 行内 chips ≤2 + `+N`；行 hover 才显标签按钮（CSS 控制透明度，不占 hover 前的眼睛）
+  const tagChips = `<span class="tag-chips">${rowTagChipsHtml(e.tags || [])}</span>`;
+  const tagBtn = `<button class="row-tag-btn" data-entry-id="${e.id}" title="${t('tags.addTitle')}">#</button>`;
   li.innerHTML = `
       <span class="title">${escapeHtml(e.title)}</span>
-      <span class="meta"><span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}</span>
+      <span class="meta"><span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}${tagChips}${tagBtn}</span>
       ${e.summary ? `<span class="summary">${escapeHtml(e.summary)}</span>` : ''}`;
   li.onclick = () => openEntry(e.id, { markRead: true });
   const mark = li.querySelector('.later-mark');
@@ -738,7 +748,13 @@ function renderList() {
     const li = document.createElement('li');
     li.className = 'dim';
     li.style.cursor = 'default';
-    li.textContent = state.view.kind === 'unread' ? t('list.emptyUnread') : t('list.empty');
+    li.textContent = t(
+      state.view.kind === 'unread'
+        ? 'list.emptyUnread'
+        : state.view.kind === 'tag'
+          ? 'tags.empty'
+          : 'list.empty'
+    );
     list.appendChild(li);
     installSentinel();
     return;
@@ -747,7 +763,9 @@ function renderList() {
   for (const e of state.entries) list.appendChild(buildEntryRow(e));
   installSentinel();
   window.__LIST_MS = +(performance.now() - __t0).toFixed(1);
-  log(`renderList rows=${state.entries.length} ${window.__LIST_MS}ms`);
+  log(
+    `renderList rows=${state.entries.length} withTags=${state.entries.filter((e) => (e.tags || []).length).length} ${window.__LIST_MS}ms`
+  );
   focusRow(state.selectedId, { follow: true });
 }
 
@@ -855,9 +873,11 @@ function onSentinel(records) {
 function renderReaderEmpty() {
   state.readerFeedId = null;
   state.readerEntry = null;
+  // 空状态把三套语义一次说清：星标=收藏 · 稍后读=待读 · 标签=主题分类（i18n 双语）
   el('reader').innerHTML = `<div class="reader-empty">
       <p>${t('reader.empty')}</p>
       <p class="dim">${t('reader.shortcuts')}</p>
+      <p class="dim">${t('tags.semantics')}</p>
     </div>`;
 }
 
@@ -882,6 +902,7 @@ function renderReader(entry) {
         <span>${escapeHtml(entry.feed_title)}</span>
         <span>${fmtTime(entry.published_at)}</span>
         ${entry.author ? `<span>${escapeHtml(entry.author)}</span>` : ''}
+        <span class="tag-bar" id="reader-tags">${readerTagChipsHtml(entry)}</span>
       </div>
     </div>`;
   reader.insertAdjacentHTML('beforeend', `
@@ -920,6 +941,11 @@ function renderReader(entry) {
     const parts = __t.slice(1).map((x) => `${x.tag}=${Math.round(x.ms - t0)}`).join(' ');
     log(`renderReader id=${entry.id} ${parts} total=${Math.round(performance.now() - t0)}ms`);
   }
+  // chips 的自证行：数量/名称/第一个 chip 的屏幕矩形都在里面——无人值守时
+  // 「chips 渲染出来了」与「点哪里」两件事都从这一行读，不必靠肉眼比图。
+  log(
+    `readerTags id=${entry.id} n=${(entry.tags || []).length} chips=${(entry.tags || []).map((x) => x.name).join('|') || '-'} rect=${tagChipRect('#reader-tags .tag-chip')}`
+  );
 
   el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
@@ -988,18 +1014,377 @@ async function fetchFulltext(entryId) {
   }
 }
 
+// ---------------------------------------------------------------- 标签（chips / 选择器 / 标签视图）
+//
+// 数据口径全在 core：chips 的标签来自 `EntryRow.tags`；选择器顺序来自
+// `list_tags(recent_first=true)`（`last_used_at DESC`，无记录回退 sort_order/名称）；
+// 每个标签的未读数来自 `TagRow.unread`。前端只做渲染、键盘与「按 id 局部 patch」——
+// 不自己排序、不自己数数（两套口径必然漂移）。
+
+/** 列表行最多显示的 chips 数（超出显示 `+N`） */
+const ROW_TAG_CHIPS = 2;
+
+/** 标签色值只接受 core 校验过的 `#rrggbb`；其余（含 null）一概退回默认色，不进 style */
+function tagColorStyle(tag) {
+  return /^#[0-9a-f]{6}$/i.test(tag.color || '') ? ` style="--tag-color:${tag.color}"` : '';
+}
+
+/** 单个 chip（阅读器与列表行共用同一份构造：转义与 data 属性只有一处） */
+function tagChipHtml(tag) {
+  return `<span class="tag-chip" data-tag-id="${tag.id}" title="${escapeHtml(tag.name)}"${tagColorStyle(tag)}>${escapeHtml(tag.name)}</span>`;
+}
+
+/** 列表行 chips：≤2 个 + `+N`（被折叠的标签名进 title，悬停仍能看全） */
+function rowTagChipsHtml(tags) {
+  const shown = tags.slice(0, ROW_TAG_CHIPS);
+  let html = shown.map(tagChipHtml).join('');
+  if (tags.length > shown.length) {
+    const all = tags.map((x) => x.name).join(' / ');
+    html += `<span class="tag-chip more" title="${escapeHtml(t('tags.chipMore', { n: tags.length - shown.length }))}：${escapeHtml(all)}">+${tags.length - shown.length}</span>`;
+  }
+  return html;
+}
+
+/** 阅读器 meta 行的 chips + 「＋标签」按钮（整体重写这个容器就是局部 patch） */
+function readerTagChipsHtml(entry) {
+  const chips = (entry.tags || []).map(tagChipHtml).join('');
+  return `<span class="tag-chips">${chips}</span><button class="tag-add" data-entry-id="${entry.id}" title="${t('tags.addTitle')}">${t('tags.add')}</button>`;
+}
+
+/** 第一个 chip 的屏幕矩形（无人值守点击定位与「chips 可见」的证据行用） */
+function tagChipRect(selector) {
+  const node = document.querySelector(selector);
+  if (!node) return '-';
+  const r = node.getBoundingClientRect();
+  return `${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)},${Math.round(r.height)}`;
+}
+
+function tagById(id) {
+  return (state.tags || []).find((tg) => tg.id === id) || null;
+}
+
+/** 标签名（缓存未命中时退回 chip 文本/`#id`：渲染不依赖缓存先到位） */
+function tagLabel(id, fallback) {
+  const tag = tagById(id);
+  return tag ? tag.name : fallback || `#${id}`;
+}
+
+/** 刷新标签缓存。`recentFirst` 缺省 = 选择器口径（最近使用优先）；侧栏口径传 false */
+async function refreshTagCache({ recentFirst = true } = {}) {
+  state.tags = await invoke('list_tags', { recentFirst });
+  return state.tags;
+}
+
+/** 条目身上当前的标签 id 集合（阅读区详情对象 / 列表行对象，两处都可能持有） */
+function entryTags(id) {
+  const entry =
+    state.readerEntry && state.readerEntry.id === id
+      ? state.readerEntry
+      : state.entries.find((e) => e.id === id);
+  return (entry && entry.tags) || [];
+}
+
+/** 把回读到的标签写进**所有**持有该条目的对象（同 setEntryFlag 的两对象口径） */
+function setEntryTags(id, tags) {
+  for (const e of state.entries) {
+    if (e.id === id) e.tags = tags;
+  }
+  if (state.readerEntry && state.readerEntry.id === id) state.readerEntry.tags = tags;
+}
+
+/** 列表行的 chips 局部 patch：只重写该行的 chips 容器，不重建行也不重建列表 */
+function patchRowTags(id) {
+  const li = rowEl(id);
+  const e = state.entries.find((row) => row.id === id);
+  if (!li || !e) return;
+  const box = li.querySelector('.tag-chips');
+  if (box) box.innerHTML = rowTagChipsHtml(e.tags || []);
+}
+
+/** 阅读器 chips 局部 patch：只重写 chips 容器（正文 DOM / 滚动位置 / AI 面板零变化） */
+function patchReaderTags() {
+  const box = el('reader-tags');
+  if (!box || !state.readerEntry) return;
+  box.innerHTML = readerTagChipsHtml(state.readerEntry);
+}
+
+/**
+ * 打标/取消的收口：回读该条目（`EntryRow.tags` 的唯一来源）→ 写回两个对象 →
+ * 局部 patch 两处 DOM → 刷新标签缓存（计数/最近使用顺序）→ 刷新侧栏聚合计数 →
+ * 标签视图里取消当前筛选标签时把该行移出列表。
+ */
+async function afterTagChange(id, tag, attached) {
+  const row = await invoke('get_entry', { id });
+  if (row) setEntryTags(id, row.tags || []);
+  patchRowTags(id);
+  patchReaderTags();
+  await refreshTagCache();
+  refreshCountsSoon();
+  if (!attached && state.view.kind === 'tag' && state.view.tagId === tag.id) dropRowFromList(id);
+  setStatus(t(attached ? 'tags.assigned' : 'tags.unassigned', { name: tag.name }));
+  log(
+    `tags:${attached ? 'assign' : 'unassign'} entry=${id} tag=${tag.id} name=${tag.name} ` +
+      `chips=${entryTags(id).map((x) => x.name).join('|') || '-'} rect=${tagChipRect('#reader-tags .tag-chip')} listRows=${state.entries.length}`
+  );
+}
+
+/** 给条目附加/取消一个标签（选择器行与 Enter 确认都走这里，幂等由 core 保证） */
+async function toggleTagOnEntry(entryId, tag) {
+  const attached = entryTags(entryId).some((x) => x.id === tag.id);
+  try {
+    if (attached) await invoke('unassign_tags', { entryId, tagIds: [tag.id] });
+    else await invoke('assign_tags', { entryId, tagIds: [tag.id] });
+  } catch (e) {
+    setStatus(e.message, true);
+    log(`tags:${attached ? 'unassign' : 'assign'} failed entry=${entryId} tag=${tag.id}: ${e.message}`);
+    return;
+  }
+  await afterTagChange(entryId, tag, !attached);
+}
+
+/** Enter 新建并附加。重名（core 判定，大小写不敏感）走既有报错提示路径，不静默吞 */
+async function createAndAttachTag(entryId, name) {
+  try {
+    const created = await invoke('create_tag', { name });
+    await invoke('assign_tags', { entryId, tagIds: [created.id] });
+    await afterTagChange(entryId, created, true);
+    log(`tags:create name=${created.name} id=${created.id} entry=${entryId}`);
+    return created;
+  } catch (e) {
+    setStatus(e.message, true);
+    log(`tags:create failed name=${name}: ${e.message}`);
+    return null;
+  }
+}
+
+// ---- 选择器：state.tags（最近使用优先序）+ type-ahead 过滤 + ↑↓/Enter/Esc
+
+let tagPickerEntryId = null;
+let tagPickerIndex = 0;
+/** 当前候选行（含「新建并附加」合成行）；渲染与键盘选择读同一份，不会各走各的 */
+let tagPickerRows = [];
+
+function tagPickerOpen() {
+  return !el('tag-picker-overlay').classList.contains('hidden');
+}
+
+async function openTagPicker(entryId) {
+  if (entryId == null) return;
+  tagPickerEntryId = entryId;
+  // 每次打开重取一次：两次打标（last_used_at 被推进）后最近使用的那条必然排前
+  await refreshTagCache();
+  const entry =
+    state.readerEntry && state.readerEntry.id === entryId
+      ? state.readerEntry
+      : state.entries.find((e) => e.id === entryId);
+  el('tag-picker-title').textContent = entry
+    ? `${t('tags.pickerTitle')} · ${entry.title}`
+    : t('tags.pickerTitle');
+  const input = el('tag-picker-input');
+  input.value = '';
+  tagPickerIndex = 0;
+  renderTagPicker('');
+  el('tag-picker-overlay').classList.remove('hidden');
+  input.focus();
+  log(
+    `tagPicker:open entry=${entryId} attached=${entryTags(entryId).map((x) => x.name).join('|') || '-'} order=${(state.tags || []).map((x) => x.name).join('|') || '-'}`
+  );
+}
+
+function closeTagPicker(reason) {
+  if (!tagPickerOpen()) return;
+  el('tag-picker-overlay').classList.add('hidden');
+  el('tag-picker-input').value = '';
+  tagPickerRows = [];
+  tagPickerIndex = 0;
+  const id = tagPickerEntryId;
+  tagPickerEntryId = null;
+  // 关闭（含 Esc/点遮罩）本身不改任何数据、不动视图/搜索/设置——只有这一行日志
+  log(`tagPicker:close reason=${reason} entry=${id} view=${state.view.kind}`);
+}
+
+/** 按输入重渲染候选行；`q` 为空 = 全部标签（core 的最近使用优先序原样） */
+function renderTagPicker(q) {
+  const query = (q || '').trim();
+  const lower = query.toLowerCase();
+  const matched = (state.tags || []).filter((tg) => tg.name.toLowerCase().includes(lower));
+  // 大小写不敏感的全名命中优先：这时 Enter 是「附加已有」，不去撞唯一约束报错
+  const exact = matched.some((tg) => tg.name.toLowerCase() === lower);
+  const createName = query && !exact ? query : null;
+  tagPickerRows = [];
+  // 候选在前、新建在后：输入 `gam` 而库里已有 `gamma` 时，默认选中是附加 gamma
+  // （实机跑出来的：新建排第一时 Enter 会凭空造一个 `gam`，近义新标签是脏数据）。
+  // 真要新建一个与现有标签前缀相同的新标签，↓ 到末行回车即可（新建行高亮色区分）。
+  for (const tg of matched) tagPickerRows.push({ kind: 'tag', tag: tg });
+  if (createName) tagPickerRows.push({ kind: 'create', name: createName });
+  if (tagPickerIndex >= tagPickerRows.length) tagPickerIndex = 0;
+
+  const attachedIds = new Set(entryTags(tagPickerEntryId).map((x) => x.id));
+  const list = el('tag-picker-list');
+  list.innerHTML = tagPickerRows.length
+    ? tagPickerRows
+        .map((row, i) => {
+          const active = i === tagPickerIndex ? ' active' : '';
+          if (row.kind === 'create') {
+            return `<li data-index="${i}" class="create${active}">${escapeHtml(t('tags.pickerCreate', { name: row.name }))}</li>`;
+          }
+          const tg = row.tag;
+          const on = attachedIds.has(tg.id);
+          return (
+            `<li data-index="${i}" data-tag-id="${tg.id}" class="${active.trim()}${on ? ' attached' : ''}"${tagColorStyle(tg)} title="${on ? t('tags.pickerAttached') : escapeHtml(tg.name)}">` +
+            `<span class="tag-dot"></span><span class="tag-name">${escapeHtml(tg.name)}</span>` +
+            `<span class="tag-unread dim">${t('tags.pickerUnread', { n: tg.unread })}</span>` +
+            `<span class="tag-mark">${on ? '✓' : ''}</span></li>`
+          );
+        })
+        .join('')
+    : `<li class="dim empty">${t('tags.pickerEmpty')}</li>`;
+  const activeRow = list.querySelector('li.active');
+  if (activeRow) activeRow.scrollIntoView({ block: 'nearest' });
+  log(
+    `tagPicker:filter q=${query || '-'} rows=${tagPickerRows.length} sel=${tagPickerRows[tagPickerIndex] ? tagPickerRows[tagPickerIndex].kind === 'create' ? 'create:' + tagPickerRows[tagPickerIndex].name : tagPickerRows[tagPickerIndex].tag.name : '-'} order=${(state.tags || []).map((x) => x.name).join('|') || '-'}`
+  );
+}
+
+/** Enter / 点击一行：合成行走新建，标签行走附加/取消 */
+async function confirmTagPickerRow() {
+  const row = tagPickerRows[tagPickerIndex];
+  if (!row) return;
+  if (row.kind === 'create') {
+    await createAndAttachTag(tagPickerEntryId, row.name);
+    const input = el('tag-picker-input');
+    input.value = '';
+    tagPickerIndex = 0;
+    renderTagPicker('');
+    input.focus();
+    return;
+  }
+  await toggleTagOnEntry(tagPickerEntryId, row.tag);
+  renderTagPicker(el('tag-picker-input').value);
+}
+
+/**
+ * 选择器事件：输入过滤 + 键盘。键盘用**捕获阶段**监听，Esc/Enter/↑↓ 都在这里
+ * 消化掉（stopPropagation），因此全局快捷键（j/k/u/s/l/t…）在选择器开着时一个
+ * 都不会被触发——Esc 的「无副作用」靠的是这两层，而不是靠全局处理器自觉。
+ * 其它字符键不拦：焦点在输入框，type-ahead 要能打进去。
+ */
+function initTagPickerEvents() {
+  const input = el('tag-picker-input');
+  input.addEventListener('input', () => {
+    tagPickerIndex = 0;
+    renderTagPicker(input.value);
+  });
+  document.addEventListener(
+    'keydown',
+    (ev) => {
+      if (!tagPickerOpen()) return;
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!tagPickerRows.length) return;
+        const step = ev.key === 'ArrowDown' ? 1 : -1;
+        tagPickerIndex = (tagPickerIndex + step + tagPickerRows.length) % tagPickerRows.length;
+        renderTagPicker(input.value);
+        return;
+      }
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        confirmTagPickerRow().catch((e) => setStatus(e.message, true));
+        return;
+      }
+      if (ev.key === 'Escape') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeTagPicker('esc');
+      }
+    },
+    true
+  );
+  el('tag-picker-close').onclick = () => closeTagPicker('button');
+  el('tag-picker-overlay').addEventListener('click', (ev) => {
+    if (ev.target === el('tag-picker-overlay')) closeTagPicker('backdrop');
+  });
+  el('tag-picker-list').addEventListener('click', (ev) => {
+    const li = ev.target.closest('li[data-index]');
+    if (!li) return;
+    tagPickerIndex = Number(li.dataset.index);
+    confirmTagPickerRow().catch((e) => setStatus(e.message, true));
+  });
+}
+
+/**
+ * chips 与「＋标签」的容器级代理（捕获阶段）：chip → 按该标签筛选列表；
+ * 「＋」/行按钮 → 打开选择器。捕获阶段是必须的——列表行的 `li.onclick` 会打开文章，
+ * 冒泡阶段再拦就已经晚了（点击 chip 会先打开文章再筛选）。
+ */
+function initTagEvents() {
+  document.addEventListener(
+    'click',
+    (ev) => {
+      const chip = ev.target.closest('.tag-chip[data-tag-id]');
+      if (chip) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const tagId = Number(chip.dataset.tagId);
+        setView({ kind: 'tag', tagId, tagName: tagLabel(tagId, chip.textContent) });
+        return;
+      }
+      const add = ev.target.closest('.tag-add, .row-tag-btn');
+      if (!add) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const id = Number(add.dataset.entryId);
+      openTagPicker(Number.isFinite(id) && id > 0 ? id : state.readerEntry?.id ?? state.selectedId).catch(
+        (e) => setStatus(e.message, true)
+      );
+    },
+    true
+  );
+}
+
+/**
+ * 启动自检：全局快捷键表不冲突。
+ *
+ * 键位不是另抄一份清单，而是从**真正生效的那个处理函数**的源码里抽 `case '<键>'`
+ * ——清单自说自话是两处漂移的源头（改了 switch 忘改清单，测试还绿）。断言：
+ * ① 一个键只绑定一次；② `t` 在表里；③ 既有键位一个都没丢。
+ */
+function selfTestShortcutKeys() {
+  const keys = [...onGlobalKeydown.toString().matchAll(/case '([^']+)'/g)].map((m) => m[1]);
+  const problems = [];
+  const seen = new Set();
+  for (const k of keys) {
+    if (seen.has(k)) problems.push(`键位重复绑定: ${k}`);
+    seen.add(k);
+  }
+  if (!seen.has('t')) problems.push('缺少 t 快捷键');
+  for (const k of ['j', 'k', 'u', 's', 'l', 'r', 'g', 'G']) {
+    if (!seen.has(k)) problems.push(`既有键位丢失: ${k}`);
+  }
+  log(
+    problems.length
+      ? `shortcut selftest FAILED: ${problems.join('; ')}`
+      : `shortcut selftest ok (keys=${keys.join(' ')} ; 输入区/覆盖层里一律不触发)`
+  );
+  return problems.length === 0;
+}
+
 // ---------------------------------------------------------------- 数据流
 
 /// 全量读数据并渲染。
 /// `reader: false` 是后台刷新用的静默模式：只重读侧栏与列表，不重渲染正文——
 /// 阅读焦点与滚动位置保持原位（定时刷新到点时用户可能正在读一篇长文）。
 async function loadAll({ reader = true } = {}) {
-  const [sidebar, settings, ai, mcp, collapsed] = await Promise.all([
+  const [sidebar, settings, ai, mcp, collapsed, tags] = await Promise.all([
     invoke('sidebar_data'),
     invoke('get_ui_settings'),
     invoke('get_ai_settings'),
     invoke('get_mcp_settings'),
     invoke('get_collapsed_folders'),
+    // 选择器顺序（最近使用优先）由 core 直出：前端不排序，只存
+    invoke('list_tags', { recentFirst: true }),
   ]);
   state.db = sidebar.db;
   state.feeds = sidebar.feeds;
@@ -1008,6 +1393,7 @@ async function loadAll({ reader = true } = {}) {
   state.settings = settings;
   state.ai = ai;
   state.mcp = mcp;
+  state.tags = tags;
   // 语言设置来自数据库；先应用再渲染，避免先闪一下默认语言
   setLocale(settings.locale || 'auto');
   // 主题同理：渲染前先设好 data-theme，避免启动时闪错色
@@ -1055,6 +1441,8 @@ function listArgs(cursor) {
     unreadOnly: kind === 'unread',
     starredOnly: kind === 'starred',
     readLaterOnly: kind === 'later',
+    // 标签视图 = 按标签筛选的普通列表（与 feed 视图同档：排序/隐藏已读仍跟随设置）
+    tagId: kind === 'tag' ? state.view.tagId : null,
     limit: PAGE_SIZE,
     // 游标 = 上一页末行的 (sortkey, id, read)；sortkey 由后端直出，前端不按
     // published_at/fetched_at 自己算（前端也拿不到 fetched_at）。read 分量只有
@@ -1264,7 +1652,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   // 重建路径的机器可核对诊断：档位 / 过滤 + 头部 id 序列。换排序、换过滤、刷新后的
   // 「顺序对不对」不用只能盯着屏幕看——head 直接与库里的期望顺序对比即可。
   log(
-    `view=${kind}${state.feedId ? '#' + state.feedId : ''} sort=${listSortMode()} hideRead=${listHideRead() ? 1 : 0} count=${state.entries.length} exhausted=${paging.exhausted} head=${headIds()}`
+    `view=${kind}${state.feedId ? '#' + state.feedId : ''}${kind === 'tag' ? '#tag=' + state.view.tagId : ''} sort=${listSortMode()} hideRead=${listHideRead() ? 1 : 0} count=${state.entries.length} exhausted=${paging.exhausted} head=${headIds()}`
   );
   // 静默模式到此为止：正文区一个 DOM 都不动
   if (!reader) return;
@@ -3014,6 +3402,7 @@ async function boot() {
   selfTestSanitizer();
   selfTestMenuRender();
   selfTestSubmenuPlacement();
+  selfTestShortcutKeys();
   // 最小绑定集先绑、且无条件执行：下面的 catch 会 return，跳过其后的全部绑定
   bindWindowControls();
   try {
@@ -3039,6 +3428,8 @@ async function boot() {
   };
   initRefreshEvents();
   initSidebarEvents();
+  initTagEvents();
+  initTagPickerEvents();
   el('btn-add').onclick = () => {
     const row = el('add-row');
     row.classList.toggle('hidden');
@@ -3453,49 +3844,67 @@ async function boot() {
     }, 250);
   });
 
-  document.addEventListener('keydown', (e) => {
-    const inField = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
-    // 确认框自己处理 Esc/Enter，其它全局快捷键先让位
-    if (!el('ai-confirm-overlay').classList.contains('hidden')) return;
-    if (e.key === '/' && !inField) {
-      e.preventDefault();
-      el('search').focus();
-      return;
-    }
-    if (e.key === 'Escape') {
-      // 菜单树优先，且只关菜单：开着菜单按 Esc 不该顺手把搜索态/设置面板一起清掉。
-      // （注意：本判断原先排在下面那个 return 之后，永远走不到——菜单 Esc 关不掉，
-      // 本次一并修好；这条也是本任务「Esc 关闭整棵菜单树」的验收点。）
-      if (el('ctx-menu')) {
-        closeContextMenu();
-        return;
-      }
-      el('settings-overlay').classList.add('hidden');
-      el('search').value = '';
-      el('search').blur();
-      el('add-row').classList.add('hidden');
-      if (state.view.kind === 'search') setView({ kind: 'unread' });
-      return;
-    }
-    if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
-    // 设置面板开着时，导航类快捷键同样让位（否则 j/k 会在面板背后换文章）
-    if (!el('settings-overlay').classList.contains('hidden')) return;
-    // 编辑弹窗同理：背后的列表/阅读区不该被快捷键推动（Esc 在上面已处理）
-    if (!el('feed-edit-overlay').classList.contains('hidden')) return;
+  document.addEventListener('keydown', onGlobalKeydown);
+}
 
-    switch (e.key) {
+/**
+ * 全局快捷键分发（唯一的键盘入口）。
+ *
+ * 键位表：j/↓ k/↑ 移动 · Enter 打开 · u 未读 · s 星标 · l 稍后读 · t 标签选择器 ·
+ * r 刷新 · g 首行 · G 末行；`/` 聚焦搜索、Esc 关菜单/清搜索/退出标签视图——
+ * 后两个在 switch 之前单独处理（Esc 要先让位给菜单与覆盖层）。
+ * 自检见 selfTestShortcutKeys()（键位从本函数源码抽取，不另维护清单）。
+ */
+function onGlobalKeydown(e) {
+  const inField = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+  // 确认框自己处理 Esc/Enter，其它全局快捷键先让位
+  if (!el('ai-confirm-overlay').classList.contains('hidden')) return;
+  if (e.key === '/' && !inField) {
+    e.preventDefault();
+    el('search').focus();
+    return;
+  }
+  if (e.key === 'Escape') {
+    // 菜单树优先，且只关菜单：开着菜单按 Esc 不该顺手把搜索态/设置面板一起清掉。
+    // （注意：本判断原先排在下面那个 return 之后，永远走不到——菜单 Esc 关不掉，
+    // 本次一并修好；这条也是本任务「Esc 关闭整棵菜单树」的验收点。）
+    if (el('ctx-menu')) {
+      closeContextMenu();
+      return;
+    }
+    el('settings-overlay').classList.add('hidden');
+    el('search').value = '';
+    el('search').blur();
+    el('add-row').classList.add('hidden');
+    // 搜索态与标签视图都是「临时筛选视图」，Esc 退回未读（默认视图）
+    if (state.view.kind === 'search' || state.view.kind === 'tag') setView({ kind: 'unread' });
+    return;
+  }
+  if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
+  // 选择器开着时全局键一律不生效（它自己的捕获阶段监听已消化 ↑↓/Enter/Esc；
+  // 这里兜底的是「焦点被鼠标点到列表行上」之后按 j/k/u/s/l/t 的情况）
+  if (tagPickerOpen()) return;
+  // 设置面板开着时，导航类快捷键同样让位（否则 j/k 会在面板背后换文章）
+  if (!el('settings-overlay').classList.contains('hidden')) return;
+  // 编辑弹窗同理：背后的列表/阅读区不该被快捷键推动（Esc 在上面已处理）
+  if (!el('feed-edit-overlay').classList.contains('hidden')) return;
+
+  switch (e.key) {
       case 'j': case 'ArrowDown': e.preventDefault(); move(1); break;
       case 'k': case 'ArrowUp': e.preventDefault(); move(-1); break;
       case 'Enter': e.preventDefault(); if (state.selectedId) openEntry(state.selectedId, { markRead: true }); break;
       case 'u': e.preventDefault(); toggleRead().catch((err) => setStatus(err.message, true)); break;
       case 's': e.preventDefault(); toggleStar().catch((err) => setStatus(err.message, true)); break;
       case 'l': e.preventDefault(); toggleReadLater().catch((err) => setStatus(err.message, true)); break;
+      // 与 u/s/l 同族：给「当前这篇」打开选择器（焦点落在输入框）。
+      // 列表态（还没选行/正文区是占位）时退到首行——选择器头部会写明是给哪篇打标，
+      // 且只有 Enter/点击才会写入，所以不是「静默改了用户没选的文章」。
+      case 't': e.preventDefault(); openTagPicker(state.readerEntry?.id ?? state.selectedId ?? state.entries[0]?.id).catch((err) => setStatus(err.message, true)); break;
       case 'r': e.preventDefault(); doRefresh(); break;
       case 'g': e.preventDefault(); jump(false); break;
       case 'G': e.preventDefault(); jump(true); break;
       default: break;
-    }
-  });
+  }
 }
 
 window.addEventListener('DOMContentLoaded', boot);

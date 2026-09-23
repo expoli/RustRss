@@ -656,6 +656,28 @@
     </div>
   </div>
 
+  <!-- 标签选择器（阅读器「＋标签」/ 列表行按钮 / t 快捷键共用）：
+       输入框常驻焦点，type-ahead 过滤；行顺序 = core 的 list_tags_recent_first
+       （最近使用优先）；↑↓ 选择、Enter 附加、Esc 关闭（无副作用）。 -->
+  <div id="tag-picker-overlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-sheet tag-sheet">
+      <h3 id="tag-picker-title"></h3>
+      <input
+        type="text"
+        id="tag-picker-input"
+        maxlength="60"
+        autocomplete="off"
+        data-i18n-placeholder="tags.pickerPlaceholder"
+      />
+      <ul id="tag-picker-list" class="tag-picker-list"></ul>
+      <p id="tag-picker-semantics" class="dim small" data-i18n="tags.semantics"></p>
+      <div class="confirm-actions">
+        <span class="spacer"></span>
+        <button id="tag-picker-close" type="button" data-i18n="tags.pickerClose"></button>
+      </div>
+    </div>
+  </div>
+
   <script src="vendor/highlight.min.js"></script>
   <script src="i18n.js"></script>
   <script src="app.js"></script>

@@ -334,6 +334,133 @@ main {
 .entries .later-mark.on { color: var(--accent); opacity: 1; font-weight: 600; }
 .reader-actions #act-later.later-active { border-color: var(--accent); color: var(--accent); }
 
+/* ---------------- 标签：chips / 行按钮 / 选择器 ----------------
+   颜色只用圆点表达，不改文字色：深浅主题下都要可读（对比度不靠标签色）。 */
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 12em;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--fg-dim);
+  background: var(--bg-panel);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tag-chip::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tag-color, var(--fg-dim));
+}
+.tag-chip:hover { color: var(--fg); border-color: var(--accent); }
+.tag-chip.more { color: var(--fg-dim); font-variant-numeric: tabular-nums; }
+.tag-chip.more::before { display: none; }
+
+/* 行内 chips 容器：不换行、可压缩（长标签名不得把行高撑歪或挤走标记） */
+.entries .meta { min-width: 0; }
+.entries .tag-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+/* 行 hover 才显的标签按钮：不占 hover 前的视线，但保留固定宽度避免布局跳动 */
+.row-tag-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .12s ease-in-out;
+}
+.entries li:hover .row-tag-btn,
+.entries li.active .row-tag-btn { opacity: .75; }
+.row-tag-btn:hover { opacity: 1; color: var(--accent); border-color: var(--accent); }
+
+/* 阅读器 meta 行的 chips + 「＋标签」（常驻：这是打标的主入口） */
+.reader-head .tag-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  /* 常驻固定高度：chips 出现/消失不引起正文位移（布局跳动红线） */
+  min-height: 20px;
+}
+.reader-head .tag-bar .tag-add {
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 1px 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.reader-head .tag-bar .tag-add:hover { color: var(--accent); border-color: var(--accent); }
+
+/* 标签选择器：输入框常驻焦点 + 候选行（最近使用优先序由 core 直出） */
+.tag-sheet { width: min(420px, 92vw); }
+.tag-sheet > input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0;
+}
+.tag-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.tag-picker-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+}
+.tag-picker-list li:last-child { border-bottom: none; }
+.tag-picker-list li.active { background: var(--bg-active); }
+.tag-picker-list li.attached .tag-name { color: var(--fg); }
+.tag-picker-list li.dim { cursor: default; color: var(--fg-dim); }
+.tag-picker-list .tag-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tag-color, var(--fg-dim));
+}
+.tag-picker-list .tag-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag-picker-list .tag-unread { flex: 0 0 auto; font-size: 11px; }
+.tag-picker-list .tag-mark { flex: 0 0 auto; width: 12px; color: var(--accent); }
+.tag-picker-list li.create { color: var(--accent); }
+
 /* ---------------- 右栏：正文 ---------------- */
 
 .reader-empty { color: var(--fg-dim); max-width: 60ch; }
