@@ -26,17 +26,21 @@ fn temp_db(tag: &str) -> std::path::PathBuf {
     p
 }
 
-/// 拉起真二进制；`write_enabled` 控制写开关，`write_token` 控制写 token 是否存在
-/// （两道闸都就位才有写能力）
+/// 拉起真二进制；`write_enabled` / `write_token` / `dangerous_enabled` 分别控制
+/// 写开关、写 token 是否存在、危险工具开关（前三道都就位才有完整写能力）
 async fn spawn_server(
     db: &std::path::Path,
     write_enabled: bool,
     write_token: bool,
+    dangerous_enabled: bool,
 ) -> tokio::process::Child {
     let store = Store::open(db).expect("建库失败");
     store
         .set_bool_setting(rustrss_mcp::config::K_WRITE_ENABLED, write_enabled)
         .expect("写开关失败");
+    store
+        .set_bool_setting(rustrss_mcp::config::K_DANGEROUS_ENABLED, dangerous_enabled)
+        .expect("危险开关失败");
     if write_token {
         rustrss_mcp::config::set_write_token(&store, "smoke-write-token").expect("写 token 失败");
     }
@@ -77,8 +81,9 @@ async fn handshake_and_list(
     db: &std::path::Path,
     write_enabled: bool,
     write_token: bool,
+    dangerous_enabled: bool,
 ) -> Vec<String> {
-    let mut child = spawn_server(db, write_enabled, write_token).await;
+    let mut child = spawn_server(db, write_enabled, write_token, dangerous_enabled).await;
     let mut stdin = child.stdin.take().expect("应有 stdin");
     let stdout = child.stdout.take().expect("应有 stdout");
     let mut lines = BufReader::new(stdout).lines();
@@ -131,7 +136,7 @@ async fn handshake_and_list(
 #[tokio::test]
 async fn stdio_lists_only_read_tools_by_default() {
     let db = temp_db("default");
-    let names = handshake_and_list(&db, false, false).await;
+    let names = handshake_and_list(&db, false, false, false).await;
     assert_eq!(
         names.len(),
         rustrss_mcp::registry::read_tool_count(),
@@ -150,7 +155,7 @@ async fn stdio_lists_only_read_tools_by_default() {
 async fn stdio_write_tools_need_both_the_switch_and_a_token() {
     // ① 开关开、写 token 不存在 → 仍然只有只读工具（写能力没被显式 provision）
     let db = temp_db("switch-only");
-    let names = handshake_and_list(&db, true, false).await;
+    let names = handshake_and_list(&db, true, false, false).await;
     for name in &names {
         let spec = rustrss_mcp::registry::spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
         assert_eq!(
@@ -161,16 +166,45 @@ async fn stdio_write_tools_need_both_the_switch_and_a_token() {
     }
     let _ = std::fs::remove_file(db);
 
-    // ② 两环都就位 → 写工具出现在 stdio 会话里（stdio 没有凭据概念，scope 恒为 write）
+    // ② 写开关 + 写 token 就位（危险开关仍关）→ 普通写工具出现，危险工具仍不可见
     let db = temp_db("licensed");
-    let names = handshake_and_list(&db, true, true).await;
+    let names = handshake_and_list(&db, true, true, false).await;
     for name in [
         "set_read",
         "set_starred",
         "set_read_later",
         "refresh",
         "fetch_fulltext",
+        // T4 的普通写工具
+        "subscribe",
+        "update_feed",
+        "folder_create",
+        "folder_rename",
+        "import_opml",
+        "export_opml",
     ] {
+        assert!(
+            names.contains(&name.to_string()),
+            "{name} 应可见：{names:?}"
+        );
+    }
+    for name in ["unsubscribe", "folder_delete"] {
+        assert!(
+            !names.contains(&name.to_string()),
+            "危险工具在危险开关关闭时不得出现：{name} / {names:?}"
+        );
+    }
+    let non_dangerous = rustrss_mcp::registry::TOOL_SPECS
+        .iter()
+        .filter(|s| !s.dangerous)
+        .count();
+    assert_eq!(names.len(), non_dangerous);
+    let _ = std::fs::remove_file(db);
+
+    // ③ 危险开关也开 → 危险工具（unsubscribe / folder_delete）出现
+    let db = temp_db("dangerous");
+    let names = handshake_and_list(&db, true, true, true).await;
+    for name in ["unsubscribe", "folder_delete"] {
         assert!(
             names.contains(&name.to_string()),
             "{name} 应可见：{names:?}"

@@ -619,7 +619,8 @@ fn fulltext_error_code(err: &FulltextError) -> &'static str {
     }
 }
 
-fn internal_error(message: &str) -> String {
+/// 内部错误信封（库操作失败）：T3/T4 的写工具共用（`feed_tools` 也调它）
+pub(crate) fn internal_error(message: &str) -> String {
     WriteOutcome::failed_with(ERROR_INTERNAL, format!("库操作失败: {message}")).to_json()
 }
 

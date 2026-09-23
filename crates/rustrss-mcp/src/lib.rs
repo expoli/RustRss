@@ -19,6 +19,7 @@ use std::sync::{Arc, Mutex};
 
 pub mod audit;
 pub mod config;
+pub mod feed_tools;
 pub mod http;
 pub mod registry;
 pub mod write_contract;
@@ -690,6 +691,64 @@ impl RustRssMcp {
     ) -> String {
         self.fetch_fulltext_json(&p).await
     }
+
+    // ------------------------------------------------------------ 写工具（T4：订阅管理）
+
+    #[tool(
+        description = "订阅一个源。url 两种形态：站点首页或 feed 地址（自动发现 feed：内容本身能按 feed 解析就用输入地址，否则扫页面 head 里的 <link rel=\"alternate\">，与界面「添加订阅」同一条 core 路径）、或 rsshub://path（三斜杠 rsshub:///path、大写 scheme、https://rsshub.app/path 都归一为 rsshub://path，不联网）。幂等：地址（含 rsshub 等价形态）已在库里时不报错，返回 ok=true、affected=0、detail.already_subscribed=true 与既有 feed_id；新订阅 affected=1。返回 {ok, affected, results, error_code?, detail}，detail 含 feed_id / title / url / already_subscribed（首页发现路径还有 discovered_from 与 via=direct|link_type|link_suffix）。错误码：invalid_url（空/非 http(s)/无主机名/页面里没发现 feed）、fetch_failed（网络或 HTTP 错，可重试）、write_disabled、write_scope_required。"
+    )]
+    async fn subscribe(&self, Parameters(p): Parameters<feed_tools::SubscribeParams>) -> String {
+        self.subscribe_json(&p).await
+    }
+
+    #[tool(
+        description = "改单个订阅源的显示名 / 分组 / 每源刷新间隔（tri-state patch：键**缺省 = 不动**）。custom_title：空串（或纯空白）= 清除自定义名、显示回退源站名；有值 = 设自定义名（trim + 截断 200 字符）。folder_id：null = 移出到未分组；数字 = 移入该分组。refresh_interval_minutes：null = 跟随全局档；数字必须命中白名单 15/30/60/120/360（归一化与落库与界面编辑对话框同源：同一批 Store 方法）。返回 {ok, affected, results, error_code?, detail}，detail 回读更新后的行（title / custom_title / source_title / folder_id / refresh_interval_minutes / updated_fields）。错误码：feed_not_found、folder_not_found、invalid_argument（三个字段一个都没给 / 间隔不在白名单）、write_disabled、write_scope_required。"
+    )]
+    fn update_feed(&self, Parameters(p): Parameters<feed_tools::UpdateFeedParams>) -> String {
+        self.update_feed_json(&p)
+    }
+
+    #[tool(
+        description = "新建分组（文件夹）。同名分组已存在时返回既有 id 且 ok=true、affected=0（detail.already_exists=true），不报错。错误码：invalid_argument（名字 trim 后为空）、write_disabled、write_scope_required。"
+    )]
+    fn folder_create(&self, Parameters(p): Parameters<feed_tools::FolderCreateParams>) -> String {
+        self.folder_create_json(&p)
+    }
+
+    #[tool(
+        description = "重命名分组。错误码：folder_not_found、invalid_argument（名字为空或与其它分组重名）、write_disabled、write_scope_required。"
+    )]
+    fn folder_rename(&self, Parameters(p): Parameters<feed_tools::FolderRenameParams>) -> String {
+        self.folder_rename_json(&p)
+    }
+
+    #[tool(
+        description = "删分组（危险工具：需写能力 + 危险开关都开启）。删组**不删订阅**：组内订阅移出到未分组（folder_id=null），与界面同一语义。必须 confirm: true 才执行（缺 → confirm_required）；dry_run: true 只返回影响面（detail.feeds_affected = 将移出的订阅数、feed_ids 采样）且库不变——预览与实际执行共用同一个影响面函数。错误码：folder_not_found、confirm_required、dangerous_tool_disabled、write_disabled、write_scope_required。"
+    )]
+    fn folder_delete(&self, Parameters(p): Parameters<feed_tools::FolderDeleteParams>) -> String {
+        self.folder_delete_json(&p)
+    }
+
+    #[tool(
+        description = "退订（危险工具：需写能力 + 危险开关都开启）。删订阅源并**级联删除其全部条目**（全文索引由触发器同步清理）。必须 confirm: true 才执行（缺 → confirm_required）；dry_run: true 只返回影响面（affected/detail.entries_affected = 将删除的条目数）且库不变——预览与实际执行共用同一个计数函数（Store::entry_count_for_feed），所以「预览多少条就真删多少条」。错误码：feed_not_found、confirm_required、dangerous_tool_disabled、write_disabled、write_scope_required。"
+    )]
+    fn unsubscribe(&self, Parameters(p): Parameters<feed_tools::UnsubscribeParams>) -> String {
+        self.unsubscribe_json(&p)
+    }
+
+    #[tool(
+        description = "导入 OPML（path 本地文件 或 content 文本，二选一）。复用 core 的 opml::import——与界面「导入 OPML」同一条实现：按 xmlUrl 去重（已存在记 skipped 且不移动分组），嵌套分组压平成「父/子」。返回 {ok, affected, results, error_code?, detail}：affected = 本次新增订阅数，results 逐项给新增 feed id（>100 截断），detail 含 added / skipped / errors（成功时空数组）/ folders_created / outlines_ignored。错误码：invalid_argument（path/content 都给或都不给 / 读文件失败 / 非 UTF-8 / 超 8MiB / XML 解析失败）、internal_error、write_disabled、write_scope_required。"
+    )]
+    fn import_opml(&self, Parameters(p): Parameters<feed_tools::ImportOpmlParams>) -> String {
+        self.import_opml_json(&p)
+    }
+
+    #[tool(
+        description = "导出全部订阅为 OPML 文本（**不写文件**，与界面「导出 OPML」同一条 core 实现）。返回 {ok, affected, results, error_code?, detail}：affected = 导出的订阅数，detail.opml 是 OPML 2.0 文本（含分组结构），可原样交给 import_opml 回导（往返幂等：第二次导入全部记 skipped）。错误码：internal_error、write_disabled、write_scope_required。"
+    )]
+    fn export_opml(&self) -> String {
+        self.export_opml_json()
+    }
 }
 
 /// 当次请求的 scope：HTTP 由鉴权中间件按下发凭据算出（注入扩展），stdio 无该标记。
@@ -979,10 +1038,10 @@ mod tests {
             assert_eq!(spec.scope, Scope::Read, "{} 不该出现在读会话里", tool.name);
         }
 
-        // 写开关/写 token 就位后，写 scope 的会话才看得到 T3 的写工具
+        // 写开关/写 token/危险开关都就位后，写 scope 的会话才看得到全部工具
         let on = Switches {
             write_enabled: true,
-            dangerous_enabled: false,
+            dangerous_enabled: true,
             write_token: true,
         };
         let write_names: Vec<String> = server
@@ -1001,6 +1060,13 @@ mod tests {
             "set_read_later",
             "refresh",
             "fetch_fulltext",
+            // T4：订阅管理（`folder_delete` / `unsubscribe` 是危险工具，危险开关关着时不列）
+            "subscribe",
+            "update_feed",
+            "folder_create",
+            "folder_rename",
+            "import_opml",
+            "export_opml",
         ] {
             assert!(write_names.contains(&name.to_string()), "{write_names:?}");
         }

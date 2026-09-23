@@ -178,6 +178,48 @@ pub const TOOL_SPECS: &[ToolSpec] = &[
         scope: Scope::Write,
         dangerous: false,
     },
+    // T4：订阅管理。危险工具（`unsubscribe` / `folder_delete`）**只多一道危险开关**，
+    // 其余闸门与普通写工具完全一样（写 scope → 写开关 → 写 token → 危险开关）。
+    ToolSpec {
+        name: "subscribe",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "update_feed",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "folder_create",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "folder_rename",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "folder_delete",
+        scope: Scope::Write,
+        dangerous: true,
+    },
+    ToolSpec {
+        name: "unsubscribe",
+        scope: Scope::Write,
+        dangerous: true,
+    },
+    ToolSpec {
+        name: "import_opml",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "export_opml",
+        scope: Scope::Write,
+        dangerous: false,
+    },
 ];
 
 /// 已登记工具的只读子集数量（读 token 会话 `tools/list` 的期待值）
@@ -369,10 +411,11 @@ mod tests {
         assert_eq!(names, vec!["list_feeds".to_string()]);
     }
 
-    /// 现有只读工具都必须登记且不带危险标记；写工具（T3 的 5 个）也登记为「写 + 不危险」
+    /// 现有只读工具都必须登记且不带危险标记；写工具（T3 的 5 个 + T4 的 8 个）
+    /// 按「是否破坏性/不可逆」标 dangerous——危险集合只有 `unsubscribe` / `folder_delete`。
     #[test]
     fn read_tools_are_registered() {
-        assert_eq!(TOOL_SPECS.len(), 12);
+        assert_eq!(TOOL_SPECS.len(), 20);
         assert_eq!(read_tool_count(), 7);
         for name in [
             "list_feeds",
@@ -398,5 +441,23 @@ mod tests {
             assert_eq!(spec.scope, Scope::Write, "{name} 应为写工具");
             assert!(!spec.dangerous, "{name} 可逆且幂等，不是危险工具");
         }
+        // T4：危险集合恰好只有这两个（退订级联删条目 / 删分组）
+        for name in ["subscribe", "update_feed", "folder_create", "folder_rename", "import_opml", "export_opml"] {
+            let spec = spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
+            assert_eq!(spec.scope, Scope::Write, "{name} 应为写工具");
+            assert!(!spec.dangerous, "{name} 不删数据，不是危险工具");
+        }
+        for name in ["unsubscribe", "folder_delete"] {
+            let spec = spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
+            assert_eq!(spec.scope, Scope::Write, "{name} 应为写工具");
+            assert!(spec.dangerous, "{name} 是危险工具（需 confirm + 危险开关）");
+        }
+        let dangerous: Vec<&str> = TOOL_SPECS
+            .iter()
+            .filter(|s| s.dangerous)
+            .map(|s| s.name)
+            .collect();
+        assert_eq!(dangerous, vec!["folder_delete", "unsubscribe"]);
         assert!(spec("no_such_tool").is_none());
-    }}
+    }
+}

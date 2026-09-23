@@ -1008,6 +1008,28 @@ impl Store {
             .map_err(Into::into)
     }
 
+    /// 单个订阅源的条目数（MCP `unsubscribe` 的影响面：删源会级联删掉多少条）。
+    ///
+    /// **预览与实际执行共用这一个函数**（MCP 的 `dry_run` 与实际删除都调它），
+    /// 所以「预览说 N 条」与「真删了 N 条」不可能漂移。
+    /// 走 `(feed_id, read)` 覆盖索引（`INDEXED BY` 钉住，口径同
+    /// [`Store::unread_summary`]）：COUNT 绝不触碰正文大列所在的表 B 树。
+    pub fn entry_count_for_feed(&self, feed_id: i64) -> Result<i64> {
+        Ok(self
+            .conn
+            .query_row(ENTRY_COUNT_FOR_FEED_SQL, params![feed_id], |r| r.get(0))?)
+    }
+
+    /// [`Store::entry_count_for_feed`] 的 EXPLAIN 断言入口（与线上 SQL 逐字同源）。
+    #[doc(hidden)]
+    pub fn explain_entry_count_for_feed(&self, feed_id: i64) -> Result<Vec<String>> {
+        let mut stmt = self
+            .conn
+            .prepare(&format!("EXPLAIN QUERY PLAN {ENTRY_COUNT_FOR_FEED_SQL}"))?;
+        let rows = stmt.query_map(params![feed_id], |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     /// 全部计数（entry/unread/starred/read_later）。
     ///
     /// 历史教训：旧版是单扫描 4 聚合（SUM CASE × 3），但 starred/read_later 不在任何
@@ -1410,6 +1432,11 @@ const COUNTS_SQL: &str = "SELECT (SELECT COUNT(*) FROM entries),
        (SELECT COUNT(*) FROM entries WHERE read = 0),
        (SELECT COUNT(*) FROM entries WHERE starred = 1),
        (SELECT COUNT(*) FROM entries WHERE read_later = 1)";
+
+/// 单源条目数的 SQL（MCP 退订影响面）：`INDEXED BY` 钉住 `(feed_id, read)` 覆盖索引，
+/// COUNT 只扫索引 B 树、不回表；抽成常量让 EXPLAIN 断言与线上 SQL 逐字同源。
+const ENTRY_COUNT_FOR_FEED_SQL: &str =
+    "SELECT COUNT(*) FROM entries INDEXED BY idx_entries_feed_read WHERE feed_id = ?1";
 
 /// 未读聚合（[`Store::unread_summary`]）的分组维度。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

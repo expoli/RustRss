@@ -2048,6 +2048,73 @@ fn unread_summary_rides_covering_index_never_table_btree() {
 }
 
 #[test]
+fn entry_count_for_feed_rides_covering_index_never_table_btree() {
+    // MCP `unsubscribe` 的 dry_run 与实际删除共用这一个计数（同一个函数）。它同样是
+    // COUNT 聚合：口径与 counts()/unread_summary 一致——只扫索引、不穿正文大列的
+    // 表 B 树；`INDEXED BY` 钉住索引，删掉索引后必须转红（变异校验）。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-entry-count-feed-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let store = Store::open(&db_path).unwrap();
+        let feed_a = store
+            .add_feed("https://example.com/a.xml", Some("A源"))
+            .unwrap();
+        let feed_b = store
+            .add_feed("https://example.com/b.xml", Some("B源"))
+            .unwrap();
+        store
+            .upsert_entries(
+                feed_a,
+                &[mk_entry("a1", "A1", "正文1"), mk_entry("a2", "A2", "正文2")],
+            )
+            .unwrap();
+        store.upsert_entries(feed_b, &[mk_entry("b1", "B1", "正文3")]).unwrap();
+
+        assert_eq!(store.entry_count_for_feed(feed_a).unwrap(), 2, "按源计数");
+        assert_eq!(store.entry_count_for_feed(feed_b).unwrap(), 1);
+        assert_eq!(
+            store.entry_count_for_feed(9_999).unwrap(),
+            0,
+            "不存在的源计数为 0（是否存在的判定由调用方另做）"
+        );
+
+        let plan = store
+            .explain_entry_count_for_feed(feed_a)
+            .unwrap()
+            .join(" | ");
+        assert!(
+            !plan
+                .split(" | ")
+                .any(|l| l.contains("SCAN entries") && !l.contains("USING")),
+            "不得裸扫 entries 表 B 树: {plan}"
+        );
+        assert!(
+            plan.contains("COVERING INDEX idx_entries_feed_read"),
+            "应走 (feed_id, read) 覆盖索引: {plan}"
+        );
+    }
+
+    // 变异校验：覆盖索引被删后，计划（经 INDEXED BY）必须建不出来
+    {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute_batch("DROP INDEX idx_entries_feed_read;")
+            .unwrap();
+    }
+    let store = Store::open(&db_path).unwrap();
+    assert!(
+        store.explain_entry_count_for_feed(1).is_err(),
+        "覆盖索引被删后计划必须建不出来（转红）"
+    );
+    let _ = std::fs::remove_file(&db_path);
+}
+
+#[test]
 fn entry_query_explicit_sort_and_hide_read_override_settings() {
     // MCP 侧「默认口径固定为 newest + 不隐藏已读」靠的就是这两个显式覆盖：
     // None = 跟随界面设置（界面路径不变），Some = 以显式值为准（MCP 路径不吃界面设置）。
