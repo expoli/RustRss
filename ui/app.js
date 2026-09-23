@@ -839,7 +839,8 @@ function toggleUnreadOnly() {
 
 /// 列表头计数：「已加载 M / 共 N」；有效筛选是未读时写「共 N 未读」；
 /// N 未知（搜索视图或查询降级）时只写「已加载 M 篇」——宁可少写，不虚报。
-function renderListCount() {  const target = el('list-count');
+function renderListCount() {
+  const target = el('list-count');
   if (!state.entries.length) {
     target.textContent = '';
     return;
