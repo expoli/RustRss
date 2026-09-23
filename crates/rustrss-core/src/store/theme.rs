@@ -63,6 +63,17 @@ impl Store {
         Ok(snapshot)
     }
 
+    /// Existing UI controls change only their explicit fields against the latest
+    /// configuration within one SQLite write transaction.
+    pub fn update_theme_controls(&self, patch: &ThemePatch) -> Result<ThemeSnapshot> {
+        let tx = Transaction::new_unchecked(&self.conn, TransactionBehavior::Immediate)?;
+        let envelope = read_envelope(&tx)?;
+        let next = envelope.current.apply(patch)?;
+        let snapshot = save(&tx, envelope, next)?;
+        tx.commit()?;
+        Ok(snapshot)
+    }
+
     /// Restoring creates a new revision; it never rolls the monotonic counter back.
     pub fn restore_theme(
         &self,

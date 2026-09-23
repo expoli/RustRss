@@ -553,3 +553,89 @@ fn contrast_checks(c: &Colors, mode: ThemeMode) -> Vec<ContrastCheck> {
     })
     .collect()
 }
+
+/// Compatibility inputs from the existing desktop controls. None preserves a field.
+#[derive(Default)]
+pub struct FontPatch {
+    pub ui: Option<String>,
+    pub read: Option<String>,
+    pub mono: Option<String>,
+    pub size: Option<f64>,
+    pub line: Option<f64>,
+}
+pub fn normalize_font_family(value: &str) -> String {
+    value
+        .trim()
+        .chars()
+        .filter_map(|c| {
+            if !c.is_control() {
+                Some(c)
+            } else if c.is_whitespace() {
+                Some(' ')
+            } else {
+                None
+            }
+        })
+        .take(100)
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+pub fn clamp_font_number(value: f64, default: f64, (min, max): (f64, f64)) -> f64 {
+    if !value.is_finite() {
+        return default;
+    }
+    (value.clamp(min, max) * 100.).round() / 100.
+}
+impl FontPatch {
+    pub fn theme_patch(self) -> ThemePatch {
+        let mut fields = serde_json::Map::new();
+        for (key, input, fallback) in [
+            ("ui_family", self.ui, "sans-serif"),
+            ("read_family", self.read, "sans-serif"),
+            ("mono_family", self.mono, "monospace"),
+        ] {
+            if let Some(raw) = input {
+                let name = normalize_font_family(&raw);
+                fields.insert(
+                    key.into(),
+                    if name.is_empty() {
+                        Value::Null
+                    } else {
+                        json!([name, fallback])
+                    },
+                );
+            }
+        }
+        if let Some(n) = self.size {
+            fields.insert(
+                "read_size".into(),
+                json!(clamp_font_number(n, 14., (13., 28.))),
+            );
+        }
+        if let Some(n) = self.line {
+            fields.insert(
+                "line_height".into(),
+                json!(clamp_font_number(n, 1.55, (1.3, 2.2))),
+            );
+        }
+        ThemePatch {
+            overrides: json!({"typography":fields}),
+            ..ThemePatch::default()
+        }
+    }
+}
+impl ThemeSnapshot {
+    /// Empty string means inherit the chosen preset, not a second legacy store.
+    pub fn font_override(&self, field: &str) -> String {
+        self.config
+            .overrides
+            .get("typography")
+            .and_then(|v| v.get(field))
+            .and_then(|v| v.get(0))
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .into()
+    }
+}

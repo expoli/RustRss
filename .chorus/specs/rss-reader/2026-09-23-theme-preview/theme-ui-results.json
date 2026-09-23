@@ -1,0 +1,181 @@
+{
+  "date": "2026-09-23",
+  "stage": "T3",
+  "rust_tests": {
+    "passed": 386,
+    "failed": 0
+  },
+  "node_tests": {
+    "passed": 22,
+    "failed": 0
+  },
+  "clippy": "three pre-existing core warnings; no new warnings",
+  "builds": [
+    "rustrss-desktop",
+    "theme_ui with snapshot-probe"
+  ],
+  "fixture_runs": [
+    {
+      "environment": "xvfb-100",
+      "backend": "libEGL warning: DRI3 error: Could not get DRI3 device\nlibEGL warning: Ensure your X server supports DRI3 to get accelerated rendering\n\n** (theme_ui:2595775): WARNING **: 21:58:23.284: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.\nactual_display_backend=GdkX11Display",
+      "output": "/tmp/rustrss-theme-ui-f4gxoodr",
+      "captures": 39,
+      "checks": [
+        "i18n key sets and markup",
+        "DOM identity 0/light/zh-CN",
+        "DOM identity 0/dark/zh-CN",
+        "DOM identity 1/light/zh-CN",
+        "DOM identity 1/dark/zh-CN",
+        "DOM identity 2/light/zh-CN",
+        "DOM identity 2/dark/zh-CN",
+        "DOM identity 0/light/en",
+        "DOM identity 0/dark/en",
+        "DOM identity 1/light/en",
+        "DOM identity 1/dark/en",
+        "DOM identity 2/light/en",
+        "DOM identity 2/dark/en",
+        "same-value zero DOM mutations",
+        "paragraph anchor after font and width change",
+        "color change preserves scroll",
+        "zero summary lines",
+        "thumbnail hidden without rebuilding rows",
+        "focus retains navigation",
+        "missing font retains readable layout via fallback",
+        "narrow viewport acknowledged",
+        "narrow reader stays within viewport",
+        "narrow theme picker remains reachable"
+      ],
+      "background_pixel_checks": 12,
+      "modal_occlusion_pixel_checks": 12,
+      "dpr": 1,
+      "final_narrow_viewport": [
+        900,
+        600
+      ],
+      "max_png_bytes": 248579
+    },
+    {
+      "environment": "xvfb-200",
+      "backend": "libEGL warning: DRI3 error: Could not get DRI3 device\nlibEGL warning: Ensure your X server supports DRI3 to get accelerated rendering\n\n** (theme_ui:2595774): WARNING **: 21:58:23.285: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.\nactual_display_backend=GdkX11Display",
+      "output": "/tmp/rustrss-theme-ui-xfhi1tm_",
+      "captures": 39,
+      "checks": [
+        "i18n key sets and markup",
+        "DOM identity 0/light/zh-CN",
+        "DOM identity 0/dark/zh-CN",
+        "DOM identity 1/light/zh-CN",
+        "DOM identity 1/dark/zh-CN",
+        "DOM identity 2/light/zh-CN",
+        "DOM identity 2/dark/zh-CN",
+        "DOM identity 0/light/en",
+        "DOM identity 0/dark/en",
+        "DOM identity 1/light/en",
+        "DOM identity 1/dark/en",
+        "DOM identity 2/light/en",
+        "DOM identity 2/dark/en",
+        "same-value zero DOM mutations",
+        "paragraph anchor after font and width change",
+        "color change preserves scroll",
+        "zero summary lines",
+        "thumbnail hidden without rebuilding rows",
+        "focus retains navigation",
+        "missing font retains readable layout via fallback",
+        "narrow viewport acknowledged",
+        "narrow reader stays within viewport",
+        "narrow theme picker remains reachable"
+      ],
+      "background_pixel_checks": 12,
+      "modal_occlusion_pixel_checks": 12,
+      "dpr": 2,
+      "final_narrow_viewport": [
+        900,
+        600
+      ],
+      "max_png_bytes": 555991
+    },
+    {
+      "environment": "kde-wayland",
+      "backend": "actual_display_backend=GdkWaylandDisplay",
+      "output": "/tmp/rustrss-theme-ui-8orjony0",
+      "captures": 39,
+      "checks": [
+        "i18n key sets and markup",
+        "DOM identity 0/light/zh-CN",
+        "DOM identity 0/dark/zh-CN",
+        "DOM identity 1/light/zh-CN",
+        "DOM identity 1/dark/zh-CN",
+        "DOM identity 2/light/zh-CN",
+        "DOM identity 2/dark/zh-CN",
+        "DOM identity 0/light/en",
+        "DOM identity 0/dark/en",
+        "DOM identity 1/light/en",
+        "DOM identity 1/dark/en",
+        "DOM identity 2/light/en",
+        "DOM identity 2/dark/en",
+        "same-value zero DOM mutations",
+        "paragraph anchor after font and width change",
+        "color change preserves scroll",
+        "zero summary lines",
+        "thumbnail hidden without rebuilding rows",
+        "focus retains navigation",
+        "missing font retains readable layout via fallback",
+        "narrow viewport acknowledged",
+        "narrow reader stays within viewport",
+        "narrow theme picker remains reachable"
+      ],
+      "background_pixel_checks": 12,
+      "modal_occlusion_pixel_checks": 12,
+      "dpr": 2,
+      "final_narrow_viewport": [
+        900,
+        600
+      ],
+      "max_png_bytes": 544054
+    }
+  ],
+  "production_desktop": {
+    "output": "/tmp/rustrss-theme-desktop-0bcds6kg",
+    "preset": "paper",
+    "revision": 2,
+    "read_size": 25.0,
+    "restart_preserved": true
+  },
+  "limitations": [
+    "Windows/macOS/GNOME not run",
+    "Actual system theme switch and cross-monitor fractional scaling not run",
+    "Real feed thumbnails lack metadata; existing image style only",
+    "No MCP theme tools or preview sessions",
+    "No per-glyph font resolution proof",
+    "Remote delayed image reflow not covered"
+  ],
+  "sample_images": [
+    {
+      "file": "t3-paper-light.png",
+      "sha256": "9d705e9ad66a30250a491579c83f47db674d59b8f0022e73b76de5b098e141c3"
+    },
+    {
+      "file": "t3-slate-dark.png",
+      "sha256": "f8004357c5262c0ec7702657e94788cac79ed494b6d32218423dc735e99a279c"
+    }
+  ],
+  "xvfb_environment_isolation_recheck": {
+    "inherited": {
+      "GDK_BACKEND": "wayland",
+      "WAYLAND_DISPLAY": "wayland-invalid",
+      "EGL_PLATFORM": "wayland"
+    },
+    "fixture_output": "/tmp/rustrss-theme-ui-dkrmlsoz",
+    "fixture_counts": [
+      39,
+      23,
+      24
+    ],
+    "desktop": {
+      "output": "/tmp/rustrss-theme-desktop-7oa2onjp",
+      "preset": "paper",
+      "revision": 2,
+      "read_size": 25.0,
+      "restart_preserved": true
+    }
+  }
+}

@@ -230,7 +230,6 @@ const DEFAULT_MARK_READ_ON_NAVIGATE: bool = true;
 pub(crate) const KEY_LOCALE: &str = "ui.locale";
 const DEFAULT_LOCALE: &str = "auto";
 /// 主题：`system`（跟随系统）/ `light` / `dark`
-const KEY_THEME: &str = "ui.theme";
 const DEFAULT_THEME: &str = "system";
 /// 关闭按钮行为：`exit`（退出程序）/ `tray`（最小化到托盘）
 pub(crate) const KEY_CLOSE_ACTION: &str = "ui.close_action";
@@ -294,17 +293,23 @@ pub(crate) fn log_level_from_store(s: &rustrss_core::Store) -> String {
 // 列表排序档与「隐藏已读」的键名与默认档白名单在 core 侧定义（`rustrss_core::store::LIST_SORT_KEY` /
 // `ListSort`）：命令层只负责归一化与落库，store 在每次查询时从库读这两个键——这里是唯一写入点。
 /// 字体族设置（设置 → 外观 → 字体）。空串 = 跟随内置字体栈（前端清除对应 CSS 变量）。
+#[cfg(test)]
 const KEY_FONT_UI: &str = "ui.font_ui";
-const KEY_FONT_READ: &str = "ui.font_read";
-const KEY_FONT_MONO: &str = "ui.font_mono";
-/// 正文字号（px）与行高。白名单之外的值一律 clamp 回区间（滑块区间 13-18 / 1.5-1.8）。
+/// 正文字号（px）与行高。白名单之外的值一律 clamp 回区间（滑块区间 13-28 / 1.3-2.2）。
+#[cfg(test)]
 const KEY_FONT_READ_SIZE: &str = "ui.font_read_size";
+#[cfg(test)]
 const KEY_FONT_READ_LINE: &str = "ui.font_read_line";
+#[cfg(test)]
 const DEFAULT_FONT_READ_SIZE: f64 = 14.0;
+#[cfg(test)]
 const DEFAULT_FONT_READ_LINE: f64 = 1.55;
-const FONT_READ_SIZE_RANGE: (f64, f64) = (13.0, 18.0);
-const FONT_READ_LINE_RANGE: (f64, f64) = (1.5, 1.8);
+#[cfg(test)]
+const FONT_READ_SIZE_RANGE: (f64, f64) = (13.0, 28.0);
+#[cfg(test)]
+const FONT_READ_LINE_RANGE: (f64, f64) = (1.3, 2.2);
 /// 字体族名长度上限：坏数据不该把 CSS 值撑成天文数字（下拉标签也放不下）。
+#[cfg(test)]
 const MAX_FONT_FAMILY_LEN: usize = 100;
 /// 字体枚举超时：fc-list 正常在几十毫秒返回，装了上千字体的机器也就几百毫秒。
 const FONT_LIST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
@@ -314,6 +319,7 @@ pub struct UiSettings {
     pub mark_read_on_navigate: bool,
     pub locale: String,
     pub theme: String,
+    pub theme_snapshot: rustrss_core::theme::ThemeSnapshot,
     pub close_action: String,
     pub rsshub_mirror: String,
     /// 回显给界面的是归一化后的值（`off` 或 `15/30/60/120/360`），前端直接当 select 的值用
@@ -322,11 +328,11 @@ pub struct UiSettings {
     pub refresh_concurrency: u32,
     pub refresh_on_start: bool,
     pub notify_new_articles: bool,
-    /// 字体族（空串 = 跟随系统/内置字体栈）
+    /// 字体族覆盖（空串 = 跟随主题预设）
     pub font_ui: String,
     pub font_read: String,
     pub font_mono: String,
-    /// 正文字号 px 与行高（已 clamp 回 13-18 / 1.5-1.8，前端直接当滑块值用）
+    /// 正文字号 px 与行高（已 clamp 回 13-28 / 1.3-2.2，前端直接当滑块值用）
     pub font_read_size: f64,
     pub font_read_line: f64,
     /// 列表排序档（归一化后的 `newest` / `oldest` / `unread_first`，前端直接当菜单值用）
@@ -385,76 +391,29 @@ pub(crate) fn refresh_interval_from_store(store: &rustrss_core::Store) -> String
         .unwrap_or_else(|| DEFAULT_REFRESH_INTERVAL.to_string())
 }
 
-/// 字体族名归一化：trim + 折叠空白 + 去控制字符 + 截断到 [`MAX_FONT_FAMILY_LEN`]；
-/// 空串 = 跟随内置字体栈（前端清除对应 CSS 变量）。
-///
-/// 不在这里剥引号/逗号这类「CSS 里有含义」的字符：写入 CSS 变量时由前端统一
-/// 加引号并转义（`cssFamily`），在这里改动反而会把真实存在的族名改错。
-pub(crate) fn normalize_font_family(value: &str) -> String {
-    let cleaned: String = value
-        .trim()
-        .chars()
-        .filter_map(|c| {
-            if !c.is_control() {
-                Some(c)
-            } else if c.is_whitespace() {
-                // 制表/换行这类空白控制字符当成词间空格（否则 "Foo\tBar" 会粘成 "FooBar"）
-                Some(' ')
-            } else {
-                None
-            }
-        })
-        .take(MAX_FONT_FAMILY_LEN)
-        .collect();
-    cleaned.split_whitespace().collect::<Vec<_>>().join(" ")
-}
-
-/// 字号/行高的数值归一化：非有限值回默认，越界 clamp 回区间，固定两位小数。
-///
-/// 两位小数是为了库里的值干净（滑块步长 0.05，浮点乘加会带出 1.5500000000000003）。
-fn clamp_font_number(value: f64, default: f64, (min, max): (f64, f64)) -> f64 {
-    if !value.is_finite() {
-        return default;
-    }
-    (value.clamp(min, max) * 100.0).round() / 100.0
-}
-
-/// 字体设置的读取：缺失/空串 → 空字体族（前端清除变量 → 回内置字体栈）。
-fn font_family_setting(store: &rustrss_core::Store, key: &str) -> String {
-    normalize_font_family(&crate::ai::non_empty_setting(store, key).unwrap_or_default())
-}
-
-/// 字体设置的读取：缺失、非数字、非有限值都回默认；越界值 clamp 回区间
-/// （与 locale/theme 的白名单同一口径：库里被写坏也不让字号把正文排版搞崩）。
-fn font_number_setting(
-    store: &rustrss_core::Store,
-    key: &str,
-    default: f64,
-    range: (f64, f64),
-) -> f64 {
-    crate::ai::non_empty_setting(store, key)
-        .and_then(|v| v.trim().parse::<f64>().ok())
-        .map(|v| clamp_font_number(v, default, range))
-        .unwrap_or(default)
-}
-
-/// 数字 → 库内字符串：`14.0` 存 "14"（而不是 "14.0"），`1.55` 存 "1.55"。
-fn font_number_text(value: f64) -> String {
-    format!("{value}")
-}
+// Compatibility normalization lives in core; exercise it through the existing tests.
+#[cfg(test)]
+use rustrss_core::theme::{clamp_font_number, normalize_font_family};
 
 fn ui_settings(state: &AppState) -> R<UiSettings> {
     state.with_store(|s| {
+        let snapshot = s.theme_snapshot().map_err(err)?;
+        let effective = if snapshot.config.mode == rustrss_core::theme::ThemeMode::Dark {
+            &snapshot.dark
+        } else {
+            &snapshot.light
+        };
         Ok(UiSettings {
             mark_read_on_navigate: s
                 .bool_setting(KEY_MARK_READ_ON_NAVIGATE, DEFAULT_MARK_READ_ON_NAVIGATE)
                 .map_err(err)?,
             locale: crate::ai::non_empty_setting(s, KEY_LOCALE)
                 .unwrap_or_else(|| DEFAULT_LOCALE.to_string()),
-            // 主题白名单在读取时也兜底：库里被写坏也不至于把界面弄没颜色
-            theme: crate::ai::non_empty_setting(s, KEY_THEME)
-                .map(|v| normalize_theme(&v).to_string())
-                .unwrap_or_else(|| DEFAULT_THEME.to_string()),
+            theme: match snapshot.config.mode {
+                rustrss_core::theme::ThemeMode::Light => "light",
+                rustrss_core::theme::ThemeMode::Dark => "dark",
+                _ => "system",
+            }.into(),
             close_action: crate::ai::non_empty_setting(s, KEY_CLOSE_ACTION)
                 .map(|v| normalize_close_action(&v).to_string())
                 .unwrap_or_else(|| DEFAULT_CLOSE_ACTION.to_string()),
@@ -471,21 +430,12 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
             notify_new_articles: s
                 .bool_setting(KEY_NOTIFY_NEW_ARTICLES, DEFAULT_NOTIFY_NEW_ARTICLES)
                 .map_err(err)?,
-            font_ui: font_family_setting(s, KEY_FONT_UI),
-            font_read: font_family_setting(s, KEY_FONT_READ),
-            font_mono: font_family_setting(s, KEY_FONT_MONO),
-            font_read_size: font_number_setting(
-                s,
-                KEY_FONT_READ_SIZE,
-                DEFAULT_FONT_READ_SIZE,
-                FONT_READ_SIZE_RANGE,
-            ),
-            font_read_line: font_number_setting(
-                s,
-                KEY_FONT_READ_LINE,
-                DEFAULT_FONT_READ_LINE,
-                FONT_READ_LINE_RANGE,
-            ),
+            font_ui: snapshot.font_override("ui_family"),
+            font_read: snapshot.font_override("read_family"),
+            font_mono: snapshot.font_override("mono_family"),
+            font_read_size: effective.typography.read_size,
+            font_read_line: effective.typography.line_height,
+            theme_snapshot: snapshot,
             list_sort: s.list_sort().as_str().to_string(),
             list_hide_read: s.list_hide_read(),
             log_level: log_level_from_store(s),
@@ -871,7 +821,24 @@ pub fn set_ui_locale(state: State<'_, AppState>, locale: String) -> R<UiSettings
 /// 主题：`system`（跟随系统）/ `light` / `dark`。非法值归为 `system`，同 locale 的白名单口径。
 #[tauri::command]
 pub fn set_ui_theme(state: State<'_, AppState>, theme: String) -> R<UiSettings> {
-    state.with_store(|s| s.set_setting(KEY_THEME, normalize_theme(&theme)).map_err(err))?;
+    state.with_store(|s| s.update_theme_controls(&rustrss_core::theme::ThemePatch {
+        mode: Some(match normalize_theme(&theme) {
+            "light" => rustrss_core::theme::ThemeMode::Light,
+            "dark" => rustrss_core::theme::ThemeMode::Dark,
+            _ => rustrss_core::theme::ThemeMode::System,
+        }),
+        ..Default::default()
+    }).map_err(err))?;
+    ui_settings(&state)
+}
+
+#[tauri::command]
+pub fn update_ui_theme(
+    state: State<'_, AppState>,
+    expected_revision: u64,
+    patch: rustrss_core::theme::ThemePatch,
+) -> R<UiSettings> {
+    state.with_store(|s| s.update_theme(expected_revision, &patch).map_err(err))?;
     ui_settings(&state)
 }
 
@@ -1253,10 +1220,10 @@ pub fn set_ui_close_action(state: State<'_, AppState>, action: String) -> R<UiSe
     ui_settings(&state)
 }
 
-/// 字体配置：一次可写 5 个 key，`None` = 该项不动（下拉只改自己那一项；滑块只写自己的值）。
+/// 字体配置：一次可改 5 个字段，`None` = 该项不动（下拉只改自己那一项；滑块只写自己的值）。
 ///
-/// - 字体族：空串 = 恢复跟随系统（清除 CSS 变量）；
-/// - 字号 clamp 13-18、行高 clamp 1.5-1.8：越界值不报错，直接夹回区间后落库——
+/// - 字体族：空串 = 恢复主题预设字体；
+/// - 字号 clamp 13-28、行高 clamp 1.3-2.2：越界值不报错，直接夹回区间后落库——
 ///   滑块是唯一写入方，夹回比报错更贴近用户意图（而库里因此不会出现 9px 这种值）。
 ///
 /// 返回值是归一化后的完整设置：前端拿同一份回读值刷 CSS 变量，两边不各算一份。
@@ -1282,36 +1249,22 @@ pub(crate) fn set_font_config_core(
     read_size: Option<f64>,
     read_line: Option<f64>,
 ) -> R<UiSettings> {
-    state.with_store(|s| {
-        for (key, value) in [
-            (KEY_FONT_UI, font_ui.as_deref()),
-            (KEY_FONT_READ, font_read.as_deref()),
-            (KEY_FONT_MONO, font_mono.as_deref()),
-        ] {
-            if let Some(raw) = value {
-                s.set_setting(key, &normalize_font_family(raw)).map_err(err)?;
-            }
-        }
-        // 数值项：只有显式给值才写（None 表示「这次不改字号」）
-        if let Some(raw) = read_size {
-            let size = clamp_font_number(raw, DEFAULT_FONT_READ_SIZE, FONT_READ_SIZE_RANGE);
-            s.set_setting(KEY_FONT_READ_SIZE, &font_number_text(size))
-                .map_err(err)?;
-        }
-        if let Some(raw) = read_line {
-            let line = clamp_font_number(raw, DEFAULT_FONT_READ_LINE, FONT_READ_LINE_RANGE);
-            s.set_setting(KEY_FONT_READ_LINE, &font_number_text(line))
-                .map_err(err)?;
-        }
-        Ok(())
-    })?;
+    let patch = rustrss_core::theme::FontPatch {
+        ui: font_ui,
+        read: font_read,
+        mono: font_mono,
+        size: read_size,
+        line: read_line,
+    }
+    .theme_patch();
+    state.with_store(|s| s.update_theme_controls(&patch).map_err(err))?;
     ui_settings(state)
 }
 
 /// 系统字体族列表（按名字排序、去重）。
 ///
 /// 平台口径：**只有 Linux 枚举**（`fc-list`，fontconfig 在 deb 依赖里已声明）；
-/// Windows / macOS 返回空表，界面在那两个平台的字体下拉只显示「跟随系统」——
+/// Windows / macOS 返回空表，界面在那两个平台的字体下拉只显示「跟随主题」——
 /// 为字体枚举引入 font-kit / DWrite / CoreText 绑定的依赖成本高于收益（后续可增强）。
 ///
 /// 性能红线 #12：子进程是重活，整段交给 tokio 的进程 API + 超时，命令的 async 主线上
@@ -1918,7 +1871,7 @@ mod tests {
     fn font_family_normalization_trims_collapses_and_bounds() {
         assert_eq!(normalize_font_family("  Noto Sans CJK SC "), "Noto Sans CJK SC");
         assert_eq!(normalize_font_family("Foo\tBar"), "Foo Bar", "制表/换行不该进 CSS 值");
-        assert_eq!(normalize_font_family("\n  "), "", "纯空白 = 跟随系统");
+        assert_eq!(normalize_font_family("\n  "), "", "纯空白 = 跟随主题");
         assert_eq!(normalize_font_family("霞鹜文楷"), "霞鹜文楷", "CJK 族名原样保留");
         // 控制字符被剔除（换行会把设置页下拉标签撑成两行）
         assert_eq!(normalize_font_family("Inter\r\n  UI"), "Inter UI");
@@ -1935,10 +1888,10 @@ mod tests {
         let line = FONT_READ_LINE_RANGE;
         assert_eq!(clamp_font_number(14.0, DEFAULT_FONT_READ_SIZE, size), 14.0);
         assert_eq!(clamp_font_number(9.0, DEFAULT_FONT_READ_SIZE, size), 13.0, "低于区间夹回下限");
-        assert_eq!(clamp_font_number(99.0, DEFAULT_FONT_READ_SIZE, size), 18.0, "高于区间夹回上限");
+        assert_eq!(clamp_font_number(99.0, DEFAULT_FONT_READ_SIZE, size), 28.0, "高于区间夹回上限");
         assert_eq!(clamp_font_number(1.55, DEFAULT_FONT_READ_LINE, line), 1.55);
-        assert_eq!(clamp_font_number(0.5, DEFAULT_FONT_READ_LINE, line), 1.5);
-        assert_eq!(clamp_font_number(3.0, DEFAULT_FONT_READ_LINE, line), 1.8);
+        assert_eq!(clamp_font_number(0.5, DEFAULT_FONT_READ_LINE, line), 1.3);
+        assert_eq!(clamp_font_number(3.0, DEFAULT_FONT_READ_LINE, line), 2.2);
         // 非有限值回默认（而不是把 NaN 落库）
         for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
             assert_eq!(clamp_font_number(bad, DEFAULT_FONT_READ_SIZE, size), DEFAULT_FONT_READ_SIZE);
@@ -1952,7 +1905,7 @@ mod tests {
     fn ui_settings_reads_font_defaults_and_survives_broken_values() {
         let state = AppState::for_test();
 
-        // 全新库：三类字体都跟随系统，字号/行高回默认
+        // 全新库：三类字体都跟随主题，字号/行高回默认
         let fresh = ui_settings(&state).unwrap();
         assert_eq!(fresh.font_ui, "");
         assert_eq!(fresh.font_read, "");
@@ -1995,8 +1948,8 @@ mod tests {
 
         // 第二次：滑块只写字号，越界值夹回上限；已设的字体族不被冲掉
         let after_size = set_font_config_core(&state, None, None, None, Some(99.0), Some(0.4)).unwrap();
-        assert_eq!(after_size.font_read_size, 18.0);
-        assert_eq!(after_size.font_read_line, 1.5);
+        assert_eq!(after_size.font_read_size, 28.0);
+        assert_eq!(after_size.font_read_line, 1.3);
         assert_eq!(after_size.font_ui, "Noto Sans CJK SC", "滑块不该动字体族");
 
         // 第三次：三类字体互不影响，等等宽字体只改 code 那一项
@@ -2004,9 +1957,9 @@ mod tests {
             .unwrap();
         assert_eq!(after_mono.font_mono, "JetBrains Mono");
         assert_eq!(after_mono.font_ui, "Noto Sans CJK SC");
-        assert_eq!(after_mono.font_read, "", "正文字体仍是跟随 UI 字体");
+        assert_eq!(after_mono.font_read, "", "正文字体仍是跟随主题");
 
-        // 库内数值是干净字符串（14.0 存 "14"，不带 \".0\"）
+        // Writes use the versioned envelope and leave legacy keys untouched.
         let stored: Vec<(String, String)> = state
             .with_store(|s| Ok(s.all_settings().unwrap()))
             .unwrap();
@@ -2017,12 +1970,13 @@ mod tests {
                 .map(|(_, v)| v.clone())
                 .unwrap_or_default()
         };
-        assert_eq!(get(KEY_FONT_READ_SIZE), "18");
-        assert_eq!(get(KEY_FONT_READ_LINE), "1.5");
+        assert_eq!(get(KEY_FONT_READ_SIZE), "");
+        assert!(get("ui.theme_config").contains("read_size"));
+        assert_eq!(get(KEY_FONT_READ_LINE), "");
 
-        // 空串 = 恢复跟随系统（清除变量走前端，库里存空值）
+        // 空串移除覆盖，恢复主题预设。
         let cleared = set_font_config_core(&state, Some(String::new()), None, None, None, None).unwrap();
-        assert_eq!(cleared.font_ui, "", "空串应恢复「跟随系统」");
+        assert_eq!(cleared.font_ui, "", "空串应恢复「跟随主题」");
         assert_eq!(cleared.font_mono, "JetBrains Mono", "清一个不该动另一个");
     }
 

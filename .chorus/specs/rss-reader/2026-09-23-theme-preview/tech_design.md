@@ -1,6 +1,6 @@
 # 技术设计：主题配置与渲染预览
 
-状态：core 主题模型/存储已实现（[T2](core-theme-model.md)）；UI/MCP 接入为拟议实现。截图资源预算仍待产品集成校准。
+状态：core 主题模型/存储已实现（[T2](core-theme-model.md)）；[T3 UI/共享渲染](shared-theme-renderer.md) 已实现；MCP 接入为拟议实现。截图资源预算仍待产品集成校准。
 
 ## 当前基础
 

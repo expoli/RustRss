@@ -200,23 +200,21 @@ function normalizeDiffBlocks(root) {
   }
 }
 
-/// 应用主题三态：system 移除 data-theme（交给 CSS 媒体查询实时跟随），
-/// light/dark 固定属性。非法值一律按 system 处理（与 Rust 侧白名单双保险）。
-function applyTheme(pref) {
-  const root = document.documentElement;
-  if (pref === 'light' || pref === 'dark') {
-    root.dataset.theme = pref;
-  } else {
-    delete root.dataset.theme;
-  }
+/// 应用 core 解析后的主题快照；系统模式由共享渲染器监听媒体查询。
+let themeRenderer;
+function applyTheme() {
+  const snapshot = state.settings.theme_snapshot;
+  if (!snapshot) return;
+  themeRenderer ||= window.RustRssTheme.createRenderer(document.documentElement, { reader: el('reader'), list: el('entries'), onModeChange: () => { paintFontControls(state.settings); refreshSettingDropdowns(); } });
+  themeRenderer.apply(snapshot, fontPreview);
 }
 
 // ---------------------------------------------------------------- 字体配置
 
 /// 正文字号 / 行高的区间、步长与默认值：与 Rust 侧 clamp 区间同源
 /// （HTML 的 min/max/step 只是静态兜底，真正的判据在这里 + Rust）。
-const FONT_SIZE = { min: 13, max: 18, step: 1, fallback: 14 };
-const FONT_LINE = { min: 1.5, max: 1.8, step: 0.05, fallback: 1.55 };
+const FONT_SIZE = { min: 13, max: 28, step: 1, fallback: 14 };
+const FONT_LINE = { min: 1.3, max: 2.2, step: 0.05, fallback: 1.55 };
 
 /// 数值兜底：非有限值回默认，越界夹回区间（库里被写坏也不让排版崩）
 function clampNumber(value, { min, max, fallback }) {
@@ -229,31 +227,6 @@ function clampNumber(value, { min, max, fallback }) {
 const fontSizeText = (v) => String(clampNumber(v, FONT_SIZE));
 const fontLineText = (v) => clampNumber(v, FONT_LINE).toFixed(2);
 
-/// 单个字体族名 → CSS `font-family` 值。
-/// 只有「简单标识符」能裸写；含空格 / CJK / 逗号 / 引号的一律加引号并转义——
-/// 否则 CSS 会把 "Noto Sans CJK SC" 拆成三个家族名（自定义属性不会被当字符串）。
-/// 通用族（sans-serif 等）走裸写分支：加引号就变成名叫 "sans-serif" 的具体家族了。
-const CSS_IDENT_FAMILY = /^[A-Za-z][A-Za-z0-9_-]*$/;
-function cssFamily(name) {
-  const trimmed = String(name || '').trim();
-  if (!trimmed) return '';
-  if (CSS_IDENT_FAMILY.test(trimmed)) return trimmed;
-  return `"${trimmed.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-}
-
-/// 已写入内联样式的变量值：同值短路，重复应用（启动 / 切换 / 滑块松手）零 DOM 写入
-/// （性能红线 #7）。值 `undefined` 表示从未写过，`''` 表示已清除。
-const appliedFontVars = {};
-
-/// 写 / 清一个 CSS 变量：空值 = 清除 → 回落到 :root 的内置字体栈（「跟随系统」）
-function setFontVar(name, value) {
-  if (appliedFontVars[name] === value) return;
-  appliedFontVars[name] = value;
-  const style = document.documentElement.style;
-  if (value) style.setProperty(name, value);
-  else style.removeProperty(name);
-}
-
 /// 拖动预览的覆盖值：拖动期间（input 事件）累积在这里，落库（change）后清掉。
 /// 这样「先拖字号再拖行高」不会因为合并了没入库的 state 而把前一项预览抖回旧值。
 const fontPreview = {};
@@ -262,17 +235,18 @@ const fontPreview = {};
 /// **只写 CSS 变量，不动滑块位置**——预览若顺手把控件按已保存值重画，
 /// 另一个滑块会被拽回它的旧值（两个滑块互相干扰），控件同步单独走 paintFontControls。
 function applyFontConfig() {
-  const s = { ...state.settings, ...fontPreview };
-  setFontVar('--font-ui', cssFamily(s.font_ui));
-  setFontVar('--font-read', cssFamily(s.font_read));
-  setFontVar('--font-mono', cssFamily(s.font_mono));
-  setFontVar('--font-read-size', `${fontSizeText(s.font_read_size)}px`);
-  setFontVar('--font-read-line', fontLineText(s.font_read_line));
+  applyTheme();
 }
 
 /// 滑块位置与数值标签对齐给定设置。只在「拿到完整权威值」时调：
 /// 启动 / 打开设置页 / 保存成功 / 保存失败回滚。同值短路（拖动一秒几十个事件）。
 function paintFontControls(s) {
+  const snapshot = s.theme_snapshot;
+  if (snapshot) {
+    const dark = snapshot.config.mode === 'dark' || (snapshot.config.mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+    const typography = snapshot[dark ? 'dark' : 'light'].typography;
+    s = { ...s, font_read_size: typography.read_size, font_read_line: typography.line_height };
+  }
   const size = clampNumber(s.font_read_size, FONT_SIZE);
   const line = clampNumber(s.font_read_line, FONT_LINE);
   const sizeInput = el('set-font-size');
@@ -289,6 +263,16 @@ function paintFontValueLabel(field, value) {
   const label = el(field === 'font_read_size' ? 'set-font-size-value' : 'set-font-line-value');
   if (!label) return;
   setText(label, field === 'font_read_size' ? `${fontSizeText(value)}px` : fontLineText(value));
+}
+
+function acceptSettings(settings) {
+  const current = state.settings?.theme_snapshot;
+  if (current && settings.theme_snapshot?.config.revision < current.config.revision) {
+    settings = { ...settings, theme_snapshot: current, theme: state.settings.theme,
+      font_ui: state.settings.font_ui, font_read: state.settings.font_read, font_mono: state.settings.font_mono,
+      font_read_size: state.settings.font_read_size, font_read_line: state.settings.font_read_line };
+  }
+  state.settings = settings;
 }
 
 async function invoke(cmd, args = {}) {
@@ -341,7 +325,7 @@ const state = {
   query: '',
   // 权威值在 Rust 侧（get_ui_settings），这里只是启动前的占位
   settings: { mark_read_on_navigate: true },
-  // 系统字体族（设置页打开时预取一次并缓存；空 = 未取到/非 Linux → 只剩「跟随系统」）
+  // 系统字体族（设置页打开时预取一次并缓存；空 = 未取到/非 Linux → 只剩「跟随主题」）
   fontFamilies: [],
   fontFamiliesLoaded: false,
   ai: null,
@@ -560,7 +544,7 @@ function reconcileViews(existing) {
       li = document.createElement('li');
       li.dataset.key = key;
       li.dataset.kind = v.kind;
-      li.innerHTML = `<span class="icon">${v.icon}</span><span class="vlabel"></span><span class="count"></span>`;
+      li.innerHTML = window.RustRssComponents.viewContent(v.icon);
       li.onclick = () => setView({ kind: v.kind });
     }
     li.className = state.view.kind === v.kind ? 'active' : '';
@@ -578,7 +562,7 @@ function feedRow(f, existing) {
     li = document.createElement('li');
     li.dataset.key = key;
     li.dataset.feedId = String(f.id);
-    li.innerHTML = '<span class="name"></span><span class="dot" hidden>●</span><span class="count"></span>';
+    li.innerHTML = window.RustRssComponents.feedContent();
   }
   const failed = !!(f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified');
   li.className = `${state.view.kind === 'feed' && state.feedId === f.id ? 'active' : ''} folder-feed`;
@@ -731,10 +715,11 @@ function buildEntryRow(e) {
   // 行内 chips ≤2 + `+N`；行 hover 才显标签按钮（CSS 控制透明度，不占 hover 前的眼睛）
   const tagChips = `<span class="tag-chips">${rowTagChipsHtml(e.tags || [])}</span>`;
   const tagBtn = `<button class="row-tag-btn" data-entry-id="${e.id}" title="${t('tags.addTitle')}">#</button>`;
-  li.innerHTML = `
-      <span class="title">${escapeHtml(e.title)}</span>
-      <span class="meta"><span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}${tagChips}${tagBtn}</span>
-      ${e.summary ? `<span class="summary">${escapeHtml(e.summary)}</span>` : ''}`;
+  li.innerHTML = window.RustRssComponents.entryContent({
+    title: escapeHtml(e.title),
+    meta: `<span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}${tagChips}${tagBtn}`,
+    summary: e.summary ? escapeHtml(e.summary) : '',
+  });
   li.onclick = () => openEntry(e.id, { markRead: true });
   const mark = li.querySelector('.later-mark');
   if (mark) {
@@ -1098,16 +1083,12 @@ function renderReader(entry) {
         .join('');
   mark('sanitize');
 
-  reader.innerHTML = `
-    <div class="reader-head">
-      <h1>${escapeHtml(entry.title)}</h1>
-      <div class="meta">
-        <span>${escapeHtml(entry.feed_title)}</span>
-        <span>${fmtTime(entry.published_at)}</span>
-        ${entry.author ? `<span>${escapeHtml(entry.author)}</span>` : ''}
-        <span class="tag-bar" id="reader-tags">${readerTagChipsHtml(entry)}</span>
-      </div>
-    </div>`;
+  reader.innerHTML = window.RustRssComponents.readerHead({
+    title: escapeHtml(entry.title),
+    meta: `<span>${escapeHtml(entry.feed_title)}</span><span>${fmtTime(entry.published_at)}</span>
+      ${entry.author ? `<span>${escapeHtml(entry.author)}</span>` : ''}
+      <span class="tag-bar" id="reader-tags">${readerTagChipsHtml(entry)}</span>`,
+  });
   reader.insertAdjacentHTML('beforeend', `
     <div class="reader-actions">
       <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
@@ -1128,7 +1109,7 @@ function renderReader(entry) {
       </div>
       <div id="ai-panel-body" class="ai-panel-body"></div>
     </div>
-    <div class="article">${body}</div>`);
+    ${window.RustRssComponents.article(body)}`);
 
   mark('innerHTML-set');
   // 高亮必须在正文插入 DOM 之后跑（hljs 需要真实节点）；
@@ -2036,14 +2017,14 @@ async function loadAll({ reader = true } = {}) {
   state.sidebarTags = sidebar.tags || [];
   state.collapsedFolders = collapsed;
   state.tagsCollapsed = !!tagsCollapsed;
-  state.settings = settings;
+  acceptSettings(settings);
   state.ai = ai;
   state.mcp = mcp;
   state.tags = tags;
   // 语言设置来自数据库；先应用再渲染，避免先闪一下默认语言
   setLocale(settings.locale || 'auto');
   // 主题同理：渲染前先设好 data-theme，避免启动时闪错色
-  applyTheme(settings.theme || 'system');
+  applyTheme();
   // 字体同理：先把 CSS 变量设好再渲染（跨会话保持的字体在首帧就生效）
   applyFontConfig();
   bindFontControls();
@@ -2240,7 +2221,7 @@ function openListSortMenu(ev, anchor) {
 /// 用户正在读的那篇清空（换视图是 reader: true 的占位语义，两件事分开）。
 async function applyListSetting(run) {
   try {
-    state.settings = await run();
+    acceptSettings(await run());
     await loadEntries({ reader: false });
     log(`list settings: sort=${listSortMode()} hideRead=${listHideRead() ? 1 : 0}`);
   } catch (err) {
@@ -3829,7 +3810,19 @@ const SETTING_DROPDOWNS = [
     ],
     current: () => state.settings.theme || 'system',
     apply: (v) => invoke('set_ui_theme', { theme: v }),
-    after: () => applyTheme(state.settings.theme || 'system'),
+    after: () => { applyTheme(); paintFontControls(state.settings); },
+  },
+  {
+    id: 'set-theme-preset',
+    choices: () => ['clear', 'paper', 'slate'].map(value => ({ value, label: t(`settings.preset.${value}`) })),
+    current: () => {
+      const snapshot = state.settings.theme_snapshot;
+      const dark = snapshot?.config.mode === 'dark' || (snapshot?.config.mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+      return snapshot?.config[dark ? 'dark_preset' : 'light_preset'] || 'clear';
+    },
+    apply: (v) => invoke('update_ui_theme', { expectedRevision: state.settings.theme_snapshot.config.revision,
+      patch: { light_preset: v, dark_preset: v, overrides: null } }),
+    after: () => { applyTheme(); paintFontControls(state.settings); refreshSettingDropdowns(); },
   },
   {
     id: 'set-close-action',
@@ -3942,9 +3935,9 @@ function settingDropdownLabel(d) {
   return (d.choices().find((c) => c.value === cur) || d.choices()[0]).label;
 }
 
-/// 字体下拉的候选：首项「跟随系统」（value = ''），其余是系统字体族（取不到就只有首项）。
+/// 字体下拉的候选：首项「跟随主题」（value = ''），其余是系统字体族（取不到就只有首项）。
 /// 当前值不在列表里时补一项：换了机器 / 卸了字体后标签要如实显示真实值，
-/// 而不是静默显示「跟随系统」（那会让用户以为设置丢了）。
+/// 而不是静默显示「跟随主题」（那会让用户以为设置丢了）。
 function fontChoices(settingKey) {
   const cur = String(state.settings[settingKey] || '').trim();
   const choices = [{ value: '', label: t('settings.fontFollowSystem') }];
@@ -3955,7 +3948,7 @@ function fontChoices(settingKey) {
 
 /// 预取系统字体族：**只在第一次打开设置页时**跑（fc-list 是子进程，不进启动路径）；
 /// 结果缓存在 state.fontFamilies，取到后重画三个下拉的标签。
-/// 失败与空表都不是错误：字体下拉仍有「跟随系统」，只是把原因挂到 tooltip 上。
+/// 失败与空表都不是错误：字体下拉仍有「跟随主题」，只是把原因挂到 tooltip 上。
 function prefetchFontFamilies() {
   if (state.fontFamiliesLoaded) {
     syncFontListHints();
@@ -3970,13 +3963,13 @@ function prefetchFontFamilies() {
       log(
         state.fontFamilies.length
           ? `font families=${state.fontFamilies.length}`
-          : 'font families=0（只有「跟随系统」可选）'
+          : 'font families=0（只有「跟随主题」可选）'
       );
     })
     .catch((e) => {
       state.fontFamilies = [];
       syncFontListHints();
-      log(`list_font_families failed: ${e.message}（字体下拉只有「跟随系统」）`);
+      log(`list_font_families failed: ${e.message}（字体下拉只有「跟随主题」）`);
     });
 }
 
@@ -4017,7 +4010,7 @@ function bindFontControls() {
       const value = clampNumber(input.value, spec);
       invoke('set_font_config', { [FONT_SETTING_ARGS[key]]: value })
         .then((settings) => {
-          state.settings = settings;
+          acceptSettings(settings);
           delete fontPreview[key];
           applyFontConfig();
           paintFontControls(state.settings);
@@ -4051,10 +4044,13 @@ function toggleSettingDropdown(d) {
       checked: c.value === cur,
       action: async () => {
         try {
-          state.settings = await d.apply(c.value);
+          acceptSettings(await d.apply(c.value));
           if (d.after) await d.after();
           refreshSettingDropdowns();
         } catch (err) {
+          if (d.id === 'set-theme-preset') {
+            try { acceptSettings(await invoke('get_ui_settings')); applyTheme(); paintFontControls(state.settings); refreshSettingDropdowns(); } catch {}
+          }
           setStatus(t('status.settingFailed', { error: err.message }), true);
         }
       },
@@ -4067,7 +4063,7 @@ function toggleSettingDropdown(d) {
 function refreshSettingDropdowns() {
   for (const d of SETTING_DROPDOWNS) {
     const btn = el(d.id);
-    if (btn) btn.textContent = settingDropdownLabel(d);
+    if (btn) setText(btn, settingDropdownLabel(d));
   }
 }
 
@@ -4319,7 +4315,7 @@ async function boot() {
   });
   el('set-mark-read').addEventListener('change', async (e) => {
     try {
-      state.settings = await invoke('set_mark_read_on_navigate', { enabled: e.target.checked });
+      acceptSettings(await invoke('set_mark_read_on_navigate', { enabled: e.target.checked }));
       setStatus(t(e.target.checked ? 'status.markReadOn' : 'status.markReadOff'));
       log(`setting mark_read_on_navigate=${e.target.checked}`);
     } catch (err) {
@@ -4328,7 +4324,7 @@ async function boot() {
   });
   el('set-refresh-on-start').addEventListener('change', async (e) => {
     try {
-      state.settings = await invoke('set_refresh_on_start', { enabled: e.target.checked });
+      acceptSettings(await invoke('set_refresh_on_start', { enabled: e.target.checked }));
       e.target.checked = state.settings.refresh_on_start;
       setStatus(
         t(state.settings.refresh_on_start ? 'status.refreshOnStartOn' : 'status.refreshOnStartOff')
@@ -4341,7 +4337,7 @@ async function boot() {
   });
   el('set-notify-new-articles').addEventListener('change', async (e) => {
     try {
-      state.settings = await invoke('set_notify_new_articles', { enabled: e.target.checked });
+      acceptSettings(await invoke('set_notify_new_articles', { enabled: e.target.checked }));
       e.target.checked = state.settings.notify_new_articles;
       log(`notifyNewArticles=${state.settings.notify_new_articles}`);
     } catch (err) {

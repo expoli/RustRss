@@ -1,6 +1,6 @@
 # T2：core 主题模型与版本化存储
 
-日期：2026-09-23。状态：core API 已实现；现有 UI 设置和 MCP 尚未切换到新模型。这里是数据/存储交付，不是主题界面交付。
+日期：2026-09-23。本页记录 T2 交付时的 core API；UI 后续已在 [T3](shared-theme-renderer.md) 接入，MCP 仍未接入。
 
 ## 模型
 
@@ -59,6 +59,6 @@ let saved = store.update_theme(current.config.revision, &patch)?;
 
 ## 接入边界
 
-T3 必须把旧 set_ui_theme/set_font_config 与设置读取切到这个 core 数据源，再开放新配置给 UI/MCP；不能一边读新记录、一边继续仅写旧键。当前新 API 尚无产品调用方，因此本轮不会更改用户界面或用户库，也不提前声称两套入口已统一。
+T3 必须把旧 set_ui_theme/set_font_config 与设置读取切到这个 core 数据源，再开放新配置给 UI/MCP；不能一边读新记录、一边继续仅写旧键。T2 交付时新 API 尚无产品调用方；后续 T3 已统一 UI 入口，详见 T3 报告。
 
 T3 继续做真实组件/CSS token 映射与阅读位置保护；T4 做设置重组；T5/T6 再接 MCP 权限、同步和图片闭环。T1 跨平台余项独立保留。

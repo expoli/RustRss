@@ -322,3 +322,52 @@ fn hash_ignores_revision_and_retains_preset_identity() {
         b.resolve().unwrap().config_hash
     );
 }
+
+#[test]
+fn existing_controls_share_versioned_store_and_preserve_other_overrides() {
+    use rustrss_core::theme::FontPatch;
+    let s = Store::open_in_memory().unwrap();
+    s.set_setting("ui.font_read_size", "13").unwrap();
+    s.update_theme(
+        0,
+        &patch(
+            json!({"light_preset":"paper","overrides":{"colors":{"light":{"accent":"#884422"}}}}),
+        ),
+    )
+    .unwrap();
+    let next = s
+        .update_theme_controls(
+            &FontPatch {
+                size: Some(24.),
+                ui: Some("Example".into()),
+                ..Default::default()
+            }
+            .theme_patch(),
+        )
+        .unwrap();
+    assert_eq!(next.config.revision, 2);
+    assert_eq!(next.light.colors.accent, "#884422");
+    assert_eq!(next.light.typography.read_size, 24.);
+    assert_eq!(
+        s.setting("ui.font_read_size").unwrap().as_deref(),
+        Some("13")
+    );
+    let reset = s
+        .update_theme_controls(
+            &FontPatch {
+                ui: Some(String::new()),
+                ..Default::default()
+            }
+            .theme_patch(),
+        )
+        .unwrap();
+    assert_eq!(reset.font_override("ui_family"), "");
+    assert_eq!(reset.light.typography.read_size, 24.);
+    assert_eq!(
+        s.update_theme_controls(&FontPatch::default().theme_patch())
+            .unwrap()
+            .config
+            .revision,
+        3
+    );
+}

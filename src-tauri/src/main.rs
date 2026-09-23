@@ -244,6 +244,7 @@ fn main() {
             commands::set_log_level,
             commands::set_ui_locale,
             commands::set_ui_theme,
+            commands::update_ui_theme,
             commands::set_list_sort,
             commands::set_list_hide_read,
             commands::set_ui_close_action,

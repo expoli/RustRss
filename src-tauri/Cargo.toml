@@ -47,3 +47,8 @@ required-features = ["snapshot-probe"]
 [dev-dependencies]
 # 测试用 mock app（空 feature）：验「没有托盘时 update_badge 静默 no-op」不必起真窗口。
 tauri = { version = "2", features = ["test"] }
+
+[[example]]
+name = "theme_ui"
+path = "examples/theme_ui.rs"
+required-features = ["snapshot-probe"]

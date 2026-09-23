@@ -951,3 +951,16 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 同值零写入：修复 JSON 的 20/20.0 表示差异导致额外版本；阻断 INSERT 的触发器下同值请求仍成功，有效修改失败且历史/当前值不变。
 - `cargo clippy -p rustrss-core --all-targets` 完成，仅原有 3 条 core 告警；新增文件 rustfmt 检查通过。运行日志位于 `/tmp/rustrss-theme-t2-workspace-tests.log` 与 `/tmp/rustrss-theme-t2-clippy.log`（临时文件，不作为持久产物）。
 - [core 模型说明与复现命令](2026-09-23-theme-preview/core-theme-model.md)。本轮不操作真实用户库；未接入 UI/MCP、未验证主题渲染效果或端到端图片闭环。
+
+
+### 24.4 T3 真实 UI 与共享渲染
+
+- 现有主题/字体入口改用同一 core 配置；外观增加 Clear/Paper/Slate 预设，显式重置覆盖；正文范围扩至 13–28px / 1.3–2.2。保存后主题无需重建文章/列表，颜色修改只更新变量，字体/宽度变更保留可见段落锚点。
+- Rust 工作区 386 passed、0 failed；Node 22 passed。新增覆盖旧控件与版本配置一致性、同值零 DOM 写、颜色变量/系统模式分支、字体转义、滑块预览回退、段落锚点、迟到字体回调、乱序配置响应。clippy 仅原有 3 条 core 告警。
+- 重新 `cargo build -p rustrss-desktop` 后跑正式应用隔离夹具：UI 选择 Paper、调大正文字号，SQLite 验证 revision 1→2；重启配置未被重写，Paper 背景像素一致。原始日志与截图路径记录在 [结果摘要](2026-09-23-theme-preview/theme-ui-results.json)。
+- opt-in `theme_ui` example 复用生产 HTML/CSS/i18n、列表/侧栏/正文模板与主题应用器；Xvfb 100%/200% 与当前 KDE 原生 Wayland 各 39 张截图、23 项行为检查、12 项主题背景像素 + 12 项设置弹层遮挡像素检查通过。含中英文、代码/diff、长文、空阅读区、错误源、缺失字体回退、900px 窄窗；缺字形的实际字体不作推断。
+- 顺手修复实测滚动条穿透弹层：原生 overlay scrollbar 的灰色像素使遮挡断言失败，改主题滚动条后通过。DOM 节点身份、同值零 MutationObserver 记录、字号/宽度改动锚点误差 <2px 在 fixture 中检查。
+- 当前仅缩略图样式开关：真实条目列表尚无缩略图元数据，不额外逐篇取正文。设置重组/历史恢复界面、MCP 配置与图片闭环、外部进程同步留到后续任务。
+- 未验证：Windows/macOS/GNOME、真实系统明暗切换、跨屏分数缩放、逐字形回退、主题变化期间的远程图片重排。详见 [T3 报告与复现](2026-09-23-theme-preview/shared-theme-renderer.md)。
+
+- T3 脚本补验：两个 Xvfb 子进程剔除 GDK_BACKEND/WAYLAND_DISPLAY/EGL_PLATFORM；显式继承冲突值复跑仍通过（39/23/24、Paper revision=2、重启保持）。滑块字号断言为 >18 且持久化，不固定为 24；本轮读回 25。命令及日志路径见 T3 报告/结果摘要。

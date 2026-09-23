@@ -4,9 +4,11 @@
 
 - 需求基线：`.chorus/specs/rss-reader/spec.md`
 - 当前阶段分析（竞品、风险、决策）：`.chorus/specs/rss-reader/2026-09-20-initial-requirements/prd.md`
-- 主题与 MCP 视觉预览设计（草案，产品未实现）：[需求与交互稿](.chorus/specs/rss-reader/2026-09-23-theme-preview/prd.md)、[技术设计](.chorus/specs/rss-reader/2026-09-23-theme-preview/tech_design.md)、[截图可行性证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/capture-feasibility.md)。
+- 主题与 MCP 视觉预览设计（UI 主题已接入，MCP 预览未实现）：[需求与交互稿](.chorus/specs/rss-reader/2026-09-23-theme-preview/prd.md)、[技术设计](.chorus/specs/rss-reader/2026-09-23-theme-preview/tech_design.md)、[截图可行性证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/capture-feasibility.md)。
 - 开发用 Tauri 截图探针（独立 example，Linux 已验证，尚未接入主题/MCP）：[构建方式与验证证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/tauri-capture-spike.md)。
-- 主题 core API 已实现：三预设/明暗参数、局部更新、旧设置映射、CAS 版本与历史恢复；UI/MCP 尚未接入，见 [T2 说明](.chorus/specs/rss-reader/2026-09-23-theme-preview/core-theme-model.md)。
+- 主题 core API 已实现：三预设/明暗参数、局部更新、旧设置映射、CAS 版本与历史恢复；UI 已接入，MCP 尚未接入，见 [T2 说明](.chorus/specs/rss-reader/2026-09-23-theme-preview/core-theme-model.md)。
+
+- 主题 UI 已接入：设置 → 通用 → 外观可选 Clear / Paper / Slate；共享配色/字体/列表/阅读区渲染器与版本化存储，选择预设会重置外观覆盖；见 [T3 实现与验收](.chorus/specs/rss-reader/2026-09-23-theme-preview/shared-theme-renderer.md)。
 
 ## 已定决策
 
@@ -234,7 +236,7 @@ RUSTSS_DB=/tmp/demo.sqlite cargo run -p rustrss-desktop   # 指定库
 - [x] 分组文章视图：点击分组名称查看组内文章，箭头独立折叠/展开；支持三档排序、只看未读、200 条分页、总数与当前分组批量标记。空分组返回空列表；移动源刷新当前分组，删除当前分组返回全部视图。
 - [x] 列表异步响应按请求版本落地：切换视图/搜索/重置后，旧首页、续页与总数响应不能覆盖当前状态；快速切换文章时只展示最后请求的文章。标签变更使总数缓存失效；头尾计数同值零写入，分页按钮禁用态与请求生命周期一致。
 - [x] 设置面板：「`j`/`k` 浏览时标记已读」开关（默认开）+ 当前视图全部已读 / 全部未读（按当前有效筛选作用于全部匹配条目，含未加载页；搜索也不限于已加载的 200 条，空搜索不操作；星标/稍后读仍豁免隐藏已读）+ 界面语言 + 主题三态（跟随系统/浅色/深色，选择持久化；启动时窗口以隐藏方式创建、主题就绪后显示，无主题闪变）+ 关闭按钮行为（退出 / 最小化到托盘；托盘不可用时始终退出）+ 自动刷新（间隔 关/15/30/60/120/360 分钟、启动时刷新开关、新文章通知开关，默认关）+ 字体（见下）+ AI + MCP
-- [x] 字体可配置（设置 → 通用 → 字体分区）：界面 / 正文 / 等宽**三类字体族互相独立**（后两个默认「跟随系统」：正文字体跟随界面字体、等宽字体用内置等宽栈），正文字号 13–18px、正文字高 1.5–1.8 可调；全部走 CSS 变量（`--font-ui` / `--font-read` / `--font-mono` / `--font-read-size` / `--font-read-line`），**保存即生效、无需重启，跨会话保持**。字体列表由 `list_font_families` 枚举系统字体（Linux `fc-list`，3s 超时、spawn 失败/超时/非零退出均降级为空表；Windows / macOS 本版返回空表），设置页打开时预取一次并缓存（`fc-list` 实测 18ms）；下拉复用自绘菜单（首项「跟随系统」= 清除变量回内置字体栈），含空格 / CJK 的族名写 CSS 变量时统一加引号并转义。滑块 **`input` 只改 CSS 变量做实时预览、`change`（松手）才写库**（拖动期间零 IPC、零 DB 写入），字号 clamp 13–18 / 行高 clamp 1.5–1.8 在 Rust 侧再夹一次（库里不存越界值）；设置弹层遮住了正文区，因此字体分区里带一块**与正文同源 CSS 变量的实时预览块**（拖动/切换即时可见）。字体枚举失败时三个下拉仍可用（只剩「跟随系统」）并把原因写在 tooltip 上
+- [x] 字体可配置（设置 → 通用 → 字体分区）：界面 / 正文 / 等宽**三类字体族互相独立**（未自定义时「跟随主题」：各自使用预设字体栈），正文字号 13–28px、正文字高 1.3–2.2 可调；全部走 CSS 变量（`--font-ui` / `--font-read` / `--font-mono` / `--font-read-size` / `--font-read-line`），**保存即生效、无需重启，跨会话保持**。字体列表由 `list_font_families` 枚举系统字体（Linux `fc-list`，3s 超时、spawn 失败/超时/非零退出均降级为空表；Windows / macOS 本版返回空表），设置页打开时预取一次并缓存（`fc-list` 实测 18ms）；下拉复用自绘菜单（首项「跟随主题」= 清除该字体覆盖，恢复预设栈），含空格 / CJK 的族名写 CSS 变量时统一加引号并转义。滑块 **`input` 只改 CSS 变量做实时预览、`change`（松手）才写库**（拖动期间零 IPC、零 DB 写入），字号 clamp 13–28 / 行高 clamp 1.3–2.2 在 Rust 侧再夹一次（库里不存越界值）；设置弹层遮住了正文区，因此字体分区里带一块**与正文同源 CSS 变量的实时预览块**（拖动/切换即时可见）。字体枚举失败时三个下拉仍可用（只剩「跟随主题」）并把原因写在 tooltip 上
 - [x] 自绘标题栏：无系统装饰，顶栏可拖拽 / 双击最大化，右上角最小化 / 最大化 / 关闭三键（代码完成 + 编译与真实 Chromium 加载验证；**点击行为与拖拽需桌面会话人工验证**，见验证清单）
 - [x] MCP：stdio 与 HTTP 双传输，HTTP 仅回环 + token；应用内一键生成并复制客户端配置
 - [x] 全文搜索（接 FTS5，中文可用）、刷新全部、单源双击重试、添加订阅（首页 URL 自动发现 feed）、浏览器打开、复制链接
