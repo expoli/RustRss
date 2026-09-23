@@ -79,6 +79,7 @@ created: 2026-09-20
 - [ ] 已读/未读、星标状态即时反映到列表与计数；「全部标记已读」可限定作用域（当前源 / 当前视图；"当前视图"作用域尚未实现，MarkScope 仅 All/Feed）
 - [x] 稍后读：条目可标记/取消（阅读器按钮、列表 ⚑ 标记、`l` 键），独立于已读/星标；侧栏「稍后读」智能视图可用
 - [x] 订阅右键菜单的「刷新间隔」与「移动到」以**子菜单**呈现（悬浮向右展开、点击父项切换；父项显示当前档位/当前分组，子菜单对当前项打勾）；空间不足时自动翻转/钳位不溢出视口（见 2026-09-23-submenu）
+- [ ] 标签（文章级）：给文章打/取消标签、按标签筛选；侧栏标签区（未读计数、置顶、颜色、拖拽排序）；打开选择器支持最近使用优先与新建；MCP 可按权限增删改查标签（`delete_tag` 需 `confirm` + `dry_run`，不进危险工具集合）（见 2026-09-23-tags）
 - [ ] 无网络时可阅读已抓取的全部文章，不出现阻塞式错误弹窗
 - [x] 初始化失败时窗口仍可关闭（最小事件绑定集无条件生效，见 2026-09-22-audit-remediation-1）
 - [x] 阅读中标记已读/星标/稍后读不重置正文滚动位置、不清空 AI 面板内容（行级 patch 而非整区重建，见 2026-09-22-audit-remediation-1）
@@ -96,7 +97,7 @@ created: 2026-09-20
 
 - [x] 可同时以 loopback HTTP 与 stdio 两种传输提供 MCP 服务，应用内直接生成可复制的客户端配置片段
 - [x] 只读工具集至少覆盖：列订阅、列条目（按源/未读/**时间**过滤、**分页**）、搜索条目、取单篇正文（2026-09-23 补齐：`list_articles` 支持 `feed_id`/`folder_id`/`unread_only`/`starred_only`/`read_later_only`/`since`/`until`/`page_size`+`cursor`/`sort`/`hide_read`，新增 `list_folders`（分组 + 每组未读）与 `get_unread_summary`（按源/分组未读聚合）；时间过滤为对 `COALESCE(published_at, fetched_at)` 的闭区间，分页为 keyset 游标；⚠ 遗留：`search_articles` 仍继承界面 `hide_read`（本批 AC 外，待后续处理））
-- [ ] MCP 提供**写能力**（阅读状态/刷新/订阅管理），且满足：读 token 会话看不到写工具（scope 分权，且**写 token 轮换/销毁后旧值立即失效**——授权按请求现算）；写能力总开关与危险工具开关**默认关闭**；危险操作（退订/删分组）需 `confirm` 并支持 `dry_run` 预览；写操作有审计日志；列表默认口径固定为「最新在前 + 不隐藏已读」（显式参数可覆盖）——见 2026-09-23-mcp-write
+- [ ] MCP 提供**写能力**（阅读状态/刷新/订阅管理），且满足：读 token 会话看不到写工具（scope 分权，且**写 token 轮换/销毁后旧值立即失效**——授权按请求现算）；写能力总开关与危险工具开关**默认关闭**；危险操作（退订/删分组）需 `confirm` 并支持 `dry_run` 预览；写操作有审计日志；列表默认口径固定为「最新在前 + 不隐藏已读」（显式参数可覆盖）——见 2026-09-23-mcp-write（2026-09-23 进度：T2 读写分权/开关/审计/写契约 + T3 阅读状态与刷新写工具已落地——`set_read`/`set_starred`/`set_read_later`（ids ≤100 或条件级 {feed_id, since, until}、幂等、逐项结果）、`refresh`（三类 scope，与界面共用单 flight，进行中返回 `rate_limited`）、`fetch_fulltext`（复用 2MiB 闸门与既有抓取）；订阅管理（T4：`subscribe`/`update_feed`/`folder_*`/`unsubscribe`/`import_opml`/`export_opml`）**未完成**，本条目仍不勾）
 - [x] MCP 仅监听回环地址；未携带正确 token 的请求一律拒绝；token 可轮换且轮换后旧 token 立即失效
 - [x] 同一条查询在 MCP 与 GUI 中返回一致结果（同一 core 数据层）——`EntryQuery` 的 `since`/`until`/`feed_ids`/`sort`/`hide_read` 是**显式参数**：界面路径不传（跟随 `list.sort`/`list.hide_read` 设置），MCP 路径全传且默认固定「最新在前 + 不隐藏已读」；两条路径共用同一份 SQL 与同一批索引，不存在第二套查询逻辑
 - [x] 返回体默认省略正文 HTML 大字段（元数据 + 纯文本摘要），正文按需单独取，避免 agent 上下文被单次响应撑爆
