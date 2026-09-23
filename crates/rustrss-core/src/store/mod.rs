@@ -1424,7 +1424,8 @@ impl Store {
         self.tag_link(target, tag_ids, true)
     }
 
-    /// 给条目移除标签（目标与幂等口径同 [`Store::assign_tags`]）。
+    /// 给条目移除标签（目标与幂等口径同 [`Store::assign_tags`]；**不**推进
+    /// `last_used_at`——「最近使用」只由打标推进，见 [`Store::assign_tags`]）。
     pub fn unassign_tags(&self, target: &TagTarget, tag_ids: &[i64]) -> Result<TagAssignReport> {
         self.tag_link(target, tag_ids, false)
     }
@@ -1538,6 +1539,9 @@ impl Store {
     /// - `last_used_at` 与关联写入在**同一个事务**里推进，且只在真的改变了关联时
     ///   才推进——于是纯重复调用是严格零副作用。这是选择器「最近使用优先」的唯一
     ///   数据来源；
+    /// - 只有**打标**（`link = true`）推进 `last_used_at`：PRD FR-1 / tech_design
+    ///   schema 注释与 `Store::create_tag` 的文档口径都是「打标时更新」，取消打标
+    ///   不算一次使用（否则刚移除的标签会跳到选择器最前）。
     /// - 不存在的标签 id 直接报 [`StoreError::TagNotFound`]（静默忽略会让调用方
     ///   以为打上了）；不存在的条目 id 静默跳过（`SELECT ... FROM entries` 只出真实
     ///   存在的行，也顺便免掉 FK 报错）。
@@ -1580,7 +1584,7 @@ impl Store {
                 params_from_iter(tag_values()),
             )?
         };
-        if changed > 0 {
+        if changed > 0 && link {
             let mut values: Vec<Value> = vec![Value::Integer(now())];
             values.extend(tag_ids.iter().map(|id| Value::Integer(*id)));
             tx.execute(

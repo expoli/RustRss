@@ -456,7 +456,7 @@ fn delete_tag_dry_run_matches_the_real_delete_and_keeps_articles() {
 // ------------------------------------------------------------ 打标 / 取消打标
 
 #[test]
-fn assign_and_unassign_batch_are_idempotent_and_touch_last_used_at() {
+fn assign_and_unassign_batch_are_idempotent() {
     let (store, _f1, _f2) = setup();
     let rust = store.create_tag("Rust", None).unwrap();
     let db = store.create_tag("数据库", None).unwrap();
@@ -593,7 +593,9 @@ fn repeat_assign_is_a_strict_no_op_for_last_used_at() {
         .last_used_at
         .unwrap();
     assert!(bumped > 1, "新增关联应推进 last_used_at，实际: {bumped}");
-    // 取消也是「用了一次」：同样推进（语义与选择器「最近使用」一致）
+    // 取消**不是**「用了一次」：`last_used_at` 只由打标推进（PRD FR-1 / tech_design
+    // schema 注释 / `Store::create_tag` 文档口径一致：「打标时更新」）。
+    // 批次收口修正：此前 unassign 也推进，刚移除的标签会跳到选择器最前。
     {
         let conn = rusqlite::Connection::open(&db_path).unwrap();
         conn.execute(
@@ -606,15 +608,10 @@ fn repeat_assign_is_a_strict_no_op_for_last_used_at() {
         .unassign_tags(&TagTarget::Entries(vec![2]), &[tag_id])
         .unwrap();
     assert_eq!(report.changed, 1);
-    assert!(
-        store
-            .tag_row(tag_id)
-            .unwrap()
-            .unwrap()
-            .last_used_at
-            .unwrap()
-            > 2,
-        "取消打标同样推进最近使用时间"
+    assert_eq!(
+        store.tag_row(tag_id).unwrap().unwrap().last_used_at,
+        Some(2),
+        "取消打标不得推进最近使用时间（哨兵值必须原样）"
     );
     let _ = std::fs::remove_file(&db_path);
 }

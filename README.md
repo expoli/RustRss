@@ -34,11 +34,11 @@ ui/                    桌面应用前端（当前为探针页面）
 
 ### MCP 服务器（stdio + HTTP 两种传输，已接真实库）
 
-工具集：**只读** 7 个 —— `list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats`；**写** 13 个 —— `set_read` / `set_starred` / `set_read_later` / `refresh` / `fetch_fulltext`（阅读状态与刷新）+ `subscribe` / `update_feed` / `folder_create` / `folder_rename` / `folder_delete` / `unsubscribe` / `import_opml` / `export_opml`（订阅管理，其中 `folder_delete` / `unsubscribe` 是**危险工具**，另受危险开关约束）。写工具默认不可用，需要写 token + 写开关，见下面的权限模型。
+工具集：**只读** 8 个 —— `list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats` / `list_tags`；**写** 18 个 —— `set_read` / `set_starred` / `set_read_later` / `refresh` / `fetch_fulltext`（阅读状态与刷新）+ `subscribe` / `update_feed` / `folder_create` / `folder_rename` / `folder_delete` / `unsubscribe` / `import_opml` / `export_opml`（订阅管理，其中 `folder_delete` / `unsubscribe` 是**危险工具**，另受危险开关约束）+ `create_tag` / `rename_tag` / `assign_tags` / `unassign_tags` / `delete_tag`（标签，全部非危险：删标签只清关联、不删文章）。写工具默认不可用，需要写 token + 写开关，见下面的权限模型。
 
 口径：**列表只回元数据 + 短摘要（≤140 字），正文必须用 `get_article` 单独取**；所有列表有上限（默认 10、上限 50）。这是为了不让单次响应撑爆 agent 上下文（见 PRD §6 风险 3）。
 
-`list_articles` 的默认口径**固定**为 `sort=newest` + 不隐藏已读，**不继承界面设置**（`list.sort` / `list.hide_read`）——agent 拿到的默认视图不该被用户此刻的界面选择左右。可用参数：`feed_id` / `folder_id`（二选一）、`unread_only`、`starred_only`、`read_later_only`、`since` / `until`（对 `COALESCE(published_at, fetched_at)` 的**闭区间**，Unix 秒）、`sort`（`newest` / `oldest` / `unread_first`）、`hide_read`、`page_size`（别名 `limit`）。翻页是 keyset 游标：把上一页返回的 `next_cursor` 原样回传给 `cursor`，不重不漏（游标带排序档、`unread_first` 档还带 `read` 分量——换档复用旧游标会明确报错，而不是翻出错页）；不满页时 `next_cursor` 为 `null`。
+`list_articles` 的默认口径**固定**为 `sort=newest` + 不隐藏已读，**不继承界面设置**（`list.sort` / `list.hide_read`）——agent 拿到的默认视图不该被用户此刻的界面选择左右。可用参数：`feed_id` / `folder_id`（二选一）、`tag_id` / `tag_name`（二选一，按标签筛选，未知标签报 `tag_not_found`；同时给报 `invalid_argument`）、`unread_only`、`starred_only`、`read_later_only`、`since` / `until`（对 `COALESCE(published_at, fetched_at)` 的**闭区间**，Unix 秒）、`sort`（`newest` / `oldest` / `unread_first`）、`hide_read`、`page_size`（别名 `limit`）。每条条目带 `tags`（该条目的标签名数组，最多 20 个，超过置 `tags_truncated=true`；标签 id 用 `list_tags` 取）。翻页是 keyset 游标：把上一页返回的 `next_cursor` 原样回传给 `cursor`，不重不漏（游标带排序档、`unread_first` 档还带 `read` 分量——换档复用旧游标会明确报错，而不是翻出错页）；不满页时 `next_cursor` 为 `null`。
 
 `list_folders` 给分组 + 每组未读合计（未分组单列 `ungrouped_unread`），`get_unread_summary`（`by=feed|folder`）给完整的未读分组清单（未读为 0 的组也出现）。三者与界面走 core 的同一条数据路径（硬约束 1）：`EntryQuery` 上的 `since` / `until` / `feed_ids` / `sort` / `hide_read` 只是**显式传参**——界面路径不传（继续跟随设置），MCP 路径全传（默认口径因此与界面设置解耦），不存在第二套查询逻辑。
 
@@ -71,6 +71,18 @@ ui/                    桌面应用前端（当前为探针页面）
 
 `import_opml`（`path` 本地文件或 `content` 文本，二选一；≤8 MiB）与 `export_opml`：复用 core 的 `opml::import|export`——与界面「导入 / 导出 OPML」同一条实现。导入按 `xmlUrl` 去重（已存在记 `skipped`、不移动分组），嵌套分组压平成 `父/子`；返回 `affected` = 新增数，`detail` 含 `added` / `skipped` / `errors`（成功时空数组）/ `folders_created` / `outlines_ignored`。导出把 OPML 文本放在 `detail.opml`（**不写文件**），同一个文本可原样回导（二次导入全部 `skipped`，有往返测试）。
 
+#### 写工具口径（标签管理）
+
+标签工具走 core 的 `Store` 标签 API（与界面同一数据层），“打标签”的效果与界面里按 `t` 打标完全一致：
+
+- `list_tags`（**只读**）：`sort=sidebar`（默认：置顶优先 → 手动顺序 → 名称）或 `recent`（最近使用优先，没用过的垫底）；每行含 `id` / `name` / `color`（`#rrggbb` 或 `null`）/ `pinned` / `unread`（该标签下**未读**条目数）/ `sort_order` / `last_used_at`。只回元数据（无条目正文），一次最多 200 个：超出时 `truncated=true` 且 `total` 给全量口径。
+- `create_tag`（`name` + 可选 `color`）：`name` trim 后非空，大小写不敏感唯一——重名报 `duplicate_tag_name`（**不是**幂等返回既有 id，与 `folder_create` 有意不同：建标签重名多半是撞名而不是重试）；`color` 必须是 `#RRGGBB`，否则 `invalid_argument`。
+- `rename_tag`（`tag_id` + `name`）：口径同 `create_tag`；`tag_id` 不存在 → `tag_not_found`；允许仅改大小写。
+- `assign_tags` / `unassign_tags`：目标与 `set_read` 同形——`ids[]`（≤100）或条件级 `{feed_id, since, until}`（至少一个；`since` / `until` 为闭区间，口径同列表排序键）；混用/都缺 → `invalid_argument`（条件级漏参绝不能退化成全库打标）。`tag_ids` 1..=100 个（来自 `list_tags`；有一个不存在 → `tag_not_found` 且本次零改动）。返回写信封：`affected` = 命中条目数（重复调用稳定 = 幂等），`detail.changed` = 本次真正新增/移除的关联行数（重复调用为 0），不存在的条目 id 逐项标 `article_not_found`。取消打标**不**推进 `last_used_at`（见下一条）。
+- `delete_tag`（`tag_id`；`confirm` / `dry_run`）：只清 `entry_tags` 关联、**不删文章**（`affected` = 该标签下将失去关联的篇数）；预览走 core 的 `Store::delete_tag(id, true)`，与实际执行共用 `Store::tag_entry_count`，所以「预览 N 篇」与「真删影响 N 篇」不可能漂移。tag 删除**不在危险工具集合**（不进 `mcp.dangerous_enabled`），只要求写能力 + `confirm: true`；`dry_run: true` 的预览不需要 `confirm`。
+- 错误码（机器可读，不靠文案）：`tag_not_found` / `duplicate_tag_name` / `invalid_argument`（空名/非法颜色/空 `tag_ids`/超 100/目标形态混用或缺失）/ `confirm_required`，沿用 `write_scope_required` / `write_disabled`。
+- `last_used_at` 只由**打标**推进（`assign_tags`），取消打标不推进——与 PRD FR-1 / tech_design 「打标时更新」同口径（批次收口时的最小 core 修正）。
+
 两种传输：
 
 - **stdio**：客户端把 `rustrss-mcp` 当子进程拉起；
@@ -91,7 +103,7 @@ ui/                    桌面应用前端（当前为探针页面）
 
 - **HTTP**：每个请求按携带的 token **现算** scope——写 token → 写能力（还需两个开关），读 token → 只读；`tools/list` 也按当次请求的 scope 过滤（读 token 的会话看不到写工具）。**不缓存会话级 scope**：写 token 轮换或销毁后，旧值的**下一个请求立刻失效**（包括已建立的连接），不需要重启服务。
 - **stdio**：没有凭据概念，写能力由同一套开关把关（写开关 + 写 token 必须都已就位），与 HTTP 同口径。
-- **无权限时返回工具级错误码**：`write_scope_required`（没有写凭据）/ `write_disabled`（开关或写 token 没就位）/ `dangerous_tool_disabled`；危险操作还要 `confirm: true`（缺失 → `confirm_required`），并支持 `dry_run: true` 只预览影响面、不落库。业务错误码同样机器可读：`article_not_found` / `invalid_argument`（ids 为空/超限/两种目标混用/条件缺失）/ `rate_limited`（刷新进行中）/ `feed_not_found` / `folder_not_found` / `fulltext_*`（见上）。被拒的调用一律不改库（有测试钉住）。
+- **无权限时返回工具级错误码**：`write_scope_required`（没有写凭据）/ `write_disabled`（开关或写 token 没就位）/ `dangerous_tool_disabled`；危险操作还要 `confirm: true`（缺失 → `confirm_required`），并支持 `dry_run: true` 只预览影响面、不落库。业务错误码同样机器可读：`article_not_found` / `invalid_argument`（ids 为空/超限/两种目标混用/条件缺失）/ `rate_limited`（刷新进行中）/ `feed_not_found` / `folder_not_found` / `tag_not_found` / `duplicate_tag_name` / `fulltext_*`（见上）。被拒的调用一律不改库（有测试钉住）。
 - **审计**：每次写调用（含被拒的）落一行 `target=mcp` 日志（工具名 / 参数摘要 / 影响条数 / 结果），参数摘要过 `scrub_log_line`（URL 里的 token、userinfo 一律 `***`），不含正文与凭据。日志落在与桌面端同一目录的日志文件里（`rustrss-mcp --http`/stdio 也会装同一套文件日志）。
 - 传输层口径不变：无/错 token 仍 401，`/health` 仍不鉴权且不含订阅数据。
 
@@ -113,6 +125,14 @@ ui/                    桌面应用前端（当前为探针页面）
 - `folder_delete` dry_run → `feeds_affected=1`（组与订阅都不动）；confirm → 组消失、订阅仍在且 `folder_id` 变空。
 - `unsubscribe` dry_run → `affected=2` 且 `sqlite3` 回读 feeds=1 / entries=2（未落库）；confirm → `affected=2`，回读 feeds=0 / entries=0（条目级联删除），`list_feeds` 里不再出现。
 - 错误码实机命中：读 token 调 `subscribe` → `write_scope_required`；缺 `confirm` → `confirm_required`；源不存在 → `feed_not_found`。审计行 19 行（含 dry_run 与被拒），日志里凭据串 0 命中。
+
+实测（2026-09-23，T4 标签；真二进制 `rustrss-mcp --http` + 真库 + 本地 HTTP 源，`mktemp -d` 隔离 HOME）：
+
+- 读 token：`tools/list` 只有 8 个只读工具（有 `list_tags`、没有 `create_tag`）；`list_tags` 可用；调 `create_tag` / `assign_tags` → 工具级 `write_scope_required`（`isError=true`，库不变）。写 token：`create_tag` → `affected=1` + 归一化颜色 `#3e63dd`；重名报 `duplicate_tag_name`；`color: "blue"` 报 `invalid_argument`。
+- `assign_tags(ids)` → `affected=2` / `detail.changed=2`，`sqlite3` 回读 `entry_tags=2`；`list_articles(tag_name=live)`（小写，大小写不敏感）→ 2 条且每条回出 `tags: ["Live"]`；`list_articles(tag_id + tag_name)` → `invalid_argument`；未知标签 → `tag_not_found`。
+- **`last_used_at` 口径收口**：`sqlite3` 把哨兵值写成 1000 → `unassign_tags` 后回读仍为 `1000`（取消不推进）；再 `assign_tags` 后变为真实时间戳（打标才推进）。
+- `delete_tag` 缺 `confirm` → `confirm_required`；`dry_run` → `affected=2` 且回读 `tags=1 / entry_tags=2 / entries=3`（未落库）；`confirm` → `affected=2`（与预览同源）、回读 `tags=0 / entry_tags=0 / entries=3`（标签消失、文章保留）。
+- 审计行 16 行 `mcp-write tool=…`（含 `dry_run=true` 与 `write_scope_required` / `duplicate_tag_name` / `confirm_required` / `tag_not_found` 失败行）；日志里 `hunter2` / `SECRET-TOKEN` / 读写 token 串 0 命中，`token=***` 打码行保留。
 
 <details>
 <summary>客户端配置片段示例（应用内可直接复制）</summary>

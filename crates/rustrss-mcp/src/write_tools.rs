@@ -285,7 +285,7 @@ impl RustRssMcp {
     }
 }
 
-fn scope_json(scope: &EntryFlagScope) -> Value {
+pub(crate) fn scope_json(scope: &EntryFlagScope) -> Value {
     let mut map = serde_json::Map::new();
     if let Some(feed_id) = scope.feed_id {
         map.insert("feed_id".into(), json!(feed_id));

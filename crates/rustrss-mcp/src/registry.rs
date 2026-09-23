@@ -151,6 +151,14 @@ pub const TOOL_SPECS: &[ToolSpec] = &[
         scope: Scope::Read,
         dangerous: false,
     },
+    // T4（标签）：`list_tags` 是只读工具（读 token 也能用）；五个写工具全部
+    // `dangerous = false`——**tag 删除不进危险集合**（只清关联、不删文章），
+    // 仅要求 `confirm: true`。危险集合保持 MCP 批次的既定定义。
+    ToolSpec {
+        name: "list_tags",
+        scope: Scope::Read,
+        dangerous: false,
+    },
     // T3：阅读状态与刷新。三者都不危险（可逆/幂等/不删数据），所以不受危险开关约束，
     // 但仍需要写 scope + 写开关 + 写 token 三道闸。
     ToolSpec {
@@ -217,6 +225,31 @@ pub const TOOL_SPECS: &[ToolSpec] = &[
     },
     ToolSpec {
         name: "export_opml",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "create_tag",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "rename_tag",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "assign_tags",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "unassign_tags",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "delete_tag",
         scope: Scope::Write,
         dangerous: false,
     },
@@ -411,12 +444,13 @@ mod tests {
         assert_eq!(names, vec!["list_feeds".to_string()]);
     }
 
-    /// 现有只读工具都必须登记且不带危险标记；写工具（T3 的 5 个 + T4 的 8 个）
-    /// 按「是否破坏性/不可逆」标 dangerous——危险集合只有 `unsubscribe` / `folder_delete`。
+    /// 现有只读工具都必须登记且不带危险标记；写工具（T3 的 5 个 + T4 订阅 8 个 +
+    /// 标签 5 个）按「是否破坏性/不可逆」标 dangerous——危险集合只有
+    /// `unsubscribe` / `folder_delete`（**tag 删除不在其中**）。
     #[test]
     fn read_tools_are_registered() {
-        assert_eq!(TOOL_SPECS.len(), 20);
-        assert_eq!(read_tool_count(), 7);
+        assert_eq!(TOOL_SPECS.len(), 26);
+        assert_eq!(read_tool_count(), 8);
         for name in [
             "list_feeds",
             "list_folders",
@@ -425,6 +459,7 @@ mod tests {
             "search_articles",
             "get_unread_summary",
             "db_stats",
+            "list_tags",
         ] {
             let spec = spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
             assert_eq!(spec.scope, Scope::Read, "{name} 应为只读");
@@ -451,6 +486,19 @@ mod tests {
             let spec = spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
             assert_eq!(spec.scope, Scope::Write, "{name} 应为写工具");
             assert!(spec.dangerous, "{name} 是危险工具（需 confirm + 危险开关）");
+        }
+        // T4（标签）：五个写工具都不进危险集合——删标签只清关联、不删文章，
+        // 仅要求 confirm；dangerous 集合保持既定两员
+        for name in [
+            "create_tag",
+            "rename_tag",
+            "assign_tags",
+            "unassign_tags",
+            "delete_tag",
+        ] {
+            let spec = spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
+            assert_eq!(spec.scope, Scope::Write, "{name} 应为写工具");
+            assert!(!spec.dangerous, "{name} 不是危险工具（只清关联/可逆）");
         }
         let dangerous: Vec<&str> = TOOL_SPECS
             .iter()

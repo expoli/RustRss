@@ -22,6 +22,7 @@ pub mod config;
 pub mod feed_tools;
 pub mod http;
 pub mod registry;
+pub mod tag_tools;
 pub mod write_contract;
 pub mod write_tools;
 
@@ -63,6 +64,10 @@ pub struct ListArticlesParams {
     pub starred_only: bool,
     /// 只看「稍后读」
     pub read_later_only: bool,
+    /// 只看带某个标签的条目（tag id 来自 list_tags）；与 `tag_name` 二选一
+    pub tag_id: Option<i64>,
+    /// 只看带某个标签的条目（按名称，大小写不敏感）；与 `tag_id` 二选一
+    pub tag_name: Option<String>,
     /// 只看该时刻（含）之后的条目；比较的是列表排序键
     /// `COALESCE(published_at, fetched_at)`（Unix 秒）
     pub since: Option<i64>,
@@ -190,6 +195,11 @@ struct ArticleMetaOut {
     read: bool,
     starred: bool,
     summary: Option<String>,
+    /// 该条目的标签名（只回名称；写工具的 tag_id 用 list_tags 取）。
+    /// 超过 [`tag_tools::TAGS_PER_ENTRY_MAX`] 时截断并置 `tags_truncated`
+    tags: Vec<String>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    tags_truncated: bool,
 }
 
 #[derive(Serialize)]
@@ -420,6 +430,13 @@ impl RustRssMcp {
         if p.feed_id.is_some() && p.folder_id.is_some() {
             return error_json("feed_id 与 folder_id 只能用一个（二者互斥）");
         }
+        // 标签过滤同样二选一：id 与名称同时给无从裁决
+        if p.tag_id.is_some() && p.tag_name.is_some() {
+            return tag_tools::error_body(
+                tag_tools::ERROR_INVALID_ARGUMENT,
+                "tag_id 与 tag_name 只能用一个（二者互斥）",
+            );
+        }
         let sort = match parse_sort(p.sort.as_deref()) {
             Ok(s) => s,
             Err(e) => return error_json(&e),
@@ -440,6 +457,13 @@ impl RustRssMcp {
                 },
                 None => None,
             };
+            // 标签过滤：tag_name 在这里解析成 id（大小写不敏感，与 UNIQUE COLLATE NOCASE
+            // 同口径）；未知标签 → 机器可读的 `tag_not_found`，而不是静默空列表
+            let tag_id = match tag_tools::resolve_tag_filter(store, p.tag_id, p.tag_name.as_deref())
+            {
+                Ok(v) => v,
+                Err(e) => return tag_tools::error_body(e.code, &e.message),
+            };
             let query = EntryQuery {
                 feed_id: p.feed_id,
                 feed_ids,
@@ -454,8 +478,7 @@ impl RustRssMcp {
                 // MCP 默认口径固定（不继承界面设置）：显式传参才偏离默认
                 sort: Some(sort),
                 hide_read: Some(p.hide_read.unwrap_or(false)),
-                // 机械补全：T1 新加的标签过滤在 MCP 侧另行接线（T4），这里保持默认不过滤
-                tag_id: None,
+                tag_id,
             };
             match store.list_entries(&query) {
                 Ok(rows) => {
@@ -626,7 +649,7 @@ impl RustRssMcp {
     }
 
     #[tool(
-        description = "列出条目元数据（不含正文）。默认口径固定：sort=newest 且不隐藏已读（不跟随界面设置，显式传参才覆盖）；每页默认 10 条、上限 50，翻页把 next_cursor 回传给 cursor；可用 feed_id / folder_id（二选一）、unread_only、starred_only、read_later_only、since / until（对 COALESCE(published_at,fetched_at) 的闭区间，Unix 秒）、sort（newest/oldest/unread_first）、hide_read。正文用 get_article 单独取。"
+        description = "列出条目元数据（不含正文）。默认口径固定：sort=newest 且不隐藏已读（不跟随界面设置，显式传参才覆盖）；每页默认 10 条、上限 50，翻页把 next_cursor 回传给 cursor；可用 feed_id / folder_id（二选一）、tag_id / tag_name（二选一，按标签筛选；未知标签报 tag_not_found）、unread_only、starred_only、read_later_only、since / until（对 COALESCE(published_at,fetched_at) 的闭区间，Unix 秒）、sort（newest/oldest/unread_first）、hide_read。每条带 tags（该条目的标签名，最多 20 个，超出置 tags_truncated）。正文用 get_article 单独取。"
     )]
     fn list_articles(&self, Parameters(p): Parameters<ListArticlesParams>) -> String {
         self.list_articles_json(&p)
@@ -750,6 +773,50 @@ impl RustRssMcp {
     )]
     fn export_opml(&self) -> String {
         self.export_opml_json()
+    }
+
+    // ------------------------------------------------------------ 标签（T4：read 一个 + write 五个）
+
+    #[tool(
+        description = "列出标签及其未读计数（**只读工具**：读 token 也能用）。sort=sidebar（默认：置顶优先 → 手动顺序 → 名称）或 recent（最近使用优先，没用过的垫底）。只回元数据（id / 名称 / 颜色 / 置顶 / 未读计数 / 顺序 / 最近使用），一次最多 200 个：超出时 truncated=true 且 total 给全量口径（不静默丢）。写工具的 tag_id 取自这里。"
+    )]
+    fn list_tags(&self, Parameters(p): Parameters<tag_tools::ListTagsParams>) -> String {
+        self.list_tags_json(&p)
+    }
+
+    #[tool(
+        description = "新建标签（写工具）。name trim 后不能为空；标签名大小写不敏感唯一——重名报 duplicate_tag_name（先用 list_tags 确认），空名 / 非法颜色（非 #RRGGBB）报 invalid_argument。返回 {ok, affected=1, results=[id], detail=标签行}。"
+    )]
+    fn create_tag(&self, Parameters(p): Parameters<tag_tools::CreateTagParams>) -> String {
+        self.create_tag_json(&p)
+    }
+
+    #[tool(
+        description = "重命名标签（写工具）。tag_id 不存在 → tag_not_found；重名（大小写不敏感）→ duplicate_tag_name；空名 → invalid_argument。允许仅大小写变化（rust → Rust）。返回更新后的标签行在 detail。"
+    )]
+    fn rename_tag(&self, Parameters(p): Parameters<tag_tools::RenameTagParams>) -> String {
+        self.rename_tag_json(&p)
+    }
+
+    #[tool(
+        description = "给条目附加标签（写工具，幂等）。目标二选一：ids[]（≤100）或条件级 {feed_id, since, until}（至少一个，闭区间，口径同 set_read）；混用 / 都缺 → invalid_argument。tag_ids 1..=100 个（来自 list_tags；有一个不存在 → tag_not_found 且本次零改动）。返回 {ok, affected, results, detail}：affected = 命中条目数（重复调用稳定），detail.changed = 本次真正新增的关联行数（重复调用 0），不存在的条目 id 逐项回 article_not_found。"
+    )]
+    fn assign_tags(&self, Parameters(p): Parameters<tag_tools::AssignTagsParams>) -> String {
+        self.assign_tags_json(&p)
+    }
+
+    #[tool(
+        description = "移除条目上的标签（写工具，幂等）。目标与返回口径同 assign_tags：affected = 命中条目数、detail.changed = 本次真正移除的关联行数（重复调用 0）；只清关联，文章保留。"
+    )]
+    fn unassign_tags(&self, Parameters(p): Parameters<tag_tools::AssignTagsParams>) -> String {
+        self.unassign_tags_json(&p)
+    }
+
+    #[tool(
+        description = "删除标签（写工具；只清关联、不删文章，**不是危险工具**）。实际执行必须 confirm: true（缺 → confirm_required）；dry_run: true 只返回受影响篇数（affected）且库不变——预览与实际执行共用 core 同一个计数函数（Store::delete_tag）。tag_id 不存在 → tag_not_found。"
+    )]
+    fn delete_tag(&self, Parameters(p): Parameters<tag_tools::DeleteTagParams>) -> String {
+        self.delete_tag_json(&p)
     }
 }
 
@@ -918,6 +985,13 @@ fn meta_out(row: &rustrss_core::EntryRow) -> ArticleMetaOut {
         read: row.read,
         starred: row.starred,
         summary: row.summary.as_deref().map(truncate),
+        tags: row
+            .tags
+            .iter()
+            .take(tag_tools::TAGS_PER_ENTRY_MAX)
+            .map(|t| t.name.clone())
+            .collect(),
+        tags_truncated: row.tags.len() > tag_tools::TAGS_PER_ENTRY_MAX,
     }
 }
 
@@ -1069,6 +1143,12 @@ mod tests {
             "folder_rename",
             "import_opml",
             "export_opml",
+            // T4：标签（写工具全非危险；`list_tags` 是读工具，不在此列）
+            "create_tag",
+            "rename_tag",
+            "assign_tags",
+            "unassign_tags",
+            "delete_tag",
         ] {
             assert!(write_names.contains(&name.to_string()), "{write_names:?}");
         }
