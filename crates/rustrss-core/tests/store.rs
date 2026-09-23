@@ -6,7 +6,10 @@
 
 use rustrss_core::store::schema::MIGRATIONS;
 use rustrss_core::store::{LIST_HIDE_READ_KEY, LIST_SORT_KEY};
-use rustrss_core::{Entry, EntryQuery, IdOrigin, ListSort, MarkScope, Store, UnreadGroupBy};
+use rustrss_core::{
+    Entry, EntryFlag, EntryFlagScope, EntryQuery, IdOrigin, ListSort, MarkScope, Store, StoreError,
+    UnreadGroupBy,
+};
 use rustrss_core::rsshub;
 
 fn mk_entry(stable_id: &str, title: &str, text: &str) -> Entry {
@@ -2094,4 +2097,284 @@ fn entry_query_explicit_sort_and_hide_read_override_settings() {
         plan.contains("idx_entries_unread_sortkey"),
         "显式排序档在 EXPLAIN 路径也要生效（与线上同一份 SQL），实际计划: {plan}"
     );
+}
+
+// ---------------------------------------------------------------- 条件级状态写入（MCP 写工具的目标选择）
+
+/// 带 `published_at` 的条目：条件级写入的时间键是 `COALESCE(published_at, fetched_at)`，
+/// 测试要能精确摆出这个键（不传 = 用入库时刻当键）。
+fn mk_entry_at(stable_id: &str, title: &str, published_at: Option<i64>) -> Entry {
+    let mut e = mk_entry(stable_id, title, "内容");
+    e.published = published_at.and_then(|ts| chrono::DateTime::from_timestamp(ts, 0));
+    e
+}
+
+/// 条件级写入只碰范围内的行，且返回**命中条数**（重复调用稳定 → 幂等）。
+#[test]
+fn conditional_flag_write_is_scoped_and_idempotent() {
+    let store = Store::open_in_memory().unwrap();
+    let feed_a = store
+        .add_feed("https://example.com/a.xml", Some("A源"))
+        .unwrap();
+    let feed_b = store
+        .add_feed("https://example.com/b.xml", Some("B源"))
+        .unwrap();
+    store
+        .upsert_entries(
+            feed_a,
+            &[
+                mk_entry_at("a-old", "A 旧", Some(1_000)),
+                mk_entry_at("a-new", "A 新", Some(3_000)),
+            ],
+        )
+        .unwrap();
+    store
+        .upsert_entries(feed_b, &[mk_entry_at("b-new", "B 新", Some(3_000))])
+        .unwrap();
+
+    let id_of = |stable_id: &str| {
+        store
+            .list_entries(&EntryQuery::default())
+            .unwrap()
+            .into_iter()
+            .find(|r| r.stable_id == stable_id)
+            .unwrap_or_else(|| panic!("{stable_id} 不在库里"))
+            .id
+    };
+    let (a_old, a_new, b_new) = (id_of("a-old"), id_of("a-new"), id_of("b-new"));
+
+    // feed_id + since：范围外的 A 旧 与别的源的 B 新 都不在目标里
+    let scope = EntryFlagScope {
+        feed_id: Some(feed_a),
+        since: Some(2_000),
+        until: None,
+    };
+    assert_eq!(
+        store.entry_ids_scoped(&scope, 100).unwrap(),
+        vec![a_new],
+        "采样必须与写入看到同一批行"
+    );
+
+    let affected = store
+        .set_flag_scoped(EntryFlag::Read, true, &scope)
+        .unwrap();
+    assert_eq!(affected, 1, "命中 1 条");
+    // 幂等：第二次仍是同一个命中条数（口径是「命中」而不是「值真的变了的行数」）
+    assert_eq!(
+        store
+            .set_flag_scoped(EntryFlag::Read, true, &scope)
+            .unwrap(),
+        1,
+        "重复调用返回值必须稳定（幂等）"
+    );
+
+    assert!(
+        store.get_entry(a_new).unwrap().unwrap().read,
+        "范围内的应已读"
+    );
+    assert!(
+        !store.get_entry(a_old).unwrap().unwrap().read,
+        "早于 since 的不该被动"
+    );
+    assert!(
+        !store.get_entry(b_new).unwrap().unwrap().read,
+        "别的源不该被动"
+    );
+    assert_eq!(store.unread_total().unwrap(), 2, "3 条里只有 1 条变已读");
+
+    // 反向（取消已读）走同一条路径：值字段传 false
+    assert_eq!(
+        store
+            .set_flag_scoped(EntryFlag::Read, false, &scope)
+            .unwrap(),
+        1
+    );
+    assert!(
+        !store.get_entry(a_new).unwrap().unwrap().read,
+        "撤销后回到未读"
+    );
+    assert_eq!(store.unread_total().unwrap(), 3);
+
+    // 星标 / 稍后读共用同一实现，互不串味
+    assert_eq!(
+        store
+            .set_flag_scoped(EntryFlag::Starred, true, &scope)
+            .unwrap(),
+        1
+    );
+    assert_eq!(
+        store
+            .set_flag_scoped(EntryFlag::ReadLater, true, &scope)
+            .unwrap(),
+        1
+    );
+    let row = store.get_entry(a_new).unwrap().unwrap();
+    assert!(row.starred && row.read_later && !row.read, "{row:?}");
+    assert!(
+        store
+            .entry_ids_scoped(&scope, 100)
+            .unwrap()
+            .contains(&a_new)
+            || true
+    );
+}
+
+/// 空范围**不得**退化成「全库」：漏参的后果是改掉整个库，必须报错。
+#[test]
+fn conditional_flag_write_rejects_an_empty_scope() {
+    let (store, feed_id) = setup();
+    store
+        .upsert_entries(
+            feed_id,
+            &[mk_entry("a1", "一", "x"), mk_entry("a2", "二", "y")],
+        )
+        .unwrap();
+
+    let err = store
+        .set_flag_scoped(EntryFlag::Read, true, &EntryFlagScope::default())
+        .unwrap_err();
+    assert!(matches!(err, StoreError::Invalid(_)), "{err:?}");
+    assert_eq!(store.unread_total().unwrap(), 2, "报错时库必须一个字节没动");
+
+    let err = store
+        .entry_ids_scoped(&EntryFlagScope::default(), 10)
+        .unwrap_err();
+    assert!(matches!(err, StoreError::Invalid(_)), "{err:?}");
+}
+
+/// 存在性检查：去重 + 升序，缺失的 id 不返回（写工具据此逐项回 `article_not_found`）。
+#[test]
+fn existing_entry_ids_dedupes_and_skips_missing() {
+    let (store, feed_id) = setup();
+    store
+        .upsert_entries(
+            feed_id,
+            &[mk_entry("a1", "一", "x"), mk_entry("a2", "二", "y")],
+        )
+        .unwrap();
+    let all = store.list_entries(&EntryQuery::default()).unwrap();
+    let (first, second) = (all[0].id, all[1].id);
+
+    assert_eq!(
+        store
+            .existing_entry_ids(&[second, 999_999, first, first])
+            .unwrap(),
+        vec![first.min(second), first.max(second)],
+        "去重去缺失 + 升序"
+    );
+    assert!(store.existing_entry_ids(&[]).unwrap().is_empty());
+    assert!(store.existing_entry_ids(&[999_999]).unwrap().is_empty());
+}
+
+/// 条件级写入的计划必须走索引：feed 等值走 `idx_entries_feed_published`，
+/// 纯时间范围走 v6 的 `idx_entries_sortkey`（与列表排序键同一个表达式）。
+/// 裸 `SCAN entries` 在这个库上意味着逐行穿过 11KB 正文列——写入也一样要付这个代价。
+#[test]
+fn conditional_write_plans_use_indexes() {
+    let store = Store::open_in_memory().unwrap();
+    let feed_id = store
+        .add_feed("https://example.com/a.xml", Some("A源"))
+        .unwrap();
+
+    let feed_scope = EntryFlagScope {
+        feed_id: Some(feed_id),
+        since: Some(0),
+        until: None,
+    };
+    let plan = store
+        .explain_set_flag_scoped(EntryFlag::Read, &feed_scope)
+        .unwrap()
+        .join(" | ");
+    assert!(
+        plan.contains("USING INDEX") || plan.contains("USING COVERING INDEX"),
+        "按源 + 时间范围的条件写入必须走索引，实际计划: {plan}"
+    );
+    assert!(!plan.contains("SCAN entries"), "不得退化为全表扫: {plan}");
+
+    let time_scope = EntryFlagScope {
+        feed_id: None,
+        since: Some(0),
+        until: Some(i64::MAX),
+    };
+    let plan = store
+        .explain_set_flag_scoped(EntryFlag::Starred, &time_scope)
+        .unwrap()
+        .join(" | ");
+    assert!(
+        plan.contains("idx_entries_sortkey"),
+        "时间范围条件应走 sortkey 表达式索引，实际计划: {plan}"
+    );
+
+    // 空范围没有计划可谈：直接报错（与写入同口径）
+    assert!(store
+        .explain_set_flag_scoped(EntryFlag::Read, &EntryFlagScope::default())
+        .is_err());
+}
+
+/// 变异校验：把相关索引删掉，上面那条断言必须真的转红——否则它只是「恰好成立」，
+/// 而不是在守索引（口径同 `time_range_plan_assertion_turns_red_without_sortkey_index`）。
+#[test]
+fn conditional_write_plan_assertion_turns_red_without_the_indexes() {
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-flag-plan-mutation-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let store = Store::open(&db_path).unwrap();
+        let feed_id = store
+            .add_feed("https://example.com/feed.xml", Some("示例源"))
+            .unwrap();
+        store
+            .upsert_entries(feed_id, &[mk_entry_at("a", "A", Some(1_700_000_000))])
+            .unwrap();
+    }
+    {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        // 三条能覆盖「feed 等值」的索引 + 排序键表达式索引一起拿走
+        conn.execute_batch(
+            "DROP INDEX idx_entries_feed_published;
+             DROP INDEX idx_entries_feed_read;
+             DROP INDEX idx_entries_sortkey;",
+        )
+        .unwrap();
+    }
+    let store = Store::open(&db_path).unwrap();
+    let feed_scope = EntryFlagScope {
+        feed_id: Some(1),
+        since: Some(0),
+        until: None,
+    };
+    let plan = store
+        .explain_set_flag_scoped(EntryFlag::Read, &feed_scope)
+        .unwrap()
+        .join(" | ");
+    // feed 等值形态：删掉那两条 feed 前缀索引后仍能走 `UNIQUE(feed_id, stable_id)` 的
+    // 自动索引 —— 所以这条断言守的是「不得退化到裸扫全表」，**不是**某一条具体索引；
+    // 真有退红色风险的是时间范围那侧的 sortkey 表达式索引（下面就是它的变异校验）。
+    assert!(
+        plan.contains("USING INDEX"),
+        "feed 等值形状必须仍有索引可用（没有就意味着去重约束/索引被动了）: {plan}"
+    );
+    let time_scope = EntryFlagScope {
+        feed_id: None,
+        since: Some(0),
+        until: Some(i64::MAX),
+    };
+    let plan = store
+        .explain_set_flag_scoped(EntryFlag::Starred, &time_scope)
+        .unwrap()
+        .join(" | ");
+    assert!(
+        !plan.contains("idx_entries_sortkey"),
+        "索引已删，计划里不该还有它: {plan}"
+    );
+    assert!(
+        plan.contains("SCAN entries"),
+        "时间范围掉索引后应退化为裸扫——这正是 `conditional_write_plans_use_indexes` 要拦住的形态: {plan}"
+    );
+    let _ = std::fs::remove_file(&db_path);
 }

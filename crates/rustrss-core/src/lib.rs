@@ -31,6 +31,6 @@ pub use refresh_flight::{RefreshFlight, RefreshGate};
 pub use parse::{parse, ParseError};
 pub use store::backup;
 pub use store::{
-    EntryQuery, EntryRow, FeedIntervalRow, FeedRow, InsertStats, ListSort, MarkScope, Store,
-    StoreError, UnreadGroup, UnreadGroupBy,
+    EntryFlag, EntryFlagScope, EntryQuery, EntryRow, FeedIntervalRow, FeedRow, InsertStats,
+    ListSort, MarkScope, Store, StoreError, UnreadGroup, UnreadGroupBy,
 };

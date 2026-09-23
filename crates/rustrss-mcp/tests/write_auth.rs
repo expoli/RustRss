@@ -292,7 +292,11 @@ async fn read_token_cannot_see_or_call_write_tools() {
     // ① tools/list 只列只读工具：写工具（含桩）一个都不出现
     let (status, names) = list_tools(&http, &base, "read-token").await;
     assert_eq!(status, 200);
-    assert_eq!(names.len(), registry::TOOL_SPECS.len(), "只应列出只读工具: {names:?}");
+    assert_eq!(
+        names.len(),
+        registry::read_tool_count(),
+        "只应列出只读工具: {names:?}"
+    );
     assert!(!names.contains(&"stub_set_read".to_string()), "{names:?}");
     assert!(!names.contains(&"stub_unsubscribe".to_string()), "{names:?}");
     for name in &names {
@@ -346,7 +350,7 @@ async fn write_switch_and_dangerous_switch_gate_independently() {
             .unwrap();
     }
     let (_, names) = list_tools(&http, &base, &write_token).await;
-    assert_eq!(names.len(), registry::TOOL_SPECS.len(), "{names:?}");
+    assert_eq!(names.len(), registry::read_tool_count(), "{names:?}");
     let (_, is_error, body) = call_tool(
         &http,
         &base,

@@ -253,6 +253,70 @@ pub enum MarkScope {
     Feed(i64),
 }
 
+/// 条目状态位（`set_read` / `set_starred` / `set_read_later` 同族的第三套入口）。
+///
+/// 用枚举而不是 `&str` 列名：MCP 的写工具把入参透传到这一层，字符串列名在这里
+/// 就是一条拼错即改错列的通道（SQLite 不会报错，只会默默写别的列）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EntryFlag {
+    Read,
+    Starred,
+    ReadLater,
+}
+
+impl EntryFlag {
+    fn column(self) -> &'static str {
+        match self {
+            EntryFlag::Read => "read",
+            EntryFlag::Starred => "starred",
+            EntryFlag::ReadLater => "read_later",
+        }
+    }
+}
+
+/// 条件级状态写入的目标范围（MCP：`set_read({feed_id, since, until})`）。
+///
+/// 三个字段全为 `None` 的空范围**不是**「全部」：它代表调用方没给条件，
+/// 由上层判 `invalid_argument`。这里若把空范围当「不过滤」，一次漏参就会静默改全库。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct EntryFlagScope {
+    /// 只看某个订阅源
+    pub feed_id: Option<i64>,
+    /// 下界（含），比较键与列表排序键同源：`COALESCE(published_at, fetched_at)`
+    pub since: Option<i64>,
+    /// 上界（含），口径同 `since`
+    pub until: Option<i64>,
+}
+
+impl EntryFlagScope {
+    pub fn is_empty(&self) -> bool {
+        self.feed_id.is_none() && self.since.is_none() && self.until.is_none()
+    }
+
+    /// 条件级查询/写入共用的 WHERE 片段（采样与写入必须看到同一批行，
+    /// 两处各拼一遍迟早漂移）。空范围返回 `None`（调用方已经判过非法）。
+    fn where_sql(&self) -> Option<(String, Vec<Value>)> {
+        let mut clauses: Vec<&str> = Vec::new();
+        let mut values: Vec<Value> = Vec::new();
+        if let Some(feed_id) = self.feed_id {
+            clauses.push("feed_id = ?");
+            values.push(Value::Integer(feed_id));
+        }
+        if let Some(since) = self.since {
+            clauses.push("COALESCE(published_at, fetched_at) >= ?");
+            values.push(Value::Integer(since));
+        }
+        if let Some(until) = self.until {
+            clauses.push("COALESCE(published_at, fetched_at) <= ?");
+            values.push(Value::Integer(until));
+        }
+        if clauses.is_empty() {
+            return None;
+        }
+        Some((clauses.join(" AND "), values))
+    }
+}
+
 pub struct Store {
     conn: Connection,
 }
@@ -983,6 +1047,90 @@ impl Store {
         let mut values: Vec<Value> = vec![Value::Integer(i64::from(value))];
         values.extend(ids.iter().map(|id| Value::Integer(*id)));
         Ok(self.conn.execute(&sql, params_from_iter(values))?)
+    }
+
+    /// 条件级写入的 EXPLAIN 断言入口（与线上 SQL 同源，口径同 [`Store::explain_counts`]）。
+    #[doc(hidden)]
+    pub fn explain_set_flag_scoped(
+        &self,
+        flag: EntryFlag,
+        scope: &EntryFlagScope,
+    ) -> Result<Vec<String>> {
+        let Some((where_sql, values)) = scope.where_sql() else {
+            return Err(StoreError::Invalid(
+                "条件级写入至少需要一个条件（feed_id / since / until）".to_string(),
+            ));
+        };
+        let sql = format!(
+            "EXPLAIN QUERY PLAN UPDATE entries SET {} = 1 WHERE {where_sql}",
+            flag.column()
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
+        // EXPLAIN 也要绑定同数量的参数（SQLite 在 prepare 阶段就数 `?`）
+        let rows = stmt.query_map(params_from_iter(values), |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// 条件级批量标记：目标 = `feed_id`（可选）+ 时间范围（闭区间，键同列表排序键）。
+    ///
+    /// 返回**命中条数**，含此前已是目标状态的行——与 `set_read(ids)` 同口径
+    /// （SQLite 的 UPDATE 计数是「匹配到的行」而不是「值真的变了的行」），所以
+    /// 重复调用返回值稳定：幂等 = 第二次仍是同一个数、且不报错。
+    ///
+    /// 空范围返回 `Invalid`（**不**退化成「全部」）：条件级写入漏参的后果是改全库。
+    pub fn set_flag_scoped(
+        &self,
+        flag: EntryFlag,
+        value: bool,
+        scope: &EntryFlagScope,
+    ) -> Result<usize> {
+        let Some((where_sql, mut values)) = scope.where_sql() else {
+            return Err(StoreError::Invalid(
+                "条件级写入至少需要一个条件（feed_id / since / until）".to_string(),
+            ));
+        };
+        let sql = format!("UPDATE entries SET {} = ? WHERE {where_sql}", flag.column());
+        // 值参数排在 WHERE 之前：`?` 按出现顺序绑定
+        values.insert(0, Value::Integer(i64::from(value)));
+        Ok(self.conn.execute(&sql, params_from_iter(values))?)
+    }
+
+    /// 条件级命中的 id 采样（**有界**，按 id 升序）：写工具的「逐项结果」用它，
+    /// 不去物化整个命中集（条件可能命中上万条，倒出去只会撑爆 agent 上下文）。
+    ///
+    /// 与 [`Store::set_flag_scoped`] 共用同一处 WHERE：采样看到的就是会被写入的那批行。
+    pub fn entry_ids_scoped(&self, scope: &EntryFlagScope, limit: usize) -> Result<Vec<i64>> {
+        let Some((where_sql, mut values)) = scope.where_sql() else {
+            return Err(StoreError::Invalid(
+                "条件级查询至少需要一个条件（feed_id / since / until）".to_string(),
+            ));
+        };
+        let sql = format!("SELECT id FROM entries WHERE {where_sql} ORDER BY id LIMIT ?");
+        values.push(Value::Integer(limit as i64));
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(params_from_iter(values), |r| r.get::<_, i64>(0))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// 批量存在性检查：返回 `ids` 里真实存在的（去重、升序）。
+    ///
+    /// 写工具据此逐项回 `article_not_found`——只看 UPDATE 的条数变少无法说明「哪几条没成」。
+    pub fn existing_entry_ids(&self, ids: &[i64]) -> Result<Vec<i64>> {
+        let mut seen = std::collections::HashSet::new();
+        let unique: Vec<i64> = ids.iter().copied().filter(|id| seen.insert(*id)).collect();
+        let mut out = Vec::with_capacity(unique.len());
+        // SQLite 的变量上限是 999，取 500 留余量（MCP 侧另有 ≤100 的批量闸门）
+        for chunk in unique.chunks(500) {
+            let placeholders = vec!["?"; chunk.len()].join(",");
+            let sql = format!("SELECT id FROM entries WHERE id IN ({placeholders})");
+            let mut stmt = self.conn.prepare(&sql)?;
+            let rows = stmt.query_map(params_from_iter(chunk.iter().copied()), |r| {
+                r.get::<_, i64>(0)
+            })?;
+            out.extend(rows.collect::<rusqlite::Result<Vec<_>>>()?);
+        }
+        out.sort_unstable();
+        Ok(out)
     }
 
     /// 双向的全部标记：`read = true` 即「全部已读」，`false` 即「全部未读」（撤销用）

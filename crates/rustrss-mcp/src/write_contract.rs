@@ -132,6 +132,10 @@ pub struct WriteOutcome {
     /// `true` = 本次只是预览、库没有变化（agent 不该把它当成"已经改了"）
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub dry_run: bool,
+    /// 工具特有的明细（刷新摘要 / 全文抓取信息…）：信封的四要素形状不变，
+    /// agent 不必为每个工具记一套解包规则（用 [`WriteOutcome::with_detail`] 挂上）。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<serde_json::Value>,
 }
 
 impl WriteOutcome {
@@ -144,6 +148,7 @@ impl WriteOutcome {
             error_code: None,
             error: None,
             dry_run,
+            detail: None,
         }
     }
 
@@ -161,7 +166,23 @@ impl WriteOutcome {
             error_code: Some(error_code.into()),
             error: None,
             dry_run: false,
+            detail: None,
         }
+    }
+
+    /// 失败 + 人读说明（"怎么改才对"），机器码不变
+    pub fn failed_with(error_code: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            error: Some(message.into()),
+            ..Self::failed(error_code, 0)
+        }
+    }
+
+    /// 工具特有明细（可选）：挂在信封的 `detail` 下，不改变四要素的形状
+    #[must_use]
+    pub fn with_detail(mut self, detail: serde_json::Value) -> Self {
+        self.detail = Some(detail);
+        self
     }
 
     /// 契约错误的捷径（`invalid_argument` / `confirm_required`）：连带人读说明
@@ -252,6 +273,7 @@ mod tests {
         assert_eq!(v["results"][1]["error_code"], "article_not_found");
         assert!(v.get("error_code").is_none(), "成功时不带 error_code");
         assert!(v.get("dry_run").is_none(), "非 dry_run 不提 dry_run");
+        assert!(v.get("detail").is_none(), "没挂明细就不出现 detail");
 
         let preview = WriteOutcome::preview(3, Vec::new());
         let v: serde_json::Value = serde_json::from_str(&preview.to_json()).unwrap();
@@ -268,5 +290,19 @@ mod tests {
             v["error"].as_str().unwrap_or_default().contains("confirm"),
             "人读说明要告诉 agent 怎么改: {v}"
         );
+
+        // 工具特有明细：挂上后出现在 detail，不影响四要素
+        let with_detail = WriteOutcome::done(1, vec![ItemResult::ok(9)], false)
+            .with_detail(serde_json::json!({"scope": "all", "inserted": 3}));
+        let v: serde_json::Value = serde_json::from_str(&with_detail.to_json()).unwrap();
+        assert_eq!(v["detail"]["scope"], "all");
+        assert_eq!(v["detail"]["inserted"], 3);
+        assert_eq!(v["affected"], 1, "detail 不改变 affected 的口径");
+
+        // 业务错误 + 人读说明（refresh 的 rate_limited / fulltext 的失败路径用它）
+        let business = WriteOutcome::failed_with("rate_limited", "刷新已在进行中，稍后重试");
+        let v: serde_json::Value = serde_json::from_str(&business.to_json()).unwrap();
+        assert_eq!(v["error_code"], "rate_limited");
+        assert!(v["error"].as_str().unwrap().contains("稍后重试"), "{v}");
     }
 }

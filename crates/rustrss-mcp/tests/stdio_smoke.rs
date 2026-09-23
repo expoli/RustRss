@@ -4,8 +4,8 @@
 //! （换行分隔 JSON）与 HTTP 不同；`tools/list` 又刚改成按请求 scope 过滤的
 //! 自定义实现——这段代码只能由"真进程 + 真 stdin/stdout"来证明没坏。
 //!
-//! 口径断言：stdio 侧只列只读工具（写能力默认关、且本批次还没有真实写工具），
-//! 开关打开也不会凭空出现写工具（写工具要由 T3/T4 登记）。
+//! 口径断言：stdio 的写能力与 HTTP 同口径——默认只列只读工具；写开关打开**且**
+//! 写 token 已生成时，T3 登记的写工具才出现（少任何一环都不出现）。
 
 use std::process::Stdio;
 use std::time::Duration;
@@ -26,12 +26,20 @@ fn temp_db(tag: &str) -> std::path::PathBuf {
     p
 }
 
-/// 拉起真二进制；`write_enabled` 控制库里的写开关
-async fn spawn_server(db: &std::path::Path, write_enabled: bool) -> tokio::process::Child {
+/// 拉起真二进制；`write_enabled` 控制写开关，`write_token` 控制写 token 是否存在
+/// （两道闸都就位才有写能力）
+async fn spawn_server(
+    db: &std::path::Path,
+    write_enabled: bool,
+    write_token: bool,
+) -> tokio::process::Child {
     let store = Store::open(db).expect("建库失败");
     store
         .set_bool_setting(rustrss_mcp::config::K_WRITE_ENABLED, write_enabled)
         .expect("写开关失败");
+    if write_token {
+        rustrss_mcp::config::set_write_token(&store, "smoke-write-token").expect("写 token 失败");
+    }
     drop(store);
 
     Command::new(env!("CARGO_BIN_EXE_rustrss-mcp"))
@@ -65,8 +73,12 @@ async fn roundtrip(
     serde_json::from_str(&line).unwrap_or_else(|e| panic!("响应不是 JSON（{e}）：{line}"))
 }
 
-async fn handshake_and_list(db: &std::path::Path, write_enabled: bool) -> Vec<String> {
-    let mut child = spawn_server(db, write_enabled).await;
+async fn handshake_and_list(
+    db: &std::path::Path,
+    write_enabled: bool,
+    write_token: bool,
+) -> Vec<String> {
+    let mut child = spawn_server(db, write_enabled, write_token).await;
     let mut stdin = child.stdin.take().expect("应有 stdin");
     let stdout = child.stdout.take().expect("应有 stdout");
     let mut lines = BufReader::new(stdout).lines();
@@ -119,8 +131,12 @@ async fn handshake_and_list(db: &std::path::Path, write_enabled: bool) -> Vec<St
 #[tokio::test]
 async fn stdio_lists_only_read_tools_by_default() {
     let db = temp_db("default");
-    let names = handshake_and_list(&db, false).await;
-    assert_eq!(names.len(), 7, "默认只读：{names:?}");
+    let names = handshake_and_list(&db, false, false).await;
+    assert_eq!(
+        names.len(),
+        rustrss_mcp::registry::read_tool_count(),
+        "默认只读：{names:?}"
+    );
     for name in &names {
         let spec = rustrss_mcp::registry::spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
         assert_eq!(spec.scope, rustrss_mcp::registry::Scope::Read, "{name}");
@@ -128,19 +144,38 @@ async fn stdio_lists_only_read_tools_by_default() {
     let _ = std::fs::remove_file(db);
 }
 
-/// stdio 的写能力同样受开关约束：开关打开也不会凭空出现写工具
-/// （本批次还没登记任何写工具；这条断言在 T3/T4 之后应改成"写工具开始出现"）。
+/// stdio 的写能力同样受两道闸约束：只开开关（没有写 token）仍不列写工具；
+/// 两环都就位后 T3 的写工具才出现。
 #[tokio::test]
-async fn stdio_write_switch_does_not_invent_tools() {
-    let db = temp_db("switched-on");
-    let names = handshake_and_list(&db, true).await;
+async fn stdio_write_tools_need_both_the_switch_and_a_token() {
+    // ① 开关开、写 token 不存在 → 仍然只有只读工具（写能力没被显式 provision）
+    let db = temp_db("switch-only");
+    let names = handshake_and_list(&db, true, false).await;
     for name in &names {
         let spec = rustrss_mcp::registry::spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
         assert_eq!(
             spec.scope,
             rustrss_mcp::registry::Scope::Read,
-            "未登记的写工具不该出现：{name}"
+            "写 token 不存在时不该出现写工具：{name}"
         );
     }
+    let _ = std::fs::remove_file(db);
+
+    // ② 两环都就位 → 写工具出现在 stdio 会话里（stdio 没有凭据概念，scope 恒为 write）
+    let db = temp_db("licensed");
+    let names = handshake_and_list(&db, true, true).await;
+    for name in [
+        "set_read",
+        "set_starred",
+        "set_read_later",
+        "refresh",
+        "fetch_fulltext",
+    ] {
+        assert!(
+            names.contains(&name.to_string()),
+            "{name} 应可见：{names:?}"
+        );
+    }
+    assert_eq!(names.len(), rustrss_mcp::registry::TOOL_SPECS.len());
     let _ = std::fs::remove_file(db);
 }

@@ -116,14 +116,74 @@ impl GateError {
 /// `every_exposed_tool_is_registered` 会把「`#[tool]` 里有、注册表里没有」
 /// 判成失败，所以漏登记不会悄悄溜过去（漏登记 = 默认按无权限处理）。
 pub const TOOL_SPECS: &[ToolSpec] = &[
-    ToolSpec { name: "list_feeds", scope: Scope::Read, dangerous: false },
-    ToolSpec { name: "list_folders", scope: Scope::Read, dangerous: false },
-    ToolSpec { name: "list_articles", scope: Scope::Read, dangerous: false },
-    ToolSpec { name: "get_article", scope: Scope::Read, dangerous: false },
-    ToolSpec { name: "search_articles", scope: Scope::Read, dangerous: false },
-    ToolSpec { name: "get_unread_summary", scope: Scope::Read, dangerous: false },
-    ToolSpec { name: "db_stats", scope: Scope::Read, dangerous: false },
+    ToolSpec {
+        name: "list_feeds",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "list_folders",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "list_articles",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "get_article",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "search_articles",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "get_unread_summary",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "db_stats",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    // T3：阅读状态与刷新。三者都不危险（可逆/幂等/不删数据），所以不受危险开关约束，
+    // 但仍需要写 scope + 写开关 + 写 token 三道闸。
+    ToolSpec {
+        name: "set_read",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "set_starred",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "set_read_later",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "refresh",
+        scope: Scope::Write,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "fetch_fulltext",
+        scope: Scope::Write,
+        dangerous: false,
+    },
 ];
+
+/// 已登记工具的只读子集数量（读 token 会话 `tools/list` 的期待值）
+pub fn read_tool_count() -> usize {
+    TOOL_SPECS.iter().filter(|s| s.scope == Scope::Read).count()
+}
 
 /// 静态注册表查询
 pub fn spec(name: &str) -> Option<&'static ToolSpec> {
@@ -309,10 +369,11 @@ mod tests {
         assert_eq!(names, vec!["list_feeds".to_string()]);
     }
 
-    /// 现有只读工具都必须在注册表里，且都不带危险标记
+    /// 现有只读工具都必须登记且不带危险标记；写工具（T3 的 5 个）也登记为「写 + 不危险」
     #[test]
     fn read_tools_are_registered() {
-        assert_eq!(TOOL_SPECS.len(), 7);
+        assert_eq!(TOOL_SPECS.len(), 12);
+        assert_eq!(read_tool_count(), 7);
         for name in [
             "list_feeds",
             "list_folders",
@@ -326,6 +387,16 @@ mod tests {
             assert_eq!(spec.scope, Scope::Read, "{name} 应为只读");
             assert!(!spec.dangerous, "{name} 不是危险工具");
         }
+        for name in [
+            "set_read",
+            "set_starred",
+            "set_read_later",
+            "refresh",
+            "fetch_fulltext",
+        ] {
+            let spec = spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
+            assert_eq!(spec.scope, Scope::Write, "{name} 应为写工具");
+            assert!(!spec.dangerous, "{name} 可逆且幂等，不是危险工具");
+        }
         assert!(spec("no_such_tool").is_none());
-    }
-}
+    }}

@@ -34,13 +34,25 @@ ui/                    桌面应用前端（当前为探针页面）
 
 ### MCP 服务器（stdio + HTTP 两种传输，已接真实库）
 
-工具集（**只读**，写工具属后续任务）：`list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats`。
+工具集：**只读** 7 个 —— `list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats`；**写** 5 个 —— `set_read` / `set_starred` / `set_read_later` / `refresh` / `fetch_fulltext`（写工具默认不可用，需要写 token + 写开关，见下面的权限模型）。
 
 口径：**列表只回元数据 + 短摘要（≤140 字），正文必须用 `get_article` 单独取**；所有列表有上限（默认 10、上限 50）。这是为了不让单次响应撑爆 agent 上下文（见 PRD §6 风险 3）。
 
 `list_articles` 的默认口径**固定**为 `sort=newest` + 不隐藏已读，**不继承界面设置**（`list.sort` / `list.hide_read`）——agent 拿到的默认视图不该被用户此刻的界面选择左右。可用参数：`feed_id` / `folder_id`（二选一）、`unread_only`、`starred_only`、`read_later_only`、`since` / `until`（对 `COALESCE(published_at, fetched_at)` 的**闭区间**，Unix 秒）、`sort`（`newest` / `oldest` / `unread_first`）、`hide_read`、`page_size`（别名 `limit`）。翻页是 keyset 游标：把上一页返回的 `next_cursor` 原样回传给 `cursor`，不重不漏（游标带排序档、`unread_first` 档还带 `read` 分量——换档复用旧游标会明确报错，而不是翻出错页）；不满页时 `next_cursor` 为 `null`。
 
 `list_folders` 给分组 + 每组未读合计（未分组单列 `ungrouped_unread`），`get_unread_summary`（`by=feed|folder`）给完整的未读分组清单（未读为 0 的组也出现）。三者与界面走 core 的同一条数据路径（硬约束 1）：`EntryQuery` 上的 `since` / `until` / `feed_ids` / `sort` / `hide_read` 只是**显式传参**——界面路径不传（继续跟随设置），MCP 路径全传（默认口径因此与界面设置解耦），不存在第二套查询逻辑。
+
+#### 写工具口径（阅读状态 / 刷新 / 全文）
+
+三个状态工具（`set_read` / `set_starred` / `set_read_later`）共用一套形状，只有「写哪一位 + 取值字段名」不同：
+
+- **目标二选一**：`ids[]`（≤100 条；`read` / `starred` / `later` 缺省 `true`，传 `false` 即撤销）**或**条件级 `{feed_id, since, until}`（至少给一个；`since` / `until` 是闭区间，比较键与列表排序键同源 `COALESCE(published_at, fetched_at)`）。**混用或都不给 = `invalid_argument`**——条件级漏参绝不能退化成「改全库」（core 侧对空条件也会拒：`Store::set_flag_scoped` 返回 `Invalid`）；
+- 返回统一信封 `{ok, affected, results, error_code?, detail?}`：`affected` 是**命中条数**（含此前已是目标状态的行，与 `set_read(ids)` 的 SQLite 计数口径一致）→ 重复调用返回值稳定，即**幂等**；`results` 逐项给（ids 形态按调用方给的顺序，缺失的 id 标 `article_not_found`；条件级给命中集里前 100 个 id，截断时 `detail.results_truncated=true`）。写的是与界面**同一个库、同一条 store 路径**，所以 `db_stats` 与界面计数立即一致；
+- 条件级写入走索引（feed 等值 / sortkey 表达式索引，EXPLAIN 断言 + 变异校验在 core 测试里），不会退化成扫正文大列的全表扫。
+
+`refresh`：`scope` = `all` / `feed_ids`（配合 `feed_ids[]`，≤100）/ `folder`（配合 `folder_id`），不传时按参数推断；与界面刷新**共用同一个单 flight**（应用内托管时是同一个 `Arc<RefreshGate>` 实例）——已有刷新在跑时本轮不执行，返回 `error_code=rate_limited`（不排队、不叠加），界面侧不受影响。返回 `affected` = 本轮入库条目数（新增+更新），`results` 只列失败源（`fetch_failed`），`detail` 给本轮摘要：`feeds` / `fetched` / `not_modified` / `inserted` / `updated` / `unchanged` / `failure_count` / `failures`（沿用 core 的刷新统计）。
+
+`fetch_fulltext`：给单篇摘要型条目补全文（抓原文页 → 提取 → 写回），复用既有全文抓取与 **2MiB 流式闸门**（Content-Length 预检 + 下载中累计超限即断）。已抓过/全文型时**零网络**返回（`affected=0` + `detail.already_fulltext=true`）。**正文不随响应返回**：写回后用 `get_article(id)` 取（与列表口径一致，避免一次响应撑爆上下文）。错误码：`invalid_url`（条目没有原文地址）/ `fulltext_too_large` / `fulltext_bot_challenge`（站点要浏览器验证）/ `fulltext_not_html` / `fulltext_no_content` / `fetch_failed`（网络或 HTTP 错，可重试）/ `article_not_found`。
 
 两种传输：
 
@@ -62,7 +74,7 @@ ui/                    桌面应用前端（当前为探针页面）
 
 - **HTTP**：每个请求按携带的 token **现算** scope——写 token → 写能力（还需两个开关），读 token → 只读；`tools/list` 也按当次请求的 scope 过滤（读 token 的会话看不到写工具）。**不缓存会话级 scope**：写 token 轮换或销毁后，旧值的**下一个请求立刻失效**（包括已建立的连接），不需要重启服务。
 - **stdio**：没有凭据概念，写能力由同一套开关把关（写开关 + 写 token 必须都已就位），与 HTTP 同口径。
-- **无权限时返回工具级错误码**：`write_scope_required`（没有写凭据）/ `write_disabled`（开关或写 token 没就位）/ `dangerous_tool_disabled`；危险操作还要 `confirm: true`（缺失 → `confirm_required`），并支持 `dry_run: true` 只预览影响面、不落库。
+- **无权限时返回工具级错误码**：`write_scope_required`（没有写凭据）/ `write_disabled`（开关或写 token 没就位）/ `dangerous_tool_disabled`；危险操作还要 `confirm: true`（缺失 → `confirm_required`），并支持 `dry_run: true` 只预览影响面、不落库。业务错误码同样机器可读：`article_not_found` / `invalid_argument`（ids 为空/超限/两种目标混用/条件缺失）/ `rate_limited`（刷新进行中）/ `feed_not_found` / `folder_not_found` / `fulltext_*`（见上）。被拒的调用一律不改库（有测试钉住）。
 - **审计**：每次写调用（含被拒的）落一行 `target=mcp` 日志（工具名 / 参数摘要 / 影响条数 / 结果），参数摘要过 `scrub_log_line`（URL 里的 token、userinfo 一律 `***`），不含正文与凭据。日志落在与桌面端同一目录的日志文件里（`rustrss-mcp --http`/stdio 也会装同一套文件日志）。
 - 传输层口径不变：无/错 token 仍 401，`/health` 仍不鉴权且不含订阅数据。
 
@@ -70,6 +82,12 @@ ui/                    桌面应用前端（当前为探针页面）
 
 - `ss -ltn` 显示监听 `127.0.0.1:8817`（不是 `0.0.0.0`）；`/health` 无 token → 200；`/mcp` 无 token 或错 token → 401；对 token（查询串或 `Authorization: Bearer`）→ 200 且能取到真实订阅数据。
 - **真实客户端**：Claude Code 以 HTTP + Authorization 头接入，正确报出 3 个订阅源；当被要求列未读条目时，它发现库里未读为 0 并**拒绝编造**，指出前提不成立。
+
+实测（2026-09-23，T3 写工具；真二进制 `rustrss-mcp --http` + 真库 + 本地 HTTP 源，53 项断言全绿）：
+
+- 读 token 调用 `set_read` / `refresh` / `fetch_fulltext` → 一律 `write_scope_required` 且库不变；写 token 下 `refresh(scope=all)` 抓到 2 条 → `sqlite3` 回读 `SELECT COUNT(*) FROM entries` = 2，重复刷新 `inserted=0`（源端 304，无重复条目）。
+- `set_read(ids)` → `affected=2`，`sqlite3` 回读 `read` 列 = `1,1`、未读数 0，`db_stats.unread` = 0（与 `sqlite3` 的口径一致）；重复调用 `affected` 仍为 2（幂等）；`set_read(feed_id, read=false)` 撤销后未读数回到 2。
+- `fetch_fulltext` → `fulltext_fetched=1`、`content_text` 607 字（越 500 字阈值），`get_article` 取到的正是抓回来的正文；二次调用 `already_fulltext=true` 且 `affected=0`（零网络）。错误码按类命中：`article_not_found` / `feed_not_found` / `folder_not_found` / `invalid_argument` / `write_scope_required`；审计行 grep 到 `mcp-write tool=set_read|set_starred|set_read_later|refresh|fetch_fulltext`，被拒的调用也有行（`error_code=write_scope_required`）。
 
 <details>
 <summary>客户端配置片段示例（应用内可直接复制）</summary>

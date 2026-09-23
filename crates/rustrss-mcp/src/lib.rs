@@ -22,6 +22,7 @@ pub mod config;
 pub mod http;
 pub mod registry;
 pub mod write_contract;
+pub mod write_tools;
 
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{
@@ -30,7 +31,7 @@ use rmcp::model::{
 };
 use rmcp::service::{RequestContext, RoleServer};
 use rmcp::{tool, tool_handler, tool_router, transport::stdio, ServerHandler, ServiceExt};
-use rustrss_core::{EntryQuery, ListSort, RefreshGate, Store, UnreadGroupBy};
+use rustrss_core::{EntryQuery, Fetcher, ListSort, RefreshGate, Store, UnreadGroupBy};
 use serde_json::Value;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -201,8 +202,14 @@ struct FolderOut {
 pub struct RustRssMcp {
     store: Arc<Mutex<Store>>,
     /// 刷新单 flight：与界面刷新共用同一个 gate（应用内托管时由 src-tauri 注入）。
-    /// T3 的 `refresh` 工具会用它，本任务先把共享设施搬到位。
+    /// `refresh` 工具（T3）用它，所以 agent 的刷新永远不会与界面刷新叠加。
     refresh_gate: Arc<RefreshGate>,
+    /// HTTP 客户端（`refresh` / `fetch_fulltext` 共用一份，与界面各自持有自己的那份）。
+    ///
+    /// 保存构造**结果**而不是直接 `expect`：reqwest 客户端建不起来是环境问题
+    /// （TLS 后端缺失之类），服务本身还应付得了只读工具——那种情况下让写工具
+    /// 如实报 `internal_error`，好过整个进程 panic。
+    fetcher: std::result::Result<Fetcher, String>,
     /// 测试专用桦工具（生产恒为空）。见 [`RustRssMcp::with_test_tool`]。
     test_tools: Arc<Vec<TestTool>>,
 }
@@ -228,6 +235,8 @@ impl RustRssMcp {
         Self {
             store: Arc::new(Mutex::new(store)),
             refresh_gate: Arc::new(RefreshGate::new()),
+            fetcher: Fetcher::new(rustrss_core::fetch::DEFAULT_USER_AGENT)
+                .map_err(|e| format!("初始化 HTTP 客户端失败: {e}")),
             test_tools: Arc::new(Vec::new()),
         }
     }
@@ -248,6 +257,19 @@ impl RustRssMcp {
     pub fn refresh_gate(&self) -> Arc<RefreshGate> {
         Arc::clone(&self.refresh_gate)
     }
+
+    /// 注入 HTTP 客户端（宿主想复用自己那份客户端时用；测试也能借此不建新客户端）
+    #[must_use]
+    pub fn with_fetcher(mut self, fetcher: Fetcher) -> Self {
+        self.fetcher = Ok(fetcher);
+        self
+    }
+
+    /// 写工具要用的 HTTP 客户端；构造失败时把原因交回调用方（工具层包成 `internal_error`）
+    pub(crate) fn fetcher(&self) -> std::result::Result<&Fetcher, String> {
+        self.fetcher.as_ref().map_err(Clone::clone)
+    }
+
 
     /// **测试专用**：登记一个桦工具（生产不调这个函数）。
     #[doc(hidden)]
@@ -274,7 +296,7 @@ impl RustRssMcp {
         self
     }
 
-    fn with_store<T>(&self, f: impl FnOnce(&Store) -> T) -> T {
+    pub(crate) fn with_store<T>(&self, f: impl FnOnce(&Store) -> T) -> T {
         let guard = self.store.lock().expect("库锁被毒化（前一次调用 panic）");
         f(&guard)
     }
@@ -628,6 +650,46 @@ impl RustRssMcp {
     fn db_stats(&self) -> String {
         self.db_stats_json()
     }
+
+    // ------------------------------------------------------------ 写工具（T3：阅读状态 / 刷新 / 全文）
+
+    #[tool(
+        description = "标记条目为已读/未读。目标二选一：ids[]（≤100 个，缺失的 id 逐项回 article_not_found）或条件级 {feed_id, since, until}（至少一个；since/until 是闭区间，键同列表排序键 COALESCE(published_at,fetched_at)，Unix 秒）。read 缺省 true（标记已读）。返回 {ok, affected, results, error_code?, detail}：affected = 命中条数（重复调用返回值稳定 = 幂等），条件级命中的 id 会以有界采样（前 100 个）回在 results 里。写后 db_stats/界面计数立即一致（同一 store）。错误码：invalid_argument（ids 为空/超限/两种目标混用/条件缺失）、article_not_found、write_disabled、write_scope_required。"
+    )]
+    fn set_read(&self, Parameters(p): Parameters<write_tools::SetReadParams>) -> String {
+        self.set_read_json(&p)
+    }
+
+    #[tool(
+        description = "给条目加/取消星标。目标与返回口径同 set_read（ids[] ≤100 或条件级 {feed_id, since, until}）；starred 缺省 true。幂等。错误码同 set_read。"
+    )]
+    fn set_starred(&self, Parameters(p): Parameters<write_tools::SetStarredParams>) -> String {
+        self.set_starred_json(&p)
+    }
+
+    #[tool(
+        description = "把条目加入/移出「稍后读」。目标与返回口径同 set_read（ids[] ≤100 或条件级 {feed_id, since, until}）；later 缺省 true。幂等。错误码同 set_read。"
+    )]
+    fn set_read_later(&self, Parameters(p): Parameters<write_tools::SetReadLaterParams>) -> String {
+        self.set_read_later_json(&p)
+    }
+
+    #[tool(
+        description = "刷新订阅源（抓取新条目）。scope=all（全部）/ feed_ids（配合 feed_ids[]，≤100）/ folder（配合 folder_id）；不传时按参数推断，都没有 = all。与界面刷新共用同一个单 flight：已有刷新在跑时本轮不执行，返回 error_code=rate_limited（不排队、不叠加，稍后重试）。返回 {ok, affected, results, error_code?, detail}：affected = 本轮入库条目数（新增 + 更新），results 只列失败源（error_code=fetch_failed），detail 给本轮摘要（feeds/fetched/not_modified/inserted/updated/unchanged/failure_count/failures）。错误码：invalid_argument、feed_not_found、folder_not_found、rate_limited、write_disabled、write_scope_required。"
+    )]
+    async fn refresh(&self, Parameters(p): Parameters<write_tools::RefreshParams>) -> String {
+        self.refresh_json(&p).await
+    }
+
+    #[tool(
+        description = "给单篇摘要型条目补全文：抓原文页 → 提取正文 → 写回库（受 2MiB 体积闸门保护）。已抓过/本来就是全文型时零网络返回（detail.already_fulltext=true，affected=0）。正文不随本工具的响应返回：写回后用 get_article(id) 取。错误码：article_not_found、invalid_url（条目没有原文地址）、fulltext_too_large（超过 2MiB）、fulltext_bot_challenge（站点要浏览器验证）、fulltext_not_html、fulltext_no_content、fetch_failed（网络/HTTP 错，可重试）、write_disabled、write_scope_required。"
+    )]
+    async fn fetch_fulltext(
+        &self,
+        Parameters(p): Parameters<write_tools::FetchFulltextParams>,
+    ) -> String {
+        self.fetch_fulltext_json(&p).await
+    }
 }
 
 /// 当次请求的 scope：HTTP 由鉴权中间件按下发凭据算出（注入扩展），stdio 无该标记。
@@ -903,7 +965,7 @@ mod tests {
         assert_eq!(exposed.len(), registry::TOOL_SPECS.len());
     }
 
-    /// 默认（未开写能力）下可见的只有 7 个只读工具，且读 token 会话看不到任何写工具。
+    /// 默认（未开写能力）下可见的只有只读工具，且读 token 会话看不到任何写工具。
     #[test]
     fn default_listing_is_read_only() {
         let server = RustRssMcp::new(Store::open_in_memory().unwrap());
@@ -911,12 +973,39 @@ mod tests {
         assert_eq!(off, Switches::default(), "新库默认全关");
 
         let read_scope = server.visible_tools(Scope::Read, &off);
-        assert_eq!(read_scope.len(), 7);
+        assert_eq!(read_scope.len(), registry::read_tool_count());
         for tool in &read_scope {
             let spec = registry::spec(&tool.name).expect("列表里的工具必须已登记");
             assert_eq!(spec.scope, Scope::Read, "{} 不该出现在读会话里", tool.name);
         }
+
+        // 写开关/写 token 就位后，写 scope 的会话才看得到 T3 的写工具
+        let on = Switches {
+            write_enabled: true,
+            dangerous_enabled: false,
+            write_token: true,
+        };
+        let write_names: Vec<String> = server
+            .visible_tools(Scope::Write, &on)
+            .iter()
+            .map(|t| t.name.to_string())
+            .collect();
+        assert_eq!(
+            write_names.len(),
+            registry::TOOL_SPECS.len(),
+            "全开时写会话看到全部工具"
+        );
+        for name in [
+            "set_read",
+            "set_starred",
+            "set_read_later",
+            "refresh",
+            "fetch_fulltext",
+        ] {
+            assert!(write_names.contains(&name.to_string()), "{write_names:?}");
+        }
     }
+
 
     /// 桦工具（测试专用）走同一套注册表：写桦工具在读 scope 下不可见、
     /// 在写 scope + 全开下可见。
