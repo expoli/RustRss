@@ -8,7 +8,7 @@ use rustrss_core::store::schema::MIGRATIONS;
 use rustrss_core::store::{LIST_HIDE_READ_KEY, LIST_SORT_KEY};
 use rustrss_core::{
     Entry, EntryFlag, EntryFlagScope, EntryQuery, IdOrigin, ListSort, MarkScope, Store, StoreError,
-    UnreadGroupBy,
+    TagTarget, UnreadGroupBy,
 };
 use rustrss_core::rsshub;
 
@@ -2109,6 +2109,122 @@ fn entry_count_for_feed_rides_covering_index_never_table_btree() {
     let store = Store::open(&db_path).unwrap();
     assert!(
         store.explain_entry_count_for_feed(1).is_err(),
+        "覆盖索引被删后计划必须建不出来（转红）"
+    );
+    let _ = std::fs::remove_file(&db_path);
+}
+
+#[test]
+fn folder_and_tag_scope_totals_stay_on_covering_indexes() {
+    // 列表头「已加载 M / 共 N」的取数（T1）：分组总数是本批唯一新增的查询；源/标签
+    // 总数复用 entry_count_for_feed / tag_entry_count。三者都是 COUNT 聚合，必须只扫
+    // 覆盖/部分索引、不穿正文大列所在的表 B 树（红线 #1），且与 list_entries 的行数
+    // 同口径——这是「共 N 不虚报」的机制保证，不是文案承诺。
+    let db_path = std::env::temp_dir().join(format!(
+        "rustrss-scope-totals-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    {
+        let store = Store::open(&db_path).unwrap();
+        let folder = store.add_folder("分组").unwrap();
+        let empty_folder = store.add_folder("空组").unwrap();
+        let in_folder = store
+            .add_feed("https://example.com/in.xml", Some("组内源"))
+            .unwrap();
+        let loose = store
+            .add_feed("https://example.com/loose.xml", Some("未分组源"))
+            .unwrap();
+        store.assign_folder(in_folder, Some(folder)).unwrap();
+        store
+            .upsert_entries(
+                in_folder,
+                &[mk_entry("i1", "I1", "正文1"), mk_entry("i2", "I2", "正文2")],
+            )
+            .unwrap();
+        store
+            .upsert_entries(loose, &[mk_entry("l1", "L1", "正文3")])
+            .unwrap();
+
+        // 分组总数：空分组、不存在的分组都是 0；未分组的源不计入任何分组
+        assert_eq!(store.entry_count_for_folder(folder).unwrap(), 2, "按分组计数");
+        assert_eq!(store.entry_count_for_feed(in_folder).unwrap(), 2, "与单源口径一致");
+        assert_eq!(store.entry_count_for_folder(empty_folder).unwrap(), 0, "空分组为 0");
+        assert_eq!(
+            store.entry_count_for_folder(9_999).unwrap(),
+            0,
+            "不存在的分组为 0（是否存在的判定由调用方另做）"
+        );
+        let (entries, ..) = store.counts().unwrap();
+        assert_eq!(entries, 3, "全局总数含未分组源");
+        assert_eq!(
+            store.entry_count_for_folder(folder).unwrap(),
+            entries - 1,
+            "分组求和只覆盖已分组条目（未分组源不计入）"
+        );
+
+        // 标签总数：同一条打两个标签时各算一次、不重复计数；且与列表行数同口径
+        let tag_rust = store.create_tag("Rust", None).unwrap();
+        let tag_db = store.create_tag("数据库", None).unwrap();
+        let ids: Vec<i64> = store
+            .list_entries(&EntryQuery {
+                feed_id: Some(in_folder),
+                ..Default::default()
+            })
+            .unwrap()
+            .into_iter()
+            .map(|e| e.id)
+            .collect();
+        assert_eq!(ids.len(), 2);
+        store
+            .assign_tags(&TagTarget::Entries(ids.clone()), &[tag_rust.id])
+            .unwrap();
+        store
+            .assign_tags(&TagTarget::Entries(vec![ids[0]]), &[tag_db.id])
+            .unwrap();
+        assert_eq!(store.tag_entry_count(tag_rust.id).unwrap(), 2);
+        assert_eq!(store.tag_entry_count(tag_db.id).unwrap(), 1);
+        assert_eq!(
+            store.tag_entry_count(tag_rust.id).unwrap(),
+            store
+                .list_entries(&EntryQuery {
+                    tag_id: Some(tag_rust.id),
+                    ..Default::default()
+                })
+                .unwrap()
+                .len() as i64,
+            "标签总数必须与列表行数同口径"
+        );
+
+        // EXPLAIN：分组总数走 (feed_id, read) 覆盖索引，不裸扫 entries
+        let plan = store
+            .explain_entry_count_for_folder(folder)
+            .unwrap()
+            .join(" | ");
+        assert!(
+            !plan
+                .split(" | ")
+                .any(|l| l.contains("SCAN entries") && !l.contains("USING")),
+            "不得裸扫 entries 表 B 树: {plan}"
+        );
+        assert!(
+            plan.contains("COVERING INDEX idx_entries_feed_read"),
+            "应走 (feed_id, read) 覆盖索引: {plan}"
+        );
+    }
+
+    // 变异校验：覆盖索引被删后，分组总数的计划（经 INDEXED BY）必须建不出来
+    {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute_batch("DROP INDEX idx_entries_feed_read;")
+            .unwrap();
+    }
+    let store = Store::open(&db_path).unwrap();
+    assert!(
+        store.explain_entry_count_for_folder(1).is_err(),
         "覆盖索引被删后计划必须建不出来（转红）"
     );
     let _ = std::fs::remove_file(&db_path);

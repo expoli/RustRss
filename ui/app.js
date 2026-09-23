@@ -737,18 +737,114 @@ function buildEntryRow(e) {
   return li;
 }
 
-/// 列表计数口径：未读视图只数未读行（灰显的已读行还在列表里但不算数），
-/// 其余视图数全部行。
-function listCountN() {
-  return state.view.kind === 'unread'
+/// 「已加载」口径：已加载且仍匹配当前视图**有效筛选**的行数。未读视图（或开着
+/// 「隐藏已读」）里刚读过的灰显行不算——与「共 N 未读」同一口径，于是 M ≤ N 恒成立，
+/// 两个数字不会自相矛盾。
+function loadedCount() {
+  return unreadFilteredView()
     ? state.entries.filter((e) => !e.read).length
     : state.entries.length;
+}
+
+/// 当前视图的有效筛选是否「只看未读」。store 查询层对星标 / 稍后读视图豁免
+/// 「隐藏已读」、搜索不豁免——这里与那条口径一致，不另立一套。
+function unreadFilteredView() {
+  const kind = state.view.kind;
+  if (kind === 'search') return false; // 搜索不显示总数，单独处理
+  return kind === 'unread' || (listHideRead() && kind !== 'starred' && kind !== 'later');
+}
+
+/// 当前 scope（侧栏选中项）的未读数：直接取侧栏已加载状态，零额外查询。
+function scopeUnread() {
+  const kind = state.view.kind;
+  if (kind === 'feed') {
+    const row = (state.feeds || []).find((f) => f.id === state.feedId);
+    return row ? row.unread : null;
+  }
+  if (kind === 'tag') {
+    const row = (state.sidebarTags || []).find((t) => t.id === state.view.tagId);
+    return row ? row.unread : null;
+  }
+  return state.db ? state.db.unread : null;
+}
+
+/// 「全部视图 + 单源 / 单标签」的总数缓存（同一视图 + 同一有效筛选只查一次）。
+let viewTotalCache = { key: null, n: null };
+
+function viewTotalKey() {
+  const kind = state.view.kind;
+  const id = kind === 'feed' ? state.feedId : kind === 'tag' ? state.view.tagId : null;
+  return `${kind}:${id ?? ''}:${unreadFilteredView() ? 'u' : 'a'}`;
+}
+
+/// 视图总数 N：同步可得就给数字，否则 null（待查库 / 本视图不适用）。
+/// 侧栏的 counts 与各维度未读都是已加载状态（refreshCounts 保持新鲜）；
+/// 只有「全部视图 + 单源 / 单标签」需要一次 list_scope_total。
+function viewTotalSync() {
+  const kind = state.view.kind;
+  if (kind === 'search') return null; // FTS 总数本批不查：只显示已加载
+  if (unreadFilteredView()) return scopeUnread();
+  switch (kind) {
+    case 'all':
+      return state.db ? state.db.entries : null;
+    case 'starred':
+      return state.db ? state.db.starred : null;
+    case 'later':
+      return state.db ? state.db.later : null;
+    default:
+      return viewTotalCache.n; // feed / tag：等 fetchViewTotal 查回来
+  }
+}
+
+/// 需要查库的视图 → 查一次总数并刷新文案；失败降级为「已加载 M 篇」+ 日志（不弹错）。
+async function fetchViewTotal() {
+  const kind = state.view.kind;
+  if (kind !== 'feed' && kind !== 'tag') return;
+  if (unreadFilteredView()) return; // 未读口径来自侧栏状态，不必查
+  const id = kind === 'feed' ? state.feedId : state.view.tagId;
+  if (id == null) return;
+  const key = viewTotalKey();
+  if (viewTotalCache.key === key) return; // 同一视图已查过（含失败：不反复重试）
+  viewTotalCache = { key, n: null };
+  try {
+    viewTotalCache = { key, n: await invoke('list_scope_total', { kind, id }) };
+  } catch (e) {
+    log(`view total failed ${kind}#${id}: ${e.message}`);
+  }
+  renderListCount();
+  // 机器可核对：视图总数与最终头部文案各一行（截图之外的第二条证据）
+  log(`view total ${kind}#${id} n=${viewTotalCache.n ?? '-'} header=${el('list-count').textContent}`);
+}
+
+/// 条目集合变了（刷新、新条目入队）后让总数缓存失效，下次渲染重查。
+function invalidateViewTotal() {
+  viewTotalCache = { key: null, n: null };
+}
+
+/// 列表头计数：「已加载 M / 共 N」；有效筛选是未读时写「共 N 未读」；
+/// N 未知（搜索视图或查询降级）时只写「已加载 M 篇」——宁可少写，不虚报。
+function renderListCount() {
+  const target = el('list-count');
+  if (!state.entries.length) {
+    target.textContent = '';
+    return;
+  }
+  const m = loadedCount();
+  const n = viewTotalSync();
+  const text =
+    n == null
+      ? t('list.loadedOnly', { m })
+      : unreadFilteredView()
+        ? t('list.loadedOfTotalUnread', { m, n })
+        : t('list.loadedOfTotal', { m, n });
+  if (target.textContent !== text) target.textContent = text; // 同值零写入
 }
 
 function renderList() {
   const __t0 = performance.now();
   el('list-title').textContent = viewTitle();
-  el('list-count').textContent = state.entries.length ? t('list.count', { n: listCountN() }) : '';
+  renderListCount();
+  void fetchViewTotal();
 
   const list = el('entries');
   list.innerHTML = '';
@@ -1985,7 +2081,9 @@ async function prependFreshEntries() {
   }
   state.entries = fresh.concat(state.entries);
   if (!atTop) list.scrollTop += list.scrollHeight - heightBefore;
-  el('list-count').textContent = t('list.count', { n: listCountN() });
+  invalidateViewTotal(); // 新条目入库：总数可能变了，下次渲染重查
+  renderListCount();
+  void fetchViewTotal();
   log(
     `refresh:done prepend rows=${fresh.length} ids=${fresh.map((e) => e.id).join(',')} sessionReadSkipped=${skipped} atTop=${atTop} listScrollTop=${scrollBefore}→${list.scrollTop} height=${heightBefore}→${list.scrollHeight} top=${visibleBefore}→${topVisibleRowId(list)} head=${list.firstChild?.dataset.id ?? 'none'} children=${list.children.length} total=${state.entries.length}`
   );
@@ -2074,7 +2172,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
     const list = el('entries');
     state.entries = state.entries.concat(fresh);
     for (const e of fresh) list.appendChild(buildEntryRow(e));
-    el('list-count').textContent = t('list.count', { n: listCountN() });
+    renderListCount();
     installSentinel();
     log(
       `append rows=${rows.length} fresh=${fresh.length} total=${state.entries.length} dup=${dup.length}${dup.length && listSortMode() !== 'unread_first' ? '（游标异常，非 unread_first 档不该重复）' : ''} exhausted=${paging.exhausted}`
@@ -2085,6 +2183,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   paging.cursor = null;
   paging.exhausted = false;
   paging.error = false;
+  invalidateViewTotal(); // 换视图 / 换筛选：总数缓存作废（renderList 里会按需重查）
   // 列表要整体重建（换视图/换筛选/手动刷新）：会话已读集合对应的「已删除行」没了，清空
   state.readSessionIds.clear();
   state.entries = await loadPage(null);
@@ -2097,7 +2196,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   // 重建路径的机器可核对诊断：档位 / 过滤 + 头部 id 序列。换排序、换过滤、刷新后的
   // 「顺序对不对」不用只能盯着屏幕看——head 直接与库里的期望顺序对比即可。
   log(
-    `view=${kind}${state.feedId ? '#' + state.feedId : ''}${kind === 'tag' ? '#tag=' + state.view.tagId : ''} sort=${listSortMode()} hideRead=${listHideRead() ? 1 : 0} count=${state.entries.length} exhausted=${paging.exhausted} head=${headIds()}`
+    `view=${kind}${state.feedId ? '#' + state.feedId : ''}${kind === 'tag' ? '#tag=' + state.view.tagId : ''} sort=${listSortMode()} hideRead=${listHideRead() ? 1 : 0} count=${state.entries.length} loaded=${loadedCount()} total=${viewTotalSync() ?? '-'} totalKind=${unreadFilteredView() ? 'unread' : 'all'} header=${el('list-count').textContent} exhausted=${paging.exhausted} head=${headIds()}`
   );
   // 静默模式到此为止：正文区一个 DOM 都不动
   if (!reader) return;
@@ -2161,8 +2260,8 @@ async function markViewedRead(id) {
   // （实测 2026-09-22：高亮在下一篇、正文还是被点的这篇）。灰显让「显示 =
   // 高亮 = 操作目标」保持同一篇，行在下次列表重建时自然离开，零重建。
   markRowRead(id);
-  if (state.view.kind === 'unread') {
-    el('list-count').textContent = t('list.count', { n: listCountN() });
+  if (unreadFilteredView()) {
+    renderListCount();
   }
   // renderReader 用的是 set_read 前取的 entry：按钮文案会滞后一拍（已读却写着
   // 「标为已读」）。只改这一个按钮的文本，不重渲染整个阅读区。
@@ -2915,8 +3014,8 @@ async function toggleRead() {
     if (readBtn) readBtn.textContent = read ? t('reader.markUnread') : t('reader.markRead');
   }
   logReaderState('toggleRead', row.id);
-  if (state.view.kind === 'unread') {
-    el('list-count').textContent = t('list.count', { n: listCountN() });
+  if (unreadFilteredView()) {
+    renderListCount();
   }
   await refreshCounts();
 }
@@ -2983,7 +3082,7 @@ async function toggleReadLater(id = state.selectedId) {
  * 当前视图里「已不再属于本视图」的行：定向移除该行 + 同步 state.entries 与列表头计数，
  * 不整表重建（重建会把列表滚动位置冲掉，也是审计 P1-2 的同一类损耗）。正文与选中项都
  * 不动：用户正在读的那篇还留在屏幕上，再按一次 s/l 还能撤回来。
- * 行对象必须从 state.entries 摘掉：listCountN 与后续整表重建都按它算，留着会多算一行。
+ * 行对象必须从 state.entries 摘掉：loadedCount 与后续整表重建都按它算，留着会多算一行。
  * 摘到空则交给 renderList 画空态（这时没有别的行可重建）。
  */
 function dropRowFromList(id) {
@@ -2994,7 +3093,7 @@ function dropRowFromList(id) {
     renderList();
     return;
   }
-  el('list-count').textContent = t('list.count', { n: listCountN() });
+  renderListCount();
 }
 
 async function doRefresh() {

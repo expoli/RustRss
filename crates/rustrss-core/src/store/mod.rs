@@ -1125,6 +1125,29 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
+    /// 单个分组下的条目数（列表头「已加载 M / 共 N」的分组维度；界面 `list_scope_total`）。
+    ///
+    /// 口径与 [`Store::entry_count_for_feed`] / [`Store::unread_summary`] 一致：
+    /// 只扫 `(feed_id, read)` 覆盖索引，不碰正文大列所在的表 B 树；未分组的源不计入
+    /// 任何分组（同侧栏口径）。
+    pub fn entry_count_for_folder(&self, folder_id: i64) -> Result<i64> {
+        Ok(self
+            .conn
+            .query_row(ENTRY_COUNT_FOR_FOLDER_SQL, params![folder_id], |r| {
+                r.get(0)
+            })?)
+    }
+
+    /// [`Store::entry_count_for_folder`] 的 EXPLAIN 断言入口（与线上 SQL 逐字同源）。
+    #[doc(hidden)]
+    pub fn explain_entry_count_for_folder(&self, folder_id: i64) -> Result<Vec<String>> {
+        let mut stmt = self
+            .conn
+            .prepare(&format!("EXPLAIN QUERY PLAN {ENTRY_COUNT_FOR_FOLDER_SQL}"))?;
+        let rows = stmt.query_map(params![folder_id], |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     /// 全部计数（entry/unread/starred/read_later）。
     ///
     /// 历史教训：旧版是单扫描 4 聚合（SUM CASE × 3），但 starred/read_later 不在任何
@@ -1918,6 +1941,14 @@ const COUNTS_SQL: &str = "SELECT (SELECT COUNT(*) FROM entries),
 /// COUNT 只扫索引 B 树、不回表；抽成常量让 EXPLAIN 断言与线上 SQL 逐字同源。
 const ENTRY_COUNT_FOR_FEED_SQL: &str =
     "SELECT COUNT(*) FROM entries INDEXED BY idx_entries_feed_read WHERE feed_id = ?1";
+
+/// 分组条目总数的 SQL（列表头「已加载 M / 共 N」的分组维度）。
+///
+/// 形状同 [`UNREAD_COUNT_BY_FOLDER_SQL`]，但**不带 read 谓词**：钉
+/// `idx_entries_feed_read` 扫 (feed_id, read) 覆盖索引，再拿 feed_id 回 `feeds`
+/// （小表、PK 查）要 folder_id——COUNT 不穿正文大列所在的表 B 树（仓库红线 #1）。
+const ENTRY_COUNT_FOR_FOLDER_SQL: &str = "SELECT COUNT(*) FROM entries e INDEXED BY idx_entries_feed_read
+      JOIN feeds f ON f.id = e.feed_id WHERE f.folder_id = ?1";
 
 /// 标签关联篇数的 SQL（`delete_tag` 的 dry_run 与实际执行**共用**）：
 /// `INDEXED BY` 钉住 `(tag_id, entry_id)` 覆盖索引——COUNT 只扫 entry_tags 的索引，

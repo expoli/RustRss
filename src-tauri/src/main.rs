@@ -256,6 +256,7 @@ fn main() {
             commands::migrate_rsshub_feeds,
             commands::list_folders,
             commands::list_tags,
+            commands::list_scope_total,
             commands::create_tag,
             commands::assign_tags,
             commands::unassign_tags,

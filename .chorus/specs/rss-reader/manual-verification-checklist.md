@@ -784,3 +784,30 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - **MCP 与界面并发写**：两者共用同一库文件与同一 core API（WAL + 锁），`create_tag` 的跨进程重名冲突在 core 侧有 `unique_violation` 映射测试；但**未做**「界面与 MCP 同时打标同一批条目」的并发实机压测（单写者场景，core 事务保证原子性）。
 - **未对真实 RSSHub 实例做标签端到端**：标签与 RSSHub 解析无交集，本批次未重测 RSSHub 抓取（既有批次覆盖）。
 - **`search_articles` 不带 tag 过滤**（聚合复审 NOTE）：按标签筛选仅提供在 `list_articles`（`tag_id`/`tag_name`）；搜索结果暂不支持按标签收窄，与提案「搜索 `tag:` 语法留 v2」口径一致。
+
+## 22. 列表计数口径 + 只看未读入口 + 加载更多兜底（2026-09-23-list-count-and-unread-toggle）
+
+### 22.1 T1 列表计数口径（「已加载 M / 共 N」）
+
+**机制证据（可复跑）**
+
+- `cargo test -p rustrss-core --test store folder_and_tag_scope_totals_stay_on_covering_indexes`：分组/标签/源三个维度的总数与 `list_entries` 行数同口径（空分组 0、不存在 id 0、未分组源不计入任何分组、同一条多标签不重复计数）；EXPLAIN 断言要求计划里出现 `COVERING INDEX idx_entries_feed_read` 且不得裸 `SCAN entries`；随后 `DROP INDEX idx_entries_feed_read` 再断言 `explain_entry_count_for_folder` **报错（变异校验转红）**——证明断言确实钉在那条索引上。
+- `cargo test -p rustrss-desktop list_scope_total`：命令三个分派分支 + 未知 kind 报「未知的统计范围」+ 返回值与列表行数一致。
+- `cargo test --workspace`：全绿（core `store` 51 / desktop 64 / mcp 55 / 其余见输出）。
+
+**实机证据**（Xvfb `:99` + `GDK_BACKEND=x11` + 真库副本 `/tmp/rustrss-verify.sqlite`，跑完已清理）
+
+> 环境备注：只设 `DISPLAY` 不够——GDK 在 `WAYLAND_DISPLAY` 缺失时会回落到 `wayland-0`，应用会连到用户真实会话而 Xvfb 里看不到窗口；harness 需显式 `GDK_BACKEND=x11`（**只加在测试环境，未写进应用代码**，不触碰硬约束 3）。另复现了清单 21.3 记录的「无 WM 下 WebKit 陈旧绘制」：侧栏出现过一块未重绘的黑色区域（DOM/日志核对无异常）。
+
+- 未读视图：`view=unread sort=newest hideRead=0 count=200 loaded=200 total=13372 totalKind=unread header=已加载 200 / 共 13372 未读`；同刻侧栏「全部未读」= 13372、左下状态栏全库 = 13476 → 头部 N 与侧栏同口径一致。
+- 全部视图 + 单源（Phoronix，feed#90）：`view total feed#90 n=57 header=已加载 57 / 共 57 篇`；`sqlite3` 独立核对 `90|Phoronix|total=57|unread=57`。
+- 全部视图 + 单标签（临时标签「验证标签」tag#1：30 条打标 / 25 未读）：`view total tag#1 n=30`，头部 `已加载 30 / 共 30 篇`。
+- **有效筛选口径（T1 AC7）**：`list.hide_read=true` 后点开 AI情报局（库内 `total=176 / unread=134`）→ `view=feed#92 sort=newest hideRead=1 count=134 loaded=134 total=134 totalKind=unread header=已加载 134 / 共 134 未读`，且该次会话里 `list_scope_total feed#92` 调用 **0 次**——N 取的是 134（未读）而不是 176（全源），且未读口径零额外查询。
+- 搜索视图：`view=search count=37`，头部 `已加载 37 篇`（不查 FTS 总数）。
+- **耗时（红线 #3，如实标注）**：`[rustrss] list_scope_total feed#90: 0ms n=57`（进程内首次调用）、`feed#92: 0ms n=176`（同进程第二次）——**OS 页缓存未清，属热缓存口径**；SQL 本身是 `INDEXED BY` 覆盖索引 COUNT（计划由 EXPLAIN 断言钉住），真冷盘口径需清 OS 缓存（需 root），本批未做、不冒充热缓存为冷启动。
+- 清理：临时库副本 / 截图 / harness 日志已删；`pkill`（应用 / Xvfb / `xeyes`）无残留。
+
+**尚未覆盖（留给后续任务或人工）**
+
+- T2（常驻「只看未读」开关 + 快捷键 `U`）与 T3（哨兵手动「加载更多」+ 末尾终止态）尚未实现，其 AC 在各自任务里单独取证。
+- 界面当前**没有单分组视图**（侧栏分组只做折叠/展开）：「共 N」的分组维度已在 core/命令层备好并测试，但界面上暂时没有入口可点——真实入口出现时复用 `list_scope_total { kind: "folder" }` 即可。

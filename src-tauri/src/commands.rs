@@ -805,6 +805,35 @@ pub(crate) fn sync_badge(app: &tauri::AppHandle, state: &AppState) {
     }
 }
 
+/// 列表头「已加载 M / 共 N」的总数：按 scope 分派到 core 的索引计数（界面命令）。
+///
+/// 智能视图（未读 / 全部 / 星标 / 稍后读）**不经过这里**——界面直接读侧栏已加载的
+/// `counts()` 结果，零额外查询；只有「全部视图 + 单源 / 单分组 / 单标签」这一格需要它。
+/// 三个维度都是 COUNT 聚合，core 侧用 `INDEXED BY` + EXPLAIN 断言钉住覆盖索引
+/// （不触碰正文大列所在的表 B 树，仓库红线 #1）。
+pub(crate) fn list_scope_total_inner(state: &AppState, kind: &str, id: i64) -> R<i64> {
+    // 耗时取证（红线 #3）：≥50ms 记 warn（`log_slow`），其余至少留一行 debug——
+    // 界面上「打开一个源 / 标签要查总数」是每次交互都跑的路径，得看得见代价。
+    let started = std::time::Instant::now();
+    let r = state.with_store(|s| match kind {
+        "feed" => s.entry_count_for_feed(id).map_err(err),
+        "folder" => s.entry_count_for_folder(id).map_err(err),
+        "tag" => s.tag_entry_count(id).map_err(err),
+        other => Err(format!("未知的统计范围：{other}")),
+    });
+    let elapsed_ms = started.elapsed().as_millis();
+    log_slow("list_scope_total", started);
+    if let Ok(n) = &r {
+        log::debug!("[rustrss] list_scope_total {kind}#{id}: {elapsed_ms}ms n={n}");
+    }
+    r
+}
+
+#[tauri::command]
+pub fn list_scope_total(state: State<'_, AppState>, kind: String, id: i64) -> R<i64> {
+    list_scope_total_inner(&state, &kind, id)
+}
+
 /// 界面语言设置的原值（`auto` / `zh-CN` / `en`）。Rust 侧自己发的文案（托盘菜单、
 /// 系统通知、角标 tooltip）按它选双语常量；界面文案的唯一出处仍是 `ui/i18n.js`。
 pub(crate) fn ui_locale_setting(state: &AppState) -> R<String> {
@@ -1752,6 +1781,90 @@ mod tests {
         let s = ui_settings(&state).unwrap();
         assert_eq!(s.list_sort, "oldest");
         assert!(s.list_hide_read);
+    }
+
+    /// `list_scope_total`：三个分派分支的数值与列表实际行数同口径（feed / folder / tag），
+    /// 未分组源不计入任何分组，未知 kind 报可读错误——界面只会传 feed/folder/tag。
+    #[test]
+    fn list_scope_total_dispatches_feed_folder_tag() {
+        let state = AppState::for_test();
+        let mk = |stable_id: &str| rustrss_core::Entry {
+            stable_id: stable_id.into(),
+            id_origin: rustrss_core::IdOrigin::SourceData,
+            source_id: stable_id.into(),
+            title: stable_id.into(),
+            url: Some(format!("https://example.com/{stable_id}")),
+            author: None,
+            published: None,
+            updated: None,
+            summary: Some("正文".into()),
+            content_html: Some("<p>正文</p>".into()),
+            content_text: Some("正文".into()),
+            categories: Vec::new(),
+        };
+
+        let (feed, loose, folder, tag_id) = state
+            .with_store(|s| {
+                let feed = s
+                    .add_feed("https://example.com/a.xml", Some("A源"))
+                    .map_err(err)?;
+                let loose = s
+                    .add_feed("https://example.com/b.xml", Some("B源"))
+                    .map_err(err)?;
+                let folder = s.add_folder("分组").map_err(err)?;
+                s.assign_folder(feed, Some(folder)).map_err(err)?;
+                s.upsert_entries(feed, &[mk("a1"), mk("a2")]).map_err(err)?;
+                s.upsert_entries(loose, &[mk("b1")]).map_err(err)?;
+                let tag = s.create_tag("Rust", None).map_err(err)?;
+                let ids: Vec<i64> = s
+                    .list_entries(&rustrss_core::EntryQuery {
+                        feed_id: Some(feed),
+                        ..Default::default()
+                    })
+                    .map_err(err)?
+                    .into_iter()
+                    .map(|e| e.id)
+                    .collect();
+                s.assign_tags(&rustrss_core::TagTarget::Entries(ids), &[tag.id])
+                    .map_err(err)?;
+                Ok((feed, loose, folder, tag.id))
+            })
+            .unwrap();
+
+        assert_eq!(list_scope_total_inner(&state, "feed", feed).unwrap(), 2);
+        assert_eq!(list_scope_total_inner(&state, "feed", loose).unwrap(), 1);
+        assert_eq!(
+            list_scope_total_inner(&state, "folder", folder).unwrap(),
+            2,
+            "未分组的源不计入任何分组"
+        );
+        assert_eq!(list_scope_total_inner(&state, "tag", tag_id).unwrap(), 2);
+        assert_eq!(
+            list_scope_total_inner(&state, "folder", 9_999).unwrap(),
+            0,
+            "不存在的分组为 0（是否存在由调用方另定）"
+        );
+
+        // 命令返回值与列表行数同口径：这是「共 N 不虚报」的机制保证
+        let listed = state
+            .with_store(|s| {
+                s.list_entries(&rustrss_core::EntryQuery {
+                    feed_id: Some(feed),
+                    ..Default::default()
+                })
+                .map_err(err)
+            })
+            .unwrap();
+        assert_eq!(
+            list_scope_total_inner(&state, "feed", feed).unwrap(),
+            listed.len() as i64
+        );
+
+        let bad = list_scope_total_inner(&state, "bogus", 1).unwrap_err();
+        assert!(
+            bad.contains("未知的统计范围"),
+            "未知 kind 要报可读错误（而不是静默回 0）：{bad}"
+        );
     }
 
     #[test]
