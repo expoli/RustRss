@@ -1,7 +1,7 @@
 ---
 title: Tech Design: MCP 写能力与读侧补齐（T0+T1+T2）
 proposalUuid: f29e24ed-edc3-4c88-a72d-4ed77445965d
-documentUuid:
+documentUuid: dac6eda0-13fc-4c47-abea-1f6dcdba7147
 ---
 
 # Technical Design: MCP 写能力与读侧补齐（T0+T1+T2）

@@ -1,7 +1,7 @@
 ---
 title: PRD: MCP 写能力与读侧补齐（T0+T1+T2）
 proposalUuid: f29e24ed-edc3-4c88-a72d-4ed77445965d
-documentUuid:
+documentUuid: 2e18c946-a480-431a-8a02-e430a5fe01ff
 ---
 
 # PRD: MCP 写能力与读侧补齐（T0+T1+T2）
