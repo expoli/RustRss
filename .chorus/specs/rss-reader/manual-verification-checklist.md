@@ -676,3 +676,20 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
   1. **依赖库的 info/warn/error 行不经 `scrub_log_line`**（debug/trace 已被 target 过滤拦下，但 info 以上不限 target）：`url` crate 的 Display 会掩密码但保留 username，极端情况下私有源 URL 的 username 可能出现在依赖库的罕见错误行里；
   2. **init 降级模式下 `[ui]` 诊断行全丢**（logger 装不上时无处可写，仅一行 stderr 提示）：headless 冒烟若靠 grep stdout 找 `[ui]` 会失掉信号，属已知取舍；
   3. **panic payload 落盘不打码**（panic 信息里若含敏感串不会被 scrub；上游 AI/UI 路径已有 core 侧打码，残余风险低）。
+
+## 19. 右键菜单子菜单化（2026-09-23-submenu，任务 4dfbce24）
+
+### 19.1 已机械验证的部分
+
+- **子菜单机制**：`submenuRect` 纯函数 5 个自检用例 + 2 个对抗探针（bottom+flip、tiny-viewport）不变量成立；`placeSubmenu` 贴父项行 `getBoundingClientRect()`（非菜单容器），右→左翻转 + 垂直钳位/内部滚动，Xvfb 实测各用例 `outofview=0`；`renderMenuItems` 父子同源，非 submenu 分支与旧代码逐行等价。
+- **订阅菜单两处**：刷新间隔父项显示当前档位（子菜单 6 档打勾）；移动到父项显示当前分组（子菜单含「未分组」且当前项打勾）；点击「每 15 分钟」→ `sqlite3` 回读 `feeds.id=92 = 15`，重开菜单勾选/文案同步。
+- **关闭与切换**：Esc / 点击外部 / 点击子项关闭整棵树；悬停其他父项切换子菜单；父菜单滚轮滚动收起子菜单。**顺带修复既有 bug**：Esc 原本永远关不掉右键菜单（判定被前置 early-return 挡死，diff 可证）。
+- **体积对照**：菜单体高度 460px → 198px（≤ 1/2）；条目 31+3 seps → 5+2 seps。
+- **回归面**：`#ctx-menu` CSS 选择器零残留（根菜单保留 id，5 处调用点存活）；文件夹菜单、列表区菜单、feed-edit 下拉按代码等价论证不变；i18n zh=en=316、被删 key（`menu.moveToWithName`/`menu.moveToUngrouped`）全仓零引用。
+- **门禁**：`cargo test --workspace` 231 passed / 0 failed；`cargo clippy --workspace` 无新增；菜单渲染/子菜单定位 boot 自检通过。
+
+### 19.2 限制与遗留
+
+- **翻转左分支在出厂几何下不可达**（244px 侧栏 + 窗口 `minWidth 900`）：该分支由 boot 自检守护，实机取证时用了一行仅测试用的 CSS 加宽（已还原、未提交、diff 验证一致）。
+- **设置页下拉在 Xvfb 下无法点击实测**（既有 `data-tauri-drag-region` 无 WM 吞点击问题，与本改动无关），其回归以「anchor 路径等价」论证（列表菜单 + feed-edit 弹窗已覆盖同一代码路径）。
+- **未新增键盘导航**：子菜单可达性与既有菜单口径一致（Esc 关闭；无方向键导航），如需键盘完整导航建议单列需求。
