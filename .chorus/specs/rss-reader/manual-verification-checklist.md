@@ -811,3 +811,9 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 - T2（常驻「只看未读」开关 + 快捷键 `U`）与 T3（哨兵手动「加载更多」+ 末尾终止态）尚未实现，其 AC 在各自任务里单独取证。
 - 界面当前**没有单分组视图**（侧栏分组只做折叠/展开）：「共 N」的分组维度已在 core/命令层备好并测试，但界面上暂时没有入口可点——真实入口出现时复用 `list_scope_total { kind: "folder" }` 即可。
+
+**任务评审备注的处理（评论 `de35fc24`，判定 PASS WITH NOTES）**
+
+- Note-1（单分组视图无入口）/ Note-2（真冷盘未测，红线 #3 允许「明确标注热缓存」分支）：评审裁定非阻塞，维持现状并在上面「尚未覆盖」里记明。
+- Note-3（PRD 说改第 70 条但实际未动）：已补——spec.md 第 70 条尾部加上指向第 71 / 72 条的指针，与「结构重组、语义无损」的裁定一致。
+- Note-4（评审称「仓库无 invoke 漂移守卫」）：**该 note 本身不准确**。守卫确实存在：文档在 `src-tauri/src/main.rs:403`、提取器 `invoked_commands()` 在 `main.rs:552`、断言 `missing.is_empty()` 在 `main.rs:446-452`。做了一次变异校验：向 `ui/app.js` 里临时插入 `invoke('definitely_not_registered')` → `cargo test -p rustrss-desktop mcp_write_settings_controls_and_commands_are_wired` 在 `main.rs:450` panic（守卫真的会拦）；还原后该测试通过。
