@@ -174,8 +174,11 @@ fn main() {
                         ))
                     })
                     .unwrap_or_else(|_| (mcp_server::DEFAULT_PORT, String::new()));
+                // 刷新单 flight 交给人 MCP：agent 的 refresh 与界面刷新抢同一个标记。
+                // 服务不持 token 副本（鉴权每请求现读库），token 只用于这行启动日志。
+                let gate = app_state.refresh_gate();
                 tauri::async_runtime::spawn(async move {
-                    match runtime.start(&db_path, token.clone(), port).await {
+                    match runtime.start(&db_path, port, gate).await {
                         Ok(addr) => log::info!("{}", mcp_startup_line(&addr.to_string(), &token)),
                         Err(e) => log::error!("[rustrss] MCP HTTP 服务启动失败: {e}"),
                     }
@@ -275,6 +278,11 @@ fn main() {
             commands::set_mcp_enabled,
             commands::set_mcp_port,
             commands::rotate_mcp_token,
+            commands::generate_mcp_write_token,
+            commands::rotate_mcp_write_token,
+            commands::clear_mcp_write_token,
+            commands::set_mcp_write_enabled,
+            commands::set_mcp_dangerous_enabled,
             commands::add_feed,
             commands::discover_feed,
             commands::remove_feed,
@@ -375,6 +383,84 @@ mod tests {
             stray.is_empty(),
             "迁移未收口（这些行仍是 println!/eprintln!）:\n{stray:#?}"
         );
+    }
+
+    /// 设置页 MCP 写能力区（T2 AC6）的接线不能在搬家/重写中静默断掉：
+    /// ① 控件 id 在 index.html 里存在；② app.js 引用了它们；
+    /// ③ 新命令在 `main.rs` 的登记表里，并且 app.js 真的调它们；
+    /// ④ 通用漂移守卫：app.js 里每个 `invoke('x')` 都必须已登记。
+    ///
+    /// 之前只能靠手点界面才能发现这类断裂（命令名拼错 → 运行时才报错）。
+    #[test]
+    fn mcp_write_settings_controls_and_commands_are_wired() {
+        const APP_JS: &str = include_str!("../../ui/app.js");
+        const INDEX_HTML: &str = include_str!("../../ui/index.html");
+        const MAIN_RS: &str = include_str!("main.rs");
+
+        for id in [
+            "set-mcp-write-enabled",
+            "set-mcp-dangerous-enabled",
+            "mcp-write-token",
+            "mcp-write-generate",
+            "mcp-write-copy",
+            "mcp-write-rotate",
+            "mcp-write-clear",
+        ] {
+            assert!(
+                INDEX_HTML.contains(&format!("id=\"{id}\"")),
+                "index.html 缺少 MCP 写能力控件 {id}"
+            );
+            assert!(APP_JS.contains(&format!("'{id}'")), "app.js 未接线 {id}");
+        }
+
+        for cmd in [
+            "set_mcp_write_enabled",
+            "set_mcp_dangerous_enabled",
+            "generate_mcp_write_token",
+            "rotate_mcp_write_token",
+            "clear_mcp_write_token",
+        ] {
+            assert!(
+                MAIN_RS.contains(&format!("commands::{cmd},")),
+                "main.rs 未登记命令 {cmd}"
+            );
+            assert!(APP_JS.contains(&format!("'{cmd}'")), "app.js 未调用 {cmd}");
+        }
+
+        let missing: Vec<String> = invoked_commands(APP_JS)
+            .into_iter()
+            .filter(|name| {
+                // 命令可能在 `commands` 模块，也可能就写在 main.rs（如 `clip_write`）
+                !MAIN_RS.contains(&format!("commands::{name},"))
+                    && !MAIN_RS.contains(&format!("            {name},"))
+            })
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "这些命令在界面被调用但没在 main.rs 登记（点下去才会报错）: {missing:?}"
+        );
+    }
+
+    /// 抽出 app.js 里 `invoke('命令名')` 的命令名（允许换行/空白）。
+    fn invoked_commands(app_js: &str) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut rest = app_js;
+        while let Some(pos) = rest.find("invoke(") {
+            let after = &rest[pos + "invoke(".len()..];
+            let trimmed = after.trim_start();
+            if let Some(stripped) = trimmed.strip_prefix('\'') {
+                if let Some(end) = stripped.find('\'') {
+                    let name = &stripped[..end];
+                    if !name.is_empty()
+                        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+                    {
+                        out.push(name.to_string());
+                    }
+                }
+            }
+            rest = after;
+        }
+        out
     }
 
     /// 一行里真正的打印调用次数（`eprintln!` 含子串 `println!`，只数一次）；

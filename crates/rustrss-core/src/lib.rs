@@ -13,6 +13,7 @@ pub mod model;
 pub mod opml;
 pub mod parse;
 pub mod paths;
+pub mod refresh_flight;
 pub mod rsshub;
 pub mod store;
 
@@ -24,7 +25,9 @@ pub use fetch::{
 };
 pub use fulltext::{extract, extract_bytes, Extracted, FulltextError};
 pub use paths::{default_data_dir, default_db_path, resolve_db_path};
+pub use logging::scrub_log_line;
 pub use model::{Entry, Feed, IdOrigin};
+pub use refresh_flight::{RefreshFlight, RefreshGate};
 pub use parse::{parse, ParseError};
 pub use store::backup;
 pub use store::{

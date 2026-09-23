@@ -3,7 +3,9 @@
 //! 三个关键约束（来自 spec 的验收点）：
 //! 1. 只监听回环地址；
 //! 2. 无 token / token 不对一律拒绝；
-//! 3. token 可轮换，且轮换后旧 token 立即失效（旧服务先停再换新 token 起）。
+//! 3. token 可轮换，且轮换后旧 token **立即**失效——服务不持任何 token 副本，
+//!    鉴权中间件每个请求现读库里的值（见 `rustrss_mcp::http`），
+//!    所以轮换/销毁写 token 连重启都不需要。
 //!
 //! 这里为 MCP 单独开一个数据库连接：界面与 MCP 共用同一个库文件，
 //! SQLite 的 WAL 支持多连接读、写由 busy_timeout 排队，代价与复杂度都低于
@@ -24,8 +26,9 @@ pub const K_ENABLED: &str = "mcp.enabled";
 
 // 供 commands 层使用，实现只有一份
 pub use rustrss_mcp::config::{
-    client_snippet, is_loopback_url, port_from_store, token_from_store, DEFAULT_PORT,
-    K_PORT, K_TOKEN,
+    client_snippet, dangerous_enabled_from_store, is_loopback_url, port_from_store,
+    token_from_store, write_enabled_from_store, write_token_from_store, DEFAULT_PORT,
+    K_DANGEROUS_ENABLED, K_PORT, K_WRITE_ENABLED,
 };
 
 pub struct McpRuntime {
@@ -62,21 +65,36 @@ impl McpRuntime {
         }
     }
 
-    /// 启动服务；已在运行时先停掉（用于换端口/换 token）
+    /// 启动服务；已在运行时先停掉（用于换端口）
+    ///
+    /// `gate`：刷新单 flight 的共享标记——与界面手刷/定时刷共用一个实例，
+    /// 所以 agent 的 `refresh` 与界面刷新不会叠加。
+    ///
+    /// 不再传 token：鉴权中间件**每个请求现读**库里的 `mcp.token` / `mcp.write_token`，
+    /// 所以轮换或销毁后旧值下一个请求即失效，不需要重启服务。
     pub async fn start(
         &self,
         db_path: &Path,
-        token: String,
         port: u16,
+        gate: std::sync::Arc<rustrss_core::RefreshGate>,
     ) -> Result<SocketAddr, String> {
         self.stop();
-        let server = RustRssMcp::open(db_path).map_err(|e| format!("打开数据库失败: {e}"))?;
+        let server = RustRssMcp::open(db_path)
+            .map_err(|e| format!("打开数据库失败: {e}"))?
+            .with_refresh_gate(gate);
         let bind: SocketAddr = format!("127.0.0.1:{port}")
             .parse()
             .map_err(|e| format!("端口 {port} 非法: {e}"))?;
-        let handle = serve(server, HttpConfig { bind, token })
-            .await
-            .map_err(|e| e.to_string())?;
+        let handle = serve(
+            server,
+            HttpConfig {
+                bind,
+                // 应用内托管：不持静态副本，只认库里此刻的值（轮换即时生效）
+                token: None,
+            },
+        )
+        .await
+        .map_err(|e| e.to_string())?;
         let addr = handle.addr;
         if let Ok(mut guard) = self.handle.lock() {
             *guard = Some(handle);

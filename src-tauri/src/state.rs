@@ -6,10 +6,16 @@
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use rustrss_core::fetch::{Fetcher, DEFAULT_USER_AGENT};
-use rustrss_core::Store;
+use rustrss_core::{RefreshGate, Store};
+
+/// 单 flight 守卫的别名：实现已上提到 `rustrss_core::refresh_flight`。
+///
+/// 这里保留 `pub use` 而不是直接删掉：界面侧（commands.rs）与既有测试都写
+/// `RefreshFlight`，搬家后它们引用的仍是同一个类型。
+pub use rustrss_core::RefreshFlight;
 
 pub struct AppState {
     store: Mutex<Store>,
@@ -20,8 +26,10 @@ pub struct AppState {
     /// 托盘是否构建成功（决定「关闭到托盘」策略是否可用：
     /// 托盘没了还把窗口藏起来，用户就永远找不回应用了）
     tray_available: AtomicBool,
-    /// 单 flight：是否有刷新（手动/定时/启动）正在进行中
-    refreshing: AtomicBool,
+    /// 单 flight：是否有刷新（手动/定时/启动/MCP）正在进行中。
+    /// 实现与标记都在 `rustrss_core::refresh_flight`——应用内托管的 MCP 服务
+    /// 共用同一个 `Arc<RefreshGate>`，所以 agent 的 `refresh` 与界面刷新不叠加。
+    refresh_gate: Arc<RefreshGate>,
 }
 
 impl AppState {
@@ -43,7 +51,7 @@ impl AppState {
             db_path,
             mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
             tray_available: AtomicBool::new(false),
-            refreshing: AtomicBool::new(false),
+            refresh_gate: Arc::new(RefreshGate::new()),
         })
     }
 
@@ -53,12 +61,13 @@ impl AppState {
     /// 同一批源会被抓两遍、重复抢库写锁，所以「进行中就跳过」是全局口径。
     /// 返回的守卫在 Drop 时释放标记，`?` 早退或任务被取消都不会把标记卡死。
     pub fn try_begin_refresh(&self) -> Result<RefreshFlight<'_>, String> {
-        self.refreshing
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .map_err(|_| "刷新已在进行中（手动或自动），本次已跳过".to_string())?;
-        Ok(RefreshFlight {
-            flag: &self.refreshing,
-        })
+        self.refresh_gate.try_begin()
+    }
+
+    /// 单 flight 标记的共享句柄：拉起 MCP 服务时交给它，让 agent 的 `refresh`
+    /// 与界面刷新抢同一个标记（两条入口共用一个 gate 实例）。
+    pub fn refresh_gate(&self) -> Arc<RefreshGate> {
+        Arc::clone(&self.refresh_gate)
     }
 
     /// 测试用状态：内存库 + 不发声的默认 HTTP 客户端，不碰真实数据目录。
@@ -70,7 +79,7 @@ impl AppState {
             db_path: PathBuf::from(":memory:"),
             mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
             tray_available: AtomicBool::new(false),
-            refreshing: AtomicBool::new(false),
+            refresh_gate: Arc::new(RefreshGate::new()),
         }
     }
 
@@ -90,17 +99,6 @@ impl AppState {
             .lock()
             .map_err(|_| "数据库锁被污染（此前有操作 panic）".to_string())?;
         f(&guard)
-    }
-}
-
-/// 单 flight 守卫：活着就代表「有刷新在跑」，Drop 释放。
-pub struct RefreshFlight<'a> {
-    flag: &'a AtomicBool,
-}
-
-impl Drop for RefreshFlight<'_> {
-    fn drop(&mut self) {
-        self.flag.store(false, Ordering::Release);
     }
 }
 

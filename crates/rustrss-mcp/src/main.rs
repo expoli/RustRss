@@ -3,18 +3,38 @@
 //! 两种传输：
 //! - 默认 **stdio**：由 MCP 客户端作为子进程拉起；
 //! - `--http [addr]`：以 HTTP（streamable HTTP）方式提供，便于不开 GUI 时使用，
-//!   或让客户端以 URL 方式接入。token 取 `RUSTSS_MCP_TOKEN`，未设置则随机生成并打印。
+//!   或让客户端以 URL 方式接入。静态读凭据取 `RUSTSS_MCP_TOKEN`（未设则随机生成
+//!   并打印）；**库里的 `mcp.token` / `mcp.write_token` 也一律有效**——鉴权每个
+//!   请求现读库，所以设置页轮换/销毁写 token 后旧值立即失效。
 //!
-//! 日志一律走 stderr：stdio 模式下 stdout 是协议通道，混入任何其他输出都会让客户端解析失败。
+//! 日志一律走 stderr（stdio 模式下 stdout 是协议通道，混入任何其他输出都会让客户端
+//! 解析失败）；同时装 core 的文件日志，写调用的审计行（`target = "mcp"`）落到与
+//! 桌面端同一目录的日志文件里。
 
 use rustrss_core::Store;
 use rustrss_mcp::http::{generate_token, serve, HttpConfig};
 use rustrss_mcp::{resolve_db_path, serve_stdio, RustRssMcp};
 
+/// 装日志（写调用的审计行 + 排障用）：失败不阻断启动，只是没有落盘。
+///
+/// 与桌面端同一套设施（core 的 `FileLogger`）；镜像关掉：stdout 在 stdio 模式下
+/// 是协议通道，而审计行只应进文件。
+fn init_logging() {
+    match rustrss_core::logging::init(&rustrss_core::paths::logs_dir(), log::LevelFilter::Info) {
+        Ok(path) => eprintln!("[rustrss-mcp] 日志: {}", path.display()),
+        Err(e) => eprintln!("[rustrss-mcp] 日志初始化失败（审计行不会落盘）: {e}"),
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let db_path = resolve_db_path();
+
+    // 服务类用法才装日志：`--print-config` 是纯输出命令，不该产生日志副作用
+    if !args.iter().any(|a| a == "--print-config") {
+        init_logging();
+    }
 
     // 不启动服务也能生成客户端配置（token 与服务将来用的是同一个）
     if args.iter().any(|a| a == "--print-config") {
@@ -45,7 +65,8 @@ async fn main() -> anyhow::Result<()> {
             server,
             HttpConfig {
                 bind: addr,
-                token: token.clone(),
+                // CLI 场景的静态读凭据；库里的 token/写 token 由鉴权中间件每个请求现读，同样有效
+                token: Some(token.clone()),
             },
         )
         .await?;

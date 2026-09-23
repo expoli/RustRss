@@ -450,6 +450,43 @@
             </div>
             <textarea id="mcp-snippet" rows="8" readonly></textarea>
           </div>
+
+          <div class="setting-block">
+            <h4 data-i18n="settings.section.write"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.mcp.writeEnabled"></b>
+                <small data-i18n="settings.mcp.writeEnabledHint"></small>
+              </div>
+              <label class="switch"
+                ><input type="checkbox" id="set-mcp-write-enabled" /><span></span></label
+              >
+            </div>
+
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.mcp.dangerousEnabled"></b>
+                <small data-i18n="settings.mcp.dangerousEnabledHint"></small>
+              </div>
+              <label class="switch"
+                ><input type="checkbox" id="set-mcp-dangerous-enabled" /><span></span></label
+              >
+            </div>
+
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.mcp.writeToken"></b>
+                <small data-i18n="settings.mcp.writeTokenHint"></small>
+              </div>
+            </div>
+            <p id="mcp-write-token" class="dim small">—</p>
+            <div class="setting-actions">
+              <button id="mcp-write-generate" data-i18n="settings.mcp.writeGenerate"></button>
+              <button id="mcp-write-copy" data-i18n="settings.mcp.writeCopy"></button>
+              <button id="mcp-write-rotate" data-i18n="settings.mcp.writeRotate"></button>
+              <button id="mcp-write-clear" data-i18n="settings.mcp.writeClear"></button>
+            </div>
+          </div>
         </div>
 
         <!-- RSSHub -->

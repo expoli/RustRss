@@ -10,6 +10,8 @@ rmcp = { version = "3", features = ["server", "macros", "schemars", "transport-i
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "net", "sync"] }
 axum = "0.8"
 uuid = { version = "1", features = ["v4"] }
+# 日志门面：写调用的审计行（target = "mcp"）走与应用同一套 log 实现（core 的 FileLogger）
+log = { version = "0.4", features = ["std"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "1"
@@ -17,6 +19,8 @@ thiserror = "2"
 anyhow = "1"
 
 [dev-dependencies]
+# stdio 冒烟测试要拉起真子进程并逐行读写协议通道
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "process", "time"] }
 # 测试里当 HTTP 客户端用（与 rustrss-core 用的是同一个客户端）
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "json"] }
 # 测试夹具要造带 published_at 的条目（core 公开模型 `Entry.published` 就是 chrono 类型）；

@@ -4107,6 +4107,7 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "log",
  "reqwest",
  "rmcp",
  "rustrss-core",

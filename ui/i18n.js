@@ -151,6 +151,7 @@ const DICTS = {
     'settings.ai.confirmBeforeSendHint': '发出请求前先展示目标地址与内容（凭据已打码）；命中缓存时不会询问',
     'settings.section.server': '服务',
     'settings.section.client': '客户端接入',
+    'settings.section.write': '写能力（agent 可改订阅与阅读状态）',
 
     'settings.languageHint': '默认跟随系统语言',
     'settings.dbPath': '数据库位置',
@@ -312,6 +313,25 @@ const DICTS = {
     'settings.mcp.copyFailed': '复制失败：{error}',
     'settings.mcp.rotated': 'token 已轮换，旧 token 立即失效',
     'settings.mcp.failed': '操作失败：{error}',
+    'settings.mcp.writeEnabled': '允许 agent 写（总开关）',
+    'settings.mcp.writeEnabledHint':
+      '默认关闭。打开后 agent 才能改阅读状态、刷新、管理订阅；仍需生成写 token 才真正可用。',
+    'settings.mcp.dangerousEnabled': '允许危险工具',
+    'settings.mcp.dangerousEnabledHint':
+      '默认关闭。退订、删分组这类不可逆操作只在这个开关打开、且调用带 confirm 时才执行（可先用 dry_run 预览）。',
+    'settings.mcp.writeToken': '写 token',
+    'settings.mcp.writeTokenHint':
+      '读 token 只能看；写 token 才能改。它不随客户端配置片段分发，请单独复制给需要写权限的 agent。',
+    'settings.mcp.writeTokenSet': '已生成：{token}（轮换或销毁后，旧值下一个请求立即失效）',
+    'settings.mcp.writeTokenUnset': '未生成：写工具不会注册到任何客户端（agent 看不到也调不动）',
+    'settings.mcp.writeGenerate': '生成写 token',
+    'settings.mcp.writeRotate': '轮换写 token',
+    'settings.mcp.writeClear': '销毁写 token',
+    'settings.mcp.writeCopy': '复制写 token',
+    'settings.mcp.writeGenerated': '写 token 已生成',
+    'settings.mcp.writeRotated': '写 token 已轮换，旧值立即失效',
+    'settings.mcp.writeCleared': '写 token 已销毁，写工具随即不可用',
+    'settings.mcp.writeCopied': '写 token 已复制（粘贴后请自行保管）',
 
     'status.refreshing': '正在刷新…',
     'status.refreshDone': '刷新完成：成功 {fetched}｜未修改 {notModified}｜新增 {inserted}｜失败 {failures}',
@@ -494,6 +514,7 @@ const DICTS = {
     'settings.ai.confirmBeforeSendHint': 'Shows the destination and payload before sending (credentials masked); skipped when the answer is already cached',
     'settings.section.server': 'Server',
     'settings.section.client': 'Client setup',
+    'settings.section.write': 'Write access (let an agent change feeds and read state)',
 
     'settings.languageHint': 'Follows the system language by default',
     'settings.dbPath': 'Database location',
@@ -656,6 +677,27 @@ const DICTS = {
     'settings.mcp.copyFailed': 'Copy failed: {error}',
     'settings.mcp.rotated': 'Token rotated; the old one stopped working',
     'settings.mcp.failed': 'Action failed: {error}',
+    'settings.mcp.writeEnabled': 'Allow the agent to write (master switch)',
+    'settings.mcp.writeEnabledHint':
+      'Off by default. When on, an agent can change read state, refresh and manage feeds - a write token is still required before anything works.',
+    'settings.mcp.dangerousEnabled': 'Allow dangerous tools',
+    'settings.mcp.dangerousEnabledHint':
+      'Off by default. Irreversible actions (unsubscribe, deleting a folder) only run when this is on and the call carries confirm; use dry_run to preview first.',
+    'settings.mcp.writeToken': 'Write token',
+    'settings.mcp.writeTokenHint':
+      'The read token can only read; the write token is what allows changes. It is not part of the client config snippet - copy it separately to agents that need write access.',
+    'settings.mcp.writeTokenSet':
+      'Generated: {token} (after rotating or destroying it, the old value stops working on the very next request)',
+    'settings.mcp.writeTokenUnset':
+      'Not generated: write tools are not registered for any client (agents cannot see or call them)',
+    'settings.mcp.writeGenerate': 'Generate write token',
+    'settings.mcp.writeRotate': 'Rotate write token',
+    'settings.mcp.writeClear': 'Destroy write token',
+    'settings.mcp.writeCopy': 'Copy write token',
+    'settings.mcp.writeGenerated': 'Write token generated',
+    'settings.mcp.writeRotated': 'Write token rotated; the old value stopped working',
+    'settings.mcp.writeCleared': 'Write token destroyed; write tools are now unavailable',
+    'settings.mcp.writeCopied': 'Write token copied (keep it somewhere safe)',
 
     'status.refreshing': 'Refreshing…',
     'status.refreshDone':

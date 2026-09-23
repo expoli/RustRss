@@ -34,7 +34,7 @@ ui/                    桌面应用前端（当前为探针页面）
 
 ### MCP 服务器（stdio + HTTP 两种传输，已接真实库）
 
-工具集（**只读**，写入类属 P1）：`list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats`。
+工具集（**只读**，写工具属后续任务）：`list_feeds` / `list_folders` / `list_articles` / `get_article` / `search_articles` / `get_unread_summary` / `db_stats`。
 
 口径：**列表只回元数据 + 短摘要（≤140 字），正文必须用 `get_article` 单独取**；所有列表有上限（默认 10、上限 50）。这是为了不让单次响应撑爆 agent 上下文（见 PRD §6 风险 3）。
 
@@ -48,6 +48,23 @@ ui/                    桌面应用前端（当前为探针页面）
 - **HTTP**（streamable HTTP）：`rustrss-mcp --http 127.0.0.1:8817`（token 取 `RUSTSS_MCP_TOKEN`，未设则随机生成并打印），或在应用「**设置 → MCP**」里启用——设置页会直接给出可粘贴的客户端配置片段与一行 `claude mcp add` 命令，并可一键复制。
 
 约束（均有测试）：**只绑回环**（非回环地址直接拒绝启动）、无 token / 错 token 一律 401、`/health` 不鉴权且不含任何订阅数据、token 轮换后旧值立即失效。客户端需带 `Accept: application/json, text/event-stream`——这是 MCP 传输规范的要求（rmcp 不对则 406），不是本项目的额外限制。
+
+#### 权限模型（读写分权）
+
+认证与授权分离：**token 对不对**决定能不能连上（传输层 401），**这个请求能不能写**决定工具级结果（200 + `isError` + `error_code`）。默认装好就是只读。
+
+| 凭据 / 开关 | 默认值 | 作用 |
+|---|---|---|
+| `mcp.token`（读 token，常驻） | 首次启用时自动生成 | 连接认证 + 只读工具；`tools/list` 里看不到任何写工具 |
+| `mcp.write_token`（写 token，48 位十六进制） | **不存在** | 设置页「生成 / 轮换 / 销毁」；不存在时写工具**不注册**（列不出来也调不动） |
+| `mcp.write_enabled`（写能力总开关） | **关** | 关着时写工具不注册；调用返回 `write_disabled` |
+| `mcp.dangerous_enabled`（危险工具开关） | **关** | 只管不可逆操作（`unsubscribe` / `folder_delete`）；关着时调用返回 `dangerous_tool_disabled` |
+
+- **HTTP**：每个请求按携带的 token **现算** scope——写 token → 写能力（还需两个开关），读 token → 只读；`tools/list` 也按当次请求的 scope 过滤（读 token 的会话看不到写工具）。**不缓存会话级 scope**：写 token 轮换或销毁后，旧值的**下一个请求立刻失效**（包括已建立的连接），不需要重启服务。
+- **stdio**：没有凭据概念，写能力由同一套开关把关（写开关 + 写 token 必须都已就位），与 HTTP 同口径。
+- **无权限时返回工具级错误码**：`write_scope_required`（没有写凭据）/ `write_disabled`（开关或写 token 没就位）/ `dangerous_tool_disabled`；危险操作还要 `confirm: true`（缺失 → `confirm_required`），并支持 `dry_run: true` 只预览影响面、不落库。
+- **审计**：每次写调用（含被拒的）落一行 `target=mcp` 日志（工具名 / 参数摘要 / 影响条数 / 结果），参数摘要过 `scrub_log_line`（URL 里的 token、userinfo 一律 `***`），不含正文与凭据。日志落在与桌面端同一目录的日志文件里（`rustrss-mcp --http`/stdio 也会装同一套文件日志）。
+- 传输层口径不变：无/错 token 仍 401，`/health` 仍不鉴权且不含订阅数据。
 
 实测（2026-09-20）：
 

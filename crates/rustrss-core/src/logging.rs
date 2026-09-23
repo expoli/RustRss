@@ -21,6 +21,10 @@ use std::time::SystemTime;
 use chrono::{DateTime, Local, SecondsFormat};
 use log::{Level, LevelFilter, Log, Metadata, Record};
 
+pub mod scrub;
+
+pub use scrub::scrub_log_line;
+
 /// 保留的日志文件个数上限（每次启动清理一次）。
 pub const KEEP_FILES: usize = 20;
 /// 保留的日志文件总字节上限（50 MB）。

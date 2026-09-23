@@ -1279,64 +1279,107 @@ mod tests {
         assert_eq!(log::max_level(), log::LevelFilter::Info, "回落也要立刻生效");
     }
 
-    /// 落盘前打码：含凭据形态的输入（URL 查询串 / userinfo）抹成 `***`，正常日志行不受影响。
+    /// 打码实现上提到 core 后，界面侧仍走同一实现（re-export 的冒烟断言）：
+    /// `ui_log` 与逐源失败行用的就是这条路径，实现搬家不能把这里变成“没过 scrub”。
     #[test]
-    fn scrub_log_line_masks_credentials_in_urls() {
-        // 真实泄漏路径 1：AI 错误正文回显端点 URL（Gemini 把 key 放在查询串里）
-        let ai_err = "ai summarize failed: error sending request for url \
-                      (https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSy-SECRET-9f3c1a7b)";
-        let scrubbed = scrub_log_line(ai_err);
-        assert!(
-            !scrubbed.contains("AIzaSy-SECRET-9f3c1a7b"),
-            "key 不得留在日志里: {scrubbed}"
+    fn ui_path_still_uses_the_shared_scrub() {
+        let line = scrub_log_line("ai failed: https://api.test/v1?key=SECRET-9f3") ;
+        assert!(!line.contains("SECRET-9f3"), "界面路径必须继续打码: {line}");
+        assert!(line.contains("key=***"), "参数名要保留: {line}");
+    }
+
+    /// MCP 写能力设置（T2 AC1/AC6）：生成/轮换/销毁写 token + 两个开关都默认关。
+    ///
+    /// 这条用例同时钉住「设置页看到的」与「MCP 侧闸门读到的」是同一份存储：
+    /// 生成写 token 后，直接把库里的开关快照喂给 `rustrss_mcp` 的注册表判断。
+    #[test]
+    fn mcp_write_settings_lifecycle_and_defaults() {
+        use rustrss_mcp::registry::{self, Scope, Switches};
+
+        let state = AppState::for_test();
+
+        // ① 默认：写开关/危险开关关，写 token 不存在（装好即只读）
+        let view = mcp_view(&state).unwrap();
+        assert!(!view.write_enabled && !view.dangerous_enabled);
+        assert!(view.write_token.is_none(), "写 token 不得默认生成");
+
+        // ② 生成：48 位十六进制；重复生成不覆盖（幂等）
+        let first = mcp_generate_write_token(&state).unwrap();
+        let token = first.write_token.clone().expect("生成后应有写 token");
+        assert_eq!(token.len(), rustrss_mcp::config::WRITE_TOKEN_HEX_LEN);
+        assert!(token.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+        let again = mcp_generate_write_token(&state).unwrap();
+        assert_eq!(again.write_token.as_deref(), Some(token.as_str()), "生成不得覆盖已有值");
+
+        // ③ 开关落到库：写工具在“写 token + 总开关”都就位后才会被登记
+        state
+            .with_store(|s| {
+                s.set_bool_setting(crate::mcp_server::K_WRITE_ENABLED, true)
+                    .map_err(err)
+            })
+            .unwrap();
+        let switches = state
+            .with_store(|s| Ok(rustrss_mcp::config::switches_from_store(s).unwrap()))
+            .unwrap();
+        assert_eq!(
+            switches,
+            Switches {
+                write_enabled: true,
+                dangerous_enabled: false,
+                write_token: true
+            }
         );
-        assert!(scrubbed.contains("key=***"), "应保留参数名便于定位: {scrubbed}");
-        assert!(
-            scrubbed.contains("generateContent"),
-            "非敏感部分要保留: {scrubbed}"
+        let write_spec = registry::ToolSpec {
+            name: "stub_write",
+            scope: Scope::Write,
+            dangerous: false,
+        };
+        assert!(registry::authorize(&write_spec, Scope::Write, &switches).is_ok());
+        let dangerous_spec = registry::ToolSpec {
+            name: "stub_unsubscribe",
+            scope: Scope::Write,
+            dangerous: true,
+        };
+        assert_eq!(
+            registry::authorize(&dangerous_spec, Scope::Write, &switches)
+                .unwrap_err()
+                .code(),
+            "dangerous_tool_disabled",
+            "危险开关未开时危险工具不可用"
         );
 
-        // 真实泄漏路径 2：私有订阅地址把凭据放在查询串里（前端 [ui] 行会带整个 URL）
-        let feed = "https://example.com/private.xml?token=9f3c1a7b2e5d4c6f&x=1";
-        let scrubbed = scrub_log_line(feed);
-        assert!(!scrubbed.contains("9f3c1a7b2e5d4c6f"));
-        assert!(scrubbed.contains("token=***"));
-        assert!(
-            scrubbed.contains("x=1"),
-            "同一条 URL 上的其它参数要保留: {scrubbed}"
+        // ④ 危险开关也能单独打开
+        let view = mcp_set_dangerous_enabled(&state, true).unwrap();
+        assert!(view.dangerous_enabled);
+        let switches = state
+            .with_store(|s| Ok(rustrss_mcp::config::switches_from_store(s).unwrap()))
+            .unwrap();
+        assert!(registry::authorize(&dangerous_spec, Scope::Write, &switches).is_ok());
+
+        // ⑤ 轮换：库里的值换成新的（旧值下一个请求即失效，靠的是“每请求现读”）
+        let rotated = mcp_rotate_write_token(&state).unwrap();
+        let fresh = rotated.write_token.expect("轮换后应有值");
+        assert_ne!(fresh, token);
+        assert_eq!(fresh.len(), rustrss_mcp::config::WRITE_TOKEN_HEX_LEN);
+
+        // ⑥ 销毁：键被删除，写工具随之不再注册
+        let cleared = mcp_clear_write_token(&state).unwrap();
+        assert!(cleared.write_token.is_none());
+        let switches = state
+            .with_store(|s| Ok(rustrss_mcp::config::switches_from_store(s).unwrap()))
+            .unwrap();
+        assert!(!switches.write_token);
+        assert_eq!(
+            registry::authorize(&write_spec, Scope::Write, &switches)
+                .unwrap_err()
+                .code(),
+            "write_disabled",
+            "写 token 不存在时写工具不可用"
         );
 
-        // 真实泄漏路径 3：URL userinfo 里的 HTTP Basic 凭据
-        let basic = "https://alice:hunter2@example.com/private.xml";
-        let scrubbed = scrub_log_line(basic);
-        assert!(!scrubbed.contains("hunter2"), "密码不得留在日志里: {scrubbed}");
-        assert!(!scrubbed.contains("alice"), "用户名也不留: {scrubbed}");
-        assert!(scrubbed.contains("***@example.com"), "主机名要保留: {scrubbed}");
-
-        // 多种常见参数名
-        for (raw, secret) in [
-            ("https://x.test/a?api_key=SECRET-A", "SECRET-A"),
-            ("https://x.test/a?api-key=SECRET-B", "SECRET-B"),
-            ("https://x.test/a?access_token=SECRET-C&y=2", "SECRET-C"),
-            ("https://x.test/a?password=SECRET-D", "SECRET-D"),
-            ("https://x.test/a?foo=1&client_secret=SECRET-E", "SECRET-E"),
-            ("https://x.test/a?KEY=SECRET-F", "SECRET-F"),
-        ] {
-            let out = scrub_log_line(raw);
-            assert!(!out.contains(secret), "{raw} → {out}");
-            assert!(out.contains("=***"), "{raw} → {out}");
-        }
-
-        // 正常日志行原样通过（打码不能把界面诊断行搞花）
-        for line in [
-            "view=all count=3 exhausted=true",
-            "[ui] renderList rows=200 12ms",
-            "ai summarize entry=7 from_cache=true chars=42 model=openai:gpt-4o-mini",
-            "settings pane=ai base=https://api.openai.com/v1",
-            "[rustrss] 已暂存恢复文件 /tmp/a.sqlite（下次启动替换 /tmp/b.sqlite）",
-        ] {
-            assert_eq!(scrub_log_line(line), line, "不该动: {line}");
-        }
+        // ⑦ 总开关也能关回去（回滚路径）
+        let view = mcp_set_write_enabled(&state, false).unwrap();
+        assert!(!view.write_enabled);
     }
 
     #[test]
@@ -2679,98 +2722,9 @@ pub fn ui_log(line: String) {
     log::info!(target: "ui", "[ui] {}", scrub_log_line(&line));
 }
 
-/// 日志行打码：抹掉 URL 里的凭据形态——userinfo（`https://user:pass@host/x`）与
-/// 查询串里的敏感参数值（`?key=…` / `&token=…`）。
-///
-/// 为什么在这个口子上做：前端/调用方无从知道「哪个值是凭据」，而日志一旦落盘就会
-/// 被用户贴进 issue。只动已知的凭据**形态**，正常日志行（`view=all count=3`）原样通过。
-/// 边界：不处理 `Authorization: Bearer …` 这类**请求头**——本任务新增的日志点不打印
-/// 任何请求头（逐点审查见 T2 报告）；将来要打请求头，先在调用点按 AI 预览的
-/// `***已隐藏***` 口径打码。
-pub fn scrub_log_line(line: &str) -> String {
-    const SENSITIVE: &[&str] = &[
-        "key",
-        "apikey",
-        "api_key",
-        "api-key",
-        "token",
-        "access_token",
-        "refresh_token",
-        "secret",
-        "client_secret",
-        "password",
-        "passwd",
-    ];
-    /// 值的结束位置：下一个参数（`&`）、终止展示符，或空白。
-    fn value_end(rest: &str) -> usize {
-        rest.find(|c: char| {
-            c == '&' || c.is_whitespace() || matches!(c, ')' | '"' | '\'' | '>' | ',' | ']' | '}')
-        })
-        .unwrap_or(rest.len())
-    }
-
-    let line = mask_url_userinfo(line);
-    let mut out = String::with_capacity(line.len());
-    let mut rest = line.as_str();
-    loop {
-        let Some(sep) = rest.find(['?', '&']) else {
-            out.push_str(rest);
-            break;
-        };
-        out.push_str(&rest[..=sep]);
-        let tail = &rest[sep + 1..];
-        let Some(eq) = tail.find('=') else {
-            rest = tail;
-            continue;
-        };
-        let name = &tail[..eq];
-        if SENSITIVE.iter().any(|s| name.eq_ignore_ascii_case(s)) {
-            let end = value_end(&tail[eq + 1..]);
-            out.push_str(name);
-            out.push_str("=***");
-            rest = &tail[eq + 1 + end..];
-        } else {
-            // 非敏感参数：原样输出「名字=」，值里的下一个 `&` 继续由循环处理
-            out.push_str(&tail[..=eq]);
-            rest = &tail[eq + 1..];
-        }
-    }
-    out
-}
-
-/// 抹掉 URL 的 userinfo：`https://user:pass@host/x` → `https://***@host/x`。
-///
-/// 私有订阅地址可能把 HTTP Basic 凭据直接写在 URL 里（前端也把这些 URL 打进 `[ui]` 行）。
-fn mask_url_userinfo(text: &str) -> String {
-    /// authority 段的结束位置（路径/查询/空白/展示符）。
-    fn authority_end(rest: &str) -> usize {
-        rest.find(|c: char| {
-            matches!(c, '/' | '?' | '#' | ' ' | '"' | '\'' | ')' | '>' | ',' | ']' | '}')
-                || c.is_control()
-        })
-        .unwrap_or(rest.len())
-    }
-
-    let mut out = String::with_capacity(text.len());
-    let mut rest = text;
-    loop {
-        let Some(pos) = rest.find("://") else {
-            out.push_str(rest);
-            return out;
-        };
-        let after = &rest[pos + 3..];
-        let end = authority_end(after);
-        out.push_str(&rest[..pos + 3]);
-        match after[..end].rfind('@') {
-            Some(at) => {
-                out.push_str("***");
-                out.push_str(&after[at..end]);
-            }
-            None => out.push_str(&after[..end]),
-        }
-        rest = &after[end..];
-    }
-}
+/// 日志行打码：实现已上提到 `rustrss-core`（MCP 侧也复用同一份），
+/// 这里保留 re-export 让界面侧的调用点（`ui_log`、逐源失败行）照旧直接用。
+pub use rustrss_core::logging::scrub::scrub_log_line;
 
 // ---------------------------------------------------------------- MCP
 
@@ -2778,6 +2732,7 @@ fn mask_url_userinfo(text: &str) -> String {
 pub struct McpSettingsView {
     pub enabled: bool,
     pub port: u16,
+    /// 读 token（常驻；随设置页一起下发给用户填客户端）
     pub token: String,
     pub running: bool,
     pub url: Option<String>,
@@ -2785,6 +2740,13 @@ pub struct McpSettingsView {
     pub snippet: String,
     /// 服务是否只绑回环——界面上如实展示，而不是只写在文档里
     pub loopback_only: bool,
+    /// 写能力总开关（`mcp.write_enabled`，默认关）
+    pub write_enabled: bool,
+    /// 危险工具开关（`mcp.dangerous_enabled`，默认关）
+    pub dangerous_enabled: bool,
+    /// 写 token（`mcp.write_token`）；`None` = 未生成 ⇒ 写工具不注册。
+    /// 与读 token 同口径地回给界面：设置页要能展示/复制它。
+    pub write_token: Option<String>,
 }
 
 fn mcp_view(state: &AppState) -> R<McpSettingsView> {
@@ -2799,6 +2761,7 @@ fn mcp_view(state: &AppState) -> R<McpSettingsView> {
             .as_deref()
             .map(|u| crate::mcp_server::client_snippet(u, &token))
             .unwrap_or_default();
+        let write_token = crate::mcp_server::write_token_from_store(s)?;
         Ok(McpSettingsView {
             enabled,
             port,
@@ -2810,6 +2773,9 @@ fn mcp_view(state: &AppState) -> R<McpSettingsView> {
                 .unwrap_or(true),
             url,
             snippet,
+            write_enabled: crate::mcp_server::write_enabled_from_store(s)?,
+            dangerous_enabled: crate::mcp_server::dangerous_enabled_from_store(s)?,
+            write_token,
         })
     })
 }
@@ -2821,17 +2787,16 @@ pub fn get_mcp_settings(state: State<'_, AppState>) -> R<McpSettingsView> {
 
 #[tauri::command]
 pub async fn set_mcp_enabled(state: State<'_, AppState>, enabled: bool) -> R<McpSettingsView> {
-    let (port, token) = state.with_store(|s| {
+    let port = state.with_store(|s| {
         s.set_bool_setting(crate::mcp_server::K_ENABLED, enabled)
             .map_err(err)?;
-        let token = crate::mcp_server::token_from_store(s)?;
-        Ok((crate::mcp_server::port_from_store(s), token))
+        Ok(crate::mcp_server::port_from_store(s))
     })?;
     if enabled {
         let db = state.db_path.clone();
         state
             .mcp
-            .start(&db, token, port)
+            .start(&db, port, state.refresh_gate())
             .await
             .map_err(|e| format!("启动 MCP HTTP 服务失败: {e}"))?;
     } else {
@@ -2842,47 +2807,104 @@ pub async fn set_mcp_enabled(state: State<'_, AppState>, enabled: bool) -> R<Mcp
 
 #[tauri::command]
 pub async fn set_mcp_port(state: State<'_, AppState>, port: u16) -> R<McpSettingsView> {
-    let (enabled, token) = state.with_store(|s| {
+    let enabled = state.with_store(|s| {
         s.set_setting(crate::mcp_server::K_PORT, &port.to_string())
             .map_err(err)?;
-        let enabled = s
-            .bool_setting(crate::mcp_server::K_ENABLED, false)
-            .map_err(err)?;
-        let token = crate::mcp_server::token_from_store(s)?;
-        Ok((enabled, token))
+        s.bool_setting(crate::mcp_server::K_ENABLED, false)
+            .map_err(err)
     })?;
     if enabled {
         let db = state.db_path.clone();
         state
             .mcp
-            .start(&db, token, port)
+            .start(&db, port, state.refresh_gate())
             .await
             .map_err(|e| format!("换端口失败: {e}"))?;
     }
     mcp_view(&state)
 }
 
-/// 轮换 token：先换库里的值，再用新 token 重启服务——旧 token 立即失效。
+/// 轮换读 token：换库里的值即可——鉴权按请求现读，旧值下一个请求就失效（无需重启）。
 #[tauri::command]
 pub async fn rotate_mcp_token(state: State<'_, AppState>) -> R<McpSettingsView> {
-    let (enabled, port, token) = state.with_store(|s| {
+    state.with_store(|s| {
         let fresh = rustrss_mcp::http::generate_token();
-        s.set_setting(crate::mcp_server::K_TOKEN, &fresh)
-            .map_err(err)?;
-        let enabled = s
-            .bool_setting(crate::mcp_server::K_ENABLED, false)
-            .map_err(err)?;
-        Ok((enabled, crate::mcp_server::port_from_store(s), fresh))
+        rustrss_mcp::config::set_token(s, &fresh).map_err(err)
     })?;
-    if enabled {
-        let db = state.db_path.clone();
-        state
-            .mcp
-            .start(&db, token, port)
-            .await
-            .map_err(|e| format!("轮换 token 失败: {e}"))?;
-    }
     mcp_view(&state)
+}
+
+/// 生成写 token（已存在则沿用，不覆盖——「生成」是显式动作，「轮换」才是换值）。
+///
+/// 逻辑放 `&AppState` 版本里，命令只是薄壳：这两条路径（界面点击 / 单测）
+/// 因此走的是同一段代码。
+fn mcp_generate_write_token(state: &AppState) -> R<McpSettingsView> {
+    state.with_store(|s| {
+        if crate::mcp_server::write_token_from_store(s)?.is_none() {
+            let fresh = rustrss_mcp::config::generate_write_token();
+            rustrss_mcp::config::set_write_token(s, &fresh).map_err(err)?;
+        }
+        Ok(())
+    })?;
+    mcp_view(state)
+}
+
+/// 轮换写 token：库里换成新值，旧值下一请求即失去写权限（含已建立的 HTTP 连接）。
+fn mcp_rotate_write_token(state: &AppState) -> R<McpSettingsView> {
+    state.with_store(|s| {
+        let fresh = rustrss_mcp::config::generate_write_token();
+        rustrss_mcp::config::set_write_token(s, &fresh).map_err(err)
+    })?;
+    mcp_view(state)
+}
+
+/// 销毁写 token：键被删除，写工具随之不再注册（与开关关闭是两件事，都要显式做）。
+fn mcp_clear_write_token(state: &AppState) -> R<McpSettingsView> {
+    state.with_store(|s| rustrss_mcp::config::clear_write_token(s).map_err(err))?;
+    mcp_view(state)
+}
+
+/// 写能力总开关（默认关）。单独一个命令：开关不需要重传整张表单。
+fn mcp_set_write_enabled(state: &AppState, enabled: bool) -> R<McpSettingsView> {
+    state.with_store(|s| {
+        s.set_bool_setting(crate::mcp_server::K_WRITE_ENABLED, enabled)
+            .map_err(err)
+    })?;
+    mcp_view(state)
+}
+
+/// 危险工具开关（默认关）；关掉后 `unsubscribe` / `folder_delete` 不可用。
+fn mcp_set_dangerous_enabled(state: &AppState, enabled: bool) -> R<McpSettingsView> {
+    state.with_store(|s| {
+        s.set_bool_setting(crate::mcp_server::K_DANGEROUS_ENABLED, enabled)
+            .map_err(err)
+    })?;
+    mcp_view(state)
+}
+
+#[tauri::command]
+pub async fn generate_mcp_write_token(state: State<'_, AppState>) -> R<McpSettingsView> {
+    mcp_generate_write_token(&state)
+}
+
+#[tauri::command]
+pub async fn rotate_mcp_write_token(state: State<'_, AppState>) -> R<McpSettingsView> {
+    mcp_rotate_write_token(&state)
+}
+
+#[tauri::command]
+pub async fn clear_mcp_write_token(state: State<'_, AppState>) -> R<McpSettingsView> {
+    mcp_clear_write_token(&state)
+}
+
+#[tauri::command]
+pub fn set_mcp_write_enabled(state: State<'_, AppState>, enabled: bool) -> R<McpSettingsView> {
+    mcp_set_write_enabled(&state, enabled)
+}
+
+#[tauri::command]
+pub fn set_mcp_dangerous_enabled(state: State<'_, AppState>, enabled: bool) -> R<McpSettingsView> {
+    mcp_set_dangerous_enabled(&state, enabled)
 }
 
 #[derive(Serialize)]

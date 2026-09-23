@@ -166,6 +166,24 @@ fn settings_roundtrip_and_defaults() {
     assert_eq!(all[0].0, "ui.mark_read_on_navigate");
 }
 
+/// 销毁设置键（MCP 写 token 的「销毁」路径就在这上面）：删掉后读回是「不存在」，
+/// 且重复删除幂等——能力开关类设置不能因为多删一次就报错。
+#[test]
+fn delete_setting_is_idempotent_and_removes_the_key() {
+    let store = Store::open_in_memory().unwrap();
+
+    store.set_setting("mcp.write_token", "deadbeef").unwrap();
+    assert_eq!(store.setting("mcp.write_token").unwrap().as_deref(), Some("deadbeef"));
+
+    store.delete_setting("mcp.write_token").unwrap();
+    assert!(store.setting("mcp.write_token").unwrap().is_none());
+    assert!(!store.all_settings().unwrap().iter().any(|(k, _)| k == "mcp.write_token"));
+
+    // 幂等：删不存在的键不报错
+    store.delete_setting("mcp.write_token").unwrap();
+    store.delete_setting("never.existed").unwrap();
+}
+
 #[test]
 fn deleting_feed_cascades_entries_and_search_index() {
     let (store, feed_id) = setup();

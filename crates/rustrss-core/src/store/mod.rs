@@ -1036,6 +1036,16 @@ impl Store {
         Ok(n > 0)
     }
 
+    /// 删除一个设置键（幂等：键本来就不存在也算成功）。
+    ///
+    /// 用于「销毁」类能力（如 MCP 写 token）：键消失 = 能力不存在，
+    /// 比写空串少一层「空值算不算没有」的歧义。
+    pub fn delete_setting(&self, key: &str) -> Result<()> {
+        self.conn
+            .execute("DELETE FROM settings WHERE key = ?1", params![key])?;
+        Ok(())
+    }
+
     pub fn all_settings(&self) -> Result<Vec<(String, String)>> {
         let mut stmt = self.conn.prepare("SELECT key, value FROM settings ORDER BY key")?;
         let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;

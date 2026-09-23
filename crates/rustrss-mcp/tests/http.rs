@@ -54,7 +54,7 @@ async fn rejects_requests_without_a_valid_token() {
         server,
         HttpConfig {
             bind: "127.0.0.1:0".parse().unwrap(),
-            token: token.clone(),
+            token: Some(token.clone()),
         },
     )
     .await
@@ -103,7 +103,7 @@ async fn accepts_initialize_and_serves_real_data_with_both_token_styles() {
         server,
         HttpConfig {
             bind: "127.0.0.1:0".parse().unwrap(),
-            token: token.clone(),
+            token: Some(token.clone()),
         },
     )
     .await
@@ -185,7 +185,7 @@ async fn refuses_to_bind_a_non_loopback_address() {
         server,
         HttpConfig {
             bind: "0.0.0.0:0".parse().unwrap(),
-            token: generate_token(),
+            token: Some(generate_token()),
         },
     )
     .await

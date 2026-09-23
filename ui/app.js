@@ -1020,7 +1020,7 @@ async function loadAll({ reader = true } = {}) {
   renderSidebar();
   await loadEntries({ reader });
   log(
-    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} notifyNewArticles=${settings.notify_new_articles} fonts ui=${settings.font_ui || 'default'} read=${settings.font_read || 'follow-ui'} mono=${settings.font_mono || 'default'} size=${fontSizeText(settings.font_read_size)}px line=${fontLineText(settings.font_read_line)} logLevel=${settings.log_level} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'}${reader ? '' : ' silent（正文未重渲染）'}`
+    `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} notifyNewArticles=${settings.notify_new_articles} fonts ui=${settings.font_ui || 'default'} read=${settings.font_read || 'follow-ui'} mono=${settings.font_mono || 'default'} size=${fontSizeText(settings.font_read_size)}px line=${fontLineText(settings.font_read_line)} logLevel=${settings.log_level} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'} mcpWrite=${mcp.write_enabled ? 'on' : 'off'} mcpDangerous=${mcp.dangerous_enabled ? 'on' : 'off'} mcpWriteToken=${mcp.write_token ? 'set' : 'none'}${reader ? '' : ' silent（正文未重渲染）'}`
   );
 }
 
@@ -2643,6 +2643,23 @@ function fillMcpForm() {
         token: masked,
       })
     : t('settings.mcp.statusStopped', { token: masked });
+
+  // 写能力：两个开关 + 写 token 三态（未生成 / 已生成）
+  el('set-mcp-write-enabled').checked = !!mcp.write_enabled;
+  el('set-mcp-dangerous-enabled').checked = !!mcp.dangerous_enabled;
+  const hasWriteToken = !!mcp.write_token;
+  el('mcp-write-token').textContent = hasWriteToken
+    ? t('settings.mcp.writeTokenSet', {
+        token: `${mcp.write_token.slice(0, 6)}…${mcp.write_token.slice(-4)}`,
+      })
+    : t('settings.mcp.writeTokenUnset');
+  // 按钮与状态一一对应：没有 token 时只能「生成」（轮换/销毁/复制无意义）
+  el('mcp-write-generate').classList.toggle('hidden', hasWriteToken);
+  for (const id of ['mcp-write-copy', 'mcp-write-rotate', 'mcp-write-clear']) {
+    el(id).classList.toggle('hidden', !hasWriteToken);
+  }
+  // 危险开关只有在写能力总开关打开后才有意义（关闭时灰置，避免“开了也没用”的困惑）
+  el('set-mcp-dangerous-enabled').disabled = !mcp.write_enabled;
 }
 
 /** 切到某个设置分类（左栏可选，右栏只显示对应面板） */
@@ -3345,6 +3362,78 @@ async function boot() {
     } catch (err) {
       el('mcp-status').textContent = t('settings.mcp.failed', { error: err.message });
       log(`mcp rotate failed: ${err.message}`);
+    }
+  };
+
+  // ---- 写能力：两个开关 + 写 token 生成/轮换/销毁（命令返回整张视图，重填表单）
+  const runMcpWriteCommand = async (command, noteKey, logLine) => {
+    try {
+      state.mcp = await invoke(command);
+      fillMcpForm();
+      if (noteKey) setStatus(t(noteKey));
+      log(logLine(state.mcp));
+    } catch (err) {
+      el('mcp-write-token').textContent = t('settings.mcp.failed', { error: err.message });
+      log(`mcp write ${command} failed: ${err.message}`);
+    }
+  };
+  // 写能力的四态在日志里如实落盘（agent 排障要看“有没有开通写能力”）
+  const writeState = (mcp) =>
+    `writeEnabled=${mcp.write_enabled} dangerous=${mcp.dangerous_enabled} writeToken=${mcp.write_token ? 'set' : 'none'}`;
+
+  el('set-mcp-write-enabled').addEventListener('change', async (e) => {
+    try {
+      state.mcp = await invoke('set_mcp_write_enabled', { enabled: e.target.checked });
+      fillMcpForm();
+      log(`mcp write_enabled=${e.target.checked} ${writeState(state.mcp)}`);
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      el('mcp-write-token').textContent = t('settings.mcp.failed', { error: err.message });
+      log(`mcp write_enabled failed: ${err.message}`);
+    }
+  });
+
+  el('set-mcp-dangerous-enabled').addEventListener('change', async (e) => {
+    try {
+      state.mcp = await invoke('set_mcp_dangerous_enabled', { enabled: e.target.checked });
+      fillMcpForm();
+      log(`mcp dangerous_enabled=${e.target.checked} ${writeState(state.mcp)}`);
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      el('mcp-write-token').textContent = t('settings.mcp.failed', { error: err.message });
+      log(`mcp dangerous_enabled failed: ${err.message}`);
+    }
+  });
+
+  el('mcp-write-generate').onclick = () =>
+    runMcpWriteCommand(
+      'generate_mcp_write_token',
+      'settings.mcp.writeGenerated',
+      (mcp) => `mcp write token generated ${writeState(mcp)}`
+    );
+
+  el('mcp-write-rotate').onclick = () =>
+    runMcpWriteCommand(
+      'rotate_mcp_write_token',
+      'settings.mcp.writeRotated',
+      (mcp) => `mcp write token rotated ${writeState(mcp)}`
+    );
+
+  el('mcp-write-clear').onclick = () =>
+    runMcpWriteCommand(
+      'clear_mcp_write_token',
+      'settings.mcp.writeCleared',
+      (mcp) => `mcp write token cleared ${writeState(mcp)}`
+    );
+
+  el('mcp-write-copy').onclick = async () => {
+    try {
+      // 写 token 单独复制（客户端配置片段里只有读 token）
+      await invoke('clip_write', { text: state.mcp.write_token || '' });
+      setStatus(t('settings.mcp.writeCopied'));
+      log('mcp write token copied');
+    } catch (err) {
+      setStatus(t('settings.mcp.copyFailed', { error: err.message }), true);
     }
   };
 
