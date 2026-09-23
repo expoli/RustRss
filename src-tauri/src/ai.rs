@@ -9,6 +9,7 @@
 use keyring::Entry;
 use rustrss_core::ai::{AiClient, AiConfig, Provider};
 use rustrss_core::Store;
+use serde::Serialize;
 
 pub const KEYRING_SERVICE: &str = "rustrss";
 pub const K_PROVIDER: &str = "ai.provider";
@@ -86,33 +87,90 @@ fn keyring_error(err: keyring::Error) -> String {
     )
 }
 
+/// 一次调用偶发失败时的重试次数；重试间隔只为不让失败路径打转。
+const KEYRING_ATTEMPTS: usize = 3;
+const KEYRING_RETRY_DELAY: std::time::Duration = std::time::Duration::from_millis(50);
+
+/// 凭据库读写统一包一层重试：Secret Service 的 DH 会话加密会**偶发**失配。
+///
+/// 根因在守护进程侧：ksecretd（kwallet6）≤ 6.24.0 在 DH 共享密钥高位为零时
+/// 不按 1024 位补零再 HKDF（KDE #514194，上游 kwallet 6.25.0 才修），于是它和
+/// 客户端导出的会话密钥不同，客户端解不开返回的密文，报
+/// `Crypto error: Unpad Error`。失配只发生在**那一个会话**里，而 keyring 的每次
+/// 操作都会重新建会话，所以重试等于换会话，能绕过去。
+/// 本机实测：400 次读里 4 次失配（1.00%），且每次失配的紧跟一次（新会话）都成功
+/// —— 所以重试 3 次的残存失败概率约 1e-6 量级。
+/// 「没有条目」是确定状态，重试不会改变结果，直接返回。
+fn keyring_retry<T>(mut op: impl FnMut() -> Result<T, keyring::Error>) -> Result<T, keyring::Error> {
+    let mut last_err = None;
+    for attempt in 1..=KEYRING_ATTEMPTS {
+        match op() {
+            Ok(value) => return Ok(value),
+            Err(e @ keyring::Error::NoEntry) => return Err(e),
+            Err(e) => {
+                if attempt < KEYRING_ATTEMPTS {
+                    log::warn!("[rustrss] 凭据库操作失败（第 {attempt} 次），换会话重试: {e}");
+                    std::thread::sleep(KEYRING_RETRY_DELAY);
+                }
+                last_err = Some(e);
+            }
+        }
+    }
+    Err(last_err.expect("循环里至少记录一次错误"))
+}
+
 pub fn store_key(provider: &str, key: &str) -> Result<(), String> {
-    Entry::new(KEYRING_SERVICE, &key_account(provider))
-        .map_err(keyring_error)?
-        .set_password(key)
-        .map_err(|e| format!("写入凭据库失败：{e}"))
+    let entry = Entry::new(KEYRING_SERVICE, &key_account(provider)).map_err(keyring_error)?;
+    keyring_retry(|| entry.set_password(key)).map_err(|e| format!("写入凭据库失败：{e}"))
+}
+
+/// 环境变量后备通道：临时/CI 用，不进库也不进凭据库。
+pub const ENV_KEY: &str = "RUSTSS_AI_KEY";
+
+/// key 的来源，或读不到的原因。
+///
+/// 刻意是结构化数据而不是拼好的中文句子：中文说明由界面按当前语言渲染，
+/// en 界面里不会冒出中文括号/中文备注，机器侧也能直接判定来源。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum KeySource {
+    /// 来自系统凭据库
+    Keyring,
+    /// 来自环境变量（名字由后端给出，如 RUSTSS_AI_KEY）
+    Env { name: String },
+    /// 读不到：凭据库不可用或读取失败；`error` 是平台错误原文
+    Unavailable { error: String },
 }
 
 /// 读 key：先看环境变量（便于临时/CI 使用），再查凭据库。
-/// 返回 `(key, 说明)`，说明用于在设置界面如实告知来源。
-pub fn load_key(provider: &str) -> Result<(Option<String>, Option<String>), String> {
-    if let Ok(from_env) = std::env::var("RUSTSS_AI_KEY") {
+/// 返回 `(key, 来源)`；来源交给界面按当前语言渲染。
+pub fn load_key(provider: &str) -> Result<(Option<String>, Option<KeySource>), String> {
+    if let Ok(from_env) = std::env::var(ENV_KEY) {
         if !from_env.trim().is_empty() {
-            return Ok((Some(from_env), Some("来自环境变量 RUSTSS_AI_KEY".into())));
+            return Ok((
+                Some(from_env),
+                Some(KeySource::Env {
+                    name: ENV_KEY.into(),
+                }),
+            ));
         }
     }
-    let entry = Entry::new(KEYRING_SERVICE, &key_account(provider)).map_err(keyring_error)?;
-    match entry.get_password() {
-        Ok(k) if !k.trim().is_empty() => Ok((Some(k), Some("来自系统凭据库".into()))),
+    // Entry::new 在 secret-service 后端只是建个内存结构（不连 D-Bus），失败基本只可能是空 target；
+    // 这里回错误原文：设置页那一路按 kind 本地化，中文说明不会漏进英文界面；
+    // 给用户看的前缀由调用方补（见 config_from_store）
+    let entry = Entry::new(KEYRING_SERVICE, &key_account(provider)).map_err(|e| e.to_string())?;
+    match keyring_retry(|| entry.get_password()) {
+        Ok(k) if !k.trim().is_empty() => Ok((Some(k), Some(KeySource::Keyring))),
         Ok(_) => Ok((None, None)),
         Err(keyring::Error::NoEntry) => Ok((None, None)),
-        Err(e) => Err(format!("读取凭据库失败：{e}")),
+        // 只回平台错误原文：给用户看的前缀由调用方补（设置页那一路交给界面本地化）
+        Err(e) => Err(e.to_string()),
     }
 }
 
 pub fn delete_key(provider: &str) -> Result<(), String> {
     let entry = Entry::new(KEYRING_SERVICE, &key_account(provider)).map_err(keyring_error)?;
-    match entry.delete_credential() {
+    match keyring_retry(|| entry.delete_credential()) {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(format!("清除凭据失败：{e}")),
     }
@@ -128,12 +186,13 @@ pub fn non_empty_setting(store: &Store, key: &str) -> Option<String> {
 }
 
 /// 组装 AiConfig：设置来自数据库，key 来自凭据库（或环境变量）
-pub fn config_from_store(store: &Store) -> Result<(AiConfig, Option<String>), String> {
+pub fn config_from_store(store: &Store) -> Result<(AiConfig, Option<KeySource>), String> {
     let provider =
         provider_from_str(&non_empty_setting(store, K_PROVIDER).unwrap_or(DEFAULT_PROVIDER.into()));
     let model = non_empty_setting(store, K_MODEL);
     let base_url = non_empty_setting(store, K_BASE_URL);
-    let (key, key_source) = load_key(provider_to_str(provider))?;
+    let (key, key_source) =
+        load_key(provider_to_str(provider)).map_err(|e| format!("读取凭据库失败：{e}"))?;
 
     let model = model.ok_or_else(|| "还没填模型名（设置 → AI）".to_string())?;
     let base = base_url.unwrap_or_else(|| default_base_url(provider).to_string());
@@ -190,6 +249,77 @@ mod tests {
             store.set_setting(K_CONFIRM_BEFORE_SEND, value).unwrap();
             // 空值等同未设置；无法识别的值不该静默变成「不问了」
             assert!(confirm_before_send(&store), "{value:?} 应当回到默认开启");
+        }
+    }
+
+    /// ksecretd 失配时客户端看到的就是这个错误（Crypto error: Unpad Error）
+    fn transient_session_error() -> keyring::Error {
+        keyring::Error::PlatformFailure(Box::new(std::io::Error::other(
+            "Crypto error: Unpad Error",
+        )))
+    }
+
+    #[test]
+    fn keyring_retry_absorbs_transient_failures() {
+        let mut calls = 0;
+        let got = keyring_retry(|| {
+            calls += 1;
+            if calls < 2 {
+                Err(transient_session_error())
+            } else {
+                Ok("credential")
+            }
+        });
+        assert_eq!(got.unwrap(), "credential");
+        assert_eq!(calls, 2, "第一次失败后应当换会话重试");
+    }
+
+    #[test]
+    fn keyring_retry_gives_up_after_attempts_and_keeps_last_error() {
+        let mut calls = 0;
+        let err = keyring_retry::<()>(|| {
+            calls += 1;
+            Err(transient_session_error())
+        })
+        .unwrap_err();
+        assert_eq!(calls, KEYRING_ATTEMPTS);
+        // 错误不能被吞掉：调用方还要把它翻成给用户看的原因
+        assert!(err.to_string().contains("Unpad Error"), "实际: {err}");
+    }
+
+    #[test]
+    fn keyring_retry_does_not_retry_missing_entry() {
+        let mut calls = 0;
+        let err = keyring_retry::<()>(|| {
+            calls += 1;
+            Err(keyring::Error::NoEntry)
+        })
+        .unwrap_err();
+        assert_eq!(calls, 1, "条目不存在是确定状态，重试没有意义");
+        assert!(matches!(err, keyring::Error::NoEntry));
+    }
+
+    /// 前后端契约：ui/app.js 的 keySourceText() 按 kind 分支取值，
+    /// 字段名/取值变了要同步改前端（这里钉住形状）
+    #[test]
+    fn key_source_serializes_to_the_shape_the_ui_switches_on() {
+        let cases = [
+            (KeySource::Keyring, r#"{"kind":"keyring"}"#),
+            (
+                KeySource::Env {
+                    name: ENV_KEY.into(),
+                },
+                r#"{"kind":"env","name":"RUSTSS_AI_KEY"}"#,
+            ),
+            (
+                KeySource::Unavailable {
+                    error: "boom".into(),
+                },
+                r#"{"kind":"unavailable","error":"boom"}"#,
+            ),
+        ];
+        for (source, expected) in cases {
+            assert_eq!(serde_json::to_string(&source).unwrap(), expected);
         }
     }
 }

@@ -3208,8 +3208,8 @@ pub struct AiSettingsView {
     pub base_url: String,
     pub translate_target: String,
     pub has_key: bool,
-    /// 凭据来源或不可用原因：如实告知，不让用户猜
-    pub key_note: Option<String>,
+    /// key 的来源或读不到的原因（结构化；界面按当前语言渲染）
+    pub key_source: Option<crate::ai::KeySource>,
     pub default_base_url: String,
     /// 「发送前确认要发什么」是否开启
     pub confirm_before_send: bool,
@@ -3226,14 +3226,21 @@ fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
             &crate::ai::non_empty_setting(s, crate::ai::K_PROVIDER)
                 .unwrap_or_else(|| crate::ai::DEFAULT_PROVIDER.to_string()),
         );
-        let (key, note) = crate::ai::load_key(crate::ai::provider_to_str(provider))?;
+        // 读 key 失败**不能**拖垮整个启动：get_ai_settings 报错会让 boot() 直接中断，
+        // 窗口里连设置都打不开（只能杀进程）。这里如实降级：按「读不到 key」渲染 +
+        // 把原因作为 key_source 交给界面显示；真正要用 key 的路径
+        // （config_from_store）仍照旧报错，不静默当成没配。
+        let (key, key_source) = match crate::ai::load_key(crate::ai::provider_to_str(provider)) {
+            Ok(v) => v,
+            Err(e) => (None, Some(crate::ai::KeySource::Unavailable { error: e })),
+        };
         Ok(AiSettingsView {
             provider: crate::ai::provider_to_str(provider).to_string(),
             model: crate::ai::non_empty_setting(s, crate::ai::K_MODEL).unwrap_or_default(),
             base_url: crate::ai::non_empty_setting(s, crate::ai::K_BASE_URL).unwrap_or_default(),
             translate_target: crate::ai::translate_target(s),
             has_key: key.is_some(),
-            key_note: note,
+            key_source,
             default_base_url: crate::ai::default_base_url(provider).to_string(),
             confirm_before_send: crate::ai::confirm_before_send(s),
             max_output_tokens: crate::ai::max_output_tokens_from_store(s),

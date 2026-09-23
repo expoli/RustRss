@@ -3444,6 +3444,22 @@ async function runAi(kind, { refresh = false } = {}) {
   }
 }
 
+/// key 来源 → 当前语言的说明。后端只给结构化数据（keyring / env / unavailable），
+/// 中文句子在这里出——en 界面里不会冒出中文括号与中文备注。
+function keySourceText(src) {
+  if (!src) return '';
+  switch (src.kind) {
+    case 'keyring':
+      return t('settings.ai.keyFromKeyring');
+    case 'env':
+      return t('settings.ai.keyFromEnv', { name: src.name || 'RUSTSS_AI_KEY' });
+    case 'unavailable':
+      return t('settings.ai.keyUnavailable', { error: src.error || '' });
+    default:
+      return '';
+  }
+}
+
 function fillAiForm() {
   const ai = state.ai;
   if (!ai) return;
@@ -3453,9 +3469,16 @@ function fillAiForm() {
   el('ai-target').value = ai.translate_target;
   el('ai-max-tokens').value = ai.max_output_tokens || 4096;
   el('ai-key').value = '';
-  el('ai-key-hint').textContent = ai.has_key
-    ? t('settings.ai.keySet', { source: ai.key_note || '' })
+  // key_source 两种含义都如实显示：已设置 → 来自哪里；未设置 → 为什么读不到
+  // （读不到时保留「尚未设置；留空＝不修改」这句操作指引，原因作为后缀）
+  const source = keySourceText(ai.key_source);
+  const keyHint = ai.has_key
+    ? t('settings.ai.keySet', { source })
     : t('settings.ai.keyUnset');
+  el('ai-key-hint').textContent =
+    !ai.has_key && source
+      ? `${keyHint}${t('settings.ai.keyUnsetDetail', { reason: source })}`
+      : keyHint;
   el('ai-status').textContent = t('settings.ai.status', {
     base: ai.default_base_url,
     key: ai.has_key ? t('settings.ai.statusSet') : t('settings.ai.statusUnset'),

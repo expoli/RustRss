@@ -209,6 +209,8 @@ RUSTSS_AI_PROVIDER=anthropic RUSTSS_AI_MODEL=claude-x RUSTSS_AI_KEY=... \
 - **API key 存操作系统凭据库**（`keyring`：Linux 走 Secret Service、macOS 走 Keychain、Windows 走凭据管理器），**不进数据库**——数据库会被导出、同步、复制给别人，key 一旦进去就会跟着跑。
 - 每个服务商一个凭据条目，切换服务商不会互相覆盖；界面只显示「已设置/未设置」，并如实告知来源（凭据库 / 环境变量）。
 - 凭据库不可用时返回明确错误（提示需要 Secret Service / KWallet），**不静默降级成明文文件**；临时可用环境变量 `RUSTSS_AI_KEY` 代替。
+- 凭据库读写带重试（每次重试都会新开一个 DH 会话）：ksecretd（kwallet6 ≤ 6.24.0）在 DH 共享密钥高位为零时不按 1024 位补零再 HKDF（[KDE #514194](https://bugs.kde.org/show_bug.cgi?id=514194)，上游 kwallet 6.25.0 修复），会让一次读/写偶发失败成 `Crypto error: Unpad Error`（本机实测 400 次读里 4 次，每次失败的下一次都成功）；重试即换会话，可绕开。
+- 启动时读凭据库失败不再中断界面初始化：设置页显示「未设置 + 失败原因」，其余功能照常可用；真正要用 key 的 AI 请求仍会明确报错。
 - 「测试连接」会真的发一个最小请求——它比「检查 key 是否存在」有意义得多：同时验证了凭据、模型名与端点三件事。
 - 正文里点「AI 摘要 / AI 翻译」→ 结果面板会标出**来自缓存还是本次新请求**、以及正文是否因超长被截断；旁边有「重新生成」。
 - AI 输出 token 上限可调（设置 → AI → 输出上限，默认 4096、范围 256–32768）：推理模型的思考链也在同一预算内，上限太小时正文会一个字没产出（finish_reason=length + 空 content），错误提示会针对性指出该调大上限或换非推理模型。思考强度也可调（设置 → AI → 思考强度：跟随默认/最低/低/中/高，仅 OpenAI 兼容接口随请求发送 reasoning_effort；摘要/翻译任务调低可显著提速省 token，deepseek-r1 固定思考不受此参数影响）。
