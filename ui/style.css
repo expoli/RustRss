@@ -385,6 +385,23 @@ main {
 }
 .entries li:hover { background: var(--bg-hover); }
 .entries li.active { background: var(--bg-active); border-left-color: var(--accent); }
+
+/* 列表尾部行（哨兵）：进度 / 重试按钮 / 终止态三种形态共用一条低调的居中行。 */
+.load-sentinel {
+  text-align: center;
+  cursor: default;
+  padding: 10px;
+}
+.load-sentinel button {
+  font-size: 12px;
+  padding: 3px 10px;
+  color: var(--fg-dim);
+  cursor: pointer;
+}
+.load-sentinel button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
 .entries li.read .title { color: var(--fg-dim); font-weight: 400; }
 
 .entries .title { font-weight: 600; display: block; margin-bottom: 2px; }

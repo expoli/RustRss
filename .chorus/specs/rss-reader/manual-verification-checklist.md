@@ -838,3 +838,24 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - Note-1（tech_design 写「排序按钮左侧」，实现放在右侧）：以实现为准修文档——tech_design §2 改为「排序按钮之后（最右）」，并重新镜像 Document（`9902402e`，版本 +1）。
 - Note-2（`b323dd8` 夹带一处无关格式改动：`renderListCount()` 两行并一行）：已还原换行，diff 里不再有无关格式改动。
 - Note-3（README 键盘导航总表未列 `U`）：已把 `U`（只看未读开关）补进总表那一行。
+
+### 22.3 T3 哨兵行手动兜底 + 续页失败可重试 + 末尾终止态 · 提交 `待填`
+
+**机制证据**：`cargo test --workspace` 全绿（200/批、keyset 游标、不重不漏、后台刷新 prepend 的既有测试保持绿——本批未动这些路径）；启动日志 `i18n selftest ok (keys=387)`。
+
+**实机证据**（Xvfb `:99` + 真库副本）
+
+- **空闲进度按钮（AC1）**：续页 append 后日志 `append rows=200 fresh=200 total=400 dup=0 exhausted=false sentinel="加载更多（已加载 400 / 共 13389）"`——按钮文案与 M / N 都进了日志。说明：该态是瞬态（哨兵进入视口 600px 内即自动续批），稳态截图难抓，故以日志钉住（`append` 行新增 `sentinel="…"` 字段）。
+- **末尾终止态（AC4）**：Phoronix 源视图 57 条一次加载完 → 截图底部显示「已到末尾（共 57 篇）」。
+- **失败 → 手动重试（AC3，真实失败注入）**：
+  1. 注入：对副本库执行 `ALTER TABLE entries RENAME TO entries_hidden`（等价于后端读真失败）；
+  2. 滚到哨兵触发续页 → `loadMore failed view=unread: 数据库错误: no such table: entries`；
+  3. 静置 6s 后再统计：`grep -c "loadMore failed"` 仍为 **1** → 自动触发在失败态确实被拦住（没有重试风暴）；
+  4. 恢复表名 → 点击尾部按钮 → `loadMore manual retry view=unread` + `append rows=200 fresh=200 total=400 dup=0 exhausted=false` → 续页成功、按钮回到进度态。
+- **未回归（AC5）**：分页/游标/append 相关 core 测试全绿；后台刷新 prepend 与静默语义未改本批代码。
+
+**未覆盖 / 说明**
+
+- 「请求在飞 → 加载中…且禁用」这一态在本机是毫秒级（本地 SQLite），未逐帧截图；由代码路径（`setSentinelLoading(true)` → `disabled` + 文案）与四种形态的文案 harness（node 打印：空闲 / 无总数 / 失败 / 末尾，中英各一遍）核对。
+- 失败注入用 `ALTER TABLE … RENAME`（真实命令失败），不是断网；两者都走 `loadMore` 的同一 catch 路径。
+- 本轮遇到的两个环境坑（已可用于下次）：WAL 库下外部 `BEGIN EXCLUSIVE` 拦不住读者（要注入读失败得改 DDL/表名）；Xvfb 里窗口需 `windowraise`+`windowfocus` 才收指针事件。

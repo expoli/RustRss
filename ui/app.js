@@ -970,21 +970,65 @@ function logReaderState(action, id) {
 let sentinel = null;
 let listObserver = null;
 
+/// 列表尾部行（哨兵）：每种状态都有明确表态，不再出现「哨兵突然消失」的静默尾。
+///
+/// - 空闲且有下一页：可点按钮「加载更多（已加载 M / 共 N）」，同时被
+///   IntersectionObserver 观察——滚到底自动续批的行为与加按钮前一致；
+/// - 请求在飞：按钮变「加载中…」且禁用（防抖 / 防重复 append 的既有保护不变）；
+/// - 续页失败：按钮变「加载失败，点此重试」；手动点击才清 `paging.error` 重试，
+///   自动触发在失败态仍被拦（不给后端制造重试风暴）；
+/// - 已到末尾：不再留哨兵，改成一行明确的「已到末尾（共 N 篇）」终止态。
 function installSentinel() {
   const list = el('entries');
   if (listObserver && sentinel) listObserver.unobserve(sentinel);
   if (sentinel) sentinel.remove();
   sentinel = null;
-  // 没有下一页（已到末尾、搜索本版不分页、续页刚失败）就不留哨兵
-  if (paging.exhausted || paging.error || state.view.kind === 'search') return;
-  if (!listObserver) {
-    listObserver = new IntersectionObserver(onSentinel, { root: list, rootMargin: '600px' });
-  }
+  // 搜索本版不分页；空列表交给空态占位，不画尾部行
+  if (state.view.kind === 'search' || !state.entries.length) return;
+
   sentinel = document.createElement('li');
   sentinel.className = 'load-sentinel dim';
-  sentinel.style.cursor = 'default';
+  if (paging.exhausted) {
+    // 终止态：明确写出来，避免「没有哨兵 = 还有更多」的歧义
+    sentinel.textContent = t('list.allLoaded', { n: viewTotalSync() ?? loadedCount() });
+    list.appendChild(sentinel);
+    return;
+  }
+  if (!sentinelPending()) return;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = sentinelLabel();
+  btn.onclick = () => loadMore({ manual: true });
+  sentinel.appendChild(btn);
   list.appendChild(sentinel);
-  listObserver.observe(sentinel);
+  if (!paging.error) {
+    if (!listObserver) {
+      listObserver = new IntersectionObserver(onSentinel, { root: list, rootMargin: '600px' });
+    }
+    listObserver.observe(sentinel);
+  }
+}
+
+/// 是否还有下一页可拉（失败态也算——手动重试要用）
+function sentinelPending() {
+  return !paging.exhausted && (paging.cursor != null || paging.error);
+}
+
+/// 尾部按钮文案：失败态 → 重试；正常 → 进度（总数未知时退化为只报已加载）
+function sentinelLabel() {
+  if (paging.error) return t('list.loadMoreRetry');
+  const m = loadedCount();
+  const n = viewTotalSync();
+  return n == null ? t('list.loadMoreNoTotal', { m }) : t('list.loadMore', { m, n });
+}
+
+/// 在飞态：按钮禁用 + 文案「加载中…」（同一时刻只允许一个请求在飞）
+function setSentinelLoading(loading) {
+  const btn = sentinel ? sentinel.querySelector('button') : null;
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? t('list.loadingMore') : sentinelLabel();
 }
 
 function onSentinel(records) {
@@ -2192,7 +2236,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
     renderListCount();
     installSentinel();
     log(
-      `append rows=${rows.length} fresh=${fresh.length} total=${state.entries.length} dup=${dup.length}${dup.length && listSortMode() !== 'unread_first' ? '（游标异常，非 unread_first 档不该重复）' : ''} exhausted=${paging.exhausted}`
+      `append rows=${rows.length} fresh=${fresh.length} total=${state.entries.length} dup=${dup.length}${dup.length && listSortMode() !== 'unread_first' ? '（游标异常，非 unread_first 档不该重复）' : ''} exhausted=${paging.exhausted} sentinel="${sentinel ? sentinel.textContent : '-'}"`
     );
     return;
   }
@@ -2230,17 +2274,24 @@ function headIds() {
 
 /// 续页（哨兵触发）。防重入：同一时刻只允许一个请求在飞——滚动抖动会让哨兵连续触发，
 /// 用同一个游标并发请求会把同一批行 append 两遍（列表出现重复行）。
-async function loadMore() {
-  if (paging.loading || paging.exhausted || paging.error || !paging.cursor) return;
+/// 续页（哨兵自动触发 / 尾部按钮手动触发）。防重入：同一时刻只允许一个请求在飞——
+/// 滚动抖动会让哨兵连续触发，用同一个游标并发请求会把同一批行 append 两遍。
+/// 失败即停：自动触发在失败态被拦（`paging.error`），只有手动点击才清掉它重试。
+async function loadMore({ manual = false } = {}) {
+  if (paging.loading || paging.exhausted || !paging.cursor) return;
+  if (paging.error && !manual) return; // 自动触发不给后端制造重试风暴
+  if (paging.error && manual) {
+    paging.error = false;
+    log(`loadMore manual retry view=${state.view.kind}`);
+  }
   const kind = state.view.kind;
   paging.loading = true;
-  if (sentinel) sentinel.textContent = t('list.loadingMore');
+  setSentinelLoading(true);
   try {
     await loadEntries({ reader: false, reset: false });
   } catch (err) {
-    // 失败即停：留着哨兵会立刻重试（新节点必然收到初始通知），把后端和日志打满；
-    // 恢复走换视图/换筛选（reset 路径）或手动刷新。
     paging.error = true;
+    // 失败后留一个可点的重试按钮（不再静默消失——那会儿只能靠换视图恢复）
     installSentinel();
     setStatus(t('status.loadMoreFailed', { error: err.message }), true);
     log(`loadMore failed view=${kind}: ${err.message}`);
