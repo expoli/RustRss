@@ -783,3 +783,4 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - **T3 评审 Note-1（颜色子菜单点击）**：reviewer 未亲自点穿颜色子菜单（父项 + chevron、`set_tag_color` 命令测试、库存色圆点渲染已验）；本次亦未补点击（无 Xvfb 会话），留待真实桌面会话。
 - **MCP 与界面并发写**：两者共用同一库文件与同一 core API（WAL + 锁），`create_tag` 的跨进程重名冲突在 core 侧有 `unique_violation` 映射测试；但**未做**「界面与 MCP 同时打标同一批条目」的并发实机压测（单写者场景，core 事务保证原子性）。
 - **未对真实 RSSHub 实例做标签端到端**：标签与 RSSHub 解析无交集，本批次未重测 RSSHub 抓取（既有批次覆盖）。
+- **`search_articles` 不带 tag 过滤**（聚合复审 NOTE）：按标签筛选仅提供在 `list_articles`（`tag_id`/`tag_name`）；搜索结果暂不支持按标签收窄，与提案「搜索 `tag:` 语法留 v2」口径一致。
