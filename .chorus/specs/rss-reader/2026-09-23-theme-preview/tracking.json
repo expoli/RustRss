@@ -3,7 +3,7 @@
   "ideaUuid": "6876476a-10ab-44c5-b12c-9e82a509fa40",
   "elaborationStatus": "resolved",
   "proposalUuid": null,
-  "stage": "tauri_snapshot_spike_linux_x11_and_kde_wayland_verified",
+  "stage": "core_theme_model_and_storage_implemented",
   "documentMirrors": {
     "prd.md": "3ffd52f8-0031-4586-89e1-750a6647d26f",
     "tech_design.md": "f9f59507-26dc-45aa-82db-9b1feaedd4e8",
@@ -11,7 +11,7 @@
   },
   "implementationTasksMaterialized": false,
   "productImplemented": false,
-  "nextTask": "T2 core theme configuration and storage",
+  "nextTask": "T3 shared theme renderer and production fixture",
   "remainingCapturePlatforms": ["windows", "macos", "gnome-wayland"],
   "waylandEvidence": "wayland-snapshot-results.json"
 }

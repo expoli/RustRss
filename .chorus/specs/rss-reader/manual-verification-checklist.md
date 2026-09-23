@@ -943,3 +943,11 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 修复实际发现的尺寸误报：旧窗口口径 1052×752 包含非 WebView 区域；现按 WebView allocation/scale 校验并返回内容尺寸。
 - 修复后 Xvfb/GdkX11Display 100% 回归同样通过 100 帧和 8 类边界检查，产物 `/tmp/rustrss-tauri-snapshot-xvfb-h59cxxep`。
 - [Wayland 结果](2026-09-23-theme-preview/wayland-snapshot-results.json) 与 [报告/复现方法](2026-09-23-theme-preview/tauri-capture-spike.md)。不据此宣称 GNOME、跨屏/全部分数缩放、真实最小化、Windows/macOS 或正式应用 MCP 均已验收。
+
+### 24.3 T2 core 主题模型与存储
+
+- Clear/Paper/Slate 各有明暗配色；参数覆盖颜色、字体、列表、阅读区与栏宽。旧设置仅在新记录不存在时无写映射，保留旧正文 13px 合法值；实际界面接入留到 T3。
+- 新增 13 项主题专项测试通过；`cargo test --workspace` 共 385 passed、0 failed。覆盖参数拒绝、低对比提示、坏记录保护、跨连接版本竞争、最多 10 份历史与恢复、SQL 失败整体回滚。
+- 同值零写入：修复 JSON 的 20/20.0 表示差异导致额外版本；阻断 INSERT 的触发器下同值请求仍成功，有效修改失败且历史/当前值不变。
+- `cargo clippy -p rustrss-core --all-targets` 完成，仅原有 3 条 core 告警；新增文件 rustfmt 检查通过。运行日志位于 `/tmp/rustrss-theme-t2-workspace-tests.log` 与 `/tmp/rustrss-theme-t2-clippy.log`（临时文件，不作为持久产物）。
+- [core 模型说明与复现命令](2026-09-23-theme-preview/core-theme-model.md)。本轮不操作真实用户库；未接入 UI/MCP、未验证主题渲染效果或端到端图片闭环。

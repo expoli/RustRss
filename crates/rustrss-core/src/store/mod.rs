@@ -11,6 +11,7 @@
 pub mod backup;
 pub mod schema;
 pub mod tokens;
+mod theme;
 
 use std::collections::HashMap;
 use std::path::Path;

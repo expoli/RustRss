@@ -1,6 +1,6 @@
 # 技术设计：主题配置与渲染预览
 
-状态：拟议实现；参数范围/资源预算为初始设计值，待 Tauri 集成验证后校准。
+状态：core 主题模型/存储已实现（[T2](core-theme-model.md)）；UI/MCP 接入为拟议实现。截图资源预算仍待产品集成校准。
 
 ## 当前基础
 
@@ -30,7 +30,7 @@ ThemeConfig 外层包含 schema_version、revision、mode（system/light/dark）
 | 分组 | 字段/初始约束 |
 | --- | --- |
 | colors.light/dark | 背景/侧栏/面板/正文/次要文字/强调/选中/边框/焦点/错误/星标、代码与 diff 语义色；首版仅 #RRGGBB |
-| typography | ui/read/mono 字体族列表；最多 4 项、单项 ≤128 字符；使用明确系统回退；UI 12–20px，正文 14–28px，代码 12–24px，行距 1.3–2.2 |
+| typography | ui/read/mono 字体族列表；最多 4 项、单项 ≤128 字符；使用明确系统回退；UI 12–20px，正文 13–28px（兼容旧 13px 偏好），代码 12–24px，行距 1.3–2.2 |
 | list | density compact/comfortable；summary_lines 0–3；thumbnail boolean |
 | reader | width 480–960 CSS px；paragraph_gap 0.5–2 em；layout three_column/focus |
 | chrome | radius 0–16px；sidebar 180–300px；list 260–460px；窄窗口按可用尺寸收缩 |
