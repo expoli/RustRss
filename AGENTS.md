@@ -67,3 +67,14 @@ ui/                     原生 JS 前端（app.js/i18n.js/index.html/style.css�
 
 12. **store 锁内不得 await**；网络等重活一律锁外；读设置等短锁快取快放。
 13. **同一动作的并发重入用 CAS 单 flight + Drop guard**，抢不到静默跳过不排队（refresh 家族，b72e7cd）；跨层字段（如游标 sortkey）由后端直出，前端不自算（P0-3 B1 教训：前端算不了它拿不到的字段）。
+
+## 项目级 Skills（`.agents/skills/`）
+
+跟着仓库走的可复用经验（Pi 与其它遵循 Agent Skills 约定的 agent 都会从仓库根发现）：
+
+| Skill | 用途 |
+|---|---|
+| `rustrss-dev-loop` | 构建/测试/运行命令 + 本项目特有的坑（ui 嵌入需重建、单实例锁、MCP 端口、日志位置与终端镜像）+ 改动前必读红线 + 文档同步义务 |
+| `rustrss-headless-ui-verification` | 无头环境验证 UI 的完整手册：Xvfb 隔离实例配方、`GDK_GL=disable`、陈旧帧对策、像素差/sqlite 回读断言、无 WM 限制清单、证据三态 |
+| `chorus-feature-pipeline` | 用 Chorus 从 idea 推到 ship：四道闸门、mcpScript 包封解包、CLI 多 agent 选择、文档镜像、单写者纪律、scope 例外与 FAIL 处理、收口清单 |
+| `agent-shell-guard-hygiene` | dcg 守卫命中后的改写对照、`pkill -f` 自杀陷阱、进程归属判定、磁盘满应急 |
