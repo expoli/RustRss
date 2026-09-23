@@ -78,8 +78,8 @@ CREATE INDEX idx_entry_tags_tag ON entry_tags(tag_id, entry_id);
 | 任务 | 内容 | 依赖 |
 |---|---|---|
 | T1 core 数据层 | 迁移 v12 + store API + 级联覆盖 + EXPLAIN 断言与变异校验 + 升级路径测试 | — |
-| T2 UI 交互 | 阅读器 chips/选择器/`t` 快捷键/列表行 chips/标签视图 + i18n | T1 |
-| T3 UI 管理 | 侧栏标签区（计数/置顶/颜色/拖拽排序）+ 重命名/删除（确认+影响篇数）+ i18n | T2（同文件区域，串行避免冲突） |
+| T2 UI 交互 | 阅读器 chips/选择器/`t` 快捷键/列表行 chips/标签视图 + i18n；**含最小 Tauri 透传胶水**（`list_tags`/`create_tag`/`assign_tags`/`unassign_tags` + `list_entries` 的 `tag_id`，仅 `invoke → core`，无业务逻辑——规划缝隙的裁决记录，先例 `1d0705d`/`292807a`） | T1 |
+| T3 UI 管理 | 侧栏标签区（含 `sidebar_data` 按标签计数）+ 重命名/删除/置顶/颜色/拖拽排序的命令与确认弹窗 + i18n | T2（同文件区域，串行避免冲突） |
 | T4 MCP 工具 | list/create/rename/assign/unassign/delete（confirm+dry_run）+ list_articles tag 过滤与 tags 字段 + README | T1 |
 
 ## 风险与缓解
