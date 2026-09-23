@@ -804,7 +804,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 全部视图 + 单标签（临时标签「验证标签」tag#1：30 条打标 / 25 未读）：`view total tag#1 n=30`，头部 `已加载 30 / 共 30 篇`。
 - **有效筛选口径（T1 AC7）**：`list.hide_read=true` 后点开 AI情报局（库内 `total=176 / unread=134`）→ `view=feed#92 sort=newest hideRead=1 count=134 loaded=134 total=134 totalKind=unread header=已加载 134 / 共 134 未读`，且该次会话里 `list_scope_total feed#92` 调用 **0 次**——N 取的是 134（未读）而不是 176（全源），且未读口径零额外查询。
 - 搜索视图：`view=search count=37`，头部 `已加载 37 篇`（不查 FTS 总数）。
-- **耗时（红线 #3，如实标注）**：`[rustrss] list_scope_total feed#90: 0ms n=57`（进程内首次调用）、`feed#92: 0ms n=176`（同进程第二次）——**OS 页缓存未清，属热缓存口径**；SQL 本身是 `INDEXED BY` 覆盖索引 COUNT（计划由 EXPLAIN 断言钉住），真冷盘口径需清 OS 缓存（需 root），本批未做、不冒充热缓存为冷启动。
+- **耗时（红线 #3，如实标注）**：`[rustrss] list_scope_total feed#90: 0ms n=57`（进程内首次调用）、`feed#92: 0ms n=176`（同进程第二次）；另用独立 Python/sqlite3 进程跑同形 SQL：`folder#1 0.63ms（3347 行）` / `feed#92 0.10ms（175 行）`。**三处均为 OS 页缓存未清的热缓存口径，已标注**；SQL 本身是 `INDEXED BY` 覆盖索引 COUNT（计划由 EXPLAIN 断言钉住），真冷盘口径需清 OS 缓存（需 root），本批未做、不冒充热缓存为冷启动。
 - 清理：临时库副本 / 截图 / harness 日志已删；`pkill`（应用 / Xvfb / `xeyes`）无残留。
 
 **尚未覆盖（留给后续任务或人工）**
