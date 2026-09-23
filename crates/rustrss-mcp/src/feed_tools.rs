@@ -185,7 +185,9 @@ fn check_refresh_interval(minutes: i64) -> Result<(), String> {
 /// 不引 `url` crate 到 `rustrss-mcp`：这里要判断的是「像不像可订阅地址」，而不是
 /// 完整 URL 语法，core 的解析/抓取路径才是权威。
 fn validate_web_url(url: &str) -> Result<(), String> {
-    if !(url.starts_with("http://") || url.starts_with("https://")) {
+    // scheme 大小写不敏感（`HTTP://` 也是合法 URL）；这里只判「像不像可订阅地址」
+    let lower = url.to_ascii_lowercase();
+    if !(lower.starts_with("http://") || lower.starts_with("https://")) {
         return Err(format!(
             "只支持 http/https 或 rsshub:// 地址，收到 {url:?}（rsshub 用 rsshub://path 形态）"
         ));
@@ -529,29 +531,32 @@ impl RustRssMcp {
             )
             .to_json();
         }
-        match self.with_store(|s| s.list_folders()) {
-            Ok(folders) => {
-                if !folders.iter().any(|(id, _)| *id == p.folder_id) {
-                    return WriteOutcome::failed_with(
-                        ERROR_FOLDER_NOT_FOUND,
-                        format!("分组 #{} 不存在；先用 list_folders 取 id", p.folder_id),
-                    )
-                    .to_json();
-                }
-            }
+        // 存在性与重名都在这里判（不靠解析 store 的错误文案）：重名给 `invalid_argument`，
+        // 与界面「文件夹「X」已存在」的可读提示同一个码。store 侧仍有自己的唯一性判断，
+        // 两者之间即使有竞态窗口，store 也会拒掉多写的一行。
+        let folders = match self.with_store(|s| s.list_folders()) {
+            Ok(folders) => folders,
             Err(e) => return internal_error(&e.to_string()),
+        };
+        if !folders.iter().any(|(id, _)| *id == p.folder_id) {
+            return WriteOutcome::failed_with(
+                ERROR_FOLDER_NOT_FOUND,
+                format!("分组 #{} 不存在；先用 list_folders 取 id", p.folder_id),
+            )
+            .to_json();
         }
-        // 重名由 store 判（`Store::rename_folder` 给可读错误）→ 归入 invalid_argument
+        if folders
+            .iter()
+            .any(|(id, existing)| *id != p.folder_id && existing == name)
+        {
+            return WriteOutcome::failed_with(
+                write_contract::ERROR_INVALID_ARGUMENT,
+                format!("分组「{name}」已存在（重命名会撞唯一约束）"),
+            )
+            .to_json();
+        }
         if let Err(e) = self.with_store(|s| s.rename_folder(p.folder_id, name)) {
-            let message = e.to_string();
-            if message.contains("已存在") || message.contains("不能为空") {
-                return WriteOutcome::failed_with(
-                    write_contract::ERROR_INVALID_ARGUMENT,
-                    message,
-                )
-                .to_json();
-            }
-            return internal_error(&message);
+            return internal_error(&e.to_string());
         }
         WriteOutcome::done(1, vec![ItemResult::ok(p.folder_id)], false)
             .with_detail(json!({ "folder_id": p.folder_id, "name": name }))
@@ -864,6 +869,11 @@ mod tests {
         assert_eq!(
             parse_subscribe_target("  https://example.com/  "),
             Ok(SubscribeTarget::Web("https://example.com/".into()))
+        );
+        // scheme 大小写不敏感：`HTTP://` 同样是可订阅的 http 地址（rsshub 大写已在上面覆盖）
+        assert_eq!(
+            parse_subscribe_target("HTTP://example.com/feed.xml"),
+            Ok(SubscribeTarget::Web("HTTP://example.com/feed.xml".into()))
         );
         for bad in ["", "   ", "not a url", "ftp://example.com/feed.xml", "http://"] {
             assert!(
