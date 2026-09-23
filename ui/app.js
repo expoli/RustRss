@@ -1389,16 +1389,88 @@ function toggleFolderCollapse(folderId) {
 }
 
 function closeContextMenu() {
+  hideSubmenu();
   el('ctx-menu')?.remove();
 }
 
-/// 通用右键菜单：items = [{label, danger?, action} | {separator: true} | {header: true, label}]
+/// 子菜单：同一时刻至多一个。收起走延时——父项与子菜单之间隔着 2px 缝隙，指针
+/// 穿过去会先触发父项的 mouseleave，立即收会闪关（见 scheduleHideSubmenu）。
+const SUBMENU_HIDE_MS = 150;
+let ctxSubmenu = null;
+
+/// 收起子菜单（父菜单关闭、父菜单滚动、悬停到另一父项、执行条目时都走这里）
+function hideSubmenu() {
+  if (!ctxSubmenu) return;
+  clearTimeout(ctxSubmenu.timer);
+  ctxSubmenu.el.remove();
+  ctxSubmenu = null;
+}
+
+function cancelHideSubmenu() {
+  if (ctxSubmenu) clearTimeout(ctxSubmenu.timer);
+}
+
+/// 延时收起：到点时指针仍在父项或子菜单上就不收。判据用 `:hover` 现查而不是
+/// 自己记 mouseenter/mouseleave 配对——跨元素的配对顺序不可靠，这里只有「现在
+/// 指针在不在里面」这一个事实。
+function scheduleHideSubmenu() {
+  if (!ctxSubmenu) return;
+  clearTimeout(ctxSubmenu.timer);
+  ctxSubmenu.timer = setTimeout(() => {
+    if (!ctxSubmenu) return;
+    if (ctxSubmenu.el.matches(':hover') || ctxSubmenu.parent.matches(':hover')) return;
+    hideSubmenu();
+  }, SUBMENU_HIDE_MS);
+}
+
+/// 打开父项的子菜单：先收掉别的（悬停到另一父项 = 切换）。`item.submenu()` 懒求值，
+/// 每次展开重建——勾选态与文案取的是展开这一刻的值。
+function openSubmenu(btn, item) {
+  hideSubmenu();
+  const sub = document.createElement('div');
+  sub.className = 'ctx-menu ctx-submenu';
+  renderMenuItems(sub, item.submenu());
+  sub.addEventListener('mouseenter', cancelHideSubmenu);
+  sub.addEventListener('mouseleave', scheduleHideSubmenu);
+  document.body.appendChild(sub);
+  const rect = placeSubmenu(sub, btn);
+  ctxSubmenu = { el: sub, parent: btn, timer: 0 };
+  // 定位诊断：右边缘翻转 / 底部钳位 / 内部滚动 / 是否出界都靠这一行机械核对，
+  // 不必盯屏幕（headless 冒烟同样读它）
+  log(
+    `submenu "${item.label}" side=${rect.side} ` +
+      `rect=${Math.round(rect.left)},${Math.round(rect.top)} ${sub.offsetWidth}x${sub.offsetHeight} ` +
+      `viewport=${window.innerWidth}x${window.innerHeight} ` +
+      `scroll=${sub.scrollHeight > sub.clientHeight ? 1 : 0} outofview=${menuOutOfView(sub) ? 1 : 0}`
+  );
+}
+
+/// 菜单是否越出视口（诊断断言用；子菜单与父菜单都必须为 0）
+function menuOutOfView(node) {
+  const r = node.getBoundingClientRect();
+  return r.left < 0 || r.top < 0 || r.right > window.innerWidth || r.bottom > window.innerHeight;
+}
+
+/// 父项事件：悬停即展开、移出延时收起、点击切换。
+function bindSubmenuParent(btn, item) {
+  btn.addEventListener('mouseenter', () => {
+    // 已展开就什么都不做：重建会闪，也会把勾选态刷新成「没变过的状态」
+    if (ctxSubmenu && ctxSubmenu.parent === btn) return;
+    openSubmenu(btn, item);
+  });
+  btn.addEventListener('mouseleave', scheduleHideSubmenu);
+  btn.addEventListener('click', () => {
+    if (ctxSubmenu && ctxSubmenu.parent === btn) hideSubmenu();
+    else openSubmenu(btn, item);
+  });
+}
+
+/// 条目渲染：父菜单与子菜单共用同一个渲染器（子菜单就是同一种容器 + 定位），
+/// 因此子菜单天然支持既有全部条目类型。
 /// - `separator` 画一条分组分隔线；`header` 是小号灰字的分组标题（不可点）。
 /// - `checked` 参与勾选组：勾中项前面打 ✓，未勾中项留同宽占位（标签对齐）。
-function openContextMenu(ev, items, anchor) {
-  closeContextMenu();
-  const menu = document.createElement('div');
-  menu.id = 'ctx-menu';
+/// - `submenu: () => items` 是父项：右侧 chevron，无 action（点击只展开/收起）。
+function renderMenuItems(menu, items) {
   for (const item of items) {
     if (item.separator) {
       const sep = document.createElement('div');
@@ -1425,15 +1497,41 @@ function openContextMenu(ev, items, anchor) {
       label.textContent = item.label;
       btn.append(mark, label);
       if (item.checked) btn.classList.add('checked');
+    } else if (item.submenu) {
+      // 父项标签必须是独立 span：chevron 与小字缩略靠 flex 排开（见 .has-submenu）
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = item.label;
+      btn.appendChild(label);
     } else {
       btn.textContent = item.label;
     }
-    btn.onclick = () => {
-      closeContextMenu();
-      item.action();
-    };
+    if (item.submenu) {
+      btn.classList.add('has-submenu');
+      bindSubmenuParent(btn, item);
+    } else {
+      btn.onclick = () => {
+        closeContextMenu();
+        item.action();
+      };
+    }
     menu.appendChild(btn);
   }
+}
+
+/// 通用右键菜单：items = [{label, danger?, action} | {separator: true} | {header: true, label}
+///                          | {label, submenu: () => items}]
+/// 容器用 `.ctx-menu` class 而非 `#ctx-menu` id：子菜单需要同一套样式却挂在 body 上
+/// （不是父菜单的子节点），id 只有一个，样式必须走 class。
+function openContextMenu(ev, items, anchor) {
+  closeContextMenu();
+  const menu = document.createElement('div');
+  menu.id = 'ctx-menu';
+  menu.className = 'ctx-menu';
+  renderMenuItems(menu, items);
+  // 父菜单自身滚动后子菜单会错位（子菜单贴的是父项行的实时矩形，不是父菜单容器）
+  // → 滚动即收起，不做跟随：简单且不可能错位。子菜单自己的滚动不冒泡到这里。
+  menu.addEventListener('scroll', hideSubmenu);
   document.body.appendChild(menu);
   // 锚定模式（设置页下拉）：宽度不小于触发按钮，展开点贴按钮下沿
   if (anchor) {
@@ -1474,6 +1572,43 @@ function placeMenu(menu, x, y) {
   }
 }
 
+/// 子菜单矩形计算（纯函数，boot 自检覆盖；不碰 DOM 便于用例穷举）：
+/// - 水平：默认贴父项行右缘 +2；右侧放不下翻到父项行左侧 -2；两侧都紧时钳到 pad。
+/// - 垂直：钳位 [pad, 视口高 - 高度 - pad]，高度超上限则限高（容器本来就 overflow-y:auto，
+///   于是变成内部滚动）。
+/// `side` 只记录「翻没翻」，`left/top` 是钳位后的最终值。
+function submenuRect(row, size, viewport, pad = 8) {
+  const maxH = Math.min(460, viewport.h - pad * 2);
+  const h = Math.min(size.h, maxH);
+  let side = 'right';
+  let left = row.right + 2;
+  if (left + size.w > viewport.w - pad) {
+    side = 'left';
+    left = row.left - size.w - 2;
+  }
+  return {
+    side,
+    maxH,
+    left: Math.max(pad, Math.min(left, viewport.w - size.w - pad)),
+    top: Math.max(pad, Math.min(row.top, viewport.h - h - pad)),
+  };
+}
+
+/// 子菜单定位：贴**父项行**的实时矩形（不是父菜单容器）——父菜单自身可滚动，
+/// 贴容器会在滚动后错位。调用前子菜单必须已在文档里，否则量不到尺寸。
+function placeSubmenu(sub, parentRow) {
+  const row = parentRow.getBoundingClientRect();
+  const viewport = { w: window.innerWidth, h: window.innerHeight };
+  // 宽度上限：CSS 已限死 260，这里只在视口更窄时兜底（保证绝不比视口宽）
+  sub.style.maxWidth = Math.min(260, viewport.w - 16) + 'px';
+  const rect = submenuRect(row, { w: sub.offsetWidth, h: sub.offsetHeight }, viewport);
+  sub.style.maxHeight = rect.maxH + 'px';
+  sub.style.left = rect.left + 'px';
+  sub.style.top = rect.top + 'px';
+  sub.dataset.side = rect.side;
+  return rect;
+}
+
 /// 每源刷新间隔档位：`value` 与后端 `set_feed_refresh_interval` 的白名单一一对应
 /// （`null` / `"global"` = 跟随全局档）。单源没有「关闭」档——要停自动刷新就选
 /// 「跟随全局」并把全局档关掉，避免出现两套「关」的语义。
@@ -1512,30 +1647,41 @@ function openFeedMenu(ev, feed) {
   items.push({ separator: true });
   // 编辑：标题/文件夹/间隔三件套的收敛入口（与下面的快捷项同一落库路径）
   items.push({ label: t('menu.editFeed'), action: () => openFeedEditDialog(feed) });
-  for (const folder of state.folders) {
-    if (folder.id === feed.folder_id) continue;
-    items.push({
-      label: t('menu.moveToWithName', { name: folder.name }),
-      action: () => reassignFeed(feed.id, folder.id),
-    });
-  }
-  if (feed.folder_id != null) {
-    items.push({ label: t('menu.moveToUngrouped'), action: () => reassignFeed(feed.id, null) });
-  }
-  // 刷新间隔组：与「移入文件夹」同层、分隔线隔开；当前档位打勾（FeedRow 直出）
+  // 刷新间隔：父项直出当前档位（FeedRow 的 refresh_interval_minutes），子菜单 6 档打勾。
+  // 原先 6 个档位平铺在菜单里，21 个分组 + 6 档 = 菜单本体几十行，找一项要滚半天。
   const current =
     feed.refresh_interval_minutes == null ? null : String(feed.refresh_interval_minutes);
-  // 没有「移动」项时（无分组可移动）不画分隔线——否则菜单顶部多一条没意义的线。
-  if (items.length) items.push({ separator: true });
-  items.push({ header: true, label: t('menu.refreshInterval') });
-  for (const choice of FEED_REFRESH_CHOICES) {
-    items.push({
-      label: choice.label(),
-      checked: current === choice.value,
-      action: () => setFeedRefreshInterval(feed.id, choice.value),
-    });
-  }
-  // 取消订阅：破坏性（条目级联删），与刷新间隔组分隔开，红色危险样式
+  const currentChoice = FEED_REFRESH_CHOICES.find((c) => c.value === current);
+  items.push({
+    label: `${t('menu.refreshInterval')} · ${
+      currentChoice ? currentChoice.label() : feedIntervalLabel(feed.refresh_interval_minutes)
+    }`,
+    submenu: () =>
+      FEED_REFRESH_CHOICES.map((choice) => ({
+        label: choice.label(),
+        checked: current === choice.value,
+        action: () => setFeedRefreshInterval(feed.id, choice.value),
+      })),
+  });
+  // 移动到：父项直出当前分组（未分组时写「未分组」），子菜单列出全部分组 + 未分组项、
+  // 当前所在项打勾。分组列表懒求值：列表可能因新建/删除分组而变。
+  const currentFolder = (state.folders || []).find((folder) => folder.id === feed.folder_id);
+  items.push({
+    label: `${t('menu.moveTo')} · ${currentFolder ? currentFolder.name : t('menu.ungrouped')}`,
+    submenu: () => [
+      ...(state.folders || []).map((folder) => ({
+        label: folder.name,
+        checked: folder.id === feed.folder_id,
+        action: () => reassignFeed(feed.id, folder.id),
+      })),
+      {
+        label: t('menu.ungrouped'),
+        checked: feed.folder_id == null,
+        action: () => reassignFeed(feed.id, null),
+      },
+    ],
+  });
+  // 取消订阅：破坏性（条目级联删），与上面的管理项分隔开，红色危险样式
   items.push({ separator: true });
   items.push({
     label: t('menu.unsubscribe'),
@@ -2231,6 +2377,84 @@ function selfTestSanitizer() {
   return failures.length === 0;
 }
 
+/**
+ * 启动自检：菜单条目渲染契约。父菜单与子菜单共用一个渲染器，子菜单要能装下既有
+ * 全部条目类型（普通 / 勾选 / 分组标题 / 分隔线），父项要带 chevron 且**没有 action**
+ * （点击只展开/收起，不会误执行操作）。断言在游离节点上跑，不碰真实菜单。
+ */
+function selfTestMenuRender() {
+  const box = document.createElement('div');
+  renderMenuItems(box, [
+    { label: 'plain', action: () => {} },
+    { label: 'checked', checked: true, action: () => {} },
+    { header: true, label: 'head' },
+    { separator: true },
+    { label: 'parent', submenu: () => [{ label: 'child', action: () => {} }] },
+  ]);
+  const failures = [];
+  const buttons = box.querySelectorAll('button');
+  if (buttons.length !== 3) failures.push(`button=${buttons.length}，期望 3`);
+  if (!box.querySelector('.ctx-head')) failures.push('header 条目未渲染');
+  if (!box.querySelector('.ctx-sep')) failures.push('separator 条目未渲染');
+  const checked = box.querySelector('button.checked');
+  if (!checked || checked.querySelector('.mark')?.textContent !== '✓') {
+    failures.push('checked 条目未打勾');
+  }
+  const parent = box.querySelector('button.has-submenu');
+  if (!parent) failures.push('父项未带 has-submenu（chevron 指示符）');
+  else if (parent.onclick) failures.push('父项不应绑定 action 点击');
+  log(
+    failures.length
+      ? `menu render selftest FAILED: ${failures.join('; ')}`
+      : 'menu render selftest ok (items=5)'
+  );
+  return failures.length === 0;
+}
+
+/**
+ * 启动自检：子菜单定位不变量。定位是纯函数 `submenuRect`，这里用合成矩形穷举
+ * 翻转/钳位/限高三种分支，断言的是**不变量**（任何用例都不越出视口）而不是具体
+ * 像素。右边缘翻转与底部钳位在真实界面里要靠窗口尺寸凑，这层自检把它们变成
+ * 随时可核对的日志行（同 `selfTestSanitizer` 的口径）。
+ */
+function selfTestSubmenuPlacement() {
+  const cases = [
+    // 右侧有地方：直接贴父项行右侧，不动 vertical
+    { name: 'right', row: { left: 100, right: 400, top: 300 }, size: { w: 200, h: 200 },
+      viewport: { w: 1240, h: 820 }, side: 'right', top: 300, clamped: false },
+    // 贴右边缘：翻转，落在父项行左侧
+    { name: 'flip-left', row: { left: 1000, right: 1240, top: 300 }, size: { w: 200, h: 200 },
+      viewport: { w: 1240, h: 820 }, side: 'left', top: 300, clamped: false },
+    // 贴视口底部：垂直钳位（top 被压上来，bottom 恰好落在 pad 内）
+    { name: 'bottom-clamp', row: { left: 100, right: 400, top: 780 }, size: { w: 200, h: 300 },
+      viewport: { w: 1240, h: 820 }, side: 'right', top: 512, clamped: false },
+    // 子菜单比可用高度还高：限高 + 内部滚动（maxH < 自然高）
+    { name: 'scroll', row: { left: 100, right: 400, top: 300 }, size: { w: 200, h: 900 },
+      viewport: { w: 1240, h: 820 }, side: 'right', top: 300, clamped: true },
+    // 两侧都放不下（窄视口）：翻转后仍要钳回 pad，不越出
+    { name: 'tight-both', row: { left: 40, right: 260, top: 300 }, size: { w: 200, h: 200 },
+      viewport: { w: 300, h: 820 }, side: 'left', top: 300, clamped: false },
+  ];
+  const failures = [];
+  for (const c of cases) {
+    const r = submenuRect(c.row, c.size, c.viewport);
+    const h = Math.min(c.size.h, r.maxH);
+    if (r.side !== c.side) failures.push(`${c.name}: side=${r.side}，期望 ${c.side}`);
+    if (r.top !== c.top) failures.push(`${c.name}: top=${r.top}，期望 ${c.top}`);
+    if ((r.maxH < c.size.h) !== c.clamped) failures.push(`${c.name}: 限高不符期望`);
+    // 硬不变量：四个边都不越出视口
+    if (r.left < 8 || r.top < 8 || r.left + c.size.w > c.viewport.w - 8 || r.top + h > c.viewport.h - 8) {
+      failures.push(`${c.name}: 越出视口 left=${r.left} top=${r.top} h=${h}`);
+    }
+  }
+  log(
+    failures.length
+      ? `submenu placement selftest FAILED: ${failures.join('; ')}`
+      : `submenu placement selftest ok (cases=${cases.length})`
+  );
+  return failures.length === 0;
+}
+
 async function markAll(read) {
   const feedId = state.view.kind === 'feed' ? state.feedId : null;
   const cmd = read ? 'mark_all_read' : 'mark_all_unread';
@@ -2759,7 +2983,7 @@ async function boot() {
   // （菜单在同一事件里被创建又被删除，表现成「下拉点了没反应」——语言/主题/刷新
   // 间隔/字体四个自绘下拉全中招）；「再点同一个下拉 = 关闭」由 toggleSettingDropdown 管。
   document.addEventListener('click', (e) => {
-    if (el('ctx-menu') && !e.target.closest('#ctx-menu') && !e.target.closest('.setting-dropdown')) {
+    if (el('ctx-menu') && !e.target.closest('.ctx-menu') && !e.target.closest('.setting-dropdown')) {
       closeContextMenu();
     }
   });
@@ -2771,6 +2995,8 @@ async function boot() {
       : `i18n selftest FAILED: ${i18n.problems.join('; ')}`
   );
   selfTestSanitizer();
+  selfTestMenuRender();
+  selfTestSubmenuPlacement();
   // 最小绑定集先绑、且无条件执行：下面的 catch 会 return，跳过其后的全部绑定
   bindWindowControls();
   try {
@@ -3148,6 +3374,13 @@ async function boot() {
       return;
     }
     if (e.key === 'Escape') {
+      // 菜单树优先，且只关菜单：开着菜单按 Esc 不该顺手把搜索态/设置面板一起清掉。
+      // （注意：本判断原先排在下面那个 return 之后，永远走不到——菜单 Esc 关不掉，
+      // 本次一并修好；这条也是本任务「Esc 关闭整棵菜单树」的验收点。）
+      if (el('ctx-menu')) {
+        closeContextMenu();
+        return;
+      }
       el('settings-overlay').classList.add('hidden');
       el('search').value = '';
       el('search').blur();
@@ -3161,10 +3394,6 @@ async function boot() {
     // 编辑弹窗同理：背后的列表/阅读区不该被快捷键推动（Esc 在上面已处理）
     if (!el('feed-edit-overlay').classList.contains('hidden')) return;
 
-    if (e.key === 'Escape' && el('ctx-menu')) {
-      closeContextMenu();
-      return;
-    }
     switch (e.key) {
       case 'j': case 'ArrowDown': e.preventDefault(); move(1); break;
       case 'k': case 'ArrowUp': e.preventDefault(); move(-1); break;
