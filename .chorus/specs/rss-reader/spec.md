@@ -95,7 +95,7 @@ created: 2026-09-20
 **通道 B：对外 MCP server**
 
 - [x] 可同时以 loopback HTTP 与 stdio 两种传输提供 MCP 服务，应用内直接生成可复制的客户端配置片段
-- [x] 只读工具集至少覆盖：列订阅、列条目（按源/未读/**时间**过滤、**分页**）、搜索条目、取单篇正文（2026-09-23 补齐：`list_articles` 支持 `feed_id`/`folder_id`/`unread_only`/`starred_only`/`read_later_only`/`since`/`until`/`page_size`+`cursor`/`sort`/`hide_read`，新增 `list_folders`（分组 + 每组未读）与 `get_unread_summary`（按源/分组未读聚合）；时间过滤为对 `COALESCE(published_at, fetched_at)` 的闭区间，分页为 keyset 游标）
+- [x] 只读工具集至少覆盖：列订阅、列条目（按源/未读/**时间**过滤、**分页**）、搜索条目、取单篇正文（2026-09-23 补齐：`list_articles` 支持 `feed_id`/`folder_id`/`unread_only`/`starred_only`/`read_later_only`/`since`/`until`/`page_size`+`cursor`/`sort`/`hide_read`，新增 `list_folders`（分组 + 每组未读）与 `get_unread_summary`（按源/分组未读聚合）；时间过滤为对 `COALESCE(published_at, fetched_at)` 的闭区间，分页为 keyset 游标；⚠ 遗留：`search_articles` 仍继承界面 `hide_read`（本批 AC 外，待后续处理））
 - [ ] MCP 提供**写能力**（阅读状态/刷新/订阅管理），且满足：读 token 会话看不到写工具（scope 分权，且**写 token 轮换/销毁后旧值立即失效**——授权按请求现算）；写能力总开关与危险工具开关**默认关闭**；危险操作（退订/删分组）需 `confirm` 并支持 `dry_run` 预览；写操作有审计日志；列表默认口径固定为「最新在前 + 不隐藏已读」（显式参数可覆盖）——见 2026-09-23-mcp-write
 - [x] MCP 仅监听回环地址；未携带正确 token 的请求一律拒绝；token 可轮换且轮换后旧 token 立即失效
 - [x] 同一条查询在 MCP 与 GUI 中返回一致结果（同一 core 数据层）——`EntryQuery` 的 `since`/`until`/`feed_ids`/`sort`/`hide_read` 是**显式参数**：界面路径不传（跟随 `list.sort`/`list.hide_read` 设置），MCP 路径全传且默认固定「最新在前 + 不隐藏已读」；两条路径共用同一份 SQL 与同一批索引，不存在第二套查询逻辑
