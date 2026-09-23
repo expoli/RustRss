@@ -3,12 +3,15 @@
   "ideaUuid": "6876476a-10ab-44c5-b12c-9e82a509fa40",
   "elaborationStatus": "resolved",
   "proposalUuid": null,
-  "stage": "design_and_native_snapshot_probe",
+  "stage": "tauri_snapshot_spike_linux_x11_and_kde_wayland_verified",
   "documentMirrors": {
     "prd.md": "3ffd52f8-0031-4586-89e1-750a6647d26f",
     "tech_design.md": "f9f59507-26dc-45aa-82db-9b1feaedd4e8",
     "tasks.md": "b4ba4020-8b69-4438-bb53-35ca965f8381"
   },
   "implementationTasksMaterialized": false,
-  "productImplemented": false
+  "productImplemented": false,
+  "nextTask": "T2 core theme configuration and storage",
+  "remainingCapturePlatforms": ["windows", "macos", "gnome-wayland"],
+  "waylandEvidence": "wayland-snapshot-results.json"
 }

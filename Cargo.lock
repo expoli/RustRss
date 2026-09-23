@@ -4085,6 +4085,8 @@ dependencies = [
 name = "rustrss-desktop"
 version = "0.0.0"
 dependencies = [
+ "cairo-rs",
+ "gtk",
  "keyring",
  "log",
  "rustrss-core",
@@ -4098,6 +4100,7 @@ dependencies = [
  "tauri-plugin-notification",
  "tauri-plugin-single-instance",
  "tokio",
+ "webkit2gtk",
 ]
 
 [[package]]

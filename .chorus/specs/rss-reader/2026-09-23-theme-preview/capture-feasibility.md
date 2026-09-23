@@ -2,6 +2,8 @@
 
 日期：2026-09-23。结论：三平台存在原生 API 路径；Linux 独立 GTK WebView 探针已成功。**Tauri 适配器、MCP 图片传输与跨平台运行仍未验证。**
 
+后续进展：本页为 T0 历史记录。T1 已完成 Linux 隔离 Tauri example 的适配与专项验证，见 [Tauri 探针报告](tauri-capture-spike.md)；MCP 与其他平台仍未完成。
+
 ## 路径核对
 
 | 平台 | 拟议实现 | 当前证据 |

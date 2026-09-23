@@ -928,3 +928,18 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 证据：[可行性报告与复现命令](2026-09-23-theme-preview/capture-feasibility.md)、[结果 JSON](2026-09-23-theme-preview/snapshot-results.json)、[独立交互稿](2026-09-23-theme-preview/mockup.html)。
 - 本次仅增加设计文档与开发探针，未修改产品主题行为，不重复运行全量产品测试；探针在隔离 Xvfb 下运行，不访问用户数据库，不安装系统包。
 - 未验证：Tauri 集成、MCP 图片响应、真实组件复用、最小化/隐藏、Wayland、客户端图片显示；Windows/macOS 当前主机无法运行验证。详见可行性报告后续步骤，保持对应验收未勾选。
+
+### 24.1 T1 Tauri 隔离 example 后续进展
+
+- Linux Tauri 2.11.6 原生截图适配器已接入 opt-in `theme_snapshot` example，未接入正式应用/MCP。构建和运行不访问用户数据库；只新增与现有版本匹配的可选 GTK/Cairo 依赖。
+- 100%/200% 各 100 帧，唯一 revision 标记像素与正文背景逐张匹配，尺寸/比例/字节上限核验通过；8 类边界检查通过。详见 [专项报告](2026-09-23-theme-preview/tauri-capture-spike.md) 与 [结果](2026-09-23-theme-preview/tauri-snapshot-results.json)。
+- 发现并处理 hide/show 后 GTK ICONIFIED 延迟事件：恢复条件使用有上限的成功原生帧握手；捕获前后均检查窗口状态。代码不强制显示后端。
+- example 构建及默认 `cargo build --workspace` 成功；未运行全量测试。本次专项证据不覆盖真实 WM 最小化、Wayland、分数缩放、Windows/macOS、延迟资源或生产主题/MCP 闭环。
+
+### 24.2 当前 KDE 原生 Wayland 补验
+
+- 当前会话 socket 可访问；runner 保留真实 runtime，不覆盖 GDK_BACKEND/GL/scale，只在子进程移除 DISPLAY；运行时确认 GdkWaylandDisplay。
+- 100/100 帧版本标记与背景像素一致，8 类边界检查通过；WebView 1000×653 CSS px、DPR=2、PNG 2000×1306，尺寸与前端 viewport 独立核对；截图中位数 45.18ms，最大 60.48ms。
+- 修复实际发现的尺寸误报：旧窗口口径 1052×752 包含非 WebView 区域；现按 WebView allocation/scale 校验并返回内容尺寸。
+- 修复后 Xvfb/GdkX11Display 100% 回归同样通过 100 帧和 8 类边界检查，产物 `/tmp/rustrss-tauri-snapshot-xvfb-h59cxxep`。
+- [Wayland 结果](2026-09-23-theme-preview/wayland-snapshot-results.json) 与 [报告/复现方法](2026-09-23-theme-preview/tauri-capture-spike.md)。不据此宣称 GNOME、跨屏/全部分数缩放、真实最小化、Windows/macOS 或正式应用 MCP 均已验收。

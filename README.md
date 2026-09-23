@@ -5,6 +5,7 @@
 - 需求基线：`.chorus/specs/rss-reader/spec.md`
 - 当前阶段分析（竞品、风险、决策）：`.chorus/specs/rss-reader/2026-09-20-initial-requirements/prd.md`
 - 主题与 MCP 视觉预览设计（草案，产品未实现）：[需求与交互稿](.chorus/specs/rss-reader/2026-09-23-theme-preview/prd.md)、[技术设计](.chorus/specs/rss-reader/2026-09-23-theme-preview/tech_design.md)、[截图可行性证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/capture-feasibility.md)。
+- 开发用 Tauri 截图探针（独立 example，Linux 已验证，尚未接入主题/MCP）：[构建方式与验证证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/tauri-capture-spike.md)。
 
 ## 已定决策
 

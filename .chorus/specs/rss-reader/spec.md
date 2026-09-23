@@ -148,7 +148,9 @@ created: 2026-09-20
 设计与验收详见 [PRD](2026-09-23-theme-preview/prd.md)、[技术设计](2026-09-23-theme-preview/tech_design.md)、[分阶段任务](2026-09-23-theme-preview/tasks.md)。
 
 - [x] 主题/设置/MCP 预览方案与任务草案落库；Linux 独立 WebKitGTK 原生截图探针成功（6 次，固定示例；仅底层可行性，不代表 Tauri/MCP 产品交付）。
+- [x] Linux Tauri 隔离截图 example 在 Xvfb 100%/200% 各完成 100 帧像素验证，覆盖隐藏/尺寸与字节预算/超时/失效版本/并发/关闭错误；可选 feature，不接入正式产品。证据见 [T1 报告](2026-09-23-theme-preview/tauri-capture-spike.md)；Windows/macOS/Wayland 与真实 WM 最小化未验收。
 - [ ] 三套整套视觉预设与用户覆盖，统一配色/字体/列表/阅读区参数；UI/MCP 共用校验/迁移/版本/恢复。
+- [x] 当前 KDE 原生 Wayland 的隔离截图探针通过 100 帧与 8 类边界检查；实际 GdkWaylandDisplay，WebView 内容尺寸与 JS viewport/DPR 相符，修正装饰区域导致的尺寸误报。仅当前会话验收，跨屏/GNOME/真实最小化/生产 MCP 仍未验收，见 [Wayland 证据](2026-09-23-theme-preview/wayland-snapshot-results.json)。
 - [ ] 设置重组、独立外观页与 Aa 阅读面板，原有功能可达，双语与键盘操作完整。
 - [ ] MCP 临时修改→真实组件渲染→返回 PNG 与版本→再调整→保存/取消闭环；内嵌与独立部署能力明确。
 - [ ] 预览不覆盖正式设置，CAS 防止并发覆盖，渲染版本一致，超时/失权/退出可回收，阅读位置保留。

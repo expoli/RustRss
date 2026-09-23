@@ -88,4 +88,4 @@ validate 返回字段错误与已计算的色对/对比度；普通文本 4.5:1�
 
 ## 技术证据与未决项
 
-见 [截图验证](capture-feasibility.md)。API 存在和独立 GTK 截图成功不等于 Tauri 集成已完成。Windows/macOS/Wayland、最小化、缩放、客户端图片显示、标准组件复用为后续阻断式验收项。
+见 [截图验证](capture-feasibility.md) 与 [T1 Tauri 探针](tauri-capture-spike.md)。已在隔离 Tauri example 中实现 Linux 原生适配器，完成 Xvfb 100%/200% 与当前 KDE 原生 Wayland 专项验证；尚未接入产品预览/MCP。Windows/macOS、其他 Wayland compositor、真实 WM 最小化、跨屏/分数缩放清晰度、客户端图片显示、标准组件复用为后续阻断式验收项。hide/show 后必须等待可绘制状态，不能把 show 返回当成绘制完成。截图 logical_size/scale 与预算必须取 WebView 内容区域，不能从带装饰的窗口尺寸推导；需要与 JS viewport/DPR 交叉核验。

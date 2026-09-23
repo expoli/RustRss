@@ -1,6 +1,6 @@
 # 分阶段任务与依赖
 
-状态：本地任务草案；尚未物化为 Chorus 实现任务，未开始产品改动。
+状态：本地任务草案；尚未物化为 Chorus 实现任务。T1 已进行隔离 Tauri example 的 Linux 验证，正式产品功能未接入。
 
 | 任务 | 依赖 | 交付与验收 | 主要范围 |
 | --- | --- | --- | --- |
@@ -33,6 +33,8 @@ T1 若仅部分平台跑通，记录能力矩阵并实现明确的 unavailable�
 
 - [x] 已形成设计、任务草案与独立交互稿。
 - [x] Linux WebKitGTK 原生截图探针：三配色循环两轮成功，详见证据。
+- [x] T1 Linux Tauri 隔离 example：100%/200% 各 100 帧像素验证，8 类边界检查；详见 [Tauri 探针报告](tauri-capture-spike.md)。
 - [ ] Tauri 原生适配器与 MCP 集成。
-- [ ] Windows/macOS/Wayland 运行验证。
+- [x] 当前 KDE 原生 Wayland：100 帧与 8 类边界检查；内容尺寸与 DPR 独立核对；不覆盖所有 compositor/跨屏场景。
+- [ ] Windows/macOS 与 GNOME Wayland、真实最小化/跨屏运行验证。
 - [ ] 正式提案评审、任务物化与产品实现。

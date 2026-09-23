@@ -32,6 +32,17 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "proce
 
 [features]
 default = []
+snapshot-probe = ["dep:webkit2gtk", "dep:cairo-rs", "dep:gtk", "tokio/sync"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = { version = "=2.0.2", optional = true }
+cairo-rs = { version = "0.18", features = ["png"], optional = true }
+gtk = { version = "0.18", optional = true }
+
+[[example]]
+name = "theme_snapshot"
+path = "examples/theme_snapshot.rs"
+required-features = ["snapshot-probe"]
 
 [dev-dependencies]
 # 测试用 mock app（空 feature）：验「没有托盘时 update_badge 静默 no-op」不必起真窗口。
