@@ -259,6 +259,13 @@ fn main() {
             commands::create_tag,
             commands::assign_tags,
             commands::unassign_tags,
+            commands::rename_tag,
+            commands::set_tag_color,
+            commands::set_tag_pinned,
+            commands::reorder_tags,
+            commands::delete_tag,
+            commands::get_tags_collapsed,
+            commands::set_tags_collapsed,
             commands::get_collapsed_folders,
             commands::add_folder,
             commands::rename_folder,
@@ -443,6 +450,54 @@ mod tests {
             missing.is_empty(),
             "这些命令在界面被调用但没在 main.rs 登记（点下去才会报错）: {missing:?}"
         );
+    }
+
+    /// 侧栏「标签」区的接线缺席会让整个管理功能在运行时静默不可用（点下去才报错）：
+    /// ① 区块容器在 index.html 里存在；② app.js 渲染/挂事件（渲染函数 + 拖拽三个
+    /// 事件名 + 右键菜单入口）；③ 管理类命令在 main.rs 登记且 app.js 真的调它们。
+    #[test]
+    fn tag_sidebar_section_and_management_commands_are_wired() {
+        const APP_JS: &str = include_str!("../../ui/app.js");
+        const INDEX_HTML: &str = include_str!("../../ui/index.html");
+        const MAIN_RS: &str = include_str!("main.rs");
+
+        for id in ["tags-head", "tags-arrow", "tags", "tags-empty"] {
+            assert!(
+                INDEX_HTML.contains(&format!("id=\"{id}\"")),
+                "index.html 缺少侧栏标签区容器 {id}"
+            );
+        }
+        assert!(
+            APP_JS.contains("function reconcileTags("),
+            "app.js 缺少标签区渲染函数 reconcileTags"
+        );
+        // 原生 drag 事件驱动排序：三个事件都得挂上（少一个就拖不动或不落库）
+        for ev in ["dragstart", "dragover", "drop"] {
+            assert!(
+                APP_JS.contains(&format!("addEventListener('{ev}'")),
+                "app.js 未挂 {ev}（拖拽排序不工作）"
+            );
+        }
+        assert!(
+            APP_JS.contains("function openTagMenu("),
+            "app.js 缺少标签右键菜单入口 openTagMenu"
+        );
+
+        for cmd in [
+            "rename_tag",
+            "set_tag_color",
+            "set_tag_pinned",
+            "reorder_tags",
+            "delete_tag",
+            "get_tags_collapsed",
+            "set_tags_collapsed",
+        ] {
+            assert!(
+                MAIN_RS.contains(&format!("commands::{cmd},")),
+                "main.rs 未登记命令 {cmd}"
+            );
+            assert!(APP_JS.contains(&format!("'{cmd}'")), "app.js 未调用 {cmd}");
+        }
     }
 
     /// 标签快捷键（`t`）不得与既有键位冲突：键位从**真正生效的分发函数**源码里抽

@@ -350,6 +350,12 @@ const state = {
   // 选择器与标签视图标题共用一份；打标后调 refreshTagCache() 整体刷新（最近使用
   // 顺序与计数都在里面）。chips 自身的来源是 EntryRow.tags，不从这里反查。
   tags: [],
+  // 侧栏「标签」区的行：同一张表，**core 的侧栏口径**（置顶优先 → 手动顺序 →
+  // 名称，`sidebar_data.tags` 带回）。与 `tags`（选择器口径：最近使用优先）并存
+  // 是刻意的——两个 ORDER BY 都在 core，前端不重排、不数数。
+  sidebarTags: [],
+  // 标签区折叠状态（跨会话保持在设置 `ui.tags_collapsed` 里，与文件夹折叠同模式）
+  tagsCollapsed: false,
 };
 
 const VIEWS = [
@@ -638,6 +644,8 @@ function renderSidebar() {
   };
   reconcileViews(collectRows('views'));
   reconcileFeeds(collectRows('feeds'));
+  reconcileTags(collectRows('tags'));
+  paintTagsSection();
   setText(el('feeds-meta'), t('sidebar.feedCount', { n: state.feeds.length }));
   if (state.db) {
     const info = el('db-info');
@@ -1371,25 +1379,462 @@ function selfTestShortcutKeys() {
   return problems.length === 0;
 }
 
+// ---------------------------------------------------------------- 标签管理（侧栏区 / 拖拽排序 / 右键菜单）
+//
+// 侧栏顺序（置顶优先 → 手动顺序 → 名称）、未读计数、颜色全部来自 core 的
+// `list_tags`（`sidebar_data.tags` 一次锁带回来）——前端只渲染，不自己排序也不自己
+// 数数。拖拽落库把**整份可见顺序**交给 core 的 `reorder_tags`（单事务按下标写
+// `sort_order`），不做逐行 IPC；DOM 侧只挪被拖的那一个节点，不重建列表。
+
+/** 预设色板：每个色在浅色 `--bg-panel`(#ffffff) 与深色 `#1a1d23` 上对比度都 ≥ 3:1
+ *  （WCAG 非文本图形底线；启动自检 `selfTestTagPalette` 现算，深浅两主题各跑一次启动
+ *  即可核对）。颜色只走圆点，不改文字色——两主题下都靠圆点自身可辨。 */
+const TAG_PALETTE = [
+  { key: 'tags.color.red', color: '#e5484d' },
+  { key: 'tags.color.orange', color: '#e8590c' },
+  { key: 'tags.color.green', color: '#30a46c' },
+  { key: 'tags.color.teal', color: '#12a594' },
+  { key: 'tags.color.blue', color: '#3e63dd' },
+  { key: 'tags.color.violet', color: '#8e4ec6' },
+  { key: 'tags.color.pink', color: '#d6409f' },
+  { key: 'tags.color.slate', color: '#6b7280' },
+];
+
+/** `#rrggbb`（core 收的颜色口径：7 字符、# 开头、全十六进制） */
+function validTagColor(color) {
+  return /^#[0-9a-f]{6}$/i.test(color || '');
+}
+
+/** 把 core 的颜色落到节点的 CSS 变量上；无颜色则清掉变量（CSS 回退到 --fg-dim） */
+function applyTagColor(node, tag) {
+  if (validTagColor(tag.color)) node.style.setProperty('--tag-color', tag.color.toLowerCase());
+  else node.style.removeProperty('--tag-color');
+}
+
+/** 当前颜色的中文/英文名（右键菜单父项回显用；库里是色板外的值也不算错） */
+function tagColorLabel(tag) {
+  const hit = TAG_PALETTE.find((c) => c.color === (tag.color || '').toLowerCase());
+  return hit ? t(hit.key) : t('tags.color.none');
+}
+
+/** sRGB 相对亮度（WCAG 2.x，对比度断言用） */
+function relLuminance(hex) {
+  const [r, g, b] = [1, 3, 5]
+    .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(a, b) {
+  const la = relLuminance(a);
+  const lb = relLuminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/**
+ * 启动自检：色板可用性。
+ * ① 每个色都是 core 收的 `#rrggbb` 格式且不重复（格式不对 core 直接报 invalid，
+ *    右键菜单会变成一排报错）；
+ * ② 每个色在**当前主题**的 `--bg-panel` 上对比度 ≥ 3:1——日志里的
+ *    theme/bgPanel/minContrast 就是「该主题下圆点辨识得出」的机械证据（深浅主题
+ *    各跑一次启动即可覆两个主题）。
+ */
+function selfTestTagPalette() {
+  const problems = [];
+  const seen = new Set();
+  for (const c of TAG_PALETTE) {
+    if (!/^#[0-9a-f]{6}$/.test(c.color)) problems.push(`色板色值非法: ${c.color}`);
+    if (seen.has(c.color)) problems.push(`色板色值重复: ${c.color}`);
+    seen.add(c.color);
+  }
+  const panel = getComputedStyle(document.documentElement).getPropertyValue('--bg-panel').trim();
+  const min = validTagColor(panel)
+    ? Math.min(...TAG_PALETTE.map((c) => contrastRatio(c.color, panel)))
+    : 0;
+  if (validTagColor(panel) && min < 3) {
+    problems.push(`色板在 --bg-panel=${panel} 上最低对比度 ${min.toFixed(2)} < 3:1`);
+  }
+  const theme = document.documentElement.dataset.theme || 'system';
+  log(
+    problems.length
+      ? `tagPalette selftest FAILED: ${problems.join('; ')}`
+      : `tagPalette selftest ok (n=${TAG_PALETTE.length} theme=${theme} bgPanel=${panel} minContrast=${min.toFixed(2)} ratios=${TAG_PALETTE.map((c) => contrastRatio(c.color, validTagColor(panel) ? panel : '#000000').toFixed(2)).join('/')})`
+  );
+  return problems.length === 0;
+}
+
+/** 侧栏标签区的行（keyed reconcile 复用；事件全走容器代理，行复用不重挂监听） */
+function tagRow(tag, existing) {
+  const key = `t:${tag.id}`;
+  let li = existing.get(key);
+  if (!li) {
+    li = document.createElement('li');
+    li.dataset.key = key;
+    li.dataset.tagId = String(tag.id);
+    li.draggable = true; // 原生 drag 事件（拖拽排序的唯一入口）
+    li.innerHTML = '<span class="tag-dot"></span><span class="name"></span><span class="count"></span>';
+  }
+  li.className = state.view.kind === 'tag' && state.view.tagId === tag.id ? 'active' : '';
+  applyTagColor(li, tag);
+  setText(li.querySelector('.name'), tag.name);
+  // 未读计数照出（0 也显示）：与源行同一口径，免得「有的行有数字有的没有」
+  setText(li.querySelector('.count'), String(tag.unread));
+  li.title = t('sidebar.tagRowTitle', { name: tag.name });
+  return li;
+}
+
+/** 标签区行渲染：顺序就是 core 给的顺序（置顶优先），前端不重排 */
+function reconcileTags(existing) {
+  const tags = state.sidebarTags || [];
+  reconcileChildren(el('tags'), tags.map((tag) => tagRow(tag, existing)));
+  setText(el('tags-meta'), tags.length ? t('sidebar.tagCount', { n: tags.length }) : '');
+}
+
+/** 折叠状态落到 DOM（箭头 + 列表/空态显隐） */
+function paintTagsSection() {
+  const tags = state.sidebarTags || [];
+  setText(el('tags-arrow'), state.tagsCollapsed ? '▸' : '▾');
+  el('tags').classList.toggle('hidden', !!state.tagsCollapsed);
+  el('tags-empty').classList.toggle('hidden', !!state.tagsCollapsed || tags.length > 0);
+}
+
+/** 折叠/展开标签区：状态落库（跨会话保持，与文件夹折叠同一套设置存储） */
+function toggleTagsCollapse() {
+  state.tagsCollapsed = !state.tagsCollapsed;
+  invoke('set_tags_collapsed', { collapsed: state.tagsCollapsed }).catch(() => {});
+  renderSidebar();
+  log(
+    `tagsSection: collapsed=${state.tagsCollapsed ? 1 : 0} head=${rectText(el('tags-head'))} ` +
+      `rows=${(state.sidebarTags || []).length} rects=${tagSidebarRects()}`
+  );
+}
+
+/** 标签区的标签名序列（诊断日志用；拖拽前后/重启后对着 sqlite 的 sort_order 核） */
+function tagOrderText() {
+  return (state.sidebarTags || []).map((tg) => tg.name).join('|') || '-';
+}
+
+/** 元素的屏幕矩形文本（`left,top,w,h`）——诊断与无人值守点击/拖拽定位用 */
+function rectText(node) {
+  const r = node.getBoundingClientRect();
+  return `${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)},${Math.round(r.height)}`;
+}
+
+/** 侧栏标签区各行的屏幕矩形（`名=left,top,w,h`，行序即当前顺序） */
+function tagSidebarRects() {
+  return (
+    [...el('tags').children]
+      .map((li) => `${li.querySelector('.name').textContent}=${rectText(li)}`)
+      .join('|') || '-'
+  );
+}
+
+// ---- 拖拽排序：原生 drag 事件 + 整份顺序单事务落库
+
+/** 正在拖拽的标签（`{id, pinned}`；null = 没有拖拽） */
+let tagDragState = null;
+
+/** 当前落点（行 + 插在它前/后）；无落点 = null */
+let tagDropHint = null;
+
+function clearTagDropHint() {
+  for (const li of el('tags').children) li.classList.remove('drop-before', 'drop-after');
+  tagDropHint = null;
+}
+
+/** 落点行 + 插到它前还是后（以行高中线为界） */
+function tagDropSpot(ev) {
+  const li = ev.target.closest('li[data-tag-id]');
+  if (!li) return null;
+  const rect = li.getBoundingClientRect();
+  return { tagId: Number(li.dataset.tagId), li, before: ev.clientY < rect.top + rect.height / 2 };
+}
+
+/**
+ * 把「被拖的标签」插到目标行前/后，返回整份新顺序的 id 数组。
+ * 整份列表（含置顶组）一并交给 core，于是置顶组的相对顺序也不会被拖乱——core 的
+ * ORDER BY 里 `pinned DESC` 在前，置顶永远在最前。
+ */
+function nextTagOrder(draggedId, targetId, before) {
+  const ids = (state.sidebarTags || []).map((tg) => tg.id);
+  const from = ids.indexOf(draggedId);
+  if (from < 0 || targetId === draggedId || !ids.includes(targetId)) return null;
+  ids.splice(from, 1);
+  ids.splice(ids.indexOf(targetId) + (before ? 0 : 1), 0, draggedId);
+  return ids;
+}
+
+/**
+ * 落库新顺序（core 单事务）。DOM 侧只**移动**被拖的那一个节点：reconcileChildren
+ * 按 key 归位，created/removed 两个计数（日志里）就是「不重建整个列表」的证据。
+ */
+async function persistTagOrder(ids) {
+  const byId = new Map((state.sidebarTags || []).map((tg) => [tg.id, tg]));
+  const next = ids.map((id) => byId.get(id)).filter(Boolean);
+  const before = new Set(el('tags').children);
+  state.sidebarTags = next;
+  renderSidebar();
+  const after = [...el('tags').children];
+  const created = after.filter((n) => !before.has(n)).length;
+  const removed = [...before].filter((n) => !after.includes(n)).length;
+  log(
+    `tagReorder: order=${tagOrderText()} created=${created} removed=${removed} persisted=pending rects=${tagSidebarRects()}`
+  );
+  try {
+    await invoke('reorder_tags', { tagIds: ids });
+    log(`tagReorder: order=${tagOrderText()} created=${created} removed=${removed} persisted=ok`);
+    setStatus(t('tags.reordered'));
+  } catch (e) {
+    log(`tagReorder: order=${tagOrderText()} created=${created} removed=${removed} persisted=fail err=${e.message}`);
+    setStatus(t('tags.reorderFailed', { error: e.message }), true);
+    await refreshCounts(); // 回滚显示：以库里的顺序为准
+  }
+}
+
+/** 标签区事件：折叠头 + 行点击筛选 + 右键管理 + 原生拖拽排序（全部容器代理） */
+function initTagSectionEvents() {
+  const head = el('tags-head');
+  head.addEventListener('click', toggleTagsCollapse);
+  // role=button 的键盘可达性（div 不会自己响应 Enter/Space）
+  head.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      toggleTagsCollapse();
+    }
+  });
+
+  const list = el('tags');
+  const tagFromRow = (node) =>
+    (state.sidebarTags || []).find((tg) => tg.id === Number(node.dataset.tagId));
+
+  list.addEventListener('click', (ev) => {
+    const li = ev.target.closest('li[data-tag-id]');
+    if (!li) return;
+    const tag = tagFromRow(li);
+    if (!tag) return;
+    setView({ kind: 'tag', tagId: tag.id, tagName: tag.name }).catch((e) => setStatus(e.message, true));
+  });
+
+  list.addEventListener('contextmenu', (ev) => {
+    const li = ev.target.closest('li[data-tag-id]');
+    if (!li) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const tag = tagFromRow(li);
+    if (tag) openTagMenu(ev, tag);
+  });
+
+  list.addEventListener('dragstart', (ev) => {
+    const li = ev.target.closest('li[data-tag-id]');
+    const tag = li && tagFromRow(li);
+    if (!tag) return;
+    tagDragState = { id: tag.id, pinned: !!tag.pinned };
+    li.classList.add('dragging');
+    // 原生 DnD 需要在 dataTransfer 里放点东西才会真正起拖（WebKit 同口径）
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.dataTransfer.setData('text/plain', String(tag.id));
+    log(`tagDrag:start id=${tag.id} name=${tag.name} pinned=${tag.pinned ? 1 : 0} order=${tagOrderText()}`);
+  });
+
+  list.addEventListener('dragover', (ev) => {
+    if (!tagDragState) return;
+    const spot = tagDropSpot(ev);
+    const tag = spot && tagFromRow(spot.li);
+    // 置顶组与普通组不混排：core 的 ORDER BY 里置顶恒在前，跨组落库也不会生效
+    // （拖了像没反应），所以干脆不接受跨组落点，也不给插入指示。
+    if (!spot || !tag || !!tag.pinned !== tagDragState.pinned) {
+      clearTagDropHint();
+      return;
+    }
+    ev.preventDefault(); // 允许 drop（不 preventDefault 掉 drop 永远不来）
+    ev.dataTransfer.dropEffect = 'move';
+    if (tagDropHint && tagDropHint.tagId === spot.tagId && tagDropHint.before === spot.before) return;
+    clearTagDropHint();
+    spot.li.classList.add(spot.before ? 'drop-before' : 'drop-after');
+    tagDropHint = spot;
+  });
+
+  // 拖出列表/拖出窗口：收掉插入指示（拖回来自会重画）
+  list.addEventListener('dragleave', (ev) => {
+    if (!list.contains(ev.relatedTarget)) clearTagDropHint();
+  });
+
+  list.addEventListener('drop', (ev) => {
+    if (!tagDragState) return;
+    const spot = tagDropHint;
+    const dragged = tagDragState;
+    tagDragState = null;
+    clearTagDropHint();
+    if (!spot) return; // 跨组/没落在行上：不做事（元素留在原位）
+    ev.preventDefault();
+    const ids = nextTagOrder(dragged.id, spot.tagId, spot.before);
+    if (ids) persistTagOrder(ids).catch((e) => setStatus(e.message, true));
+  });
+
+  list.addEventListener('dragend', () => {
+    tagDragState = null;
+    clearTagDropHint();
+    for (const li of el('tags').children) li.classList.remove('dragging');
+  });
+}
+
+// ---- 右键菜单：重命名 / 颜色（预设色板）/ 置顶切换 / 删除
+
+/**
+ * 标签项菜单。颜色走子菜单（既有 `openContextMenu` 的子菜单机制）：父项直出当前
+ * 颜色名，子菜单列 8 个预设色 + 「默认」，当前项打勾。删除与其它项用分隔线隔开。
+ */
+function openTagMenu(ev, tag) {
+  openContextMenu(ev, [
+    { label: t('menu.rename'), action: () => renameTag(tag) },
+    {
+      label: `${t('menu.tagColor')} · ${tagColorLabel(tag)}`,
+      submenu: () => [
+        ...TAG_PALETTE.map((c) => ({
+          label: t(c.key),
+          checked: (tag.color || '').toLowerCase() === c.color,
+          action: () => setTagColor(tag, c.color),
+        })),
+        { separator: true },
+        {
+          label: t('tags.color.none'),
+          checked: !tag.color,
+          action: () => setTagColor(tag, null),
+        },
+      ],
+    },
+    {
+      label: tag.pinned ? t('menu.tagUnpin') : t('menu.tagPin'),
+      action: () => toggleTagPinned(tag),
+    },
+    { separator: true },
+    { label: t('menu.delete'), danger: true, action: () => deleteTag(tag) },
+  ]);
+}
+
+/** 标签元信息变更后的统一收口：侧栏口径与选择器口径各重建一次（数量少，开销可忽略） */
+async function afterTagMetaChange() {
+  await refreshCounts(); // sidebar_data.tags：侧栏顺序 + 未读计数
+  await refreshTagCache(); // 选择器口径：最近使用优先
+}
+
+/** 重命名：重名（core 判定，大小写不敏感）与空名都回可读错误，不静默吞 */
+async function renameTag(tag) {
+  const name = await promptText(t('tags.renameTitle'), tag.name);
+  if (!name || name === tag.name) return;
+  try {
+    await invoke('rename_tag', { tagId: tag.id, name });
+    await afterTagMetaChange();
+    setStatus(t('tags.renamed', { name }));
+    log(`tagRename: id=${tag.id} "${tag.name}"→"${name}" order=${tagOrderText()}`);
+  } catch (e) {
+    setStatus(e.message, true);
+    log(`tagRename failed: id=${tag.id} "${tag.name}"→"${name}": ${e.message}`);
+  }
+}
+
+/** 颜色：`null` = 清除回默认色（圆点用 --fg-dim） */
+async function setTagColor(tag, color) {
+  try {
+    await invoke('set_tag_color', { tagId: tag.id, color });
+    await afterTagMetaChange();
+    setStatus(t('tags.colorSet', { name: tag.name }));
+    log(`tagColor: id=${tag.id} name=${tag.name} color=${color || 'none'} order=${tagOrderText()}`);
+  } catch (e) {
+    setStatus(e.message, true);
+    log(`tagColor failed: id=${tag.id} color=${color || 'none'}: ${e.message}`);
+  }
+}
+
+/** 置顶切换：置顶的标签在侧栏排最前（顺序口径在 core，前端只重渲染） */
+async function toggleTagPinned(tag) {
+  try {
+    const row = await invoke('set_tag_pinned', { tagId: tag.id, pinned: !tag.pinned });
+    await afterTagMetaChange();
+    setStatus(t(row.pinned ? 'tags.pinned' : 'tags.unpinned', { name: row.name }));
+    log(`tagPin: id=${tag.id} name=${row.name} pinned=${row.pinned ? 1 : 0} order=${tagOrderText()}`);
+  } catch (e) {
+    setStatus(e.message, true);
+    log(`tagPin failed: id=${tag.id}: ${e.message}`);
+  }
+}
+
+/** 删除后清内存里的标签痕迹（含所有条目对象上的 chips 与阅读器 chips 的局部 patch） */
+function dropTagFromMemory(tagId) {
+  state.tags = (state.tags || []).filter((tg) => tg.id !== tagId);
+  state.sidebarTags = (state.sidebarTags || []).filter((tg) => tg.id !== tagId);
+  for (const e of state.entries) {
+    if (e.tags) e.tags = e.tags.filter((x) => x.id !== tagId);
+  }
+  if (state.readerEntry && state.readerEntry.tags) {
+    state.readerEntry.tags = state.readerEntry.tags.filter((x) => x.id !== tagId);
+    patchReaderTags();
+  }
+}
+
+/**
+ * 删除标签：先 `dry_run` 拿影响篇数（与执行同源的计数函数）→ 通用确认弹窗展示 →
+ * 确认后才真删。删除只清 `entry_tags` 关联，**文章保留**。
+ */
+async function deleteTag(tag) {
+  let preview;
+  try {
+    preview = await invoke('delete_tag', { tagId: tag.id, dryRun: true });
+  } catch (e) {
+    setStatus(e.message, true);
+    log(`tagDelete preview failed: id=${tag.id}: ${e.message}`);
+    return;
+  }
+  const confirmed = await confirmDialog({
+    title: t('tags.deleteTitle'),
+    body: t('tags.deleteBody', { name: tag.name, n: preview.affected_entries }),
+    okLabel: t('menu.delete'),
+  });
+  log(`tagDelete: preview id=${tag.id} name=${tag.name} affected=${preview.affected_entries} confirmed=${confirmed ? 1 : 0}`);
+  if (!confirmed) return;
+  try {
+    const report = await invoke('delete_tag', { tagId: tag.id, dryRun: false });
+    const wasCurrentView = state.view.kind === 'tag' && state.view.tagId === tag.id;
+    dropTagFromMemory(tag.id);
+    // 当前正看这个标签 → 退回未读（不然停在已不存在的筛选上）；否则静默重拉列表，
+    // 让行上的 chips 去掉这个标签（阅读区与滚动位置不动）。
+    if (wasCurrentView) await setView(VIEWS.find((v) => v.kind === 'unread'));
+    else await loadEntries({ reader: false });
+    await afterTagMetaChange();
+    setStatus(t('tags.deleted', { name: tag.name, n: report.affected_entries }));
+    log(
+      `tagDelete: done id=${tag.id} name=${tag.name} affected=${report.affected_entries} ` +
+        `view=${state.view.kind} rows=${state.entries.length} head=${headIds()} order=${tagOrderText()}`
+    );
+  } catch (e) {
+    setStatus(e.message, true);
+    log(`tagDelete failed: id=${tag.id}: ${e.message}`);
+  }
+}
+
 // ---------------------------------------------------------------- 数据流
 
 /// 全量读数据并渲染。
 /// `reader: false` 是后台刷新用的静默模式：只重读侧栏与列表，不重渲染正文——
 /// 阅读焦点与滚动位置保持原位（定时刷新到点时用户可能正在读一篇长文）。
 async function loadAll({ reader = true } = {}) {
-  const [sidebar, settings, ai, mcp, collapsed, tags] = await Promise.all([
+  const [sidebar, settings, ai, mcp, collapsed, tagsCollapsed, tags] = await Promise.all([
     invoke('sidebar_data'),
     invoke('get_ui_settings'),
     invoke('get_ai_settings'),
     invoke('get_mcp_settings'),
     invoke('get_collapsed_folders'),
+    invoke('get_tags_collapsed'),
     // 选择器顺序（最近使用优先）由 core 直出：前端不排序，只存
     invoke('list_tags', { recentFirst: true }),
   ]);
   state.db = sidebar.db;
   state.feeds = sidebar.feeds;
   state.folders = sidebar.folders;
+  // 侧栏标签区用的是同一批 TagRow 的侧栏口径（置顶优先）
+  state.sidebarTags = sidebar.tags || [];
   state.collapsedFolders = collapsed;
+  state.tagsCollapsed = !!tagsCollapsed;
   state.settings = settings;
   state.ai = ai;
   state.mcp = mcp;
@@ -1763,6 +2208,8 @@ async function refreshCounts() {
   state.db = data.db;
   state.feeds = data.feeds;
   state.folders = data.folders;
+  // 侧栏标签区（顺序 + 未读计数）与聚合计数同一把锁、同一次 IPC 回来
+  state.sidebarTags = data.tags || [];
   renderSidebar();
 }
 
@@ -3430,6 +3877,11 @@ async function boot() {
   initSidebarEvents();
   initTagEvents();
   initTagPickerEvents();
+  initTagSectionEvents();
+  // 色板自检放在主题应用之后：对比度算的是**当前主题**的 --bg-panel
+  selfTestTagPalette();
+  // 侧栏标签区行的实时矩形（无人值守拖拽定位/截图核对用）
+  log(`tags:rows=${(state.sidebarTags || []).length} collapsed=${state.tagsCollapsed ? 1 : 0} rects=${tagSidebarRects()}`);
   el('btn-add').onclick = () => {
     const row = el('add-row');
     row.classList.toggle('hidden');

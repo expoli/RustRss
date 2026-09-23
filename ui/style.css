@@ -258,6 +258,61 @@ main {
 
 .feeds { overflow-y: auto; flex: 1; }
 
+/* ---------------- 侧栏「标签」区（颜色圆点 + 名称 + 未读计数 + 拖拽排序）
+   颜色只走圆点，文字色不变——深浅主题下都靠圆点自身对比度可辨（预设色板
+   每个色在 --bg-panel 上 ≥ 3:1，启动自检里算）。 */
+.tags-head {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.tags-head:hover { color: var(--fg); }
+.tags-head .section-arrow { flex: 0 0 auto; width: 10px; font-size: 10px; }
+.tags-head #tags-meta {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* 标签多时自己滚，不把订阅源列表挤没（订阅源列表是 flex:1 的主区） */
+  flex: 0 1 auto;
+  max-height: 34vh;
+  overflow-y: auto;
+}
+.tags li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-left: 3px solid transparent;
+  font-size: 13px;
+  cursor: pointer;
+}
+.tags li:hover { background: var(--bg-hover); }
+.tags li.active { background: var(--bg-active); border-left-color: var(--accent); }
+.tags .tag-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tag-color, var(--fg-dim));
+}
+.tags .name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tags .count { flex: 0 0 auto; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
+/* 折叠/空态的显隐：本仓库的 `.hidden` 不是全局工具类（逐组件定义），
+   这里必须自己接一格，否则折叠后列表与空态提示都还挂在侧栏上。 */
+.tags.hidden, .tags-empty.hidden { display: none; }
+.tags li.dragging { opacity: .45; }
+.tags li.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.tags li.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.tags-empty { padding: 2px 12px 8px; font-size: 12px; line-height: 1.5; }
+
 .add-row { display: flex; gap: 6px; padding: 8px 12px; }
 .add-row.hidden { display: none; }
 .add-row input {

@@ -24,12 +24,16 @@ fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
 }
 
-/// 侧栏聚合数据：一次锁获取返回全部，消除三命令并发抢锁。
+/// 侧栏聚合数据：一次锁获取返回全部，消除多命令并发抢锁。
 #[derive(Serialize)]
 pub struct SidebarData {
     pub db: DbInfo,
     pub feeds: Vec<FeedRow>,
     pub folders: Vec<rustrss_core::store::FolderRow>,
+    /// 侧栏「标签」区的行（core 的侧栏口径：置顶优先 → 手动顺序 → 名称，带未读计数）。
+    /// 与选择器的 `list_tags(recent_first=true)` 是**同一张表、两个 ORDER BY**，
+    /// 未读计数只有 core 这一个事实源，界面不自己数。
+    pub tags: Vec<rustrss_core::TagRow>,
 }
 
 #[derive(Serialize)]
@@ -507,6 +511,7 @@ pub async fn sidebar_data(state: State<'_, AppState>) -> R<SidebarData> {
             },
             feeds,
             folders: s.list_folders_ordered().map_err(err)?,
+            tags: s.list_tags().map_err(err)?,
         })
     });
     log_slow("sidebar_data", t);
@@ -1094,6 +1099,84 @@ pub async fn unassign_tags(
     r
 }
 
+/// 重命名标签（名称 trim/非空、大小写不敏感唯一、重名报可读错误——全在 core）。
+#[tauri::command]
+pub async fn rename_tag(
+    state: State<'_, AppState>,
+    tag_id: i64,
+    name: String,
+) -> R<rustrss_core::TagRow> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.rename_tag(tag_id, &name).map_err(err));
+    log_slow("rename_tag", t);
+    r
+}
+
+/// 设置/清除标签颜色（`None`/空串 = 默认色；格式校验在 core，非法值回可读错误）。
+#[tauri::command]
+pub async fn set_tag_color(
+    state: State<'_, AppState>,
+    tag_id: i64,
+    color: Option<String>,
+) -> R<rustrss_core::TagRow> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.set_tag_color(tag_id, color.as_deref()).map_err(err));
+    log_slow("set_tag_color", t);
+    r
+}
+
+/// 置顶/取消置顶（置顶的标签在侧栏排最前，排序口径在 core 的 `list_tags`）。
+#[tauri::command]
+pub async fn set_tag_pinned(
+    state: State<'_, AppState>,
+    tag_id: i64,
+    pinned: bool,
+) -> R<rustrss_core::TagRow> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.set_tag_pinned(tag_id, pinned).map_err(err));
+    log_slow("set_tag_pinned", t);
+    r
+}
+
+/// 拖拽排序落库：参数是**整份可见顺序**，core 单事务按下标写 `sort_order`
+/// （中途遇到不存在的 id 整体回滚），不是逐行多次 IPC。
+#[tauri::command]
+pub async fn reorder_tags(state: State<'_, AppState>, tag_ids: Vec<i64>) -> R<()> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.reorder_tags(&tag_ids).map_err(err));
+    log_slow("reorder_tags", t);
+    r
+}
+
+/// 删除标签：`dry_run=true` 只回影响篇数（不落库），`false` 才真删。
+/// 两个分支的影响数来自 core 的同一个计数函数（预览与执行不可能漂移）；
+/// 删除只清 `entry_tags` 关联，**文章保留**。
+#[tauri::command]
+pub async fn delete_tag(
+    state: State<'_, AppState>,
+    tag_id: i64,
+    dry_run: Option<bool>,
+) -> R<rustrss_core::DeleteTagReport> {
+    let t = std::time::Instant::now();
+    let r = state.with_store(|s| s.delete_tag(tag_id, dry_run.unwrap_or(false)).map_err(err));
+    log_slow("delete_tag", t);
+    r
+}
+
+/// 读取侧栏「标签」区的折叠状态（未设置 = 展开）。
+#[tauri::command]
+pub fn get_tags_collapsed(state: State<'_, AppState>) -> R<bool> {
+    state.with_store(|s| Ok(tags_collapsed_setting(s)))
+}
+
+#[tauri::command]
+pub fn set_tags_collapsed(state: State<'_, AppState>, collapsed: bool) -> R<()> {
+    state.with_store(|s| {
+        s.set_setting(TAGS_COLLAPSED_KEY, if collapsed { "true" } else { "false" })
+            .map_err(err)
+    })
+}
+
 /// 读取侧栏折叠状态（未设置返回空表）。
 #[tauri::command]
 pub fn get_collapsed_folders(state: State<'_, AppState>) -> R<Vec<i64>> {
@@ -1104,6 +1187,14 @@ pub fn get_collapsed_folders(state: State<'_, AppState>) -> R<Vec<i64>> {
 pub fn set_collapsed_folders(state: State<'_, AppState>, ids: Vec<i64>) -> R<()> {
     let json = serde_json::to_string(&ids).map_err(err)?;
     state.with_store(|s| s.set_setting("ui.folders_collapsed", &json).map_err(err))
+}
+
+/// 侧栏「标签」区折叠状态的设置键（与文件夹折叠同属界面 ephemera，走 key-value 设置）。
+const TAGS_COLLAPSED_KEY: &str = "ui.tags_collapsed";
+
+/// 读折叠状态：只有明确写成 `true` 才当折叠（未设置/写坏 = 展开）。
+fn tags_collapsed_setting(store: &rustrss_core::Store) -> bool {
+    matches!(store.setting(TAGS_COLLAPSED_KEY), Ok(Some(v)) if v.trim() == "true")
 }
 
 fn collapsed_folders_setting(store: &rustrss_core::Store) -> Vec<i64> {
@@ -1283,6 +1374,131 @@ fn cursor_pair(cursor_sortkey: Option<i64>, cursor_id: Option<i64>) -> Option<(i
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 侧栏标签区管理命令实际走的那条路径（`State` 在单测里用 `AppState::for_test()`，
+    /// 与 T1 的 core 单测同一套夹具口径）：
+    /// ① 重命名生效、重名报可读错误；
+    /// ② 置顶/颜色/顺序落库后按侧栏口径回读（置顶优先 → 手动顺序）；
+    /// ③ `delete_tag` 的 dry_run 预览数 = 真删影响数（同源计数函数），且只清关联：
+    ///    标签消失、`entry_tags` 关联清空、**文章仍在**；
+    /// ④ 标签区折叠状态：默认展开、可写可读、写坏值仍展开（不让坏设置卡死区块）。
+    #[test]
+    fn tag_management_command_path_persists_and_delete_is_previewed() {
+        let state = AppState::for_test();
+        let feed = state
+            .with_store(|s| s.add_feed("https://example.com/a.xml", Some("A源")).map_err(err))
+            .unwrap();
+        let entry = rustrss_core::Entry {
+            stable_id: "a1".into(),
+            id_origin: rustrss_core::IdOrigin::SourceData,
+            source_id: "a1".into(),
+            title: "a1".into(),
+            url: Some("https://example.com/a1".into()),
+            author: None,
+            published: None,
+            updated: None,
+            summary: Some("正文".into()),
+            content_html: Some("<p>正文</p>".into()),
+            content_text: Some("正文".into()),
+            categories: Vec::new(),
+        };
+        state
+            .with_store(|s| s.upsert_entries(feed, &[entry]).map_err(err))
+            .unwrap();
+
+        let (alpha, beta, gamma) = state
+            .with_store(|s| {
+                let a = s.create_tag("alpha", Some("#e5484d")).map_err(err)?;
+                let b = s.create_tag("beta", None).map_err(err)?;
+                let g = s.create_tag("gamma", None).map_err(err)?;
+                Ok((a, b, g))
+            })
+            .unwrap();
+        state
+            .with_store(|s| {
+                s.assign_tags(
+                    &rustrss_core::TagTarget::Entries(vec![1]),
+                    &[alpha.id, beta.id],
+                )
+                .map_err(err)
+            })
+            .unwrap();
+
+        // ① 重命名：生效 + 重名（大小写不敏感）回可读错误
+        let renamed = state
+            .with_store(|s| s.rename_tag(gamma.id, "gamma2").map_err(err))
+            .unwrap();
+        assert_eq!(renamed.name, "gamma2");
+        let dup = state.with_store(|s| s.rename_tag(gamma.id, "ALPHA").map_err(err));
+        let msg = dup.expect_err("与已有标签仅大小写不同也应拒绝");
+        assert!(msg.contains("标签名已存在"), "重名错误要可读: {msg}");
+
+        // ② 置顶 / 颜色 / 顺序：回读口径 = 置顶优先 → sort_order
+        state
+            .with_store(|s| s.set_tag_pinned(beta.id, true).map_err(err))
+            .unwrap();
+        state
+            .with_store(|s| s.set_tag_color(alpha.id, Some("#3E63DD")).map_err(err))
+            .unwrap();
+        state
+            .with_store(|s| s.reorder_tags(&[gamma.id, beta.id, alpha.id]).map_err(err))
+            .unwrap();
+        let rows = state.with_store(|s| s.list_tags().map_err(err)).unwrap();
+        let names: Vec<&str> = rows.iter().map(|r| r.name.as_str()).collect();
+        assert_eq!(names, vec!["beta", "gamma2", "alpha"], "置顶的排最前");
+        assert_eq!(rows[2].color.as_deref(), Some("#3e63dd"), "颜色归一为小写落库");
+
+        // ③ dry_run 预览与真删同源；只清关联，文章保留
+        let preview = state
+            .with_store(|s| s.delete_tag(alpha.id, true).map_err(err))
+            .unwrap();
+        assert!(preview.dry_run);
+        assert_eq!(preview.affected_entries, 1, "alpha 关联 1 篇");
+        assert!(
+            state
+                .with_store(|s| Ok(s.tag_row(alpha.id).map_err(err)?.is_some()))
+                .unwrap(),
+            "dry_run 不得落库"
+        );
+        let report = state
+            .with_store(|s| s.delete_tag(alpha.id, false).map_err(err))
+            .unwrap();
+        assert!(!report.dry_run);
+        assert_eq!(
+            report.affected_entries, preview.affected_entries,
+            "预览数与真删影响数必须同源"
+        );
+        assert!(
+            state
+                .with_store(|s| Ok(s.tag_row(alpha.id).map_err(err)?.is_none()))
+                .unwrap(),
+            "标签已删除"
+        );
+        let kept: Vec<String> = state
+            .with_store(|s| s.entry_tags(1).map_err(err))
+            .unwrap()
+            .into_iter()
+            .map(|t| t.name)
+            .collect();
+        assert_eq!(kept, vec!["beta"], "entry_tags 里只该剩下没被删的标签");
+        assert!(
+            state
+                .with_store(|s| Ok(s.get_entry(1).map_err(err)?.is_some()))
+                .unwrap(),
+            "删除标签不得动文章"
+        );
+
+        // ④ 折叠状态：默认展开；写了才折叠；写坏值不把区块卡在折叠态
+        assert!(!state.with_store(|s| Ok(tags_collapsed_setting(s))).unwrap());
+        state
+            .with_store(|s| s.set_setting(TAGS_COLLAPSED_KEY, "true").map_err(err))
+            .unwrap();
+        assert!(state.with_store(|s| Ok(tags_collapsed_setting(s))).unwrap());
+        state
+            .with_store(|s| s.set_setting(TAGS_COLLAPSED_KEY, "yes").map_err(err))
+            .unwrap();
+        assert!(!state.with_store(|s| Ok(tags_collapsed_setting(s))).unwrap());
+    }
 
     /// 日志级别归一化：只认 `debug`，其余（缺失/非法/未来新档）一律 `info`。
     /// 读侧（启动/回显）与写侧（`set_log_level`）共用这一个函数，坏值不会被带进 logger。

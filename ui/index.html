@@ -60,6 +60,16 @@
         <button id="btn-new-folder" data-i18n-title="folder.newTitle" aria-label="new folder">＋</button>
       </div>
       <ul id="feeds" class="feeds"></ul>
+      <!-- 标签区：颜色圆点 + 名称 + 未读计数，置顶优先（顺序由 core 直出）；
+           行可拖拽排序，右键出管理菜单（重命名/颜色/置顶/删除）。 -->
+      <div id="tags-head" class="section-title tags-head" role="button" tabindex="0"
+        data-i18n-title="sidebar.tagsToggleTitle">
+        <span id="tags-arrow" class="section-arrow">▾</span>
+        <span data-i18n="sidebar.tags"></span>
+        <span id="tags-meta" class="dim"></span>
+      </div>
+      <ul id="tags" class="tags"></ul>
+      <div id="tags-empty" class="tags-empty dim hidden" data-i18n="sidebar.tagsEmpty"></div>
       <div id="add-row" class="add-row hidden">
         <input id="add-url" data-i18n-placeholder="sidebar.addPlaceholder" autocomplete="off" />
         <button id="add-ok" data-i18n="sidebar.add"></button>
