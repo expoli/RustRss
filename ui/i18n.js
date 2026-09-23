@@ -15,6 +15,7 @@
 
 const DICTS = {
   'zh-CN': {
+    'themePreview.readOnly': '固定示例，仅展示候选主题；在发起预览的客户端调整或保存。',
     'theme.localeDraft': '请先保存或放弃主题草稿，再切换语言。',
     "settings.nav.appearance": "外观与主题",
     "settings.nav.subscriptions": "订阅与更新",
@@ -514,6 +515,7 @@ const DICTS = {
   },
 
   en: {
+    'themePreview.readOnly': 'Fixed sample of the candidate theme. Adjust or save in the client that started this preview.',
     'theme.localeDraft': 'Save or discard theme drafts before changing language.',
     "settings.nav.appearance": "Appearance & themes",
     "settings.nav.subscriptions": "Subscriptions & updates",

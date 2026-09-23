@@ -28,13 +28,14 @@
 
   I18N.setLocale('zh-CN'); I18N.applyStaticI18n();
   const style=document.createElement('style');
-  style.textContent='*{animation:none!important;transition:none!important;caret-color:transparent!important} #preview-marker{position:fixed;top:0;left:0;z-index:99999;height:4px;display:flex;pointer-events:none} #preview-marker i{display:block;width:4px;height:4px} #preview-cancel{position:fixed;right:12px;bottom:8px;z-index:99999;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:6px 12px}';
+  style.textContent='*{animation:none!important;transition:none!important;caret-color:transparent!important} #preview-marker{position:fixed;top:0;left:0;z-index:99999;height:4px;display:flex;pointer-events:none} #preview-marker i{display:block;width:4px;height:4px} #preview-cancel{position:fixed;right:12px;bottom:8px;z-index:99999;background:var(--bg);color:var(--fg);border:1px solid var(--line);padding:6px 12px}';
   document.head.append(style);
   const marker=document.createElement('div'); marker.id='preview-marker';document.body.append(marker);
   const cancel=document.createElement('button');cancel.id='preview-cancel';cancel.textContent=I18N.t('themePreview.cancel');
   cancel.onclick=()=>invoke('preview_cancel');document.body.append(cancel);
   document.addEventListener('click',e=>{if(e.target.closest('a'))e.preventDefault();});
-  let last='',generation=0;
+  let last='',generation=0,settingsEditor;
+  el('pane-appearance').classList.remove('hidden');
   async function render(force=false) {
     const request=await invoke('preview_request');
     if(!request || (request.request_id===last && !force))return;
@@ -44,11 +45,11 @@
     el('reader').style.visibility=request.scene==='overview'?'hidden':'';
     el('settings-overlay').classList.toggle('hidden',request.scene!=='settings');
     const values=snapshot[request.mode];
-    el('set-theme').textContent=I18N.t('settings.theme'+(request.mode==='dark'?'Dark':'Light'));
-    el('set-theme-preset').textContent=I18N.t('settings.preset.'+snapshot.config[request.mode+'_preset']);
-    for(const id of ['set-font-ui','set-font-read','set-font-mono'])el(id).textContent=I18N.t('settings.fontFollowSystem');
-    el('set-font-size').value=values.typography.read_size;el('set-font-size-value').textContent=values.typography.read_size+'px';
-    el('set-font-line').value=values.typography.line_height;el('set-font-line-value').textContent=values.typography.line_height;
+    settingsEditor?.dispose();
+    settingsEditor=RustRssThemeSettings.createEditor(el('appearance-editor'), {
+      kind:'appearance', getSnapshot:()=>snapshot, t:I18N.t, readOnly:true,
+      invoke:()=>Promise.reject(new Error('read-only fixture')), apply:()=>{},
+    });
     marker.replaceChildren(...request.marker.map(color=>{const cell=document.createElement('i');cell.style.background=color;return cell;}));
     await document.fonts.ready;
     await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));

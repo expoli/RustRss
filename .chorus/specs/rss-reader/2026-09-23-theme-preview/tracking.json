@@ -3,7 +3,7 @@
   "ideaUuid": "6876476a-10ab-44c5-b12c-9e82a509fa40",
   "elaborationStatus": "resolved",
   "proposalUuid": null,
-  "stage": "appearance_settings_integrated",
+  "stage": "aggregate_evidence_with_open_items",
   "documentMirrors": {
     "prd.md": "3ffd52f8-0031-4586-89e1-750a6647d26f",
     "tech_design.md": "f9f59507-26dc-45aa-82db-9b1feaedd4e8",
@@ -11,7 +11,7 @@
   },
   "implementationTasksMaterialized": false,
   "productImplemented": false,
-  "nextTask": "T7 aggregate verification only after user instruction and independent review",
+  "nextTask": "user-present Wayland input rerun and user-appointed independent review",
   "remainingCapturePlatforms": [
     "windows",
     "macos",
@@ -30,5 +30,15 @@
   "t6Evidence": "mcp-theme-preview-results.json",
   "themeSettingsImplemented": true,
   "t4Evidence": "t4-settings-results.json",
-  "t6Commit": "951d7e9"
+  "t6Commit": "951d7e9",
+  "t7Evidence": "t7-results.json",
+  "t7Report": "t7-aggregate.md",
+  "independentAggregateReview": "pending_user_reviewer",
+  "t7OpenItems": [
+    "native Wayland trusted cancel click plus reader position (user absent)",
+    "third-party GUI MCP client image loop",
+    "empty-state fixture matrix",
+    "other platforms, fractional scaling and accessibility",
+    "user-appointed independent aggregate review"
+  ]
 }

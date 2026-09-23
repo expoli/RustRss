@@ -1,0 +1,5017 @@
+{
+  "date": "2026-09-24",
+  "baseline": "5abd0c6",
+  "independent_review": "pending user-appointed reviewer",
+  "native_input_combined_status": "open: user absent; authorization terminated; DOM evidence alone is not acceptance",
+  "tests": {
+    "node": [
+      "ℹ tests 36",
+      "ℹ pass 36",
+      "ℹ fail 0"
+    ],
+    "core_theme": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.34s",
+      "test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s"
+    ],
+    "mcp_theme": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.44s",
+      "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s"
+    ],
+    "mcp_preview": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.54s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s"
+    ],
+    "desktop_preview": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.54s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 66 filtered out; finished in 0.00s"
+    ],
+    "mcp_write_auth": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.19s",
+      "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s"
+    ],
+    "clippy": [
+      "warning: redundant closure",
+      "warning: matching on `Some` with `ok()` is redundant",
+      "warning: matching on `Some` with `ok()` is redundant",
+      "warning: `rustrss-core` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p rustrss-core -- ` to apply 3 suggestions)",
+      "warning: `rustrss-core` (lib test) generated 3 warnings (3 duplicates)",
+      "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.64s"
+    ]
+  },
+  "i18n": {
+    "keys": 469,
+    "problems": []
+  },
+  "matrices": [
+    {
+      "requested_scale": 1,
+      "backend": "xvfb",
+      "expected_cells": 36,
+      "covered_cells": 36,
+      "result": {
+        "captures": [
+          {
+            "background": "#f7f8fa",
+            "bytes": 139826,
+            "file": "clear-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-zh-CN-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 234991,
+            "file": "clear-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-zh-CN-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 146467,
+            "file": "clear-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#ffffff"
+          },
+          {
+            "background": "#14161a",
+            "bytes": 138934,
+            "file": "clear-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-zh-CN-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#14161a",
+            "bytes": 233208,
+            "file": "clear-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-zh-CN-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#14161a",
+            "bytes": 141015,
+            "file": "clear-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#1a1d23"
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 139283,
+            "file": "paper-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-zh-CN-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 222504,
+            "file": "paper-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-zh-CN-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 136918,
+            "file": "paper-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#faf7f0"
+          },
+          {
+            "background": "#302b22",
+            "bytes": 138170,
+            "file": "paper-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-zh-CN-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#302b22",
+            "bytes": 220383,
+            "file": "paper-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-zh-CN-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#302b22",
+            "bytes": 130688,
+            "file": "paper-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#2b271f"
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 145854,
+            "file": "slate-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-zh-CN-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 242091,
+            "file": "slate-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-zh-CN-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 139062,
+            "file": "slate-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#f5f7f8"
+          },
+          {
+            "background": "#242d31",
+            "bytes": 144920,
+            "file": "slate-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-zh-CN-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#242d31",
+            "bytes": 241142,
+            "file": "slate-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-zh-CN-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#242d31",
+            "bytes": 134209,
+            "file": "slate-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#20272b"
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 138329,
+            "file": "clear-light-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-en-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 233561,
+            "file": "clear-light-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-en-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 129398,
+            "file": "clear-light-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#ffffff"
+          },
+          {
+            "background": "#14161a",
+            "bytes": 137533,
+            "file": "clear-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-en-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#14161a",
+            "bytes": 231770,
+            "file": "clear-dark-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-en-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#14161a",
+            "bytes": 124393,
+            "file": "clear-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#1a1d23"
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 137957,
+            "file": "paper-light-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-en-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 221152,
+            "file": "paper-light-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-en-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 120792,
+            "file": "paper-light-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#faf7f0"
+          },
+          {
+            "background": "#302b22",
+            "bytes": 136883,
+            "file": "paper-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-en-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#302b22",
+            "bytes": 219094,
+            "file": "paper-dark-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-en-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#302b22",
+            "bytes": 114834,
+            "file": "paper-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#2b271f"
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 144256,
+            "file": "slate-light-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-en-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 240509,
+            "file": "slate-light-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-en-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 121870,
+            "file": "slate-light-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#f5f7f8"
+          },
+          {
+            "background": "#242d31",
+            "bytes": 143506,
+            "file": "slate-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-en-overview",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#242d31",
+            "bytes": 239777,
+            "file": "slate-dark-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-en-article",
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "background": "#242d31",
+            "bytes": 117574,
+            "file": "slate-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1,
+            "settings_background": "#20272b"
+          },
+          {
+            "bytes": 248195,
+            "file": "layout-focus.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "pixels": [
+              1240,
+              820
+            ],
+            "scale": 1
+          },
+          {
+            "bytes": 176172,
+            "file": "narrow-article.png",
+            "logical_size": [
+              900,
+              600
+            ],
+            "pixels": [
+              900,
+              600
+            ],
+            "scale": 1
+          },
+          {
+            "bytes": 75709,
+            "file": "narrow-settings.png",
+            "logical_size": [
+              900,
+              600
+            ],
+            "pixels": [
+              900,
+              600
+            ],
+            "scale": 1
+          }
+        ],
+        "checks": [
+          "i18n key sets and markup",
+          "DOM identity 0/light/zh-CN",
+          "DOM identity 0/dark/zh-CN",
+          "DOM identity 1/light/zh-CN",
+          "DOM identity 1/dark/zh-CN",
+          "DOM identity 2/light/zh-CN",
+          "DOM identity 2/dark/zh-CN",
+          "DOM identity 0/light/en",
+          "DOM identity 0/dark/en",
+          "DOM identity 1/light/en",
+          "DOM identity 1/dark/en",
+          "DOM identity 2/light/en",
+          "DOM identity 2/dark/en",
+          "same-value zero DOM mutations",
+          "paragraph anchor after font and width change",
+          "color change preserves scroll",
+          "zero summary lines",
+          "thumbnail hidden without rebuilding rows",
+          "focus retains navigation",
+          "missing font retains readable layout via fallback",
+          "narrow viewport acknowledged",
+          "narrow reader stays within viewport",
+          "narrow theme picker remains reachable"
+        ],
+        "dpr": 1,
+        "fixture_version": 1,
+        "fonts": "requested/computed stacks only; glyph fallback not inferred",
+        "viewport": [
+          900,
+          600
+        ],
+        "native_background_pixel_checks": 12,
+        "modal_occlusion_pixel_checks": 12,
+        "display": "xvfb",
+        "run_log": "/tmp/rustrss-theme-ui-jtnegbpq/run.log"
+      }
+    },
+    {
+      "requested_scale": 2,
+      "backend": "xvfb",
+      "expected_cells": 36,
+      "covered_cells": 36,
+      "result": {
+        "captures": [
+          {
+            "background": "#f7f8fa",
+            "bytes": 327800,
+            "file": "clear-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-zh-CN-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 552853,
+            "file": "clear-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-zh-CN-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 337371,
+            "file": "clear-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#ffffff"
+          },
+          {
+            "background": "#14161a",
+            "bytes": 329949,
+            "file": "clear-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-zh-CN-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#14161a",
+            "bytes": 553337,
+            "file": "clear-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-zh-CN-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#14161a",
+            "bytes": 326689,
+            "file": "clear-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#1a1d23"
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 328318,
+            "file": "paper-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-zh-CN-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 514205,
+            "file": "paper-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-zh-CN-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 315946,
+            "file": "paper-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#faf7f0"
+          },
+          {
+            "background": "#302b22",
+            "bytes": 325541,
+            "file": "paper-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-zh-CN-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#302b22",
+            "bytes": 511587,
+            "file": "paper-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-zh-CN-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#302b22",
+            "bytes": 302080,
+            "file": "paper-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#2b271f"
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 342938,
+            "file": "slate-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-zh-CN-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 547965,
+            "file": "slate-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-zh-CN-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 318910,
+            "file": "slate-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#f5f7f8"
+          },
+          {
+            "background": "#242d31",
+            "bytes": 340303,
+            "file": "slate-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-zh-CN-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#242d31",
+            "bytes": 543864,
+            "file": "slate-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-zh-CN-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#242d31",
+            "bytes": 308718,
+            "file": "slate-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#20272b"
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 327727,
+            "file": "clear-light-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-en-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 552751,
+            "file": "clear-light-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-en-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 306377,
+            "file": "clear-light-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#ffffff"
+          },
+          {
+            "background": "#14161a",
+            "bytes": 330191,
+            "file": "clear-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-en-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#14161a",
+            "bytes": 553617,
+            "file": "clear-dark-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-en-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#14161a",
+            "bytes": 296614,
+            "file": "clear-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "clear-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#1a1d23"
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 328345,
+            "file": "paper-light-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-en-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 514262,
+            "file": "paper-light-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-en-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 286599,
+            "file": "paper-light-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#faf7f0"
+          },
+          {
+            "background": "#302b22",
+            "bytes": 325610,
+            "file": "paper-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-en-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#302b22",
+            "bytes": 511562,
+            "file": "paper-dark-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-en-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#302b22",
+            "bytes": 273131,
+            "file": "paper-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "paper-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#2b271f"
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 342911,
+            "file": "slate-light-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-en-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 547857,
+            "file": "slate-light-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-en-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 287618,
+            "file": "slate-light-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#f5f7f8"
+          },
+          {
+            "background": "#242d31",
+            "bytes": 340500,
+            "file": "slate-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-en-overview",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#242d31",
+            "bytes": 544016,
+            "file": "slate-dark-en-article.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-en-article",
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#242d31",
+            "bytes": 277930,
+            "file": "slate-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "name": "slate-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2,
+            "settings_background": "#20272b"
+          },
+          {
+            "bytes": 490861,
+            "file": "layout-focus.png",
+            "logical_size": [
+              1240,
+              820
+            ],
+            "pixels": [
+              2480,
+              1640
+            ],
+            "scale": 2
+          },
+          {
+            "bytes": 369998,
+            "file": "narrow-article.png",
+            "logical_size": [
+              900,
+              600
+            ],
+            "pixels": [
+              1800,
+              1200
+            ],
+            "scale": 2
+          },
+          {
+            "bytes": 176877,
+            "file": "narrow-settings.png",
+            "logical_size": [
+              900,
+              600
+            ],
+            "pixels": [
+              1800,
+              1200
+            ],
+            "scale": 2
+          }
+        ],
+        "checks": [
+          "i18n key sets and markup",
+          "DOM identity 0/light/zh-CN",
+          "DOM identity 0/dark/zh-CN",
+          "DOM identity 1/light/zh-CN",
+          "DOM identity 1/dark/zh-CN",
+          "DOM identity 2/light/zh-CN",
+          "DOM identity 2/dark/zh-CN",
+          "DOM identity 0/light/en",
+          "DOM identity 0/dark/en",
+          "DOM identity 1/light/en",
+          "DOM identity 1/dark/en",
+          "DOM identity 2/light/en",
+          "DOM identity 2/dark/en",
+          "same-value zero DOM mutations",
+          "paragraph anchor after font and width change",
+          "color change preserves scroll",
+          "zero summary lines",
+          "thumbnail hidden without rebuilding rows",
+          "focus retains navigation",
+          "missing font retains readable layout via fallback",
+          "narrow viewport acknowledged",
+          "narrow reader stays within viewport",
+          "narrow theme picker remains reachable"
+        ],
+        "dpr": 2,
+        "fixture_version": 1,
+        "fonts": "requested/computed stacks only; glyph fallback not inferred",
+        "viewport": [
+          900,
+          600
+        ],
+        "native_background_pixel_checks": 12,
+        "modal_occlusion_pixel_checks": 12,
+        "display": "xvfb",
+        "run_log": "/tmp/rustrss-theme-ui-sqhj99db/run.log"
+      }
+    },
+    {
+      "requested_scale": 2,
+      "backend": "wayland",
+      "expected_cells": 36,
+      "covered_cells": 36,
+      "result": {
+        "captures": [
+          {
+            "background": "#f7f8fa",
+            "bytes": 315719,
+            "file": "clear-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-light-zh-CN-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 536739,
+            "file": "clear-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-light-zh-CN-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 288928,
+            "file": "clear-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#ffffff"
+          },
+          {
+            "background": "#14161a",
+            "bytes": 317097,
+            "file": "clear-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-dark-zh-CN-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#14161a",
+            "bytes": 536804,
+            "file": "clear-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-dark-zh-CN-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#14161a",
+            "bytes": 281020,
+            "file": "clear-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#1a1d23"
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 316184,
+            "file": "paper-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-light-zh-CN-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 491391,
+            "file": "paper-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-light-zh-CN-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 281641,
+            "file": "paper-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#faf7f0"
+          },
+          {
+            "background": "#302b22",
+            "bytes": 313720,
+            "file": "paper-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-dark-zh-CN-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#302b22",
+            "bytes": 489145,
+            "file": "paper-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-dark-zh-CN-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#302b22",
+            "bytes": 271181,
+            "file": "paper-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#2b271f"
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 333857,
+            "file": "slate-light-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-light-zh-CN-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 502259,
+            "file": "slate-light-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-light-zh-CN-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 287477,
+            "file": "slate-light-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-light-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#f5f7f8"
+          },
+          {
+            "background": "#242d31",
+            "bytes": 331269,
+            "file": "slate-dark-zh-CN-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-dark-zh-CN-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#242d31",
+            "bytes": 498650,
+            "file": "slate-dark-zh-CN-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-dark-zh-CN-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#242d31",
+            "bytes": 278623,
+            "file": "slate-dark-zh-CN-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-dark-zh-CN-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#20272b"
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 314900,
+            "file": "clear-light-en-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-light-en-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 535695,
+            "file": "clear-light-en-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-light-en-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#f7f8fa",
+            "bytes": 266195,
+            "file": "clear-light-en-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#ffffff"
+          },
+          {
+            "background": "#14161a",
+            "bytes": 316492,
+            "file": "clear-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-dark-en-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#14161a",
+            "bytes": 535992,
+            "file": "clear-dark-en-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-dark-en-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#14161a",
+            "bytes": 259167,
+            "file": "clear-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "clear-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#1a1d23"
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 315467,
+            "file": "paper-light-en-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-light-en-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 489150,
+            "file": "paper-light-en-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-light-en-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fffdf7",
+            "bytes": 259984,
+            "file": "paper-light-en-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#faf7f0"
+          },
+          {
+            "background": "#302b22",
+            "bytes": 313071,
+            "file": "paper-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-dark-en-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#302b22",
+            "bytes": 486433,
+            "file": "paper-dark-en-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-dark-en-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#302b22",
+            "bytes": 249811,
+            "file": "paper-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "paper-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#2b271f"
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 333080,
+            "file": "slate-light-en-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-light-en-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 501466,
+            "file": "slate-light-en-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-light-en-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#fcfcfd",
+            "bytes": 263796,
+            "file": "slate-light-en-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-light-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#f5f7f8"
+          },
+          {
+            "background": "#242d31",
+            "bytes": 330507,
+            "file": "slate-dark-en-overview.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-dark-en-overview",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#242d31",
+            "bytes": 497780,
+            "file": "slate-dark-en-article.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-dark-en-article",
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "background": "#242d31",
+            "bytes": 256172,
+            "file": "slate-dark-en-settings.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "name": "slate-dark-en-settings",
+            "occlusion_point": [
+              554,
+              150
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2,
+            "settings_background": "#20272b"
+          },
+          {
+            "bytes": 529023,
+            "file": "layout-focus.png",
+            "logical_size": [
+              1240,
+              772
+            ],
+            "pixels": [
+              2480,
+              1544
+            ],
+            "scale": 2
+          },
+          {
+            "bytes": 378002,
+            "file": "narrow-article.png",
+            "logical_size": [
+              900,
+              600
+            ],
+            "pixels": [
+              1800,
+              1200
+            ],
+            "scale": 2
+          },
+          {
+            "bytes": 181267,
+            "file": "narrow-settings.png",
+            "logical_size": [
+              900,
+              600
+            ],
+            "pixels": [
+              1800,
+              1200
+            ],
+            "scale": 2
+          }
+        ],
+        "checks": [
+          "i18n key sets and markup",
+          "DOM identity 0/light/zh-CN",
+          "DOM identity 0/dark/zh-CN",
+          "DOM identity 1/light/zh-CN",
+          "DOM identity 1/dark/zh-CN",
+          "DOM identity 2/light/zh-CN",
+          "DOM identity 2/dark/zh-CN",
+          "DOM identity 0/light/en",
+          "DOM identity 0/dark/en",
+          "DOM identity 1/light/en",
+          "DOM identity 1/dark/en",
+          "DOM identity 2/light/en",
+          "DOM identity 2/dark/en",
+          "same-value zero DOM mutations",
+          "paragraph anchor after font and width change",
+          "color change preserves scroll",
+          "zero summary lines",
+          "thumbnail hidden without rebuilding rows",
+          "focus retains navigation",
+          "missing font retains readable layout via fallback",
+          "narrow viewport acknowledged",
+          "narrow reader stays within viewport",
+          "narrow theme picker remains reachable"
+        ],
+        "dpr": 2,
+        "fixture_version": 1,
+        "fonts": "requested/computed stacks only; glyph fallback not inferred",
+        "viewport": [
+          900,
+          600
+        ],
+        "native_background_pixel_checks": 12,
+        "modal_occlusion_pixel_checks": 12,
+        "display": "wayland",
+        "run_log": "/tmp/rustrss-theme-ui-yithk493/run.log"
+      }
+    }
+  ],
+  "mcp": {
+    "output": "/tmp/rustrss-theme-preview-3qgujmtk",
+    "captures": [
+      {
+        "label": "clear-light-overview",
+        "bytes": 155068,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 1020.491646,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "clear-light-article",
+        "bytes": 263877,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 84.945933,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "clear-light-settings",
+        "bytes": 154849,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 151.305828,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "clear-dark-overview",
+        "bytes": 154046,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 73.55879,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "clear-dark-article",
+        "bytes": 261821,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 89.351188,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "clear-dark-settings",
+        "bytes": 149246,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 102.570843,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "paper-light-overview",
+        "bytes": 154549,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 114.77775799999999,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "paper-light-article",
+        "bytes": 250755,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 87.77626400000001,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "paper-light-settings",
+        "bytes": 147468,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 108.785061,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "paper-dark-overview",
+        "bytes": 153317,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 84.184895,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "paper-dark-article",
+        "bytes": 248474,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 83.358447,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "paper-dark-settings",
+        "bytes": 140725,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 103.127945,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "slate-light-overview",
+        "bytes": 164281,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 97.47272099999999,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "slate-light-article",
+        "bytes": 271558,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 106.920779,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "slate-light-settings",
+        "bytes": 159996,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 112.233365,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "slate-dark-overview",
+        "bytes": 163190,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 86.196537,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "slate-dark-article",
+        "bytes": 270442,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 102.468121,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "slate-dark-settings",
+        "bytes": 154207,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 105.815828,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "recapture",
+        "bytes": 164284,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 78.37803,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "reopen-0",
+        "bytes": 263878,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 1029.515077,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "reopen-1",
+        "bytes": 263877,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 1013.2142749999999,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "reopen-2",
+        "bytes": 263879,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 1123.179843,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "stdio-paper",
+        "bytes": 250759,
+        "revision": 1,
+        "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+        "capture_ms": 1106.558664,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "local-close",
+        "bytes": 261824,
+        "revision": 1,
+        "hash": "d7626fc6f5a7c9cfa36fc7c30f6a3d6c9cff895a74386025a67b4f82b6623835",
+        "capture_ms": 1079.75386,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      },
+      {
+        "label": "revoke",
+        "bytes": 250758,
+        "revision": 1,
+        "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+        "capture_ms": 1029.2062760000001,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1,
+        "display_backend": "GdkX11Display"
+      }
+    ],
+    "temporary_no_write": true,
+    "stdio_bridge_image": true,
+    "saved_revision": 1,
+    "idempotent_save": true,
+    "display": "xvfb",
+    "requested_scale": "1",
+    "local_cancel": true,
+    "revocation_reaped": true,
+    "article_renders_before_after": [
+      1,
+      1
+    ]
+  },
+  "native_dom_auxiliary": {
+    "input_method": "WebKit inspector DOM automation; native pointer cancellation reported separately",
+    "checks": [
+      "native GdkWaylandDisplay capture (not Xwayland)",
+      "temporary preview preserves main reader position and nodes",
+      "save preserves real article/row/paragraph identities",
+      "save preserves paragraph offset within 2 CSS px",
+      "saved configuration confirmed directly in isolated SQLite"
+    ],
+    "before": {
+      "offset": 0.09375,
+      "before": 0.09375,
+      "sameArticle": true,
+      "sameRow": true,
+      "sameParagraph": true,
+      "scrollTop": 2229,
+      "font": "24px",
+      "dpr": 2
+    },
+    "requested": {
+      "read_size": 22,
+      "width": 620
+    },
+    "capture": {
+      "capture_ms": 732.901263,
+      "captured_at": 1790180232961,
+      "display_backend": "GdkWaylandDisplay",
+      "fonts": {
+        "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+        "glyph_fallback": "unknown",
+        "requested": {
+          "line_height": 1.55,
+          "mono_family": [
+            "JetBrains Mono",
+            "Cascadia Mono",
+            "Menlo",
+            "monospace"
+          ],
+          "mono_size": 13,
+          "read_family": [
+            "-apple-system",
+            "Noto Sans CJK SC",
+            "Segoe UI",
+            "sans-serif"
+          ],
+          "read_size": 22,
+          "ui_family": [
+            "-apple-system",
+            "Noto Sans CJK SC",
+            "Segoe UI",
+            "sans-serif"
+          ],
+          "ui_size": 14
+        }
+      },
+      "freshness_marker_verified": true,
+      "logical_size": [
+        960,
+        640
+      ],
+      "output_scale": 1,
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2
+    },
+    "after_save": {
+      "offset": 0.09375,
+      "before": 0.09375,
+      "sameArticle": true,
+      "sameRow": true,
+      "sameParagraph": true,
+      "scrollTop": 1589,
+      "font": "22px",
+      "dpr": 2
+    },
+    "saved_revision": 2,
+    "local_cancel_candidate": {
+      "preview_id": "c1118d54-e36c-45f1-b9df-43af5f564387",
+      "expected_preview_revision": 1,
+      "base_revision": 2,
+      "capture": {
+        "capture_ms": 835.5399329999999,
+        "captured_at": 1790180234078,
+        "display_backend": "GdkWaylandDisplay",
+        "fonts": {
+          "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+          "glyph_fallback": "unknown",
+          "requested": {
+            "line_height": 1.55,
+            "mono_family": [
+              "JetBrains Mono",
+              "Cascadia Mono",
+              "Menlo",
+              "monospace"
+            ],
+            "mono_size": 13,
+            "read_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "read_size": 22,
+            "ui_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "ui_size": 14
+          }
+        },
+        "freshness_marker_verified": true,
+        "logical_size": [
+          960,
+          640
+        ],
+        "output_scale": 1,
+        "pixel_size": [
+          1920,
+          1280
+        ],
+        "scale_factor": 2
+      }
+    },
+    "before_cancel": {
+      "offset": 0.09375,
+      "before": 0.09375,
+      "sameArticle": true,
+      "sameRow": true,
+      "sameParagraph": true,
+      "scrollTop": 1589,
+      "font": "22px",
+      "dpr": 2
+    }
+  },
+  "cross_entry_contract": {
+    "ui_mcp_identical_snapshot": true,
+    "config_hash": "307321e797b372b3cf988bddafda1c75100100e3aa775060ed1c8a1d40eb30a1",
+    "formal_revision_unchanged": 2,
+    "fixed_preview_settings": {
+      "readonly": true,
+      "history": 0,
+      "presets": 6,
+      "paneVisible": true,
+      "colorFields": 52
+    }
+  },
+  "lifetime": {
+    "wall_clock": true,
+    "profiles": [
+      {
+        "kind": "idle",
+        "closed_at_seconds": 599.750313671073,
+        "captures": [
+          {
+            "elapsed": 1.0608098610537127,
+            "bytes": 250759,
+            "capture_ms": 1023.4547670000001
+          }
+        ],
+        "expiry_error": {
+          "affected": 0,
+          "error_code": "preview_expired",
+          "ok": false,
+          "retryable": false
+        },
+        "temporary_no_write": true
+      },
+      {
+        "kind": "absolute",
+        "closed_at_seconds": 1800.5224096860038,
+        "captures": [
+          {
+            "elapsed": 1.0449930540053174,
+            "bytes": 250759,
+            "capture_ms": 1031.5715169999999
+          },
+          {
+            "elapsed": 120.5662466569338,
+            "bytes": 250756,
+            "capture_ms": 310.093972
+          },
+          {
+            "elapsed": 241.8844393659383,
+            "bytes": 250758,
+            "capture_ms": 103.488019
+          },
+          {
+            "elapsed": 361.1971698529087,
+            "bytes": 250754,
+            "capture_ms": 101.80821700000001
+          },
+          {
+            "elapsed": 480.4889460769482,
+            "bytes": 250758,
+            "capture_ms": 102.266229
+          },
+          {
+            "elapsed": 601.905710699968,
+            "bytes": 250756,
+            "capture_ms": 103.65307
+          },
+          {
+            "elapsed": 720.8197336399462,
+            "bytes": 250757,
+            "capture_ms": 116.092202
+          },
+          {
+            "elapsed": 841.6894982899539,
+            "bytes": 250759,
+            "capture_ms": 102.192113
+          },
+          {
+            "elapsed": 960.5470648419578,
+            "bytes": 250759,
+            "capture_ms": 107.92185
+          },
+          {
+            "elapsed": 1081.4606218739646,
+            "bytes": 250758,
+            "capture_ms": 105.42397000000001
+          },
+          {
+            "elapsed": 1200.290452483925,
+            "bytes": 250757,
+            "capture_ms": 97.70082
+          },
+          {
+            "elapsed": 1321.1438968509901,
+            "bytes": 250756,
+            "capture_ms": 98.518317
+          },
+          {
+            "elapsed": 1442.0134960409487,
+            "bytes": 250759,
+            "capture_ms": 102.00073599999999
+          },
+          {
+            "elapsed": 1560.8785551548935,
+            "bytes": 250759,
+            "capture_ms": 99.87141
+          },
+          {
+            "elapsed": 1681.7849132599076,
+            "bytes": 250757,
+            "capture_ms": 102.001474
+          }
+        ],
+        "expiry_error": {
+          "affected": 0,
+          "error_code": "preview_expired",
+          "ok": false,
+          "retryable": false
+        },
+        "temporary_no_write": true
+      }
+    ],
+    "samples": [
+      {
+        "elapsed": 1.516076736152172e-06,
+        "free_bytes": 70192640000,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 645544,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646752,
+            "processes": 4,
+            "disk_bytes": 4139209,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 30.298102130065672,
+        "free_bytes": 70192504832,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633112,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 638156,
+            "processes": 4,
+            "disk_bytes": 4139209,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 60.59582329902332,
+        "free_bytes": 70192291840,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633168,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 638252,
+            "processes": 4,
+            "disk_bytes": 4139209,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 90.902128003072,
+        "free_bytes": 70191996928,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633140,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 638220,
+            "processes": 4,
+            "disk_bytes": 4139209,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 121.52216713503003,
+        "free_bytes": 70191693824,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633140,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 647932,
+            "processes": 4,
+            "disk_bytes": 4140851,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 151.81660933303647,
+        "free_bytes": 70191063040,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633112,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646836,
+            "processes": 4,
+            "disk_bytes": 4140851,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 180.10282353300136,
+        "free_bytes": 70190112768,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633112,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646804,
+            "processes": 4,
+            "disk_bytes": 4140851,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 210.40495942998677,
+        "free_bytes": 70189285376,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633120,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646804,
+            "processes": 4,
+            "disk_bytes": 4140851,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 240.70723712898325,
+        "free_bytes": 70189051904,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633124,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 647456,
+            "processes": 4,
+            "disk_bytes": 4142493,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 271.1206056160154,
+        "free_bytes": 70188855296,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633128,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646896,
+            "processes": 4,
+            "disk_bytes": 4142493,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 301.4185252090683,
+        "free_bytes": 70188830720,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633160,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646968,
+            "processes": 4,
+            "disk_bytes": 4142493,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 331.7304224569816,
+        "free_bytes": 70188507136,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633300,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 647056,
+            "processes": 4,
+            "disk_bytes": 4142493,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 360.01959343708586,
+        "free_bytes": 70188199936,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633288,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 648956,
+            "processes": 4,
+            "disk_bytes": 4144135,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 390.43605647899676,
+        "free_bytes": 70187966464,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633204,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 648252,
+            "processes": 4,
+            "disk_bytes": 4144135,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 420.73928696708754,
+        "free_bytes": 70187614208,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633208,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 648144,
+            "processes": 4,
+            "disk_bytes": 4144135,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 451.0297114599962,
+        "free_bytes": 70187380736,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633208,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 648100,
+            "processes": 4,
+            "disk_bytes": 4144135,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 481.44444843998645,
+        "free_bytes": 70186622976,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633208,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 648544,
+            "processes": 4,
+            "disk_bytes": 4145777,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 511.7558568910463,
+        "free_bytes": 70186504192,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633208,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 647996,
+            "processes": 4,
+            "disk_bytes": 4145777,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 540.0430689060595,
+        "free_bytes": 70186418176,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 633196,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 647940,
+            "processes": 4,
+            "disk_bytes": 4145777,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 570.43428903108,
+        "free_bytes": 68410302464,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 630324,
+            "processes": 4,
+            "disk_bytes": 4139193,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              },
+              {
+                "id": "2097185",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 645260,
+            "processes": 4,
+            "disk_bytes": 4145777,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 600.7355526310857,
+        "free_bytes": 68410163200,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 431960,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646944,
+            "processes": 4,
+            "disk_bytes": 4147419,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 631.0402322800364,
+        "free_bytes": 68410122240,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 431948,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646076,
+            "processes": 4,
+            "disk_bytes": 4147419,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 661.2527735610493,
+        "free_bytes": 68410126336,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 431952,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 646036,
+            "processes": 4,
+            "disk_bytes": 4147419,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 691.4568901690654,
+        "free_bytes": 67395149824,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 397852,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 603304,
+            "processes": 4,
+            "disk_bytes": 4147419,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 721.773832721985,
+        "free_bytes": 66884747264,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 361432,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 536880,
+            "processes": 4,
+            "disk_bytes": 4149061,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 751.9546554770786,
+        "free_bytes": 66884169728,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 361576,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 536340,
+            "processes": 4,
+            "disk_bytes": 4149061,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 780.1445231140824,
+        "free_bytes": 66883801088,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 354248,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 525064,
+            "processes": 4,
+            "disk_bytes": 4149061,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 810.3338633390376,
+        "free_bytes": 66883215360,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 354248,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 525064,
+            "processes": 4,
+            "disk_bytes": 4149061,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 840.5215371160302,
+        "free_bytes": 66883555328,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350084,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519760,
+            "processes": 4,
+            "disk_bytes": 4150703,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 870.8212135110516,
+        "free_bytes": 66883452928,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350084,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 518656,
+            "processes": 4,
+            "disk_bytes": 4150703,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 901.0086032170802,
+        "free_bytes": 66883399680,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350088,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 518656,
+            "processes": 4,
+            "disk_bytes": 4150703,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 931.1993455369957,
+        "free_bytes": 66883362816,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350088,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 518660,
+            "processes": 4,
+            "disk_bytes": 4150703,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 961.5019591290038,
+        "free_bytes": 66882826240,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350088,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519628,
+            "processes": 4,
+            "disk_bytes": 4152345,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 991.7166644990211,
+        "free_bytes": 66882695168,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350088,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 518940,
+            "processes": 4,
+            "disk_bytes": 4152345,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1021.9049865390407,
+        "free_bytes": 66882211840,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350088,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 518732,
+            "processes": 4,
+            "disk_bytes": 4152345,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1050.0930368580157,
+        "free_bytes": 66881236992,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350100,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 518744,
+            "processes": 4,
+            "disk_bytes": 4152345,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1080.289072921034,
+        "free_bytes": 66881822720,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350100,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519988,
+            "processes": 4,
+            "disk_bytes": 4153987,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1110.5995467810426,
+        "free_bytes": 66881548288,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350100,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519328,
+            "processes": 4,
+            "disk_bytes": 4153987,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1140.7887559260707,
+        "free_bytes": 66880225280,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350100,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519328,
+            "processes": 4,
+            "disk_bytes": 4153987,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1170.959326428012,
+        "free_bytes": 66880045056,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350108,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519336,
+            "processes": 4,
+            "disk_bytes": 4153987,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1201.2447641240433,
+        "free_bytes": 66880000000,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350104,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519776,
+            "processes": 4,
+            "disk_bytes": 4155629,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1231.4322631310206,
+        "free_bytes": 66879823872,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350108,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519232,
+            "processes": 4,
+            "disk_bytes": 4155629,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1261.6256966120563,
+        "free_bytes": 66878947328,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 349988,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519076,
+            "processes": 4,
+            "disk_bytes": 4155629,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1291.8059931460302,
+        "free_bytes": 66356318208,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 349992,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519036,
+            "processes": 4,
+            "disk_bytes": 4155629,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1322.0979501800612,
+        "free_bytes": 65902460928,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 349996,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 520212,
+            "processes": 4,
+            "disk_bytes": 4157271,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1350.2848089070758,
+        "free_bytes": 65902424064,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 349996,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519584,
+            "processes": 4,
+            "disk_bytes": 4157271,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1380.4766466330038,
+        "free_bytes": 65902071808,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 349996,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519584,
+            "processes": 4,
+            "disk_bytes": 4157271,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1410.6626965809846,
+        "free_bytes": 65902071808,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350004,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519592,
+            "processes": 4,
+            "disk_bytes": 4157271,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1440.8457775780698,
+        "free_bytes": 65658929152,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350004,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519840,
+            "processes": 4,
+            "disk_bytes": 4158913,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1471.142325057066,
+        "free_bytes": 65658855424,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350004,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519276,
+            "processes": 4,
+            "disk_bytes": 4158913,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1501.332129631075,
+        "free_bytes": 65658044416,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350008,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 518832,
+            "processes": 4,
+            "disk_bytes": 4158913,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1531.5212280519772,
+        "free_bytes": 65658023936,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350012,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 518828,
+            "processes": 4,
+            "disk_bytes": 4158913,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1561.8335420610383,
+        "free_bytes": 65657425920,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350024,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519796,
+            "processes": 4,
+            "disk_bytes": 4160555,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1590.0184081620537,
+        "free_bytes": 65657376768,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350020,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519248,
+            "processes": 4,
+            "disk_bytes": 4160555,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1620.1988653100561,
+        "free_bytes": 65657229312,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350020,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519248,
+            "processes": 4,
+            "disk_bytes": 4160555,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1650.3863455919782,
+        "free_bytes": 65657147392,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350028,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519252,
+            "processes": 4,
+            "disk_bytes": 4160555,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1680.6079226799775,
+        "free_bytes": 65656823808,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350028,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 520184,
+            "processes": 4,
+            "disk_bytes": 4162197,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1710.921657479019,
+        "free_bytes": 65656721408,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350028,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519524,
+            "processes": 4,
+            "disk_bytes": 4162197,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1741.1055024260422,
+        "free_bytes": 65656668160,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350032,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519528,
+            "processes": 4,
+            "disk_bytes": 4162197,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "elapsed": 1771.291646518046,
+        "free_bytes": 65656545280,
+        "profiles": [
+          {
+            "kind": "idle",
+            "rss_kib": 350032,
+            "processes": 3,
+            "disk_bytes": 4140895,
+            "windows": [
+              {
+                "id": "2097159",
+                "name": "RustRss"
+              }
+            ]
+          },
+          {
+            "kind": "absolute",
+            "rss_kib": 519484,
+            "processes": 4,
+            "disk_bytes": 4162197,
+            "windows": [
+              {
+                "id": "8388615",
+                "name": "RustRss"
+              },
+              {
+                "id": "8388641",
+                "name": "RustRss — Theme preview"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "ok": true
+  },
+  "resource_summary": [
+    {
+      "kind": "idle",
+      "initial": {
+        "kind": "idle",
+        "rss_kib": 645544,
+        "processes": 4,
+        "disk_bytes": 4139193,
+        "windows": [
+          {
+            "id": "2097159",
+            "name": "RustRss"
+          },
+          {
+            "id": "2097185",
+            "name": "RustRss — Theme preview"
+          }
+        ]
+      },
+      "last_sample": {
+        "kind": "idle",
+        "rss_kib": 350032,
+        "processes": 3,
+        "disk_bytes": 4140895,
+        "windows": [
+          {
+            "id": "2097159",
+            "name": "RustRss"
+          }
+        ]
+      },
+      "rss_min_kib": 349988,
+      "rss_max_kib": 645544,
+      "profile_growth_bytes": 1702
+    },
+    {
+      "kind": "absolute",
+      "initial": {
+        "kind": "absolute",
+        "rss_kib": 646752,
+        "processes": 4,
+        "disk_bytes": 4139209,
+        "windows": [
+          {
+            "id": "8388615",
+            "name": "RustRss"
+          },
+          {
+            "id": "8388641",
+            "name": "RustRss — Theme preview"
+          }
+        ]
+      },
+      "last_sample": {
+        "kind": "absolute",
+        "rss_kib": 519484,
+        "processes": 4,
+        "disk_bytes": 4162197,
+        "windows": [
+          {
+            "id": "8388615",
+            "name": "RustRss"
+          },
+          {
+            "id": "8388641",
+            "name": "RustRss — Theme preview"
+          }
+        ]
+      },
+      "rss_min_kib": 518656,
+      "rss_max_kib": 648956,
+      "profile_growth_bytes": 22988
+    }
+  ],
+  "binaries": {
+    "rustrss-desktop": {
+      "sha256": "36d70fcda16e25c832550403ffdb9c7895630138a29810f63ba083bda0bf7e6e",
+      "bytes": 536690752
+    },
+    "rustrss-mcp": {
+      "sha256": "32e271e6950cf872b92ff39bc91ea0bb39214e4abf88b8003a1763c0377c7efb",
+      "bytes": 230414808
+    },
+    "examples/theme_ui": {
+      "sha256": "3592c751bd7c8ec8414cd984f44e9ff61c2f77b6ccf275d6ddc2618b8394b4c5",
+      "bytes": 286923552
+    }
+  }
+}

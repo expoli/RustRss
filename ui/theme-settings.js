@@ -50,7 +50,7 @@
       },
     };
   }
-  function createEditor(host, { kind, getSnapshot, invoke, apply, t, fontNames = () => [] }) {
+  function createEditor(host, { kind, getSnapshot, invoke, apply, t, fontNames = () => [], readOnly = false }) {
     const session = draftSession(getSnapshot(), (expectedRevision, patch) => invoke('validate_ui_theme', { expectedRevision, patch }));
     let busy = false, disposed = false, previewMode = 'light', renderer, controls = [];
     const node = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
@@ -68,7 +68,7 @@
     const mode = node('select'); mode.setAttribute('aria-label', t('theme.previewMode'));
     for (const v of ['light', 'dark']) { const o = node('option', t('settings.theme' + (v === 'light' ? 'Light' : 'Dark'))); o.value = v; mode.append(o); }
     mode.onchange = () => { previewMode = mode.value; validate(); };
-    host.replaceChildren(node('p', t('theme.draftHint'), 'dim'), form, mode, sample, status, actions);
+    host.replaceChildren(node('p', t(readOnly ? 'themePreview.readOnly' : 'theme.draftHint'), 'dim'), form, mode, sample, status, actions);
     const fonts = node('datalist'); fonts.id = host.id + '-fonts'; host.append(fonts);
     function paint(snapshot) {
       renderer ||= global.RustRssTheme.createRenderer(sample, { media: null });
@@ -137,6 +137,8 @@
         for (const color of Object.keys(global.RustRssTheme.colorVars)) control(['colors.' + variant + '.' + color, kind, 'color'], details);
         form.append(details);
       }
+    }
+    if (kind === 'appearance' && !readOnly) {
       const history = node('select'); history.setAttribute('aria-label', t('theme.history')); history.dataset.themeHistory = '';
       const restore = button(t('theme.restore'), async () => {
         if (!history.value || busy) return;
@@ -180,6 +182,7 @@
       await persist(() => invoke('update_ui_theme', { expectedRevision: session.base.config.revision, patch: session.patch }));
     }
     fill();
+    if (readOnly) { form.disabled = true; mode.disabled = true; actions.remove(); }
     return { refresh() { if (!session.dirty && !busy) reset(); else if (session.base.config.revision !== getSnapshot().config.revision) status.textContent = t('theme.changedElsewhere'); }, dispose() { disposed = true; session.reset(getSnapshot()); renderer?.dispose(); }, get dirty() { return session.dirty; } };
   }
   global.RustRssThemeSettings = { fields, put, parseField, draftSession, createEditor };

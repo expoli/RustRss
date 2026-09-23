@@ -18,6 +18,7 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--display',choices=['xvfb','wayland'],default='xvfb')
 parser.add_argument('--scale',choices=['1','2'],default='1')
 options=parser.parse_args()
+subprocess.run(['df','-h','.'],check=True)
 root=Path(tempfile.mkdtemp(prefix='rustrss-theme-preview-'))
 dbpath=root/'fixture.sqlite'
 subprocess.run(['target/debug/examples/theme_fixture',str(dbpath)],check=True)
@@ -83,7 +84,7 @@ try:
     wait_for(lambda:'loaded feeds=' in logfile.read_text(),'desktop boot')
     if options.display=='xvfb':
         window=run('xdotool','search','--onlyvisible','--name','^RustRss$').splitlines()[0]
-        run('xdotool','windowfocus',window,'mousemove',str(330*int(options.scale)),str(120*int(options.scale)),'click','1')
+        run('xdotool','windowfocus',window,'mousemove',str(330*int(options.scale)),str(150*int(options.scale)),'click','1')
         wait_for(lambda:'renderReader id=' in logfile.read_text(),'article opened')
     initial_renders=logfile.read_text().count('renderReader id=')
     assert metadata(http('get_theme',{},'fixture-read'))['capabilities']['preview']['available']

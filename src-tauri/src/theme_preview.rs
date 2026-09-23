@@ -40,6 +40,7 @@ pub fn register(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wr
         let (mime,body)=match request.uri().path() {
             "/"|"/index.html" => ("text/html",include_str!("../../ui/index.html").replace("src=\"app.js\"","src=\"preview.js\"").into_bytes()),
             "/preview.js" => ("text/javascript",include_bytes!("../../ui/preview.js").to_vec()),
+            "/theme-settings.js" => ("text/javascript",include_bytes!("../../ui/theme-settings.js").to_vec()),
             "/theme.js" => ("text/javascript",include_bytes!("../../ui/theme.js").to_vec()),
             "/theme-sync.js" => ("text/javascript",include_bytes!("../../ui/theme-sync.js").to_vec()),
             "/components.js" => ("text/javascript",include_bytes!("../../ui/components.js").to_vec()),
