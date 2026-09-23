@@ -886,4 +886,4 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 - 残留（与 B1 同类）：终止行（`exhausted` / 搜索）是静态文本，而 `refreshCounts` 原来调用的 `setSentinelLoading` 在没有按钮时提前返回——标读后终止行的 N 会滞后到下次列表重建。
 - 修：抽出 `sentinelTerminalText()`（终止行文案）与 `refreshSentinelFooter()`（按钮态含在飞禁用 + 终止行文本，统一重算），`refreshCounts()` 与 `loadMore()` 都改调它，删掉只服务按钮的 `setSentinelLoading`。
-- 实机证据：feed#93 + 只看未读（47 条未读、`exhausted=true`、终止行「已到末尾（共 47 篇）」）→ 点开一篇（日志 `open id=9489 markRead=true read=false`）→ 出现 `renderSidebar`、**0 条 `view=`**（未重建）→ 同位置截图终止行变为「已到末尾（共 46 篇）」。提交 `待填`。
+- 实机证据：feed#93 + 只看未读（47 条未读、`exhausted=true`、终止行「已到末尾（共 47 篇）」）→ 点开一篇（日志 `open id=9489 markRead=true read=false`）→ 出现 `renderSidebar`、**0 条 `view=`**（未重建）→ 同位置截图终止行变为「已到末尾（共 46 篇）」。提交 `a332afe`。
