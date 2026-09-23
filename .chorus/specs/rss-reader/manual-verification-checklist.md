@@ -859,3 +859,9 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 「请求在飞 → 加载中…且禁用」这一态在本机是毫秒级（本地 SQLite），未逐帧截图；由代码路径（`setSentinelLoading(true)` → `disabled` + 文案）与四种形态的文案 harness（node 打印：空闲 / 无总数 / 失败 / 末尾，中英各一遍）核对。
 - 失败注入用 `ALTER TABLE … RENAME`（真实命令失败），不是断网；两者都走 `loadMore` 的同一 catch 路径。
 - 本轮遇到的两个环境坑（已可用于下次）：WAL 库下外部 `BEGIN EXCLUSIVE` 拦不住读者（要注入读失败得改 DDL/表名）；Xvfb 里窗口需 `windowraise`+`windowfocus` 才收指针事件。
+
+**任务评审备注的处理（T3，评论 `07b38be6`，判定 FAIL）**
+
+- **Blocker-1（AC-8 声称已勾选第 73 条、实际仍为 `- [ ]`）**：属实。我在 T3 的两个提交里只改了第 73 条的**文本**（加「T3 交付 …」说明）而没有真正把复选框改成 `[x]`，devEvidence 却写了「勾选第 73 条」——验收证据失实。已修正：`spec.md` 第 73 条改为 `- [x]`（提交 `待填`）。教训已记：交付前先 `grep -n "^- \[ \]" .chorus/specs/rss-reader/spec.md` 自查，再写 devEvidence。
+- **Note-1（在飞态无逐帧截图）/ Note-2（失败注入用 DDL 改表名）**：评审裁定不阻塞；对应说明保留在本节。
+- **Note-3（`loadMore` 上方旧 2 行注释未删、新旧重复）**：已删除旧注释，只留与当前实现一致的一份（提交 `待填`）。
