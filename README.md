@@ -212,7 +212,8 @@ npx -y @tauri-apps/cli@latest build --bundles deb
 每次启动在数据目录的 `logs/` 下新建一个日志文件——Linux `~/.local/share/rustrss/logs/`、macOS `~/Library/Application Support/rustrss/logs/`、Windows `%APPDATA%\rustrss\logs\`（`XDG_DATA_HOME` 生效时跟随它）。注意日志目录只跟随数据目录，**不跟着 `RUSTSS_DB` 走**（诊断副本的库可以指到别处，日志仍在同一个数据目录）。
 
 - **文件名**：`rustrss-YYYYMMDD-HHMMSS.log`（本地时间；同一秒内第二次启动追加 `-N` 后缀）。
-- **行格式**：`2026-09-22T23:45:01.123 INFO  rustrss_core::fetch: …`（本地时间带毫秒、级别、来源模块）。界面诊断行进同一份文件，target 为 `ui`、正文保留 `[ui]` 前缀——**它们不在 stdout 里**，看界面在干什么要看日志文件。
+- **行格式**：`2026-09-22T23:45:01.123 INFO  rustrss_core::fetch: …`（本地时间带毫秒、级别、来源模块）。界面诊断行进同一份文件，target 为 `ui`、正文保留 `[ui]` 前缀——**它们不在 stdout 里**（从终端运行时随同一行镜像到 stderr，见下条），看界面在干什么要看日志文件。
+- **终端镜像**：从终端运行（stdout 是终端）时，日志行在写文件的同时**镜像一份到 stderr**——`cargo run -p rustrss-desktop` 就能直接看到启动行与 `[ui]` 诊断行，不必先去找日志文件；重定向到文件或由桌面启动器拉起时 stdout 不是终端，默认**不**镜像，桌面场景没有额外输出。`RUSTSS_LOG_STDOUT=1` 强制开启（无头/脚本场景）、`=0` 强制关闭；未设置、空串或其它非法值按「stdout 是否终端」判，**启动时只判一次**。镜像行与文件行**同源同格式**（同一份字符串，逐字节一致，含时间戳毫秒），级别与 target 过滤口径也相同——镜像不是第二个数据源，文件日志的内容/顺序/保留策略都不受影响；镜像写失败（stderr 已关）静默忽略，不影响文件写入与应用。
 - **内容**：抓取/入库/刷新/调度/迁移/托盘降级等 Rust 侧关键事件 + 界面诊断行；panic 另写一条 `ERROR`（payload + 位置），stderr 现场照旧。落盘前对凭据形态打码（URL 里的 userinfo、`key=`/`token=` 查询串），AI 错误文本在 core 侧已打码。
 - **级别**：设置 → 关于 →「日志级别」（存库键 `log.level`，默认 `info`）。`debug` 记录更细的过程（刷新批次、逐源失败、HTTP 请求耗时），**改完即时生效、无需重启**，跨重启保持；debug 级只收录本应用（`rustrss*` 与 `ui`）的记录，依赖库（h2/hyper/reqwest…）的 debug 不写文件。
 - **保留策略**：每次启动清理一次，**保留最近 20 个文件且总量 ≤ 50MB**（两条上限独立生效，超限从最旧的开始删）；清理结果写进当次日志（`日志保留清理: 删除 N 个（剩 N 个 / N 字节）`）。

@@ -12,6 +12,8 @@ mod scheduler;
 mod state;
 mod tray;
 
+use std::io::IsTerminal;
+
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use state::AppState;
@@ -45,16 +47,25 @@ fn mcp_startup_line(addr: &str, token: &str) -> String {
 ///
 /// 返回本次日志文件路径；失败只提示一次并返回 `None`（降级为无日志，不阻断启动）。
 /// 级别先按默认 `info`——此时设置还读不到（`log.level` 在 SQLite 里），开库后立刻覆盖。
+///
+/// 终端镜像在**这里判定一次**并随 logger 定型（运行期不重判）：`RUSTSS_LOG_STDOUT=1/0`
+/// 显式覆盖，未设置/非法值跟随「stdout 是否终端」——从终端 `cargo run` 时日志可见，
+/// 桌面启动器/重定向场景默认无额外输出。
 fn init_logging() -> Option<std::path::PathBuf> {
     let logs_dir = rustrss_core::paths::logs_dir();
-    let path = match rustrss_core::logging::init(&logs_dir, log::LevelFilter::Info) {
-        Ok(path) => path,
-        Err(e) => {
-            // 本文件唯一保留的 stderr 输出：它的存在前提正是「logger 装不上」
-            eprintln!("[rustrss] 日志初始化失败（本次不写日志文件，应用继续启动）: {e}");
-            return None;
-        }
-    };
+    let mirror = rustrss_core::logging::mirror_enabled(
+        std::env::var("RUSTSS_LOG_STDOUT").ok().as_deref(),
+        std::io::stdout().is_terminal(),
+    );
+    let path =
+        match rustrss_core::logging::init_with_mirror(&logs_dir, log::LevelFilter::Info, mirror) {
+            Ok(path) => path,
+            Err(e) => {
+                // 本文件唯一保留的 stderr 输出：它的存在前提正是「logger 装不上」
+                eprintln!("[rustrss] 日志初始化失败（本次不写日志文件，应用继续启动）: {e}");
+                return None;
+            }
+        };
     // panic 现场进同一份日志；logger 没装上时它静默无事，原 hook 照旧执行
     rustrss_core::logging::install_panic_hook();
     // 保留策略每次启动跑一次（幂等）：清理结果进日志，便于核对「超限后重启是否真的删了」

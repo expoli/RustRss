@@ -8,6 +8,9 @@
 //! - **写失败不能反过来弄崩应用**：`Log::log` 里忽略写入错误；
 //! - **初始化失败返回 `Err` 由调用方降级**（提示一次继续跑），不 panic、不阻断启动；
 //! - **清理幂等，且只认自己的 `rustrss-*.log`**：误删别人的文件是比日志没删干净更坏的事故。
+//!
+//! 可选的终端镜像（从终端调试时看得见日志）见 [`init_with_mirror`]：镜像行与文件行
+//! **同源同格式**（同一份 `format_line` 字符串），镜像写失败同样静默忽略。
 
 use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
@@ -32,29 +35,62 @@ const MAX_SAME_SECOND_FILES: u32 = 100;
 ///
 /// 锁内只做一次 `write_all` + `flush`（不 fsync），避免刷新线程被磁盘拖住；
 /// 写失败不 panic —— 日志不能反过来把应用弄崩。
+///
+/// 可选的镜像目标（[`open_with_mirror`](Self::open_with_mirror)）：开启时同一行
+/// 字符串同时写文件与镜像；镜像写失败静默忽略，绝不影响文件写入。
 pub struct FileLogger {
     file: Mutex<File>,
+    /// `Some` = 开启镜像。持 `Box<dyn Write + Send>` 而非 `Stderr` 是刻意的测试缝：
+    /// 线上由 [`init_with_mirror`] 传 `io::stderr()`，单测传可读回的 writer 来断言
+    /// 「镜像与文件行逐字节一致」，不去截真实 stderr。
+    mirror: Option<Mutex<Box<dyn Write + Send>>>,
 }
 
 impl FileLogger {
-    /// 打开（不存在则创建）一个文件作为日志落点，始终追加写。
+    /// 打开（不存在则创建）一个文件作为日志落点，始终追加写（不镜像）。
     pub fn open(path: &Path) -> io::Result<Self> {
         let file = OpenOptions::new().create(true).append(true).open(path)?;
         Ok(Self::from_file(file))
     }
 
+    /// 打开文件并开启镜像：每行同时写文件与 `mirror`（测试缝，见字段说明）。
+    pub fn open_with_mirror(path: &Path, mirror: Box<dyn Write + Send>) -> io::Result<Self> {
+        let file = OpenOptions::new().create(true).append(true).open(path)?;
+        Ok(Self {
+            file: Mutex::new(file),
+            mirror: Some(Mutex::new(mirror)),
+        })
+    }
+
     fn from_file(file: File) -> Self {
         Self {
             file: Mutex::new(file),
+            mirror: None,
+        }
+    }
+
+    fn from_file_with_mirror(file: File, mirror: Box<dyn Write + Send>) -> Self {
+        Self {
+            file: Mutex::new(file),
+            mirror: Some(Mutex::new(mirror)),
         }
     }
 
     /// 按行格式写一条记录（`Log::log` 与单测共用这条路径）。
     fn write_record(&self, record: &Record<'_>, now: DateTime<Local>) -> io::Result<()> {
+        // 同一行只格式化一次：文件与镜像写同一份字符串，逐字节一致（各 format 一次
+        // 会在毫秒边界分叉——两个时间戳同秒不同毫秒，用户贴出来对不上）。
         self.write_line(&format_line(record, now))
     }
 
     fn write_line(&self, line: &str) -> io::Result<()> {
+        let written = self.write_file(line);
+        // 镜像不因文件写失败而停：文件写不进去时，终端那份反而是唯一的线索。
+        self.write_mirror(line);
+        written
+    }
+
+    fn write_file(&self, line: &str) -> io::Result<()> {
         let mut file = self
             .file
             .lock()
@@ -62,6 +98,21 @@ impl FileLogger {
         file.write_all(line.as_bytes())?;
         // 只把行交给内核（行级 flush），不做 fsync：日志丢几行可以接受，卡住 UI 不行。
         file.flush()
+    }
+
+    /// 把同一行写一份到镜像目标（未开启则什么都不做）。
+    ///
+    /// 行级 flush 保证交互式终端立即看到；写失败（stderr 已关 / EPIPE）一律吞掉——
+    /// 终端那头没了不等于应用该出问题。
+    fn write_mirror(&self, line: &str) {
+        let Some(mirror) = &self.mirror else {
+            return;
+        };
+        let Ok(mut sink) = mirror.lock() else {
+            return;
+        };
+        let _ = sink.write_all(line.as_bytes());
+        let _ = sink.flush();
     }
 }
 
@@ -121,13 +172,46 @@ fn format_line(record: &Record<'_>, now: DateTime<Local>) -> String {
 /// 全局 logger 只能装一次：若已有其它 logger（重复调用 init），保留先安装的那个，
 /// 本次文件仍会创建并返回路径（可能保持为空），不算失败。
 pub fn init(log_dir: &Path, level: LevelFilter) -> Result<PathBuf, String> {
+    init_with_mirror(log_dir, level, false)
+}
+
+/// 终端镜像判定（**纯函数**，调用方在启动早期判定一次并把结果传给
+/// [`init_with_mirror`]，运行期不再重判）。
+///
+/// - `Some("1")` → 开（脚本/无头场景显式开启，此时 stdout 往往不是终端）；
+/// - `Some("0")` → 关（重定向、启动器场景显式关闭）；
+/// - 其它（未设置、空串、`"true"`/`" 1 "` 这类非法值）→ 回退 `stdout_is_terminal`。
+///   非法值按「没设」处理：宁可回退到探测结果，也不猜用户想开还是想关。
+pub fn mirror_enabled(env_value: Option<&str>, stdout_is_terminal: bool) -> bool {
+    match env_value {
+        Some("1") => true,
+        Some("0") => false,
+        _ => stdout_is_terminal,
+    }
+}
+
+/// [`init`] 的带镜像版本：`mirror_stderr = true` 时每条落文件的日志行同时镜像到 stderr。
+///
+/// 与 [`init`] 同口径：失败返回 `Err` 由调用方降级（不 panic、不阻断启动）；全局 logger
+/// 只装一次（已有 logger 时保留先装的，本次文件仍创建并返回路径）。
+pub fn init_with_mirror(
+    log_dir: &Path,
+    level: LevelFilter,
+    mirror_stderr: bool,
+) -> Result<PathBuf, String> {
     let path = create_log_file(log_dir)?;
     let file = OpenOptions::new()
         .append(true)
         .open(&path)
         .map_err(|e| format!("打开日志文件 {} 失败：{e}", path.display()))?;
+    let logger = if mirror_stderr {
+        // 镜像统一写 stderr：stdout 留给可能的管道消费者，不被诊断行污染。
+        FileLogger::from_file_with_mirror(file, Box::new(io::stderr()))
+    } else {
+        FileLogger::from_file(file)
+    };
     log::set_max_level(level);
-    let _ = log::set_boxed_logger(Box::new(FileLogger::from_file(file)));
+    let _ = log::set_boxed_logger(Box::new(logger));
     Ok(path)
 }
 
@@ -312,8 +396,47 @@ fn seq_of(name: &str) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
     use chrono::{TimeZone, Timelike};
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    /// 可注入的镜像目标：写入内容攒在共享 buffer 里，测试可读回逐字节比对。
+    #[derive(Clone, Default)]
+    struct CaptureSink(Arc<Mutex<Vec<u8>>>);
+
+    impl CaptureSink {
+        fn text(&self) -> String {
+            String::from_utf8(self.0.lock().expect("镜像 buffer 锁不应中毒").clone())
+                .expect("镜像内容应是 UTF-8")
+        }
+    }
+
+    impl Write for CaptureSink {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            self.0
+                .lock()
+                .expect("镜像 buffer 锁不应中毒")
+                .extend_from_slice(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    /// 模拟「stderr 已关 / 管道对端没了」：写入必败。
+    struct BrokenSink;
+
+    impl Write for BrokenSink {
+        fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
+            Err(io::Error::new(io::ErrorKind::BrokenPipe, "stderr 已关"))
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Err(io::Error::new(io::ErrorKind::BrokenPipe, "stderr 已关"))
+        }
+    }
 
     fn tmp_dir(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!(
@@ -388,6 +511,164 @@ mod tests {
         assert_eq!(first.file_name().unwrap(), "rustrss-20260102-030405.log");
         assert_eq!(second.file_name().unwrap(), "rustrss-20260102-030405-1.log");
         assert!(first.is_file() && second.is_file(), "同秒两次不得互相覆盖");
+        cleanup(&dir);
+    }
+
+    /// AC1 真值表：`1` 强制开、`0` 强制关，其余（未设置 / 空串 / 非法值）跟随 TTY 输入。
+    /// 非法值刻意不猜用户意图（`"true"` / `" 1 "` / `"2"` / `"01"` 都按未设置处理）。
+    #[test]
+    fn mirror_enabled_truth_table() {
+        let cases: &[(Option<&str>, bool, bool)] = &[
+            (Some("1"), false, true), // 非 TTY 也能靠 env 打开（脚本/无头场景）
+            (Some("1"), true, true),
+            (Some("0"), true, false), // TTY 也能靠 env 关掉
+            (Some("0"), false, false),
+            (None, true, true), // 未设置 → 跟随 TTY
+            (None, false, false),
+            (Some(""), true, true), // 空串 = 未设置
+            (Some(""), false, false),
+            (Some("true"), true, true), // 非法值 → 跟随 TTY
+            (Some("true"), false, false),
+            (Some(" 1 "), true, true), // 带空白不 trim：同样按非法值回退
+            (Some(" 1 "), false, false),
+            (Some("2"), true, true),
+            (Some("01"), false, false),
+        ];
+        for &(env, tty, expected) in cases {
+            assert_eq!(
+                mirror_enabled(env, tty),
+                expected,
+                "env={env:?} stdout_is_terminal={tty}"
+            );
+        }
+    }
+
+    /// AC2：镜像开启时镜像内容与文件行**逐字节一致**（同一行字符串只格式化一次）。
+    #[test]
+    fn mirror_lines_are_byte_identical_to_file_lines() {
+        let dir = tmp_dir("mirror-identical");
+        let path = dir.join("mirror.log");
+        let sink = CaptureSink::default();
+        let logger = FileLogger::open_with_mirror(&path, Box::new(sink.clone()))
+            .expect("应能打开带镜像的 logger");
+        let now = fixed_now();
+
+        logger
+            .write_record(&record!(Level::Info, "ui", "[ui] view=all 共 3 条"), now)
+            .expect("写入应成功");
+        logger
+            .write_record(
+                &record!(Level::Error, "rustrss_core::store", "写库失败"),
+                now,
+            )
+            .expect("写入应成功");
+
+        let file_text = std::fs::read_to_string(&path).expect("应能读回日志");
+        assert_eq!(sink.text(), file_text, "镜像行必须与文件行逐字节一致");
+        assert_eq!(file_text.lines().count(), 2, "两条记录两行：{file_text:?}");
+        assert!(
+            file_text.contains(" INFO  ui: [ui] view=all 共 3 条")
+                && file_text.contains(" ERROR rustrss_core::store: 写库失败"),
+            "行格式不变：{file_text:?}"
+        );
+        cleanup(&dir);
+    }
+
+    /// AC2：镜像只跟随「通过级别 + target 过滤」的行——与文件行一一对应，
+    /// 被过滤掉的依赖库 debug 两边都不出现（不是额外数据源）。
+    #[test]
+    fn mirror_follows_the_same_level_and_target_gate_as_the_file() {
+        let dir = tmp_dir("mirror-gate");
+        let path = dir.join("gate.log");
+        let sink = CaptureSink::default();
+        let logger = FileLogger::open_with_mirror(&path, Box::new(sink.clone()))
+            .expect("应能打开带镜像的 logger");
+
+        // 只放大不缩小全局级别，避免与并行用例互相掐架
+        log::set_max_level(LevelFilter::Trace);
+        Log::log(&logger, &record!(Level::Info, "ui", "ui-info"));
+        Log::log(&logger, &record!(Level::Debug, "h2::codec", "dep-debug"));
+        Log::log(
+            &logger,
+            &record!(Level::Debug, "rustrss_core::fetch", "app-debug"),
+        );
+        Log::log(&logger, &record!(Level::Error, "hyper::proto", "dep-error"));
+
+        let file_text = std::fs::read_to_string(&path).expect("应能读回日志");
+        assert_eq!(sink.text(), file_text, "镜像与文件行集合必须一致");
+        assert!(
+            !file_text.contains("dep-debug"),
+            "依赖库 debug 两边都不该出现：{file_text:?}"
+        );
+        assert_eq!(file_text.lines().count(), 3, "恰好 3 条：{file_text:?}");
+        cleanup(&dir);
+    }
+
+    /// AC2：镜像关闭时不产生任何镜像输出——`open`/`init` 路径根本没有镜像目标。
+    #[test]
+    fn mirror_off_has_no_mirror_target_and_writes_only_the_file() {
+        let dir = tmp_dir("mirror-off");
+        let path = dir.join("off.log");
+        let logger = FileLogger::open(&path).expect("应能打开 logger");
+        assert!(logger.mirror.is_none(), "未开启镜像时不该有镜像目标");
+
+        logger
+            .write_record(&record!(Level::Info, "ui", "only-file"), fixed_now())
+            .expect("写入应成功");
+
+        let text = std::fs::read_to_string(&path).expect("应能读回日志");
+        assert!(text.contains(" INFO  ui: only-file"), "{text:?}");
+        cleanup(&dir);
+    }
+
+    /// AC3：镜像写入失败（stderr 已关 / EPIPE）不 panic、不影响文件写入；
+    /// 后续行照常落文件（失败按行独立，不污染后面的行）。
+    #[test]
+    fn broken_mirror_does_not_panic_or_disturb_the_file() {
+        let dir = tmp_dir("mirror-broken");
+        let path = dir.join("broken.log");
+        let logger = FileLogger::open_with_mirror(&path, Box::new(BrokenSink))
+            .expect("应能打开带镜像的 logger");
+        let now = fixed_now();
+
+        logger
+            .write_record(&record!(Level::Info, "ui", "第一条"), now)
+            .expect("文件写入应成功（不受镜像失败影响）");
+        logger
+            .write_record(&record!(Level::Info, "ui", "第二条"), now)
+            .expect("后续行也应成功");
+
+        let text = std::fs::read_to_string(&path).expect("应能读回日志");
+        assert_eq!(
+            text.lines().count(),
+            2,
+            "镜像失败不得吞掉或破坏文件行：{text:?}"
+        );
+        assert!(
+            text.contains("第一条") && text.contains("第二条"),
+            "{text:?}"
+        );
+        cleanup(&dir);
+    }
+
+    /// AC5：`init_with_mirror` 与 `init` 同口径——建目录与本次文件、返回
+    /// `Result<PathBuf, String>`、目录不可建时同样返回 Err 而不是 panic。
+    #[test]
+    fn init_with_mirror_shares_init_contract() {
+        let dir = tmp_dir("init-with-mirror");
+        let log_dir = dir.join("logs"); // 故意先不存在：init_with_mirror 负责创建
+        let path = init_with_mirror(&log_dir, LevelFilter::Debug, false).expect("应成功");
+        assert!(log_dir.is_dir(), "应创建日志目录");
+        assert!(
+            path.starts_with(&log_dir) && path.is_file(),
+            "应返回本次文件路径"
+        );
+
+        let blocked = dir.join("blocked");
+        std::fs::write(&blocked, b"not a dir").expect("应能造出阻挡目录创建的普通文件");
+        let err = init_with_mirror(&blocked.join("logs"), LevelFilter::Info, false)
+            .expect_err("应返回 Err 而不是 panic");
+        assert!(err.contains("创建日志目录"), "错误信息应可读：{err}");
         cleanup(&dir);
     }
 
