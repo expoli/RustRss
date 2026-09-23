@@ -743,7 +743,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - **未对真实 RSSHub 实例做端到端抓取**：只验证了 scheme 归一、等价形态去重与「不联网落库」；`rsshub://` 的抓取解析（按镜像解析实际地址）在既有批次与 `refresh` 的实机里覆盖，本批次未重测。
 - **界面入口未新增**：订阅 / 分组的界面路径本来就存在（侧栏菜单 / 编辑对话框 / OPML 按钮），MCP 只是同一数据层的第二个调用方；本批次未改 UI 文案，因此没有 i18n key 变化。
 
-## 21. 标签批次（2026-09-23-tags；T1 `73a4433` / T2 `4bee3cf` / T3 `f397762` / T4 `14ac1a0`）
+## 21. 标签批次（2026-09-23-tags；T1 `73a4433` / T2 `4bee3cf` / T3 `f397762` / T4 `14ac1a0` + `fc89939`）
 
 ### 21.1 已机械验证的部分（core 单测 + Xvfb 实机 + 真 HTTP e2e + 真二进制实机）
 
@@ -760,7 +760,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 错误码按 `StoreError` 变体映射（不解析文案）：`tag_not_found` / `duplicate_tag_name` / `invalid_argument`；沿用 `write_scope_required` / `write_disabled` / `confirm_required`。
 - 单元测试 10 条（`tag_tools` 模块内：批量闸门、清单元数据与上限、排序档、错误码映射、目标形态、条目存在性、delete 的 confirm/dry_run 同源）+ 真 HTTP e2e 8 条（`crates/rustrss-mcp/tests/tag_tools.rs`）：读 token 可见性/写 token 可用、写调用落库回读、读 token 与关写开关两种拒绝（`write_scope_required` / `write_disabled`，库不变）、`delete_tag` 缺 confirm、`dry_run` 影响数与真删相等且 dry_run 后库不变、`list_articles` 过滤与 `tags` 字段、注入界面设置后默认口径不变、审计行含 dry_run/被拒且参数过 scrub。
 - 批次收口修正（core 一行条件 + 一个测试）：`last_used_at` 只由**打标**推进（`tag_link` 的 `changed > 0 && link`），取消打标不推进——PRD FR-1 / tech_design schema 注释 / `Store::create_tag` 文档 / `schema.rs` 注释四处口径一致；T2 评审 Note-2 与 T3 评审 Note-4 均点名留 T4 裁定。
-- 门禁：`cargo test --workspace` **359 passed / 0 failed**；`cargo clippy --workspace --all-targets` 仅 3 条既有 rustrss-core 基线警告（`fulltext.rs:130` redundant closure、`store/mod.rs:461`/`:680` matching on `Some` with `ok()`），无新增。
+- 门禁：`cargo test --workspace` **360 passed / 0 failed**（含收尾补测的条件级截断分支）；`cargo clippy --workspace --all-targets` 仅 3 条既有 rustrss-core 基线警告（`fulltext.rs:130` redundant closure、`store/mod.rs:461`/`:680` matching on `Some` with `ok()`），无新增。
 
 ### 21.2 实机快照（T4；真二进制 + 真库 + 本地 HTTP 源，`mktemp -d` 隔离 HOME）
 
