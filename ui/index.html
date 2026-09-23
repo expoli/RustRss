@@ -85,6 +85,7 @@
         <span class="list-head-right">
           <span id="list-count" class="dim"></span>
           <!-- 排序与过滤入口：图标按钮弹 ctx-menu（三档 + 分隔 + 隐藏已读）-->
+          <button id="btn-list-bulk" data-i18n-title="settings.bulkTitle" aria-label="✓">✓</button>
           <button id="btn-list-sort" data-i18n-title="list.sortTitle" aria-label="sort">⇅</button>
           <!-- 常驻「只看未读」：与排序菜单里的「隐藏已读」同一设置（list.hide_read），
                只是把入口提到显眼处（用户实测找不到菜单里的那项）；快捷键 U -->
@@ -109,128 +110,29 @@
     </section>
   </main>
 
+  <dialog id="aa-dialog" aria-labelledby="aa-title"><div class="aa-heading"><h3 id="aa-title" data-i18n="theme.reading"></h3><button id="aa-close" data-i18n="settings.close"></button></div><div id="aa-editor"></div></dialog>
   <div id="settings-overlay" class="overlay hidden" role="dialog" aria-modal="true">
     <div class="settings-dialog">
       <nav class="settings-nav">
         <div class="settings-nav-title" data-i18n="settings.title"></div>
-        <ul id="settings-nav-list">
-          <li data-pane="general" class="active">
-            <span class="icon">⚙</span><span data-i18n="settings.nav.general"></span>
-          </li>
-          <li data-pane="reading">
-            <span class="icon">👁</span><span data-i18n="settings.nav.reading"></span>
-          </li>
-          <li data-pane="data">
-            <span class="icon">⇅</span><span data-i18n="settings.nav.data"></span>
-          </li>
-          <li data-pane="ai">
-            <span class="icon">✨</span><span data-i18n="settings.nav.ai"></span>
-          </li>
-          <li data-pane="mcp">
-            <span class="icon">🔌</span><span data-i18n="settings.nav.mcp"></span>
-          </li>
-          <li data-pane="rsshub">
-            <span class="icon">🛰</span><span data-i18n="settings.nav.rsshub"></span>
-          </li>
-          <li data-pane="about">
-            <span class="icon">ℹ</span><span data-i18n="settings.nav.about"></span>
-          </li>
-        </ul>
+        <ul id="settings-nav-list" role="tablist" aria-orientation="vertical"><li role="presentation"><button type="button" role="tab" id="tab-appearance" data-pane="appearance" aria-controls="pane-appearance" aria-selected="false" tabindex="-1" data-i18n="settings.nav.appearance"></button></li><li role="presentation"><button type="button" role="tab" id="tab-reading" data-pane="reading" aria-controls="pane-reading" aria-selected="false" tabindex="-1" data-i18n="settings.nav.reading"></button></li><li role="presentation"><button type="button" role="tab" id="tab-subscriptions" data-pane="subscriptions" aria-controls="pane-subscriptions" aria-selected="false" tabindex="-1" data-i18n="settings.nav.subscriptions"></button></li><li role="presentation"><button type="button" role="tab" id="tab-ai" data-pane="ai" aria-controls="pane-ai" aria-selected="false" tabindex="-1" data-i18n="settings.nav.ai"></button></li><li role="presentation"><button type="button" role="tab" id="tab-mcp" data-pane="mcp" aria-controls="pane-mcp" aria-selected="false" tabindex="-1" data-i18n="settings.nav.mcp"></button></li><li role="presentation"><button type="button" role="tab" id="tab-data" data-pane="data" aria-controls="pane-data" aria-selected="false" tabindex="-1" data-i18n="settings.nav.data"></button></li><li role="presentation"><button type="button" role="tab" id="tab-general" data-pane="general" aria-controls="pane-general" aria-selected="false" tabindex="-1" data-i18n="settings.nav.general"></button></li></ul>
         <div class="settings-nav-foot">
           <span id="settings-db-path" class="dim" title=""></span>
         </div>
       </nav>
 
-      <section class="settings-body">
-        <!-- 通用 -->
-        <div class="pane" data-pane="general">
-          <h3 data-i18n="settings.nav.general"></h3>
-
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.appearance"></h4>
+      <section class="settings-body"><div class="pane hidden" id="pane-appearance" role="tabpanel" aria-labelledby="tab-appearance" data-pane="appearance"><h3 data-i18n="settings.nav.appearance"></h3><div id="appearance-editor"></div></div>
+<div class="pane hidden" id="pane-reading" role="tabpanel" aria-labelledby="tab-reading" data-pane="reading"><h3 data-i18n="settings.nav.reading"></h3><div id="reading-editor"></div><div class="setting-block">
+            <h4 data-i18n="settings.section.readBehaviour"></h4>
             <div class="setting-item">
               <div class="text">
-                <b data-i18n="settings.language"></b>
-                <small data-i18n="settings.languageHint"></small>
+                <b data-i18n="settings.markRead.title"></b>
+                <small data-i18n="settings.markRead.hint"></small>
               </div>
-              <button type="button" id="set-language" class="setting-dropdown" aria-haspopup="menu"></button>
+              <label class="switch"><input type="checkbox" id="set-mark-read" /><span></span></label>
             </div>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.theme"></b>
-                <small data-i18n="settings.themeHint"></small>
-              </div>
-              <button type="button" id="set-theme" class="setting-dropdown" aria-haspopup="menu"></button>
-            </div>
-            <div class="setting-item">
-              <div class="text"><b data-i18n="settings.preset"></b><small data-i18n="settings.presetHint"></small></div>
-              <button type="button" id="set-theme-preset" class="setting-dropdown" aria-haspopup="menu"></button>
-            </div>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.closeAction"></b>
-                <small data-i18n="settings.closeActionHint"></small>
-              </div>
-              <button type="button" id="set-close-action" class="setting-dropdown" aria-haspopup="menu"></button>
-            </div>
-          </div>
-
-          <!-- 字体（外观分区）：三类字体族名 + 正文字号/行高，改完即时生效 -->
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.fonts"></h4>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.fontUi"></b>
-                <small data-i18n="settings.fontUiHint"></small>
-              </div>
-              <button type="button" id="set-font-ui" class="setting-dropdown" aria-haspopup="menu"></button>
-            </div>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.fontRead"></b>
-                <small data-i18n="settings.fontReadHint"></small>
-              </div>
-              <button type="button" id="set-font-read" class="setting-dropdown" aria-haspopup="menu"></button>
-            </div>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.fontMono"></b>
-                <small data-i18n="settings.fontMonoHint"></small>
-              </div>
-              <button type="button" id="set-font-mono" class="setting-dropdown" aria-haspopup="menu"></button>
-            </div>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.fontSize"></b>
-                <small data-i18n="settings.fontSizeHint"></small>
-              </div>
-              <input type="range" id="set-font-size" min="13" max="28" step="1" />
-              <span class="setting-value" id="set-font-size-value"></span>
-            </div>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.fontLine"></b>
-                <small data-i18n="settings.fontLineHint"></small>
-              </div>
-              <input type="range" id="set-font-line" min="1.3" max="2.2" step="0.05" />
-              <span class="setting-value" id="set-font-line-value"></span>
-            </div>
-            <!-- 实时预览：设置弹层盖住了正文区，没有这块就只能看右侧数值。
-                 它直接消费 --font-read / --font-read-size / --font-read-line / --font-mono，
-                 所以拖动滑块/切换字体时它和正文一模一样地变。 -->
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.fontPreview"></b>
-                <small data-i18n="settings.fontPreviewHint"></small>
-              </div>
-            </div>
-            <div class="font-preview">
-              <p data-i18n="settings.fontPreviewSample"></p>
-              <p><code>fn main() { println!("RustRss"); }</code></p>
-            </div>
-          </div>
-
-          <div class="setting-block">
+          </div></div>
+<div class="pane hidden" id="pane-subscriptions" role="tabpanel" aria-labelledby="tab-subscriptions" data-pane="subscriptions"><h3 data-i18n="settings.nav.subscriptions"></h3><div class="setting-block">
             <h4 data-i18n="settings.section.refresh"></h4>
             <div class="setting-item">
               <div class="text">
@@ -260,93 +162,31 @@
               </div>
               <label class="switch"><input type="checkbox" id="set-notify-new-articles" /><span></span></label>
             </div>
-          </div>
-
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.storage"></h4>
+          </div><div class="setting-block">
+            <h4 data-i18n="settings.section.rsshubInstance"></h4>
             <div class="setting-item">
               <div class="text">
-                <b data-i18n="settings.dbPath"></b>
-                <small id="general-db-path"></small>
+                <b data-i18n="settings.rsshub.mirror"></b>
+                <small data-i18n="settings.rsshub.mirrorHint"></small>
               </div>
-            </div>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.storageHintTitle"></b>
-                <small data-i18n="settings.storageHint"></small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 阅读 -->
-        <div class="pane hidden" data-pane="reading">
-          <h3 data-i18n="settings.nav.reading"></h3>
-
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.readBehaviour"></h4>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.markRead.title"></b>
-                <small data-i18n="settings.markRead.hint"></small>
-              </div>
-              <label class="switch"><input type="checkbox" id="set-mark-read" /><span></span></label>
-            </div>
-          </div>
-
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.bulk"></h4>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.bulkTitle"></b>
-                <small data-i18n="settings.bulkHint"></small>
-              </div>
+              <input id="set-rsshub-mirror" autocomplete="off" />
             </div>
             <div class="setting-actions">
-              <button id="act-mark-all-read" data-i18n="settings.markAllRead"></button>
-              <button id="act-mark-all-unread" data-i18n="settings.markAllUnread"></button>
+              <button id="btn-rsshub-save" data-i18n="settings.rsshub.save"></button>
+              <button id="btn-rsshub-test" data-i18n="settings.rsshub.test"></button>
             </div>
-          </div>
-        </div>
-
-        <!-- 数据 -->
-        <div class="pane hidden" data-pane="data">
-          <h3 data-i18n="settings.nav.data"></h3>
-
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.opml"></h4>
+            <p id="rsshub-status" class="dim small">—</p>
+          </div><div class="setting-block">
+            <h4 data-i18n="settings.section.migration"></h4>
             <div class="setting-item">
               <div class="text">
-                <b data-i18n="settings.opmlTitle"></b>
-                <small data-i18n="settings.opmlHint"></small>
+                <b data-i18n="settings.rsshub.migrate"></b>
+                <small data-i18n="settings.rsshub.migrateHint"></small>
               </div>
+              <button id="btn-rsshub-migrate" data-i18n="settings.rsshub.migrate"></button>
             </div>
-            <div class="setting-actions">
-              <button id="act-import-opml" data-i18n="settings.importOpml"></button>
-              <button id="act-export-opml" data-i18n="settings.exportOpml"></button>
-            </div>
-          </div>
-
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.backup"></h4>
-            <div class="setting-item">
-              <div class="text">
-                <b data-i18n="settings.backupTitle"></b>
-                <small data-i18n="settings.backupHint"></small>
-              </div>
-            </div>
-            <div class="setting-actions">
-              <button id="act-backup-db" data-i18n="settings.backupDb"></button>
-              <button id="act-restore-db" data-i18n="settings.restoreDb"></button>
-            </div>
-          </div>
-        </div>
-
-        <!-- AI -->
-        <div class="pane hidden" data-pane="ai">
-          <h3 data-i18n="settings.nav.ai"></h3>
-
-          <div class="setting-block">
+          </div></div>
+<div class="pane hidden" id="pane-ai" role="tabpanel" aria-labelledby="tab-ai" data-pane="ai"><h3 data-i18n="settings.nav.ai"></h3><div class="setting-block">
             <h4 data-i18n="settings.section.provider"></h4>
 
             <div class="setting-item">
@@ -397,9 +237,7 @@
               </div>
               <button type="button" id="set-ai-reasoning" class="setting-dropdown" aria-haspopup="menu"></button>
             </div>
-          </div>
-
-          <div class="setting-block">
+          </div><div class="setting-block">
             <h4 data-i18n="settings.section.credentials"></h4>
             <div class="setting-item">
               <div class="text">
@@ -414,9 +252,7 @@
               <button id="ai-test" data-i18n="settings.ai.test"></button>
             </div>
             <p id="ai-status" class="dim small">—</p>
-          </div>
-
-          <div class="setting-block">
+          </div><div class="setting-block">
             <h4 data-i18n="settings.section.sending"></h4>
             <div class="setting-item">
               <div class="text">
@@ -425,14 +261,8 @@
               </div>
               <label class="switch"><input type="checkbox" id="set-ai-confirm" /><span></span></label>
             </div>
-          </div>
-        </div>
-
-        <!-- MCP -->
-        <div class="pane hidden" data-pane="mcp">
-          <h3 data-i18n="settings.nav.mcp"></h3>
-
-          <div class="setting-block">
+          </div></div>
+<div class="pane hidden" id="pane-mcp" role="tabpanel" aria-labelledby="tab-mcp" data-pane="mcp"><h3 data-i18n="settings.nav.mcp"></h3><div class="setting-block">
             <h4 data-i18n="settings.section.server"></h4>
             <div class="setting-item">
               <div class="text">
@@ -451,9 +281,7 @@
             </div>
 
             <p id="mcp-status" class="dim small">—</p>
-          </div>
-
-          <div class="setting-block">
+          </div><div class="setting-block">
             <h4 data-i18n="settings.section.client"></h4>
             <div class="setting-item">
               <div class="text">
@@ -467,9 +295,7 @@
               <button id="mcp-rotate" data-i18n="settings.mcp.rotate"></button>
             </div>
             <textarea id="mcp-snippet" rows="8" readonly></textarea>
-          </div>
-
-          <div class="setting-block">
+          </div><div class="setting-block">
             <h4 data-i18n="settings.section.write"></h4>
             <div class="setting-item">
               <div class="text">
@@ -504,43 +330,59 @@
               <button id="mcp-write-rotate" data-i18n="settings.mcp.writeRotate"></button>
               <button id="mcp-write-clear" data-i18n="settings.mcp.writeClear"></button>
             </div>
-          </div>
-        </div>
-
-        <!-- RSSHub -->
-        <div class="pane hidden" data-pane="rsshub">
-          <h3 data-i18n="settings.nav.rsshub"></h3>
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.rsshubInstance"></h4>
+          </div></div>
+<div class="pane hidden" id="pane-data" role="tabpanel" aria-labelledby="tab-data" data-pane="data"><h3 data-i18n="settings.nav.data"></h3><div class="setting-block">
+            <h4 data-i18n="settings.section.storage"></h4>
             <div class="setting-item">
               <div class="text">
-                <b data-i18n="settings.rsshub.mirror"></b>
-                <small data-i18n="settings.rsshub.mirrorHint"></small>
+                <b data-i18n="settings.dbPath"></b>
+                <small id="general-db-path"></small>
               </div>
-              <input id="set-rsshub-mirror" autocomplete="off" />
+            </div>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.storageHintTitle"></b>
+                <small data-i18n="settings.storageHint"></small>
+              </div>
+            </div>
+          </div><div class="setting-block">
+            <h4 data-i18n="settings.section.opml"></h4>
+            <div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.opmlTitle"></b>
+                <small data-i18n="settings.opmlHint"></small>
+              </div>
             </div>
             <div class="setting-actions">
-              <button id="btn-rsshub-save" data-i18n="settings.rsshub.save"></button>
-              <button id="btn-rsshub-test" data-i18n="settings.rsshub.test"></button>
+              <button id="act-import-opml" data-i18n="settings.importOpml"></button>
+              <button id="act-export-opml" data-i18n="settings.exportOpml"></button>
             </div>
-            <p id="rsshub-status" class="dim small">—</p>
-          </div>
-          <div class="setting-block">
-            <h4 data-i18n="settings.section.migration"></h4>
+          </div><div class="setting-block">
+            <h4 data-i18n="settings.section.backup"></h4>
             <div class="setting-item">
               <div class="text">
-                <b data-i18n="settings.rsshub.migrate"></b>
-                <small data-i18n="settings.rsshub.migrateHint"></small>
+                <b data-i18n="settings.backupTitle"></b>
+                <small data-i18n="settings.backupHint"></small>
               </div>
-              <button id="btn-rsshub-migrate" data-i18n="settings.rsshub.migrate"></button>
             </div>
-          </div>
-        </div>
-
-        <!-- 关于 -->
-        <div class="pane hidden" data-pane="about">
-          <h3 data-i18n="settings.nav.about"></h3>
-          <div class="setting-block">
+            <div class="setting-actions">
+              <button id="act-backup-db" data-i18n="settings.backupDb"></button>
+              <button id="act-restore-db" data-i18n="settings.restoreDb"></button>
+            </div>
+          </div></div>
+<div class="pane hidden" id="pane-general" role="tabpanel" aria-labelledby="tab-general" data-pane="general"><h3 data-i18n="settings.nav.general"></h3><div class="setting-block"><div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.language"></b>
+                <small data-i18n="settings.languageHint"></small>
+              </div>
+              <button type="button" id="set-language" class="setting-dropdown" aria-haspopup="menu"></button>
+            </div><div class="setting-item">
+              <div class="text">
+                <b data-i18n="settings.closeAction"></b>
+                <small data-i18n="settings.closeActionHint"></small>
+              </div>
+              <button type="button" id="set-close-action" class="setting-dropdown" aria-haspopup="menu"></button>
+            </div></div><div class="setting-block">
             <div class="setting-item">
               <div class="text">
                 <b>RustRss</b>
@@ -559,11 +401,7 @@
                 <small data-i18n="settings.about.privacyHint"></small>
               </div>
             </div>
-          </div>
-
-          <!-- 日志：级别下拉（T3）+ 「打开日志目录」按钮（T4）。排在关于页是因为
-               诊断类设置与日志文件位置放在一起更顺；改完立刻生效，不需要重启。 -->
-          <div class="setting-block">
+          </div><div class="setting-block">
             <h4 data-i18n="settings.section.logging"></h4>
             <div class="setting-item">
               <div class="text">
@@ -581,9 +419,7 @@
             <div class="setting-actions">
               <button id="act-open-logs" data-i18n="settings.openLogsDir"></button>
             </div>
-          </div>
-        </div>
-      </section>
+          </div></div></section>
 
       <button id="settings-close" class="settings-close" data-i18n-title="settings.close">✕</button>
     </div>
@@ -701,6 +537,7 @@
   <script src="components.js"></script>
   <script src="theme.js"></script>
   <script src="theme-sync.js"></script>
+  <script src="theme-settings.js"></script>
   <script src="app.js"></script>
 </body>
 

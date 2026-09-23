@@ -89,3 +89,9 @@ validate 返回字段错误与已计算的色对/对比度；普通文本 4.5:1�
 ## 技术证据与未决项
 
 见 [截图验证](capture-feasibility.md) 与 [T1 Tauri 探针](tauri-capture-spike.md)。已在隔离 Tauri example 中实现 Linux 原生适配器，完成 Xvfb 100%/200% 与当前 KDE 原生 Wayland 专项验证；已接入 Linux 产品预览/MCP。Windows/macOS、其他 Wayland compositor、真实 WM 最小化、跨屏/分数缩放清晰度、客户端图片显示、标准组件复用为后续阻断式验收项。hide/show 后必须等待可绘制状态，不能把 show 返回当成绘制完成。截图 logical_size/scale 与预算必须取 WebView 内容区域，不能从带装饰的窗口尺寸推导；需要与 JS viewport/DPR 交叉核验。
+
+## T4 设置实现
+
+七类静态设置面板保持原非主题控件 ID 和处理器；原主题/字体控件由 `theme-settings.js` 的共享字段表替代。外观与阅读/Aa 使用内存 sparse patch，经 core validate 更新局部示例，显式保存携带 base revision；校验结果有 generation 防迟到覆盖。取消只丢草稿；restore 经 core 历史 CAS。浅/深预设选择分别修改，默认保留覆盖；清除全部再改单项仍清除其它旧覆盖。
+
+Tauri 新增三个薄 command：validate_ui_theme/get_ui_theme_history/restore_ui_theme；不新增 core 业务分支或 MCP 工具。主窗口仍复用 T3 renderer 保持段落位置。字段包含全部语义颜色；字体输入接受最多四项，并显示已枚举的字体名建议。示例默认可选明暗，局部预览不会改变主窗口或截图 T6 会话。T4 验收及 T7 未测项见 [报告](t4-settings.md)。

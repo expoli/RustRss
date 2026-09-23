@@ -154,7 +154,7 @@ created: 2026-09-20
 - [x] 当前 KDE 原生 Wayland 的隔离截图探针通过 100 帧与 8 类边界检查；实际 GdkWaylandDisplay，WebView 内容尺寸与 JS viewport/DPR 相符，修正装饰区域导致的尺寸误报。仅当前会话验收，跨屏/GNOME/真实最小化/生产 MCP 仍未验收，见 [Wayland 证据](2026-09-23-theme-preview/wayland-snapshot-results.json)。
 - [x] T3 UI 接入 core：现有主题/字体设置统一存储，三套预设选择、共享语义 CSS 参数与真实组件 fixture、同值零写/阅读锚点保护；Linux X11/当前 KDE Wayland 专项验证见 [T3 报告](2026-09-23-theme-preview/shared-theme-renderer.md)。
 - [ ] 真实订阅列表的缩略图元数据来源与展示（T3 仅已有图片元素样式开关和本地 fixture 验证）。
-- [ ] 设置重组、独立外观页与 Aa 阅读面板，原有功能可达，双语与键盘操作完整。
+- [x] T4 设置七类重组、独立外观页与 Aa 共用排版、草稿预览/保存/历史恢复；旧非主题控件 ID 保留，批量操作移至列表头。Linux Xvfb 真产物七类键盘导航/焦点回环与双语检查通过，见 [T4 证据](2026-09-23-theme-preview/t4-settings.md)。跨平台和读屏器未验收。
 - [x] T6 Linux：MCP 临时修改→真实组件渲染→PNG 与版本→再调整→保存/取消；内嵌与独立 stdio 同库桥接验证通过，见 [T6 报告](2026-09-23-theme-preview/mcp-theme-preview.md)。其它平台及第三方 GUI 客户端未验收。
 - [x] T6 Linux：临时配置不落库、CAS 防覆盖、ready/原生像素双确认、超时取消与失权回收；Xvfb 正文无重建。TTL 用时钟边界测试，未做 30 分钟墙钟长测；阅读锚点由 T3 复用，Wayland 正文位置未在 T6 重验。
 - [ ] Windows/macOS/Linux X11/Wayland 原生截图及真实客户端闭环完成运行验证；图片尺寸/体积有界。

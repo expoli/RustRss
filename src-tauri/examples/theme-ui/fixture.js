@@ -6,6 +6,8 @@
   const el = id => document.getElementById(id);
   const settle = async () => { await document.fonts.ready; await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); };
   try {
+    let editor;
+    el('pane-appearance').classList.remove('hidden');
     const snapshots = await invoke('snapshots');
     const renderer = RustRssTheme.createRenderer(document.documentElement,{reader:el('reader'),list:el('entries')});
     const components = RustRssComponents;
@@ -38,13 +40,8 @@
         snapshot.config.mode=mode;
         renderer.apply(snapshot);
         const v=snapshot[mode];
-        el('set-theme-preset').textContent=I18N.t('settings.preset.'+['clear','paper','slate'][i]);
-        el('set-theme').textContent=I18N.t('settings.theme'+(mode==='light'?'Light':'Dark'));
-        for (const id of ['set-font-ui','set-font-read','set-font-mono']) el(id).textContent=I18N.t('settings.fontFollowSystem');
-        el('set-font-size').value=v.typography.read_size;
-        el('set-font-size-value').textContent=v.typography.read_size+'px';
-        el('set-font-line').value=v.typography.line_height;
-        el('set-font-line-value').textContent=v.typography.line_height;
+        editor?.dispose();
+        editor = RustRssThemeSettings.createEditor(el('appearance-editor'), {kind:'appearance', getSnapshot:()=>snapshot, invoke, apply:()=>{}, t:I18N.t});
         for (const scene of ['overview','article','settings']) {
           el('reader').style.visibility=scene==='overview'?'hidden':'';
           el('settings-overlay').classList.toggle('hidden',scene!=='settings');
@@ -84,11 +81,7 @@
     assert(document.querySelector('.right-col').getBoundingClientRect().right<=innerWidth+1,'narrow reader stays within viewport');
     report.captures.push(await invoke('capture_scene',{name:'narrow-article'}));
     el('settings-overlay').classList.remove('hidden');await settle();
-    el('set-theme').textContent=I18N.t('settings.themeLight');
-    el('set-theme-preset').textContent=I18N.t('settings.preset.clear');
-    el('set-font-size').value=24;el('set-font-size-value').textContent='24px';
-    el('set-font-line').value=1.55;el('set-font-line-value').textContent='1.55';
-    const button=el('set-theme-preset').getBoundingClientRect();
+    const button=el('appearance-editor').querySelector('[data-preset]').getBoundingClientRect();
     assert(button.right<innerWidth && button.left>0,'narrow theme picker remains reachable');
     report.captures.push(await invoke('capture_scene',{name:'narrow-settings'}));
     report.viewport=[innerWidth,innerHeight];report.dpr=devicePixelRatio;

@@ -8,7 +8,8 @@
 - 开发用 Tauri 截图探针（独立 example，Linux 已验证，尚未接入主题/MCP）：[构建方式与验证证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/tauri-capture-spike.md)。
 - 主题 core API 已实现：三预设/明暗参数、局部更新、旧设置映射、CAS 版本与历史恢复；UI 与 MCP 配置工具已接入，见 [T2 说明](.chorus/specs/rss-reader/2026-09-23-theme-preview/core-theme-model.md)。
 
-- 主题 UI 已接入：设置 → 通用 → 外观可选 Clear / Paper / Slate；共享配色/字体/列表/阅读区渲染器与版本化存储，选择预设会重置外观覆盖；见 [T3 实现与验收](.chorus/specs/rss-reader/2026-09-23-theme-preview/shared-theme-renderer.md)。
+- 设置现分为外观与主题、阅读、订阅与更新、AI、外部集成、数据与备份、通用七类。外观页可独立选择浅/深色 Clear / Paper / Slate，并编辑颜色、字体、列表和栏宽；切换预设保留覆盖，只有“使用整套预设”清除全部覆盖。修改先在局部示例预览，保存后应用；关闭放弃草稿。支持单项跟随预设、最近 10 份历史恢复与版本冲突提示。
+- 正文工具栏 **Aa** 与阅读设置共用排版字段和 core 保存路径；保存后保留当前正文节点与段落锚点。当前视图批量标读/未读移至列表头 **✓** 菜单，scope 与原确认流程不变。设置支持方向键/Home/End 切页、Tab 焦点回环、Esc 关闭。见 [T4 实现与验收](.chorus/specs/rss-reader/2026-09-23-theme-preview/t4-settings.md)。
 
 ## 已定决策
 
@@ -20,7 +21,7 @@
 | 数据 | 本地优先 SQLite + OPML；v1 不做云同步 |
 | 许可证 | MIT OR Apache-2.0 |
 | 定位 | 先自用；发布能力留在架构里但不投入 |
-| 字体 | 内置字体栈 + 用户可覆盖三类字体族（界面 / 正文 / 等宽）与正文字号、行高；字体枚举只在 Linux 走 fontconfig（`fc-list`），Windows / macOS 本版只提供「跟随系统」（不引 font-kit 这类重依赖） |
+| 字体 | 内置字体栈 + 用户可覆盖三类字体族（界面 / 正文 / 等宽）与正文字号、行高；字体枚举只在 Linux 走 fontconfig（`fc-list`），Windows / macOS 本版不枚举本机字体，可输入字体族名或跟随预设（不引 font-kit 这类重依赖） |
 | bundle id | `tech.expoli.rustrss` |
 
 ## 硬约束（来自竞品实测，见 PRD 风险 1 / 10）

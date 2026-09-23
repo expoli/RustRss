@@ -8,6 +8,7 @@ import tempfile
 import time
 from PIL import Image
 
+subprocess.run(['df', '-h', '.'], check=True)
 root = Path(tempfile.mkdtemp(prefix='rustrss-theme-desktop-'))
 dbpath = root / 'fixture.sqlite'
 subprocess.run(['target/debug/examples/theme_fixture', str(dbpath)], check=True)
@@ -18,7 +19,7 @@ with os.fdopen(read_fd) as pipe:
     display = ':' + pipe.readline().strip()
 runtime = root / 'runtime'
 runtime.mkdir(mode=0o700)
-env = dict(os.environ, DISPLAY=display, GDK_GL='disable', GDK_SCALE='1', XDG_RUNTIME_DIR=str(runtime),
+env = dict(os.environ, HOME=str(root / 'home'), DISPLAY=display, GDK_GL='disable', GDK_SCALE='1', XDG_RUNTIME_DIR=str(runtime),
            XDG_DATA_HOME=str(root / 'data'), RUSTSS_DB=str(dbpath), RUSTSS_LOG_STDOUT='1', RUSTSS_AI_KEY='isolated-fixture-placeholder')
 # Discard session backend hints only for this isolated Xvfb child.
 for key in ('GDK_BACKEND', 'WAYLAND_DISPLAY', 'EGL_PLATFORM'):
@@ -60,35 +61,53 @@ def stop():
 try:
     start('first.log')
     assert config() is None, 'startup must not materialize legacy theme'
-    click(330, 120)
-    shot('initial-article.png')
+    click(330, 150)
+    assert 'renderReader id=' in (root/'first.log').read_text()
+    renders = (root/'first.log').read_text().count('renderReader id=')
     click(1080, 25)
-    click(960, 298)
-    shot('preset-menu.png')
-    click(920, 368)
-    shot('paper-settings.png')
-    first = config()
-    assert first['current']['light_preset'] == 'paper', first
-    assert first['current']['dark_preset'] == 'paper', first
-    assert first['current']['revision'] == 1, first
-    click(985, 666)
+    shot('appearance.png')
+    # Active-tab pixels verify actual keyboard navigation through all seven panes.
+    navigation = []
+    run('xdotool','key','Home')
+    for index in range(7):
+        if index: run('xdotool','key','Down')
+        time.sleep(.25)
+        shot('nav.png')
+        image = Image.open(root/'nav.png').convert('RGB')
+        assert image.getpixel((300,120+45*index)) == (226,232,244), (index,image.getpixel((300,120+45*index)))
+        navigation.append(index)
+    run('xdotool','key','Home')
+    time.sleep(.2)
+    run('xdotool','key','shift+Tab')
+    run('xdotool','key','Tab')
+    run('xdotool','key','End')
+    time.sleep(.25)
+    shot('general-keyboard.png')
+    assert Image.open(root/'general-keyboard.png').convert('RGB').getpixel((300,390)) == (226,232,244), 'focus did not wrap back into tab navigation'
+    run('xdotool','key','Escape')
+    click(610,160)
+    shot('aa-before.png')
+    click(690,280)
+    run('xdotool','key','ctrl+a')
+    run('xdotool','type','23')
+    run('xdotool','key','Tab')
+    time.sleep(.25)
+    assert config() is None, 'Aa draft must not write'
+    click(545,740)
     after = config()
-    assert after['current']['overrides']['typography']['read_size'] > 18, after
-    assert after['current']['revision'] == 2, after
-    run('xdotool', 'key', 'Escape')
-    shot('paper-article.png')
+    assert after['current']['overrides']['typography']['read_size'] == 23, after
+    assert after['current']['revision'] == 1, after
+    run('xdotool','key','Escape')
+    shot('saved-reader.png')
+    assert (root/'first.log').read_text().count('renderReader id=') == renders, 'theme save rebuilt article'
     stop()
     start('restart.log')
     assert config() == after, 'restart must not rewrite saved theme'
-    click(330, 120)
-    shot('restarted-paper.png')
-    image = Image.open(root / 'restarted-paper.png').convert('RGB')
-    assert image.getpixel((1200, 730)) == (255, 253, 247), image.getpixel((1200,730))
-    report = {'output':str(root), 'preset':'paper', 'revision':after['current']['revision'], 'read_size':after['current']['overrides']['typography']['read_size'], 'restart_preserved':True}
-    (root / 'results.json').write_text(json.dumps(report, indent=2))
+    report = {'output':str(root), 'keyboard_categories':len(navigation), 'focus_wrap':True, 'aa_draft_no_write':True, 'read_size':23, 'revision':1, 'article_renders':[renders,renders], 'restart_preserved':True}
+    (root/'results.json').write_text(json.dumps(report,indent=2))
     print(json.dumps(report))
 finally:
     stop()
     xvfb.terminate()
     xvfb.wait(timeout=10)
-    print('Evidence:',root, flush=True)
+    print('Evidence:',root,flush=True)

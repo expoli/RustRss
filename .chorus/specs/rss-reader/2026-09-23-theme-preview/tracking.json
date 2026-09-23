@@ -3,7 +3,7 @@
   "ideaUuid": "6876476a-10ab-44c5-b12c-9e82a509fa40",
   "elaborationStatus": "resolved",
   "proposalUuid": null,
-  "stage": "linux_mcp_theme_preview_integrated",
+  "stage": "appearance_settings_integrated",
   "documentMirrors": {
     "prd.md": "3ffd52f8-0031-4586-89e1-750a6647d26f",
     "tech_design.md": "f9f59507-26dc-45aa-82db-9b1feaedd4e8",
@@ -11,7 +11,7 @@
   },
   "implementationTasksMaterialized": false,
   "productImplemented": false,
-  "nextTask": "T4 appearance settings and organization, then T7 aggregate verification",
+  "nextTask": "T7 aggregate verification only after user instruction and independent review",
   "remainingCapturePlatforms": [
     "windows",
     "macos",
@@ -27,5 +27,8 @@
     "current-kde-wayland"
   ],
   "t5Commit": "1324b45",
-  "t6Evidence": "mcp-theme-preview-results.json"
+  "t6Evidence": "mcp-theme-preview-results.json",
+  "themeSettingsImplemented": true,
+  "t4Evidence": "t4-settings-results.json",
+  "t6Commit": "951d7e9"
 }

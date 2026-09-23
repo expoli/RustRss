@@ -987,3 +987,12 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] 第三方 GUI MCP 客户端的图片显示与消息体上限；T7 聚合验收。
 
 报告：[T6 交付说明](2026-09-23-theme-preview/mcp-theme-preview.md)；机器证据包含二进制 SHA256、每图尺寸/字节/后端：[结果](2026-09-23-theme-preview/mcp-theme-preview-results.json)。截图为固定本地 fixture，不包含用户订阅。
+
+### 24.7 T4 设置重组 / 外观 / Aa（2026-09-23）
+
+- [x] Rust 405、Node 33；Clippy 仅原有 3 告警；双语 468/468。
+- [x] 重建真实 UI 后 Xvfb 单档：七类原生键盘导航与焦点回环，Aa 草稿零写、23px 保存 revision=1、重启保持、正文渲染 1→1。
+- [x] 生产编辑器 + core 隔离探针 12 checks / 3 captures：局部预览、明暗独立预设、CAS 冲突、历史恢复、Aa/阅读同步、段落偏移 <2px、窄窗。
+- [ ] T7：原生 Wayland 本地取消真实点击 + 正文段落位置；30 分钟长测与内存/磁盘趋势；完整主题矩阵/跨平台/真实客户端图片反馈。等待用户指示，不自动执行。
+
+详细步骤、截图、磁盘 clean 前后记录与限制见 [T4 报告](2026-09-23-theme-preview/t4-settings.md)。

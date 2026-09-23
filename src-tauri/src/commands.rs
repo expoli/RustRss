@@ -851,6 +851,22 @@ pub fn update_ui_theme(
     ui_settings(&state)
 }
 
+#[tauri::command]
+pub fn validate_ui_theme(state: State<'_, AppState>, expected_revision: u64, patch: rustrss_core::theme::ThemePatch) -> R<rustrss_core::theme::ThemeSnapshot> {
+    state.with_store(|s| s.validate_theme_patch(expected_revision, &patch).map_err(err))
+}
+
+#[tauri::command]
+pub fn get_ui_theme_history(state: State<'_, AppState>) -> R<Vec<rustrss_core::theme::ThemeConfig>> {
+    state.with_store(|s| s.theme_history().map_err(err))
+}
+
+#[tauri::command]
+pub fn restore_ui_theme(state: State<'_, AppState>, expected_revision: u64, historical_revision: u64) -> R<UiSettings> {
+    state.with_store(|s| s.restore_theme(expected_revision, historical_revision).map_err(err))?;
+    ui_settings(&state)
+}
+
 /// 关闭按钮行为白名单：`exit`（退出程序）/ `tray`（最小化到托盘）。
 /// 托盘不可用时即使选了 `tray` 也强制走退出，避免窗口被藏起后找不回。
 pub(crate) fn normalize_close_action(value: &str) -> &'static str {

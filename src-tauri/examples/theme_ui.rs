@@ -59,6 +59,31 @@ fn finish(window: WebviewWindow, output: State<'_, Output>, report: Value) -> Re
         .exit(if report.get("error").is_some() { 1 } else { 0 });
     Ok(())
 }
+// Isolated editor IPC: the same core methods used by desktop command glue.
+struct EditorStore(std::sync::Mutex<rustrss_core::Store>);
+#[tauri::command]
+fn editor_state(store: State<'_, EditorStore>) -> Value {
+    let s = store.0.lock().unwrap();
+    json!({"theme_snapshot":s.theme_snapshot().unwrap(),"history":s.theme_history().unwrap()})
+}
+#[tauri::command]
+fn validate_ui_theme(store: State<'_, EditorStore>, expected_revision: u64, patch: rustrss_core::theme::ThemePatch) -> Result<rustrss_core::theme::ThemeSnapshot, String> {
+    store.0.lock().unwrap().validate_theme_patch(expected_revision, &patch).map_err(|e|e.to_string())
+}
+#[tauri::command]
+fn update_ui_theme(store: State<'_, EditorStore>, expected_revision: u64, patch: rustrss_core::theme::ThemePatch) -> Result<Value, String> {
+    let snapshot = store.0.lock().unwrap().update_theme(expected_revision, &patch).map_err(|e|e.to_string())?;
+    Ok(json!({"theme_snapshot":snapshot}))
+}
+#[tauri::command]
+fn get_ui_theme_history(store: State<'_, EditorStore>) -> Vec<rustrss_core::theme::ThemeConfig> {
+    store.0.lock().unwrap().theme_history().unwrap()
+}
+#[tauri::command]
+fn restore_ui_theme(store: State<'_, EditorStore>, expected_revision: u64, historical_revision: u64) -> Result<Value, String> {
+    let snapshot = store.0.lock().unwrap().restore_theme(expected_revision, historical_revision).map_err(|e|e.to_string())?;
+    Ok(json!({"theme_snapshot":snapshot}))
+}
 fn main() {
     if !cfg!(target_os = "linux") {
         eprintln!("{:?}", preview_capture::CaptureError::Unavailable);
@@ -72,9 +97,11 @@ fn main() {
     std::fs::create_dir(&output).expect("output must not exist");
     let mut context = tauri::generate_context!("examples/snapshot-probe/tauri.conf.json");
     context.config_mut().app.windows.clear();
+    let settings_probe = std::env::args().any(|arg| arg == "--settings");
     tauri::Builder::default()
+        .manage(EditorStore(std::sync::Mutex::new(rustrss_core::Store::open(":memory:").unwrap())))
         .manage(Output(output))
-        .register_uri_scheme_protocol("fixture", |_ctx, request| {
+        .register_uri_scheme_protocol("fixture", move |_ctx, request| {
             let (mime, body) = match request.uri().path() {
                 "/index.html" | "/" => (
                     "text/html",
@@ -84,8 +111,9 @@ fn main() {
                 ),
                 "/fixture.js" => (
                     "text/javascript",
-                    include_bytes!("theme-ui/fixture.js").to_vec(),
+                    if settings_probe { include_bytes!("theme-ui/settings-fixture.js").to_vec() } else { include_bytes!("theme-ui/fixture.js").to_vec() },
                 ),
+                "/theme-settings.js" => ("text/javascript", include_bytes!("../../ui/theme-settings.js").to_vec()),
                 "/theme.js" => (
                     "text/javascript",
                     include_bytes!("../../ui/theme.js").to_vec(),
@@ -115,6 +143,7 @@ fn main() {
                 .unwrap()
         })
         .invoke_handler(tauri::generate_handler![
+            editor_state, validate_ui_theme, update_ui_theme, get_ui_theme_history, restore_ui_theme,
             snapshots,
             capture_scene,
             finish,

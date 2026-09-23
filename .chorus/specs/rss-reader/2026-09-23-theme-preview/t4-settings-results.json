@@ -1,0 +1,86 @@
+{
+  "rust_passed": 405,
+  "rust_result_sections": 26,
+  "node_passed": 33,
+  "i18n_keys": 468,
+  "clippy_existing_warnings": 3,
+  "editor_probe": {
+    "captures": [
+      {
+        "bytes": 126709,
+        "file": "appearance-draft.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "bytes": 169521,
+        "file": "aa-reading.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "bytes": 82534,
+        "file": "reading-narrow-zh.png",
+        "logical_size": [
+          900,
+          600
+        ],
+        "pixels": [
+          900,
+          600
+        ],
+        "scale": 1
+      }
+    ],
+    "checks": [
+      "bilingual key sets and markup",
+      "draft preview has zero persistent writes",
+      "independent light and dark presets",
+      "sparse override saved",
+      "save retains article and row nodes",
+      "save preserves paragraph offset",
+      "discard does not write",
+      "history restore creates a new revision",
+      "stale draft fails CAS and remains editable",
+      "Aa saves shared reading fields",
+      "reading settings reflect Aa",
+      "narrow window has no horizontal overflow"
+    ],
+    "final_revision": 4
+  },
+  "desktop_probe": {
+    "output": "/tmp/rustrss-theme-desktop-ltnmq51t",
+    "keyboard_categories": 7,
+    "focus_wrap": true,
+    "aa_draft_no_write": true,
+    "read_size": 23,
+    "revision": 1,
+    "article_renders": [
+      1,
+      1
+    ],
+    "restart_preserved": true
+  },
+  "desktop_sha256": "4d728eef413f02bb04eb986f4abaf62fe30af4a967e9a449d567587d2fbe49f5",
+  "disk": {
+    "before_clean": "98%, 21G available",
+    "clean_removed": "64.4GiB, 68049 files",
+    "after_clean": "92%, 79G available",
+    "after_build": "93%, 66G available"
+  },
+  "temporary_evidence": "Two named screenshots and this report are retained in git. Cleanup of six own temporary probe directories (about 17MiB) was rejected by the environment deletion policy; no bypass attempted. Own helper scripts and logs also remain in /tmp. No running probe processes remain."
+}

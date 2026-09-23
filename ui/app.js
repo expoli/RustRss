@@ -287,6 +287,7 @@ function acceptThemeSnapshot(snapshot) {
   applyTheme();
   if (!Object.keys(fontPreview).length) paintFontControls(state.settings);
   refreshSettingDropdowns();
+  themeEditors.forEach(e => e.refresh()); aaEditor?.refresh();
   log(`theme applied revision=${config.revision} hash=${snapshot.config_hash}`);
 }
 
@@ -1128,6 +1129,7 @@ function renderReader(entry) {
   });
   reader.insertAdjacentHTML('beforeend', `
     <div class="reader-actions">
+      <button id="act-aa" aria-haspopup="dialog" title="${t('theme.reading')}">Aa</button>
       <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
       <button id="act-star">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</button>
       <button id="act-later" class="${entry.read_later ? 'later-active' : ''}">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</button>
@@ -1168,6 +1170,7 @@ function renderReader(entry) {
     `readerTags id=${entry.id} n=${(entry.tags || []).length} chips=${(entry.tags || []).map((x) => x.name).join('|') || '-'} rect=${tagChipRect('#reader-tags .tag-chip')}`
   );
 
+  el('act-aa').onclick = openAa;
   el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
   el('act-later').onclick = () => toggleReadLater();
@@ -3801,8 +3804,10 @@ function fillMcpForm() {
 
 /** 切到某个设置分类（左栏可选，右栏只显示对应面板） */
 function showPane(name) {
-  for (const li of el('settings-nav-list').children) {
-    li.classList.toggle('active', li.dataset.pane === name);
+  for (const tab of el('settings-nav-list').querySelectorAll('[data-pane]')) {
+    const active = tab.dataset.pane === name;
+    tab.parentElement.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1;
   }
   for (const pane of document.querySelectorAll('.settings-body .pane')) {
     pane.classList.toggle('hidden', pane.dataset.pane !== name);
@@ -3811,7 +3816,27 @@ function showPane(name) {
 }
 
 /// 记住上次看的是哪个分类（同一次运行内）
-let currentPane = 'general';
+let currentPane = 'appearance';
+let themeEditors = [];
+let aaEditor;
+let settingsReturnFocus;
+function mountThemeEditor(id, kind) {
+  return window.RustRssThemeSettings.createEditor(el(id), { kind,
+    getSnapshot: () => state.settings.theme_snapshot, invoke, t, fontNames: () => state.fontFamilies,
+    apply: settings => { acceptSettings(settings); applyTheme(); themeEditors.forEach(e => e.refresh()); },
+  });
+}
+function closeSettings() {
+  themeEditors.forEach(e => e.dispose()); themeEditors = [];
+  el('settings-overlay').classList.add('hidden');
+  settingsReturnFocus?.focus();
+}
+function openAa() {
+  prefetchFontFamilies();
+  aaEditor?.dispose(); aaEditor = mountThemeEditor('aa-editor', 'reading');
+  el('aa-dialog').showModal();
+}
+
 
 /// 设置页自绘下拉：原生 <select> 的弹层由 GTK 系统主题绘制，应用内切深色它
 /// 仍白底（实测 2026-09-22：Breeze 浅色弹层 #FFFFFF/#3DAEE9 混在深色 UI 里），
@@ -3826,10 +3851,15 @@ const SETTING_DROPDOWNS = [
       { value: 'en', label: t('settings.languageEn') },
     ],
     current: () => state.settings.locale || 'auto',
-    apply: (v) => invoke('set_ui_locale', { locale: v }),
+    apply: (v) => {
+      if (themeEditors.some(editor => editor.dirty)) throw new Error(t('theme.localeDraft'));
+      return invoke('set_ui_locale', { locale: v });
+    },
     after: async () => {
       setLocale(state.settings.locale || 'auto');
       applyStaticI18n();
+      themeEditors.forEach(e => e.dispose());
+      themeEditors = [mountThemeEditor('appearance-editor', 'appearance'), mountThemeEditor('reading-editor', 'reading')];
       renderSidebar();
       renderList();
       if (state.selectedId) {
@@ -3839,29 +3869,6 @@ const SETTING_DROPDOWNS = [
     },
   },
   {
-    id: 'set-theme',
-    choices: () => [
-      { value: 'system', label: t('settings.themeSystem') },
-      { value: 'light', label: t('settings.themeLight') },
-      { value: 'dark', label: t('settings.themeDark') },
-    ],
-    current: () => state.settings.theme || 'system',
-    apply: (v) => invoke('set_ui_theme', { theme: v }),
-    after: () => { applyTheme(); paintFontControls(state.settings); },
-  },
-  {
-    id: 'set-theme-preset',
-    choices: () => ['clear', 'paper', 'slate'].map(value => ({ value, label: t(`settings.preset.${value}`) })),
-    current: () => {
-      const snapshot = state.settings.theme_snapshot;
-      const dark = snapshot?.config.mode === 'dark' || (snapshot?.config.mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-      return snapshot?.config[dark ? 'dark_preset' : 'light_preset'] || 'clear';
-    },
-    apply: (v) => invoke('update_ui_theme', { expectedRevision: state.settings.theme_snapshot.config.revision,
-      patch: { light_preset: v, dark_preset: v, overrides: null } }),
-    after: () => { applyTheme(); paintFontControls(state.settings); refreshSettingDropdowns(); },
-  },
-  {
     id: 'set-close-action',
     choices: () => [
       { value: 'exit', label: t('settings.closeExit') },
@@ -3869,29 +3876,6 @@ const SETTING_DROPDOWNS = [
     ],
     current: () => state.settings.close_action || 'exit',
     apply: (v) => invoke('set_ui_close_action', { action: v }),
-  },
-  // 字体：choices 来自 `list_font_families`（设置页打开时预取并缓存，见 prefetchFontFamilies）。
-  // 只传自己那一个参数：Rust 侧 `set_font_config` 对 `null` 的项不动库里原有值。
-  {
-    id: 'set-font-ui',
-    choices: () => fontChoices('font_ui'),
-    current: () => state.settings.font_ui || '',
-    apply: (v) => invoke('set_font_config', { fontUi: v }),
-    after: () => applyFontConfig(),
-  },
-  {
-    id: 'set-font-read',
-    choices: () => fontChoices('font_read'),
-    current: () => state.settings.font_read || '',
-    apply: (v) => invoke('set_font_config', { fontRead: v }),
-    after: () => applyFontConfig(),
-  },
-  {
-    id: 'set-font-mono',
-    choices: () => fontChoices('font_mono'),
-    current: () => state.settings.font_mono || '',
-    apply: (v) => invoke('set_font_config', { fontMono: v }),
-    after: () => applyFontConfig(),
   },
   {
     id: 'set-refresh-interval',
@@ -4112,6 +4096,9 @@ function bindSettingDropdowns() {
 }
 
 function openSettings() {
+  settingsReturnFocus = document.activeElement;
+  themeEditors.forEach(e => e.dispose());
+  themeEditors = [mountThemeEditor('appearance-editor', 'appearance'), mountThemeEditor('reading-editor', 'reading')];
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
   refreshSettingDropdowns();
   // 字体：滑块位置/标签对齐已保存值（启动时已应用过，弹层里再对一次不会闪）
@@ -4128,6 +4115,7 @@ function openSettings() {
   fillMcpForm();
   showPane(currentPane);
   el('settings-overlay').classList.remove('hidden');
+  el('tab-' + currentPane).focus();
 }
 
 /**
@@ -4284,11 +4272,33 @@ async function boot() {
     }
   };
 
-  el('settings-close').onclick = () => el('settings-overlay').classList.add('hidden');
+  el('settings-close').onclick = closeSettings;
+  el('aa-close').onclick = () => el('aa-dialog').close();
+  el('aa-dialog').addEventListener('close', () => { aaEditor?.dispose(); aaEditor = null; });
+  el('aa-dialog').addEventListener('keydown', e => e.stopPropagation());
+
+  el('settings-overlay').addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !el('ctx-menu')) { e.preventDefault(); e.stopPropagation(); closeSettings(); return; }
+    if (e.key === 'Tab') {
+      const focusable = [...el('settings-overlay').querySelectorAll('button, input, select, textarea, [tabindex="0"]')].filter(n => !n.disabled && n.tabIndex >= 0 && n.getClientRects().length);
+      const first = focusable[0], last = focusable.at(-1);
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    }
+    if (!e.target.closest('#settings-nav-list')) return;
+    const tabs = [...el('settings-nav-list').querySelectorAll('[data-pane]')];
+    let i = tabs.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') i = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowUp') i = (i + tabs.length - 1) % tabs.length;
+    else if (e.key === 'Home') i = 0;
+    else if (e.key === 'End') i = tabs.length - 1;
+    else return;
+    e.preventDefault(); currentPane = tabs[i].dataset.pane; showPane(currentPane); tabs[i].focus();
+  });
 
   // 左栏分类切换（事件委派：以后加分类不用改这里）
   el('settings-nav-list').addEventListener('click', (e) => {
-    const li = e.target.closest('li[data-pane]');
+    const li = e.target.closest('button[data-pane]');
     if (!li) return;
     currentPane = li.dataset.pane;
     showPane(currentPane);
@@ -4349,7 +4359,7 @@ async function boot() {
   };
   el('settings-overlay').addEventListener('click', (e) => {
     // 点击遮罩区域关闭（点对话框内部不关）
-    if (e.target === el('settings-overlay')) el('settings-overlay').classList.add('hidden');
+    if (e.target === el('settings-overlay')) closeSettings();
   });
   el('set-mark-read').addEventListener('change', async (e) => {
     try {
@@ -4383,8 +4393,13 @@ async function boot() {
       log(`set_notify_new_articles failed: ${err.message}`);
     }
   });
-  el('act-mark-all-read').onclick = () => markAll(true);
-  el('act-mark-all-unread').onclick = () => markAll(false);
+  el('btn-list-bulk').onclick = e => {
+    e.stopPropagation();
+    openContextMenu(e, [
+      { label: t('settings.markAllRead'), action: () => markAll(true) },
+      { label: t('settings.markAllUnread'), action: () => markAll(false) },
+    ], el('btn-list-bulk'));
+  };
 
   el('act-export-opml').onclick = async () => {    try {
       const path = await invoke('export_opml');
@@ -4630,7 +4645,9 @@ async function boot() {
  * 自检见 selfTestShortcutKeys()（键位从本函数源码抽取，不另维护清单）。
  */
 function onGlobalKeydown(e) {
-  const inField = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+  const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+  if (el('aa-dialog').open) return;
+  if (!el('settings-overlay').classList.contains('hidden') && e.key !== 'Escape') return;
   // 确认框自己处理 Esc/Enter，其它全局快捷键先让位
   if (!el('ai-confirm-overlay').classList.contains('hidden')) return;
   if (e.key === '/' && !inField) {
