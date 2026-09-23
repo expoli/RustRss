@@ -1,14 +1,14 @@
 ---
 title: Tech Design: 标签（文章级 tag）
 proposalUuid: 0b5f9a68-c377-463d-be03-e74b4415e8c7
-documentUuid:
+documentUuid: a4ade641-57de-411a-b6c8-c8269e6bb374
 ---
 
 # Technical Design: 标签（文章级 tag）
 
 ## 概览
 
-四个模块化任务：**core 数据层（迁移 v12 + store API + 索引断言）→ UI 交互（阅读/列表/筛选/快捷键）→ UI 管理（侧栏区 + 置顶/颜色/拖拽 + 重命名/删除）→ MCP 工具（分权限）**。全部沿用既有架构：core 不依赖 Tauri；UI 沿用原生 JS + 子菜单机制；MCP 复用 T2 已落地的注册表/写契约/审计。
+四个模块化任务：**core 数据层（迁移 v12 + store API + 索引断言）→ UI 交互（阅读/列表/筛选/快捷键）→ UI 管理（侧栏区 + 置顶/颜色/拖拽 + 重命名/删除）→ MCP 工具（分权限）**。全部沿用既有架构：core 不依赖 Tauri；UI 沿用原生 JS + 子菜单机制；MCP 复用 `2026-09-23-mcp-write` 批次已落地的 `registry.rs`/`write_contract.rs`/`audit.rs`（commit `30a476c`）。
 
 ## Module Contracts
 

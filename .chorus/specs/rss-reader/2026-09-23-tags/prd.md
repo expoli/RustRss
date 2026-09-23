@@ -1,7 +1,7 @@
 ---
 title: PRD: 标签（文章级 tag）
 proposalUuid: 0b5f9a68-c377-463d-be03-e74b4415e8c7
-documentUuid:
+documentUuid: bf8d16f3-dda1-4c1f-9407-722b973da0c0
 ---
 
 # PRD: 标签（文章级 tag）
