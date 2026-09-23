@@ -870,7 +870,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 **修复内容**
 
-- **B1（阻塞，跨任务缝隙）**：`refreshCounts()` 末尾补 `renderListCount()` + 尾部文案刷新（`setSentinelLoading(paging.loading)`，两者都同值短路）——此前 `state.db` 更新后没有人重渲 `#list-count`，会话内标读时侧栏未读已变、头部「共 N」与尾部进度仍是旧值，直到下次列表重建才追上。
+- **B1（阻塞，跨任务缝隙）**：`refreshCounts()` 末尾补 `renderListCount()` + 尾部文案刷新（`refreshSentinelFooter()`）——精度修正（聚合复核 round 2 的 Note-3）：头部是**同值短路**（未变零写入），尾部三形态是**幂等写**（未做旧值比对；每次计数刷新一次短字符串赋值、不在渲染热路径上，已作为已知小项记进 Follow-ups）——此前 `state.db` 更新后没有人重渲 `#list-count`，会话内标读时侧栏未读已变、头部「共 N」与尾部进度仍是旧值，直到下次列表重建才追上。
 - **NOTE-1（缓存 key 未校验）**：`viewTotalSync()` 只在 `viewTotalCache.key === viewTotalKey()` 时返回缓存值，否则返回 null（避免拿到其他视图的陈旧总数）。
 - **NOTE-3（搜索缺终止行）**：搜索视图也画终止行，文案用既有 `list.loadedOnly`（「已加载 M 篇」），不声称 FTS 总数。
 
