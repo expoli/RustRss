@@ -19,7 +19,7 @@ use std::time::Duration;
 use chrono::{DateTime, Utc};
 use rusqlite::types::Value;
 use rusqlite::{params, params_from_iter, Connection};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::model::{Entry, IdOrigin};
@@ -217,6 +217,8 @@ pub struct MigrationOutcome {
 #[derive(Debug, Clone, Default)]
 pub struct EntryQuery {
     pub feed_id: Option<i64>,
+    /// Folder membership is resolved by SQL; an empty folder matches no entries.
+    pub folder_id: Option<i64>,
     /// 多源过滤（`feed_id IN (…)`）。语义：
     /// - `None` = 不过滤（全部源）；
     /// - `Some(非空)` = 只取这些源的条目（未知 id 自然匹配零条）；
@@ -268,6 +270,20 @@ pub struct EntryQuery {
 pub enum MarkScope {
     All,
     Feed(i64),
+}
+
+/// Desktop batch operations require an explicit scope; invalid IPC never defaults to All.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ViewScope {
+    All {},
+    Unread {},
+    Feed { id: i64 },
+    Folder { id: i64 },
+    Tag { id: i64 },
+    Starred {},
+    Later {},
+    Search { query: String },
 }
 
 /// 条目状态位（`set_read` / `set_starred` / `set_read_later` 同族的第三套入口）。
@@ -1036,23 +1052,7 @@ impl Store {
         let mut sql = entry_list_sql(None);
         let has_fts = !plan.fts.is_empty();
 
-        if has_fts {
-            sql.push_str(" JOIN entries_fts ON entries_fts.rowid = e.id");
-        }
-        sql.push_str(" WHERE 1=1");
-        if self.list_hide_read() {
-            sql.push_str(" AND e.read = 0");
-        }
-        if has_fts {
-            sql.push_str(" AND entries_fts MATCH ?");
-            values.push(Value::Text(plan.fts.clone()));
-        }
-        for term in &plan.like_terms {
-            sql.push_str(" AND (e.title LIKE ? OR e.content_text LIKE ?)");
-            let pattern = format!("%{term}%");
-            values.push(Value::Text(pattern.clone()));
-            values.push(Value::Text(pattern));
-        }
+        append_search_filter(&mut sql, &mut values, query, self.list_hide_read());
         if has_fts {
             sql.push_str(" ORDER BY bm25(entries_fts), COALESCE(e.published_at, e.fetched_at) DESC");
         } else {
@@ -1287,6 +1287,54 @@ impl Store {
             )?,
         };
         Ok(n)
+    }
+
+    /// Mark all rows matching the current view, independent of pagination.
+    /// Materialize IDs before updating: read filters and the FTS update trigger must not
+    /// change the target set while the statement runs. Never fetch article bodies here.
+    pub fn mark_view(&self, scope: &ViewScope, read: bool) -> Result<usize> {
+        let (sql, values) = self.mark_view_sql(scope, read)?;
+        Ok(self.conn.execute(&sql, params_from_iter(values))?)
+    }
+
+    /// Query-plan evidence uses exactly the statement executed by mark_view.
+    pub fn explain_mark_view(&self, scope: &ViewScope, read: bool) -> Result<Vec<String>> {
+        let (sql, values) = self.mark_view_sql(scope, read)?;
+        let mut stmt = self.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
+        let rows = stmt.query_map(params_from_iter(values), |r| r.get::<_, String>(3))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    fn mark_view_sql(&self, scope: &ViewScope, read: bool) -> Result<(String, Vec<Value>)> {
+        let mut sql = String::from("SELECT e.id FROM entries e");
+        let mut values = Vec::new();
+        if let ViewScope::Search { query } = scope {
+            if query.trim().is_empty() {
+                return Ok(("UPDATE entries SET read = read WHERE 0".into(), vec![]));
+            }
+            append_search_filter(&mut sql, &mut values, query, self.list_hide_read());
+        } else {
+            let mut q = EntryQuery::default();
+            match scope {
+                ViewScope::All {} => {}
+                ViewScope::Unread {} => q.unread_only = true,
+                ViewScope::Feed { id } => q.feed_id = Some(*id),
+                ViewScope::Folder { id } => q.folder_id = Some(*id),
+                ViewScope::Tag { id } => q.tag_id = Some(*id),
+                ViewScope::Starred {} => q.starred_only = true,
+                ViewScope::Later {} => q.read_later_only = true,
+                ViewScope::Search { .. } => unreachable!(),
+            }
+            append_entry_filter(&mut sql, &mut values, &q, self.effective_hide_read(&q));
+        }
+        sql.push_str(" AND e.read = ?");
+        values.push(Value::Integer(i64::from(!read)));
+        let update = format!(
+            "WITH targets AS MATERIALIZED ({sql})
+            UPDATE entries SET read = ? WHERE id IN (SELECT id FROM targets)"
+        );
+        values.push(Value::Integer(i64::from(read)));
+        Ok((update, values))
     }
 
     // ---------------------------------------------------------------- 标签
@@ -2085,42 +2133,37 @@ fn list_order_by(sort: ListSort) -> &'static str {
     }
 }
 
-/// `list_entries` 的 SQL 与参数（排序档 / 隐藏已读 / 游标续扫条件都在这里拼接）。
-///
-/// 抽成独立函数是为了让 EXPLAIN 断言与线上 SQL 逐字同源（见 `explain_list_entries`）；
-/// `sort` 与 `hide_read` 由调用方从设置读出传入（测试里先写设置再断言计划，
-/// 验的就是线上真会跑到的 SQL）。
-fn list_entries_sql(q: &EntryQuery, sort: ListSort, hide_read: bool) -> (String, Vec<Value>) {
-    // INDEXED BY 的必要性（实测，sqlite 3.53.2，无 sqlite_stat1 的新库）：
-    // - `newest`/`oldest` 的续页：不过滤时靠统计也能选中 idx_entries_sortkey，但
-    //   read/feed_id 这类带等值索引的筛选形态，planner 会改选等值索引 + 临时排序
-    //   （本程序从不 ANALYZE）。续页是逐页路径，计划不能看统计的脸色。
-    // - `unread_first`：首屏也钉。它的 ORDER BY 只有 v11 复合索引能同时满足顺序与
-    //   `read` 等值筛选；不钉的话 feed 视图退化成 idx_entries_feed_read +
-    //   `USE TEMP B-TREE FOR LAST 2 TERMS OF ORDER BY`（每页重排一遍筛选集合）。
-    // - `newest`/`oldest` + 多源 `IN`：同样钉住。实测（sqlite 3.x，无 ANALYZE 的新库）
-    //   feed_ids 会把 planner 引到 `idx_entries_feed_read (feed_id=?)` +
-    //   `USE TEMP B-TREE FOR ORDER BY`——每页把筛选集合重排一遍；钉排序索引后变成
-    //   按序 SEARCH + 逐行过滤 feed_id（同游标续扫的道理）。
-    // - `newest`/`oldest` + 标签过滤：同理钉住（否则 planner 会驱动 `idx_entry_tags_tag`
-    //   再临时排序）。标签的条目 id 集由 `idx_entry_tags_tag` 的子查询给出，外层扫的是
-    //   排序索引——不得退化成 `SCAN entries`（见 `explain_list_entries` 的标签用例）。
-    let pin = match sort {
-        ListSort::UnreadFirst => Some(sort),
-        ListSort::Newest | ListSort::Oldest => {
-            if q.cursor.is_some() || q.feed_ids.is_some() || q.tag_id.is_some() {
-                Some(sort)
-            } else {
-                None
-            }
-        }
-    };
-    let mut sql = entry_list_sql(pin);
-    let mut values: Vec<Value> = Vec::new();
+fn append_search_filter(sql: &mut String, values: &mut Vec<Value>, query: &str, hide_read: bool) {
+    let plan = plan_query(query);
+    let has_fts = !plan.fts.is_empty();
+    if has_fts {
+        sql.push_str(" JOIN entries_fts ON entries_fts.rowid = e.id");
+    }
+    sql.push_str(" WHERE 1=1");
+    if hide_read {
+        sql.push_str(" AND e.read = 0");
+    }
+    if has_fts {
+        sql.push_str(" AND entries_fts MATCH ?");
+        values.push(Value::Text(plan.fts.clone()));
+    }
+    for term in &plan.like_terms {
+        sql.push_str(" AND (e.title LIKE ? OR e.content_text LIKE ?)");
+        let pattern = format!("%{term}%");
+        values.push(Value::Text(pattern.clone()));
+        values.push(Value::Text(pattern));
+    }
+}
+
+fn append_entry_filter(sql: &mut String, values: &mut Vec<Value>, q: &EntryQuery, hide_read: bool) {
     sql.push_str(" WHERE 1=1");
     if let Some(feed_id) = q.feed_id {
         sql.push_str(" AND e.feed_id = ?");
         values.push(Value::Integer(feed_id));
+    }
+    if let Some(folder_id) = q.folder_id {
+        sql.push_str(" AND e.feed_id IN (SELECT id FROM feeds WHERE folder_id = ?)");
+        values.push(Value::Integer(folder_id));
     }
     if let Some(feed_ids) = &q.feed_ids {
         if feed_ids.is_empty() {
@@ -2167,6 +2210,41 @@ fn list_entries_sql(q: &EntryQuery, sort: ListSort, hide_read: bool) -> (String,
     if hide_read && !q.starred_only && !q.read_later_only {
         sql.push_str(" AND e.read = 0");
     }
+}
+
+/// `list_entries` 的 SQL 与参数（排序档 / 隐藏已读 / 游标续扫条件都在这里拼接）。
+///
+/// 抽成独立函数是为了让 EXPLAIN 断言与线上 SQL 逐字同源（见 `explain_list_entries`）；
+/// `sort` 与 `hide_read` 由调用方从设置读出传入（测试里先写设置再断言计划，
+/// 验的就是线上真会跑到的 SQL）。
+fn list_entries_sql(q: &EntryQuery, sort: ListSort, hide_read: bool) -> (String, Vec<Value>) {
+    // INDEXED BY 的必要性（实测，sqlite 3.53.2，无 sqlite_stat1 的新库）：
+    // - `newest`/`oldest` 的续页：不过滤时靠统计也能选中 idx_entries_sortkey，但
+    //   read/feed_id 这类带等值索引的筛选形态，planner 会改选等值索引 + 临时排序
+    //   （本程序从不 ANALYZE）。续页是逐页路径，计划不能看统计的脸色。
+    // - `unread_first`：首屏也钉。它的 ORDER BY 只有 v11 复合索引能同时满足顺序与
+    //   `read` 等值筛选；不钉的话 feed 视图退化成 idx_entries_feed_read +
+    //   `USE TEMP B-TREE FOR LAST 2 TERMS OF ORDER BY`（每页重排一遍筛选集合）。
+    // - `newest`/`oldest` + 多源 `IN`：同样钉住。实测（sqlite 3.x，无 ANALYZE 的新库）
+    //   feed_ids 会把 planner 引到 `idx_entries_feed_read (feed_id=?)` +
+    //   `USE TEMP B-TREE FOR ORDER BY`——每页把筛选集合重排一遍；钉排序索引后变成
+    //   按序 SEARCH + 逐行过滤 feed_id（同游标续扫的道理）。
+    // - `newest`/`oldest` + 标签过滤：同理钉住（否则 planner 会驱动 `idx_entry_tags_tag`
+    //   再临时排序）。标签的条目 id 集由 `idx_entry_tags_tag` 的子查询给出，外层扫的是
+    //   排序索引——不得退化成 `SCAN entries`（见 `explain_list_entries` 的标签用例）。
+    let pin = match sort {
+        ListSort::UnreadFirst => Some(sort),
+        ListSort::Newest | ListSort::Oldest => {
+            if q.cursor.is_some() || q.feed_ids.is_some() || q.folder_id.is_some() || q.tag_id.is_some() {
+                Some(sort)
+            } else {
+                None
+            }
+        }
+    };
+    let mut sql = entry_list_sql(pin);
+    let mut values: Vec<Value> = Vec::new();
+    append_entry_filter(&mut sql, &mut values, q, hide_read);
     match sort {
         ListSort::Newest => {
             if let Some((sortkey, id)) = q.cursor {

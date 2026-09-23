@@ -887,3 +887,44 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 残留（与 B1 同类）：终止行（`exhausted` / 搜索）是静态文本，而 `refreshCounts` 原来调用的 `setSentinelLoading` 在没有按钮时提前返回——标读后终止行的 N 会滞后到下次列表重建。
 - 修：抽出 `sentinelTerminalText()`（终止行文案）与 `refreshSentinelFooter()`（按钮态含在飞禁用 + 终止行文本，统一重算），`refreshCounts()` 与 `loadMore()` 都改调它，删掉只服务按钮的 `setSentinelLoading`。
 - 实机证据：feed#93 + 只看未读（47 条未读、`exhausted=true`、终止行「已到末尾（共 47 篇）」）→ 点开一篇（日志 `open id=9489 markRead=true read=false`）→ 出现 `renderSidebar`、**0 条 `view=`**（未重建）→ 同位置截图终止行变为「已到末尾（共 46 篇）」。提交 `a332afe`。
+
+
+## 23. 遗留问题逐项修复（2026-09-23）
+
+### 23.1 当前视图批量标读作用域
+
+- 复现：`node scripts/tests/mark-view.test.cjs` 原代码 7 项失败，缺失显式 scope；修改后补充分组共 8 项通过。
+- core：`mark_view_is_scoped_and_not_limited_to_loaded_page` 验证 230 条跨页的 feed/tag/starred/later/folder/FTS/单字中文搜索范围，范围外不变、幂等、空分组/空搜索/未知 ID、隐藏已读与星标豁免；`mark_view_rejects_missing_or_unknown_scope` 验证 IPC 缺参/未知 kind 不退化为全库。
+- 批量 SQL 与列表/搜索复用过滤函数，单语句先物化目标 ID，再更新；避免 FTS 触发器与 read 变化影响本次目标集合。
+- 「全部未读」遵循有效筛选，不是撤销；未读视图中执行没有变更，需切到全部并关闭只看未读后处理已读文章。
+- 实机：重建 desktop 后在独立 Xvfb + 12000 篇样本库点击星标视图 → Settings/Reading → Mark this view read；日志 `mark_all_read scope=starred changed=100`，SQLite 断言 `(sum(read AND starred), sum(read AND NOT starred)) = (100, 0)`。
+
+
+### 23.2 计数/异步状态、分组、凭据锁
+
+- `node scripts/tests/list-state.test.cjs`：6 项通过；先红后绿覆盖同值零写入、总数乱序覆盖、跨视图旧分页游标、分组参数/未读口径、正文请求乱序和移源后分组刷新。
+- core 分组测试：230 条、三档游标无重复无遗漏、空分组为空；EXPLAIN 不临时排序；删排序/标签索引后同源 EXPLAIN 断言失败。
+- desktop：模拟凭据读取时 `try_lock` 必须成功，设置页与 AI 客户端各一项；凭据不可用只更新设置页状态。保存凭据已移到 store 闭包之外。
+- 分组实机：点击名称日志 `view=folder` 与 `view total folder#1 n=6000`，箭头单独折叠。截图/运行日志在 `target/verification-followups/`；可用 `python3 scripts/verify-followups-ui.py` 对隔离夹具复跑，脚本自动清理所属进程。
+- 构建/回归：`cargo test --workspace` 372 passed，Node 14 passed；`cargo clippy --workspace --all-targets` 仅原有 3 条 core 告警；`cargo build -p rustrss-desktop` 成功。新增脚本仅用于验证，无前端构建链。
+- 环境：首次 Xvfb 启动继承 Wayland 会话，修正为独立 XDG_RUNTIME_DIR 后验证；无产品代码强制显示后端。真实 Wayland/Windows/macOS 的本批交互未复测。
+
+### 23.3 冷页缓存计数
+
+- NVMe 文件系统上的合成夹具：120 源、12000 篇、470286336 bytes；正文每篇约 12KB，另有 HTML 和分词内容。夹具与真实库隔离。
+- 每项三次新进程；fsync + POSIX_FADV_DONTNEED 仅作用于夹具文件，mincore 每轮确认 `resident_before=0 / 114816 pages`。未清全局缓存，不声称存储控制器也冷。
+- 首次 SQL：feed(100) 0.244–0.382ms；folder(6000) 3.350–5.606ms；tag(3000) 0.920–2.817ms。打开库另计 1.07–3.66ms；热态 100 次均值分别约 0.019/0.519/0.242ms。
+- 复现命令见 `scripts/measure-scope-counts.py`；原始数据见 `2026-09-23-followups-counts.json`。这是 core 计数，不能等同 IPC/渲染或真实用户库耗时。
+- 实机另观察一次分组 `list_entries: 138ms`，这是列表查询路径，需要进一步分层定位；未把计数达标写成列表性能达标。
+
+### 23.4 系统侧阻挡
+
+- installed/candidate 均 `kwallet6 6.24.0-0ubuntu1`；`apt-get --simulate --only-upgrade install kwallet6` 报 0 upgraded。
+- 尝试刷新 APT 索引被 `sudo: interactive authentication is required` 阻挡，未升级任何系统包。本地索引可能陈旧；需管理员刷新索引后确认发行版的修复包或回移补丁，再安装并重新登录验证。应用侧保留 3 次有限重试，不把概率缓解当作系统根治。
+
+## 24. 完整主题与 MCP 预览设计验证（2026-09-23）
+
+- 已验证：独立 GTK WebView + WebKitGTK 2.52.6 原生内容截图；三种配色循环两轮，6/6 标记像素匹配；同主题两次 PNG 哈希相同。最终 PNG 2560×1800、489262–506432 bytes，应用配置至探针保存/检查耗时 242.22–305.39ms（包含写盘/图片检查，不是生产延时承诺）。
+- 证据：[可行性报告与复现命令](2026-09-23-theme-preview/capture-feasibility.md)、[结果 JSON](2026-09-23-theme-preview/snapshot-results.json)、[独立交互稿](2026-09-23-theme-preview/mockup.html)。
+- 本次仅增加设计文档与开发探针，未修改产品主题行为，不重复运行全量产品测试；探针在隔离 Xvfb 下运行，不访问用户数据库，不安装系统包。
+- 未验证：Tauri 集成、MCP 图片响应、真实组件复用、最小化/隐藏、Wayland、客户端图片显示；Windows/macOS 当前主机无法运行验证。详见可行性报告后续步骤，保持对应验收未勾选。

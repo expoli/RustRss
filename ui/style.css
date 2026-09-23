@@ -1113,3 +1113,9 @@ li.folder-feed .name { font-size: 13px; }
   border-color: var(--accent);
   color: #fff;
 }
+
+/* Folder controls remain independently keyboard accessible. */
+li.folder-head.active { background: var(--bg-hover); }
+li.folder-head button { border: 0; background: transparent; color: inherit; padding: 0; font: inherit; }
+li.folder-head .folder-arrow { flex: 0 0 18px; }
+li.folder-head button.name { text-align: left; min-width: 0; }

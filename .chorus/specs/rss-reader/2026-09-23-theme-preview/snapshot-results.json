@@ -1,0 +1,86 @@
+{
+  "backend": "WebKitGTK native get_snapshot",
+  "webkit": "2.52.6",
+  "scope": "standalone visible GTK WebView; mock content; not Tauri/MCP integration",
+  "captures": [
+    {
+      "revision": 1,
+      "palette": "clear",
+      "mode": "light",
+      "size": [
+        2560,
+        1800
+      ],
+      "png_bytes": 489262,
+      "sha256": "44777cca8d5f1dd49543a71bd050172450ebb6e03f7966129cd7e79f08750c53",
+      "apply_to_snapshot_ms": 305.39,
+      "marker_matches": true
+    },
+    {
+      "revision": 2,
+      "palette": "paper",
+      "mode": "dark",
+      "size": [
+        2560,
+        1800
+      ],
+      "png_bytes": 506432,
+      "sha256": "74eed86e4ef3fc4096f8b1248b3d178f14442702ac555c697adfc62ec45df019",
+      "apply_to_snapshot_ms": 275.43,
+      "marker_matches": true
+    },
+    {
+      "revision": 3,
+      "palette": "slate",
+      "mode": "light",
+      "size": [
+        2560,
+        1800
+      ],
+      "png_bytes": 491725,
+      "sha256": "a4c7a956eb140cbe4ae0029fd409c559c9feafad65b2933e1eb0b898f4c2a00a",
+      "apply_to_snapshot_ms": 252.29,
+      "marker_matches": true
+    },
+    {
+      "revision": 4,
+      "palette": "clear",
+      "mode": "light",
+      "size": [
+        2560,
+        1800
+      ],
+      "png_bytes": 489262,
+      "sha256": "44777cca8d5f1dd49543a71bd050172450ebb6e03f7966129cd7e79f08750c53",
+      "apply_to_snapshot_ms": 242.22,
+      "marker_matches": true
+    },
+    {
+      "revision": 5,
+      "palette": "paper",
+      "mode": "dark",
+      "size": [
+        2560,
+        1800
+      ],
+      "png_bytes": 506432,
+      "sha256": "74eed86e4ef3fc4096f8b1248b3d178f14442702ac555c697adfc62ec45df019",
+      "apply_to_snapshot_ms": 242.93,
+      "marker_matches": true
+    },
+    {
+      "revision": 6,
+      "palette": "slate",
+      "mode": "light",
+      "size": [
+        2560,
+        1800
+      ],
+      "png_bytes": 491725,
+      "sha256": "a4c7a956eb140cbe4ae0029fd409c559c9feafad65b2933e1eb0b898f4c2a00a",
+      "apply_to_snapshot_ms": 249.63,
+      "marker_matches": true
+    }
+  ],
+  "errors": []
+}

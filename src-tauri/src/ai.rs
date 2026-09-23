@@ -157,7 +157,7 @@ pub fn load_key(provider: &str) -> Result<(Option<String>, Option<KeySource>), S
     }
     // Entry::new 在 secret-service 后端只是建个内存结构（不连 D-Bus），失败基本只可能是空 target；
     // 这里回错误原文：设置页那一路按 kind 本地化，中文说明不会漏进英文界面；
-    // 给用户看的前缀由调用方补（见 config_from_store）
+    // 给用户看的前缀由调用方补（见 config_snapshot）
     let entry = Entry::new(KEYRING_SERVICE, &key_account(provider)).map_err(|e| e.to_string())?;
     match keyring_retry(|| entry.get_password()) {
         Ok(k) if !k.trim().is_empty() => Ok((Some(k), Some(KeySource::Keyring))),
@@ -186,34 +186,43 @@ pub fn non_empty_setting(store: &Store, key: &str) -> Option<String> {
 }
 
 /// 组装 AiConfig：设置来自数据库，key 来自凭据库（或环境变量）
-pub fn config_from_store(store: &Store) -> Result<(AiConfig, Option<KeySource>), String> {
+fn config_snapshot(store: &Store) -> Result<AiConfig, String> {
     let provider =
         provider_from_str(&non_empty_setting(store, K_PROVIDER).unwrap_or(DEFAULT_PROVIDER.into()));
     let model = non_empty_setting(store, K_MODEL);
     let base_url = non_empty_setting(store, K_BASE_URL);
-    let (key, key_source) =
-        load_key(provider_to_str(provider)).map_err(|e| format!("读取凭据库失败：{e}"))?;
 
     let model = model.ok_or_else(|| "还没填模型名（设置 → AI）".to_string())?;
     let base = base_url.unwrap_or_else(|| default_base_url(provider).to_string());
 
     let config = match provider {
         Provider::OpenAiCompatible => {
-            AiConfig::openai_compatible(&base, &model, key.clone().unwrap_or_default())
+            AiConfig::openai_compatible(&base, &model, String::new())
         }
         Provider::Anthropic => {
-            AiConfig::anthropic(&model, key.clone().unwrap_or_default()).with_base_url(&base)
+            AiConfig::anthropic(&model, String::new()).with_base_url(&base)
         }
-        Provider::Gemini => AiConfig::gemini(&model, key.clone().unwrap_or_default()).with_base_url(&base),
+        Provider::Gemini => AiConfig::gemini(&model, String::new()).with_base_url(&base),
         Provider::Ollama => AiConfig::ollama(&model).with_base_url(&base),
     }
     .with_max_output_tokens(max_output_tokens_from_store(store))
     .with_reasoning_effort(reasoning_effort_from_store(store));
-    Ok((config, key_source))
+    Ok(config)
 }
 
-pub fn client_from_store(store: &Store) -> Result<AiClient, String> {
-    let (config, _) = config_from_store(store)?;
+pub fn client_from_state(state: &crate::state::AppState) -> Result<AiClient, String> {
+    client_with_key_loader(state, load_key)
+}
+
+fn client_with_key_loader(
+    state: &crate::state::AppState,
+    load: impl FnOnce(&str) -> Result<(Option<String>, Option<KeySource>), String>,
+) -> Result<AiClient, String> {
+    let mut config = state.with_store(config_snapshot)?;
+    if config.provider != Provider::Ollama {
+        config.api_key = load(provider_to_str(config.provider))
+            .map_err(|e| format!("读取凭据库失败：{e}"))?.0;
+    }
     AiClient::new(config).map_err(|e| e.to_string())
 }
 
@@ -233,6 +242,24 @@ pub fn confirm_before_send(store: &Store) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn credential_client_creation_does_not_hold_store_lock() {
+        let state = crate::state::AppState::for_test();
+        state.with_store(|s| {
+            s.set_setting(K_PROVIDER, "openai").unwrap();
+            s.set_setting(K_MODEL, "test-model").unwrap();
+            Ok(())
+        }).unwrap();
+        let mut called = false;
+        client_with_key_loader(&state, |_| {
+            called = true;
+            assert!(state.store_is_available());
+            Ok((Some("test-key".into()), Some(KeySource::Keyring)))
+        }).unwrap();
+        assert!(called);
+    }
+
 
     #[test]
     fn confirm_before_send_defaults_to_on_and_only_accepts_explicit_off() {

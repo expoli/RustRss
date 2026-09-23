@@ -145,6 +145,163 @@ fn unread_counts_track_state() {
 }
 
 #[test]
+fn mark_view_is_scoped_and_not_limited_to_loaded_page() {
+    use rustrss_core::store::ViewScope;
+    let (store, feed) = setup();
+    let other = store.add_feed("https://example.com/other", None).unwrap();
+    let entries: Vec<_> = (0..230)
+        .map(|n| mk_entry(&format!("a{n}"), "Rust article", "中文内容"))
+        .collect();
+    store.upsert_entries(feed, &entries).unwrap();
+    store
+        .upsert_entries(other, &[mk_entry("outside", "Other", "outside")])
+        .unwrap();
+    let rows = store
+        .list_entries(&EntryQuery {
+            limit: Some(500),
+            ..Default::default()
+        })
+        .unwrap();
+    let ids: Vec<_> = rows
+        .iter()
+        .filter(|e| e.feed_id == feed)
+        .map(|e| e.id)
+        .collect();
+    let outside = rows.iter().find(|e| e.feed_id == other).unwrap().id;
+    let tag = store.create_tag("topic", None).unwrap();
+    for chunk in ids.chunks(100) {
+        store
+            .assign_tags(&TagTarget::Entries(chunk.to_vec()), &[tag.id])
+            .unwrap();
+    }
+    store.set_starred(&ids, true).unwrap();
+    store.set_read_later(&ids, true).unwrap();
+    let folder = store.add_folder("group").unwrap();
+    store.assign_folder(feed, Some(folder)).unwrap();
+    for scope in [
+        ViewScope::Feed { id: feed },
+        ViewScope::Tag { id: tag.id },
+        ViewScope::Starred {},
+        ViewScope::Later {},
+        ViewScope::Folder { id: folder },
+        ViewScope::Search {
+            query: "Rust".into(),
+        },
+        ViewScope::Search {
+            query: "中".into()
+        },
+    ] {
+        let plan = store.explain_mark_view(&scope, true).unwrap().join("\n");
+        assert!(
+            !plan
+                .lines()
+                .any(|line| line == "SCAN e" || line == "SCAN entries"),
+            "{scope:?}: {plan}"
+        );
+        assert_eq!(store.mark_view(&scope, true).unwrap(), 230, "{scope:?}");
+        assert!(
+            !store.get_entry(outside).unwrap().unwrap().read,
+            "outside {scope:?}"
+        );
+        assert_eq!(store.mark_view(&scope, true).unwrap(), 0);
+        assert_eq!(store.mark_view(&scope, false).unwrap(), 230);
+    }
+    let empty = store.add_folder("empty").unwrap();
+    for scope in [
+        ViewScope::Folder { id: empty },
+        ViewScope::Tag { id: -1 },
+        ViewScope::Feed { id: -1 },
+        ViewScope::Search { query: "  ".into() },
+    ] {
+        assert_eq!(store.mark_view(&scope, true).unwrap(), 0);
+    }
+    store.set_read(&[outside], true).unwrap();
+    assert_eq!(store.mark_view(&ViewScope::Unread {}, false).unwrap(), 0);
+    store.set_bool_setting(LIST_HIDE_READ_KEY, true).unwrap();
+    assert_eq!(store.mark_view(&ViewScope::All {}, false).unwrap(), 0);
+    assert_eq!(
+        store
+            .mark_view(
+                &ViewScope::Search {
+                    query: "Other".into()
+                },
+                false
+            )
+            .unwrap(),
+        0
+    );
+    assert_eq!(store.mark_view(&ViewScope::Unread {}, true).unwrap(), 230);
+    assert_eq!(
+        store.mark_view(&ViewScope::Starred {}, false).unwrap(),
+        230,
+        "starred ignores hide-read"
+    );
+    store.set_bool_setting(LIST_HIDE_READ_KEY, false).unwrap();
+    assert_eq!(store.mark_view(&ViewScope::All {}, false).unwrap(), 1);
+}
+
+#[test]
+fn mark_view_rejects_missing_or_unknown_scope() {
+    use rustrss_core::store::ViewScope;
+    for value in [
+        r#"{}"#,
+        r#"{"kind":"oops"}"#,
+        r#"{"kind":"feed"}"#,
+        r#"{"kind":"all","id":7}"#,
+    ] {
+        assert!(serde_json::from_str::<ViewScope>(value).is_err(), "{value}");
+    }
+}
+
+#[test]
+fn folder_pages_cover_only_members_in_every_sort_order() {
+    let (store, feed) = setup();
+    let folder = store.add_folder("group").unwrap();
+    let empty = store.add_folder("empty").unwrap();
+    store.assign_folder(feed, Some(folder)).unwrap();
+    let other = store.add_feed("https://example.com/outside", None).unwrap();
+    let entries: Vec<_> = (0..230).map(|n| mk_entry(&format!("e{n}"), "article", "body")).collect();
+    store.upsert_entries(feed, &entries).unwrap();
+    store.upsert_entries(other, &[mk_entry("out", "outside", "body")]).unwrap();
+    for order in ["newest", "oldest", "unread_first"] {
+        store.set_setting(LIST_SORT_KEY, order).unwrap();
+        let mut query = EntryQuery { folder_id: Some(folder), limit: Some(100), ..Default::default() };
+        let mut seen = std::collections::HashSet::new();
+        loop {
+            let rows = store.list_entries(&query).unwrap();
+            for row in &rows {
+                assert_eq!(row.feed_id, feed);
+                assert!(seen.insert(row.id), "duplicate in {order}");
+            }
+            let Some(last) = rows.last() else { break };
+            query.cursor = Some((last.sortkey, last.id));
+            query.cursor_read = Some(last.read);
+        }
+        assert_eq!(seen.len(), 230, "{order}");
+        let plan = store.explain_list_entries(&query).unwrap().join("\n");
+        assert!(!plan.contains("TEMP B-TREE"), "{order}: {plan}");
+    }
+    assert!(store.list_entries(&EntryQuery { folder_id: Some(empty), ..Default::default() }).unwrap().is_empty());
+}
+
+#[test]
+fn scoped_query_plan_guards_fail_when_required_indexes_are_removed() {
+    use rustrss_core::store::ViewScope;
+    let path = std::env::temp_dir().join(format!("rustrss-scope-plan-{}.sqlite", std::process::id()));
+    let store = Store::open(&path).unwrap();
+    let query = EntryQuery { folder_id: Some(1), ..Default::default() };
+    assert!(store.explain_list_entries(&query).is_ok());
+    assert!(store.explain_mark_view(&ViewScope::Tag { id: 1 }, true).is_ok());
+    let conn = rusqlite::Connection::open(&path).unwrap();
+    conn.execute_batch("DROP INDEX idx_entries_sortkey; DROP INDEX idx_entry_tags_tag;").unwrap();
+    assert!(store.explain_list_entries(&query).is_err());
+    assert!(store.explain_mark_view(&ViewScope::Tag { id: 1 }, true).is_err());
+    drop(conn);
+    drop(store);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
 fn settings_roundtrip_and_defaults() {
     let store = Store::open_in_memory().unwrap();
 

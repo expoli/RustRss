@@ -1,0 +1,96 @@
+{
+  "bytes": 470286336,
+  "cache": "OS page cache cold; controller cache unspecified",
+  "measurements": [
+    {
+      "count": 100,
+      "first_ms": 0.25339900000000004,
+      "open_ms": 1.688745,
+      "scope": "feed",
+      "warm_mean_ms": 0.0187889,
+      "trial": 1,
+      "resident_before": 0,
+      "pages": 114816
+    },
+    {
+      "count": 100,
+      "first_ms": 0.381661,
+      "open_ms": 3.6612099999999996,
+      "scope": "feed",
+      "warm_mean_ms": 0.01952431,
+      "trial": 2,
+      "resident_before": 0,
+      "pages": 114816
+    },
+    {
+      "count": 100,
+      "first_ms": 0.24396199999999998,
+      "open_ms": 1.095407,
+      "scope": "feed",
+      "warm_mean_ms": 0.01940045,
+      "trial": 3,
+      "resident_before": 0,
+      "pages": 114816
+    },
+    {
+      "count": 6000,
+      "first_ms": 5.605684,
+      "open_ms": 1.488646,
+      "scope": "folder",
+      "warm_mean_ms": 0.51977522,
+      "trial": 1,
+      "resident_before": 0,
+      "pages": 114816
+    },
+    {
+      "count": 6000,
+      "first_ms": 3.350299,
+      "open_ms": 1.92516,
+      "scope": "folder",
+      "warm_mean_ms": 0.5221464,
+      "trial": 2,
+      "resident_before": 0,
+      "pages": 114816
+    },
+    {
+      "count": 6000,
+      "first_ms": 3.6648739999999997,
+      "open_ms": 1.609037,
+      "scope": "folder",
+      "warm_mean_ms": 0.5136761,
+      "trial": 3,
+      "resident_before": 0,
+      "pages": 114816
+    },
+    {
+      "count": 3000,
+      "first_ms": 0.920242,
+      "open_ms": 1.9433600000000002,
+      "scope": "tag",
+      "warm_mean_ms": 0.23300880999999998,
+      "trial": 1,
+      "resident_before": 0,
+      "pages": 114816
+    },
+    {
+      "count": 3000,
+      "first_ms": 1.4610319999999999,
+      "open_ms": 1.0730920000000002,
+      "scope": "tag",
+      "warm_mean_ms": 0.24648949,
+      "trial": 2,
+      "resident_before": 0,
+      "pages": 114816
+    },
+    {
+      "count": 3000,
+      "first_ms": 2.8169839999999997,
+      "open_ms": 1.489527,
+      "scope": "tag",
+      "warm_mean_ms": 0.24522827,
+      "trial": 3,
+      "resident_before": 0,
+      "pages": 114816
+    }
+  ]
+}

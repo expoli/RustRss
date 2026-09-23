@@ -1,0 +1,14 @@
+{
+  "projectUuid": "430ac7ad-2e23-40df-82ff-9102671a9d14",
+  "ideaUuid": "6876476a-10ab-44c5-b12c-9e82a509fa40",
+  "elaborationStatus": "resolved",
+  "proposalUuid": null,
+  "stage": "design_and_native_snapshot_probe",
+  "documentMirrors": {
+    "prd.md": "3ffd52f8-0031-4586-89e1-750a6647d26f",
+    "tech_design.md": "f9f59507-26dc-45aa-82db-9b1feaedd4e8",
+    "tasks.md": "b4ba4020-8b69-4438-bb53-35ca965f8381"
+  },
+  "implementationTasksMaterialized": false,
+  "productImplemented": false
+}

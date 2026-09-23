@@ -610,9 +610,16 @@ function folderHead(folder, unreadSum, collapsed, existing) {
     li.dataset.key = key;
     li.dataset.folderId = String(folder.id);
     li.className = 'folder-head';
-    li.innerHTML = '<span class="folder-arrow"></span><span class="name"></span><span class="count"></span>';
+    li.innerHTML = '<button type="button" class="folder-arrow"></button><button type="button" class="name"></button><span class="count"></span>';
   }
-  setText(li.querySelector('.folder-arrow'), collapsed ? '▸' : '▾');
+  const active = state.view.kind === 'folder' && state.view.folderId === folder.id;
+  li.classList.toggle('active', active);
+  const arrow = li.querySelector('.folder-arrow');
+  const expanded = String(!collapsed);
+  if (arrow.getAttribute('aria-expanded') !== expanded) arrow.setAttribute('aria-expanded', expanded);
+  const label = t(collapsed ? 'folder.expand' : 'folder.collapse');
+  if (arrow.getAttribute('aria-label') !== label) arrow.setAttribute('aria-label', label);
+  setText(arrow, collapsed ? '▸' : '▾');
   setText(li.querySelector('.name'), folder.name);
   setText(li.querySelector('.count'), unreadSum ? String(unreadSum) : '');
   return li;
@@ -663,7 +670,9 @@ function initSidebarEvents() {
     const li = ev.target.closest('li');
     if (!li) return;
     if (li.classList.contains('folder-head')) {
-      toggleFolderCollapse(Number(li.dataset.folderId));
+      const folderId = Number(li.dataset.folderId);
+      if (ev.target.closest('.folder-arrow')) toggleFolderCollapse(folderId);
+      else setView({ kind: 'folder', folderId }).catch((e) => setStatus(e.message, true));
       return;
     }
     if (li.dataset.feedId != null) setView({ kind: 'feed', feedId: Number(li.dataset.feedId) });
@@ -697,6 +706,9 @@ function escapeHtml(text) {
 }
 
 function viewTitle() {
+  if (state.view.kind === 'folder') {
+    return (state.folders || []).find((f) => f.id === state.view.folderId)?.name || t('folder.viewTitle');
+  }
   if (state.view.kind === 'search') return t('list.searchTitle', { q: state.query });
   if (state.view.kind === 'feed') {
     const feed = state.feeds.find((f) => f.id === state.feedId);
@@ -757,6 +769,10 @@ function unreadFilteredView() {
 /// 当前 scope（侧栏选中项）的未读数：直接取侧栏已加载状态，零额外查询。
 function scopeUnread() {
   const kind = state.view.kind;
+  if (kind === 'folder') {
+    return (state.feeds || []).filter((f) => f.folder_id === state.view.folderId)
+      .reduce((n, f) => n + f.unread, 0);
+  }
   if (kind === 'feed') {
     const row = (state.feeds || []).find((f) => f.id === state.feedId);
     return row ? row.unread : null;
@@ -773,7 +789,7 @@ let viewTotalCache = { key: null, n: null };
 
 function viewTotalKey() {
   const kind = state.view.kind;
-  const id = kind === 'feed' ? state.feedId : kind === 'tag' ? state.view.tagId : null;
+  const id = kind === 'feed' ? state.feedId : kind === 'tag' ? state.view.tagId : kind === 'folder' ? state.view.folderId : null;
   return `${kind}:${id ?? ''}:${unreadFilteredView() ? 'u' : 'a'}`;
 }
 
@@ -801,19 +817,24 @@ function viewTotalSync() {
 /// 需要查库的视图 → 查一次总数并刷新文案；失败降级为「已加载 M 篇」+ 日志（不弹错）。
 async function fetchViewTotal() {
   const kind = state.view.kind;
-  if (kind !== 'feed' && kind !== 'tag') return;
+  if (kind !== 'feed' && kind !== 'tag' && kind !== 'folder') return;
   if (unreadFilteredView()) return; // 未读口径来自侧栏状态，不必查
-  const id = kind === 'feed' ? state.feedId : state.view.tagId;
+  const id = kind === 'feed' ? state.feedId : kind === 'folder' ? state.view.folderId : state.view.tagId;
   if (id == null) return;
   const key = viewTotalKey();
   if (viewTotalCache.key === key) return; // 同一视图已查过（含失败：不反复重试）
-  viewTotalCache = { key, n: null };
+  const request = { key, n: null };
+  viewTotalCache = request;
   try {
-    viewTotalCache = { key, n: await invoke('list_scope_total', { kind, id }) };
+    const n = await invoke('list_scope_total', { kind, id });
+    if (viewTotalCache !== request || viewTotalKey() !== key) return;
+    request.n = n;
   } catch (e) {
     log(`view total failed ${kind}#${id}: ${e.message}`);
   }
+  if (viewTotalCache !== request || viewTotalKey() !== key) return;
   renderListCount();
+  refreshSentinelFooter();
   // 机器可核对：视图总数与最终头部文案各一行（截图之外的第二条证据）
   log(`view total ${kind}#${id} n=${viewTotalCache.n ?? '-'} header=${el('list-count').textContent}`);
 }
@@ -844,7 +865,7 @@ function toggleUnreadOnly() {
 function renderListCount() {
   const target = el('list-count');
   if (!state.entries.length) {
-    target.textContent = '';
+    setText(target, '');
     return;
   }
   const m = loadedCount();
@@ -1003,6 +1024,7 @@ function installSentinel() {
   btn.textContent = sentinelLabel();
   btn.onclick = () => loadMore({ manual: true });
   sentinel.appendChild(btn);
+  refreshSentinelFooter();
   list.appendChild(sentinel);
   if (!paging.error) {
     if (!listObserver) {
@@ -1040,11 +1062,11 @@ function refreshSentinelFooter() {
   if (!sentinel) return;
   const btn = sentinel.querySelector('button');
   if (btn) {
-    btn.disabled = paging.loading;
-    btn.textContent = paging.loading ? t('list.loadingMore') : sentinelLabel();
+    if (btn.disabled !== paging.loading) btn.disabled = paging.loading;
+    setText(btn, paging.loading ? t('list.loadingMore') : sentinelLabel());
     return;
   }
-  sentinel.textContent = sentinelTerminalText();
+  setText(sentinel, sentinelTerminalText());
 }
 
 function onSentinel(records) {
@@ -1301,7 +1323,13 @@ async function afterTagChange(id, tag, attached) {
   patchReaderTags();
   await refreshTagCache();
   refreshCountsSoon();
-  if (!attached && state.view.kind === 'tag' && state.view.tagId === tag.id) dropRowFromList(id);
+  if (state.view.kind === 'tag') {
+    invalidateViewTotal();
+    if (!attached && state.view.tagId === tag.id) dropRowFromList(id);
+    renderListCount();
+    refreshSentinelFooter();
+    void fetchViewTotal();
+  }
   setStatus(t(attached ? 'tags.assigned' : 'tags.unassigned', { name: tag.name }));
   log(
     `tags:${attached ? 'assign' : 'unassign'} entry=${id} tag=${tag.id} name=${tag.name} ` +
@@ -2048,7 +2076,7 @@ function listHideRead() {
 /// cursor 记的是「已取到的最后一行」而不是「当前列表最后一行」：未读视图里读完一篇
 /// 会把它从列表里移除，若拿剩下的末行当游标，读空一整批之后就再也取不到后面的未读
 /// 条目——游标是结果流里的位置，不随某行被移出列表而后退。
-const paging = { cursor: null, exhausted: false, loading: false, error: false };
+const paging = { cursor: null, exhausted: false, loading: false, error: false, generation: 0 };
 
 /// 当前视图对应的 `list_entries` 参数（`cursor: null` = 取首页）。
 /// 首页与续页必须用同一套筛选，抽出来避免后台刷新的 prepend 比对另抄一份漂移。
@@ -2056,6 +2084,7 @@ function listArgs(cursor) {
   const kind = state.view.kind;
   return {
     feedId: kind === 'feed' ? state.feedId : null,
+    folderId: kind === 'folder' ? state.view.folderId : null,
     unreadOnly: kind === 'unread',
     starredOnly: kind === 'starred',
     readLaterOnly: kind === 'later',
@@ -2073,8 +2102,19 @@ function listArgs(cursor) {
 
 /// 取一页并记下游标与「有没有下一页」。判据是「返回不足一批」：满批也可能是最后一页，
 /// 多请求一次空页的代价可以接受，换来的是不必猜。
+async function listRequest(command, args, generation) {
+  try {
+    const rows = await invoke(command, args);
+    return generation === paging.generation ? rows : null;
+  } catch (e) {
+    if (generation !== paging.generation) return null;
+    throw e;
+  }
+}
+
 async function loadPage(cursor) {
-  const rows = await invoke('list_entries', listArgs(cursor));
+  const rows = await listRequest('list_entries', listArgs(cursor), paging.generation);
+  if (rows === null) return null;
   const last = rows[rows.length - 1];
   if (last) paging.cursor = { sortkey: last.sortkey, id: last.id, read: last.read };
   paging.exhausted = rows.length < PAGE_SIZE;
@@ -2119,7 +2159,9 @@ async function prependFreshEntries() {
     return;
   }
   const first = state.entries[0];
-  const rows = await invoke('list_entries', listArgs(null));
+  const generation = paging.generation;
+  const rows = await listRequest('list_entries', listArgs(null), generation);
+  if (rows === null || generation !== paging.generation) return;
   // 在飞期间用户可能换了视图/筛选或手动刷新（列表已被整体重建）：这次的结果作废，
   // 否则会把旧筛选下的条目插进新列表。重建出来的是新对象，用对象标识就能认出来；
   // 续页 append 不动头部，所以不影响判据。
@@ -2222,13 +2264,23 @@ function renderSelectedEntry() {
 /// - `reader: false` 静默模式（后台刷新用）：只重读列表，正文与滚动位置保持原位。
 async function loadEntries({ reader = true, reset = true } = {}) {
   const kind = state.view.kind;
+  if (reset) {
+    paging.generation++;
+    paging.loading = false;
+    paging.cursor = null;
+    invalidateViewTotal();
+  }
+  const generation = paging.generation;
 
   // 搜索本版仍是一次性 200（PRD R3）：不装哨兵、不参与续页
   if (kind === 'search') {
     paging.cursor = null;
     paging.exhausted = true;
     paging.error = false;
-    state.entries = state.query ? await invoke('search', { query: state.query, limit: PAGE_SIZE }) : [];
+    const rows = state.query
+      ? await listRequest('search', { query: state.query, limit: PAGE_SIZE }, generation) : [];
+    if (rows === null || generation !== paging.generation) return;
+    state.entries = rows;
     renderList();
     if (reader) renderSelectedEntry();
     log(`view=${kind} count=${state.entries.length} exhausted=true`);
@@ -2237,6 +2289,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
 
   if (!reset && paging.cursor) {
     const rows = await loadPage(paging.cursor);
+    if (rows === null || generation !== paging.generation) return;
     // 运行时自证：续页不该重放已加载的行。dup 两个成因要分开看：
     // ① newest/oldest 档游标只看时间键，dup>0 = 游标语义坏了（必须报警）；
     // ② unread_first 的复合游标看 (read,sortkey,id)，分页之间用户读了已加载行
@@ -2263,7 +2316,9 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   invalidateViewTotal(); // 换视图 / 换筛选：总数缓存作废（renderList 里会按需重查）
   // 列表要整体重建（换视图/换筛选/手动刷新）：会话已读集合对应的「已删除行」没了，清空
   state.readSessionIds.clear();
-  state.entries = await loadPage(null);
+  const rows = await loadPage(null);
+  if (rows === null || generation !== paging.generation) return;
+  state.entries = rows;
   // 静默刷新（reader=false）不动 selectedId：正文区一个 DOM 都不动，选中态也
   // 保持——否则重指到首行后，操作按钮（标已读/星标/稍后读）会作用于用户没在看的
   // 文章（实测 2026-09-22：后台刷新把 selected 挪到 9320 而正文还是 9135）。
@@ -2299,18 +2354,23 @@ async function loadMore({ manual = false } = {}) {
     log(`loadMore manual retry view=${state.view.kind}`);
   }
   const kind = state.view.kind;
+  const generation = paging.generation;
   paging.loading = true;
   refreshSentinelFooter();
   try {
     await loadEntries({ reader: false, reset: false });
   } catch (err) {
+    if (generation !== paging.generation) return;
     paging.error = true;
     // 失败后留一个可点的重试按钮（不再静默消失——那会儿只能靠换视图恢复）
     installSentinel();
     setStatus(t('status.loadMoreFailed', { error: err.message }), true);
     log(`loadMore failed view=${kind}: ${err.message}`);
   } finally {
-    paging.loading = false;
+    if (generation === paging.generation) {
+      paging.loading = false;
+      refreshSentinelFooter();
+    }
   }
 }
 
@@ -2348,15 +2408,19 @@ async function markViewedRead(id) {
   // renderReader 用的是 set_read 前取的 entry：按钮文案会滞后一拍（已读却写着
   // 「标为已读」）。只改这一个按钮的文本，不重渲染整个阅读区。
   const readBtn = el('act-read');
-  if (readBtn) readBtn.textContent = t('reader.markUnread');
+  if (readBtn && state.selectedId === id) setText(readBtn, t('reader.markUnread'));
   // 计数刷新节流：连续快速阅读时合并为一次全量刷新（600ms 去抖）
   refreshCountsSoon();
 }
 
+let readerRequest = 0;
+
 /** 打开某篇文章；markRead=true 表示这是用户主动打开的动作 */
 async function openEntry(id, { markRead, follow = true } = {}) {
+  const request = ++readerRequest;
+  const generation = paging.generation;
   const entry = await invoke('get_entry', { id });
-  if (!entry) return;
+  if (!entry || request !== readerRequest || generation !== paging.generation) return;
   const changed = state.selectedId !== id;
   state.selectedId = id;
   if (changed) focusRow(id, { follow });
@@ -2394,8 +2458,7 @@ async function refreshCounts() {
   renderSidebar();
   // 计数变了要同时刷新列表头与尾部（两处都读这些数字，见 T1/T3）：不重渲的话，
   // 侧栏未读已经变了、头部「共 N」与尾部进度还是旧值，要等下次列表重建才追上。
-  // 头部计数是同值短路（未变零写入）；尾部的三种形态是幂等写——每次计数刷新最多几十
-  // 字节的赋值、且不在渲染热路径上，所以这里不做比对（红线 #7 的比对留给每帧都可能跑的更新）。
+  // 头部与尾部都同值短路，未变零写入。
   renderListCount();
   refreshSentinelFooter();
 }
@@ -2790,10 +2853,14 @@ function openFolderMenu(ev, folder) {
   ]);
 }
 
-function reassignFeed(feedId, folderId) {
-  invoke('assign_feed_folder', { feedId, folderId })
-    .then(() => refreshCounts())
-    .catch((err) => setStatus(err.message, true));
+async function reassignFeed(feedId, folderId) {
+  try {
+    await invoke('assign_feed_folder', { feedId, folderId });
+    await refreshCounts();
+    if (state.view.kind === 'folder') await loadEntries({ reader: false });
+  } catch (err) {
+    setStatus(err.message, true);
+  }
 }
 
 // ---------------- 订阅源编辑对话框 ----------------
@@ -3052,6 +3119,7 @@ async function renameFolder(folder) {
   try {
     await invoke('rename_folder', { folderId: folder.id, name });
     await refreshCounts();
+    setText(el('list-title'), viewTitle());
   } catch (err) {
     setStatus(err.message, true);
   }
@@ -3061,6 +3129,7 @@ async function deleteFolder(folder) {
   try {
     await invoke('delete_folder', { folderId: folder.id });
     await refreshCounts();
+    if (state.view.kind === 'folder' && state.view.folderId === folder.id) await setView({ kind: 'all' });
     log(`folder deleted: ${folder.name}`);
   } catch (err) {
     setStatus(err.message, true);
@@ -3478,10 +3547,15 @@ function selfTestSubmenuPlacement() {
 }
 
 async function markAll(read) {
-  const feedId = state.view.kind === 'feed' ? state.feedId : null;
+  const { kind } = state.view;
+  const scope = { kind };
+  if (kind === 'feed') scope.id = state.view.feedId;
+  if (kind === 'tag') scope.id = state.view.tagId;
+  if (kind === 'folder') scope.id = state.view.folderId;
+  if (kind === 'search') scope.query = state.query;
   const cmd = read ? 'mark_all_read' : 'mark_all_unread';
   try {
-    const n = await invoke(cmd, { feedId });
+    const n = await invoke(cmd, { scope });
     // 批量标记同样算「会话内读过」：prepend 不回插（紧随其后的 loadAll 会重建列表并
     // 清空集合，这里跟上单条路径的语义，不让两条路径对不上）
     for (const e of state.entries) {
@@ -3489,7 +3563,7 @@ async function markAll(read) {
       else state.readSessionIds.delete(e.id);
     }
     setStatus(t(read ? 'status.markedRead' : 'status.markedUnread', { n }));
-    log(`${cmd} scope=${feedId ?? 'all'} changed=${n}`);
+    log(`${cmd} scope=${kind} changed=${n}`);
     el('settings-overlay').classList.add('hidden');
     await loadAll();
   } catch (e) {

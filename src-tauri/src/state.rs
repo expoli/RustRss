@@ -92,6 +92,11 @@ impl AppState {
         self.tray_available.load(Ordering::Relaxed)
     }
 
+    #[cfg(test)]
+    pub(crate) fn store_is_available(&self) -> bool {
+        self.store.try_lock().is_ok()
+    }
+
     /// 在锁内做一次数据库操作。闭包内**不得有 await**。
     pub fn with_store<T>(&self, f: impl FnOnce(&Store) -> Result<T, String>) -> Result<T, String> {
         let guard = self

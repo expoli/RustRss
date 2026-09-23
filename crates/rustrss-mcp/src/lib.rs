@@ -465,6 +465,7 @@ impl RustRssMcp {
                 Err(e) => return tag_tools::error_body(e.code, &e.message),
             };
             let query = EntryQuery {
+                folder_id: None, // MCP already resolves folder membership into feed_ids.
                 feed_id: p.feed_id,
                 feed_ids,
                 unread_only: p.unread_only,

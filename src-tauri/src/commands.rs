@@ -14,7 +14,7 @@ use rustrss_core::ai::{AiClient, AiRequest, AiTaskPlan, CachePolicy};
 use rustrss_core::discover::{discover, Discovery};
 use rustrss_core::fetch::RefreshReport;
 use rustrss_core::fulltext;
-use rustrss_core::{EntryQuery, EntryRow, FeedRow, MarkScope};
+use rustrss_core::{EntryQuery, EntryRow, FeedRow};
 
 use crate::state::AppState;
 
@@ -91,6 +91,7 @@ pub async fn list_feeds(state: State<'_, AppState>) -> R<Vec<FeedRow>> {
 pub async fn list_entries(
     state: State<'_, AppState>,
     feed_id: Option<i64>,
+    folder_id: Option<i64>,
     unread_only: Option<bool>,
     starred_only: Option<bool>,
     read_later_only: Option<bool>,
@@ -102,6 +103,7 @@ pub async fn list_entries(
 ) -> R<Vec<EntryRow>> {
     let query = EntryQuery {
         feed_id,
+        folder_id,
         unread_only: unread_only.unwrap_or(false),
         starred_only: starred_only.unwrap_or(false),
         read_later_only: read_later_only.unwrap_or(false),
@@ -1382,13 +1384,6 @@ async fn run_font_command(bin: &str, args: &[&str], timeout: std::time::Duration
             );
             Vec::new()
         }
-    }
-}
-
-fn scope_of(feed_id: Option<i64>) -> MarkScope {
-    match feed_id {
-        Some(id) => MarkScope::Feed(id),
-        None => MarkScope::All,
     }
 }
 
@@ -2720,21 +2715,21 @@ mod tests {
 pub fn mark_all_read(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
-    feed_id: Option<i64>,
+    scope: rustrss_core::store::ViewScope,
 ) -> R<usize> {
-    let n = state.with_store(|s| s.mark_all(scope_of(feed_id), true).map_err(err))?;
+    let n = state.with_store(|s| s.mark_view(&scope, true).map_err(err))?;
     sync_badge(&app, &state);
     Ok(n)
 }
 
-/// 全标已读的撤销（也用于误扫一遍之后的恢复）
+/// Set the current matching view unread; this does not undo previous operations.
 #[tauri::command]
 pub fn mark_all_unread(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
-    feed_id: Option<i64>,
+    scope: rustrss_core::store::ViewScope,
 ) -> R<usize> {
-    let n = state.with_store(|s| s.mark_all(scope_of(feed_id), false).map_err(err))?;
+    let n = state.with_store(|s| s.mark_view(&scope, false).map_err(err))?;
     sync_badge(&app, &state);
     Ok(n)
 }
@@ -3334,32 +3329,37 @@ pub struct AiSettingsView {
 }
 
 fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
-    state.with_store(|s| {
+    ai_settings_view_with_key_loader(state, crate::ai::load_key)
+}
+
+fn ai_settings_view_with_key_loader(
+    state: &AppState,
+    load_key: impl FnOnce(&str) -> R<(Option<String>, Option<crate::ai::KeySource>)>,
+) -> R<AiSettingsView> {
+    let mut view = state.with_store(|s| {
         let provider = crate::ai::provider_from_str(
             &crate::ai::non_empty_setting(s, crate::ai::K_PROVIDER)
                 .unwrap_or_else(|| crate::ai::DEFAULT_PROVIDER.to_string()),
         );
-        // 读 key 失败**不能**拖垮整个启动：get_ai_settings 报错会让 boot() 直接中断，
-        // 窗口里连设置都打不开（只能杀进程）。这里如实降级：按「读不到 key」渲染 +
-        // 把原因作为 key_source 交给界面显示；真正要用 key 的路径
-        // （config_from_store）仍照旧报错，不静默当成没配。
-        let (key, key_source) = match crate::ai::load_key(crate::ai::provider_to_str(provider)) {
-            Ok(v) => v,
-            Err(e) => (None, Some(crate::ai::KeySource::Unavailable { error: e })),
-        };
         Ok(AiSettingsView {
             provider: crate::ai::provider_to_str(provider).to_string(),
             model: crate::ai::non_empty_setting(s, crate::ai::K_MODEL).unwrap_or_default(),
             base_url: crate::ai::non_empty_setting(s, crate::ai::K_BASE_URL).unwrap_or_default(),
             translate_target: crate::ai::translate_target(s),
-            has_key: key.is_some(),
-            key_source,
+            has_key: false,
+            key_source: None,
             default_base_url: crate::ai::default_base_url(provider).to_string(),
             confirm_before_send: crate::ai::confirm_before_send(s),
             max_output_tokens: crate::ai::max_output_tokens_from_store(s),
             reasoning_effort: crate::ai::reasoning_effort_from_store(s).unwrap_or_default(),
         })
-    })
+    })?;
+    // Credential service may block or retry; the database guard is already gone.
+    match load_key(&view.provider) {
+        Ok((key, source)) => { view.has_key = key.is_some(); view.key_source = source; }
+        Err(error) => view.key_source = Some(crate::ai::KeySource::Unavailable { error }),
+    }
+    Ok(view)
 }
 
 #[tauri::command]
@@ -3426,15 +3426,15 @@ pub fn save_ai_settings(
             s.set_setting(crate::ai::K_MAX_OUTPUT_TOKENS, &clamped.to_string())
                 .map_err(err)?;
         }
-        if let Some(key) = api_key {
-            if key.trim().is_empty() {
-                crate::ai::delete_key(&provider)?;
-            } else {
-                crate::ai::store_key(&provider, key.trim())?;
-            }
-        }
         Ok(())
     })?;
+    if let Some(key) = api_key {
+        if key.trim().is_empty() {
+            crate::ai::delete_key(&provider)?;
+        } else {
+            crate::ai::store_key(&provider, key.trim())?;
+        }
+    }
     ai_settings_view(&state)
 }
 
@@ -3442,7 +3442,7 @@ pub fn save_ai_settings(
 /// 比「只检查 key 是否存在」有意义得多：它同时验证了凭据、模型名与端点三件事。
 #[tauri::command]
 pub async fn test_ai_connection(state: State<'_, AppState>) -> R<String> {
-    let client = state.with_store(crate::ai::client_from_store)?;
+    let client = crate::ai::client_from_state(&state)?;
     let request = AiRequest {
         system: Some("这是连通性测试。只回答两个字：可用".into()),
         user: "请回复：可用".into(),
@@ -3458,7 +3458,7 @@ pub async fn test_ai_connection(state: State<'_, AppState>) -> R<String> {
     result.map_err(|e| e.to_string())
 }
 
-/// 计划阶段：持锁读库 + 取凭据 + 拼请求（请求本身不在锁内发）。
+/// 计划阶段：短锁读配置、锁外取凭据，再短锁读文章与缓存（请求在锁外发送）。
 /// 预览与真实发送共用这一步——否则「预览看到的」和「实际发出的」会漂移。
 fn build_ai_plan(
     state: &State<'_, AppState>,
@@ -3466,8 +3466,8 @@ fn build_ai_plan(
     task: AiTask,
     policy: CachePolicy,
 ) -> R<(AiTaskPlan, AiClient)> {
+    let client = crate::ai::client_from_state(state)?;
     state.with_store(|s| {
-        let client = crate::ai::client_from_store(s)?;
         let plan = rustrss_core::ai::plan_task(s, &client, entry_id, &task, policy)
             .map_err(|e| e.to_string())?;
         Ok((plan, client))
@@ -3648,4 +3648,20 @@ pub async fn ai_translate(
 ) -> R<AiOutcomeView> {
     let task = task_from_str(&state, "translate", target)?;
     run_ai(state, entry_id, task, refresh.unwrap_or(false)).await
+}
+
+#[cfg(test)]
+mod credential_lock_tests {
+    use super::*;
+
+    #[test]
+    fn credential_lookup_releases_store_lock() {
+        let state = AppState::for_test();
+        let view = ai_settings_view_with_key_loader(&state, |_| {
+            assert!(state.store_is_available(), "credential lookup must not hold store lock");
+            Err("test unavailable".into())
+        }).unwrap();
+        assert!(!view.has_key);
+        assert!(matches!(view.key_source, Some(crate::ai::KeySource::Unavailable { .. })));
+    }
 }
