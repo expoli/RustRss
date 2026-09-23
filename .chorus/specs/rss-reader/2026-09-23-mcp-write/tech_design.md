@@ -38,7 +38,7 @@ documentUuid:
 ### 授权模型
 
 - **凭据**：读 token = `mcp.token`（现有）；写 token = `mcp.write_token`（新，设置页生成/轮换/销毁，随机 48 hex）；两个 token 均可用于**连接认证**；
-- **HTTP**：连接建立时认证 token → 记录该会话的 `scope`（`read` | `write`）；`tools/list` 按 scope 过滤（读 token 会话看不到写工具）；调用未授权工具返回工具级错误 `write_scope_required`；
+- **HTTP**：**每个请求**按携带的 token 现算 `scope`（`read` | `write`）——**不缓存会话级 scope**，因此写 token 轮换/销毁后，旧 token 的下一个请求立即失去写权限（被拒）；`tools/list` 按**当次请求**的 scope 过滤（读 token 会话看不到写工具）；调用未授权工具返回工具级错误 `write_scope_required`；
 - **stdio**：无 token → scope 由设置开关决定（`mcp.write_enabled` 开 → `write`，否则 `read`）；
 - **开关**：`mcp.write_enabled`（默认 false）总开关；`mcp.dangerous_enabled`（默认 false）危险工具开关——**两者都开**且 `confirm: true` 时 `unsubscribe` / `folder_delete` 才可执行；
 - **认证 vs 授权**：无/错 token → 401（传输层，不变）；已认证但无写权限 → 200 + 工具级错误（保持 MCP 语义，agent 能读懂原因）。
@@ -49,6 +49,14 @@ documentUuid:
 - 每个写操作返回 `{ "ok": bool, "affected": n, "results": [...], "error_code"?: "..." }`（逐项结果用于部分失败的可解释性）；
 - `dry_run: true`：只计算影响面（如 `unsubscribe` 的条目数、`import_opml` 的新增/跳过数），**不落库**；
 - 审计：每次写调用一行 `log::info!(target: "mcp", "mcp-write tool=… args_summary=… affected=… ok=…")`（参数摘要需过 `scrub_log_line`；不含正文/凭据）。
+
+### 共享设施上提 core（MCP 与界面共用）
+
+现有两处能力位于 `src-tauri`，`rustrss-mcp`（独立二进制）无法访问，必须上提复用：
+
+- **`scrub_log_line` / `mask_url_userinfo`**（现 `src-tauri/src/commands.rs`）→ 上提到 `rustrss-core`（如 `core::logging::scrub`），src-tauri 改为复用；MCP 审计行与错误路径直接调用 core 版本；
+- **刷新单 flight**（现 src-tauri 的 CAS 守卫 + Drop guard）→ 抽到 `rustrss-core`（如 `core::refresh_flight`），src-tauri 与 `rustrss-mcp` 共用同一实现与状态，保证 MCP 的 `refresh` 与界面刷新**不叠加**（进行中调用返回可解释状态）；
+- 两者均为**纯搬迁 + 复用**，不改变行为（界面路径的既有测试与单 flight 行为保持绿）。
 
 ### core 查询扩展
 

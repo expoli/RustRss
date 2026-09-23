@@ -23,7 +23,7 @@ documentUuid:
 
 ### FR-2 写能力基础设施（安全先行）
 
-- **读写 token 分权**：读 token 常驻（沿用现 `mcp.token`）；**写 token** 在设置页显式生成/轮换/销毁，未生成则写工具不可用；
+- **读写 token 分权**：读 token 常驻（沿用现 `mcp.token`）；**写 token** 在设置页显式生成/轮换/销毁，未生成则写工具不可用；**轮换/销毁后旧写 token 立即失效**（含已建立的连接/会话——授权按请求现算，不缓存会话 scope）；
 - **写能力总开关**（默认关）；**危险工具开关**（默认关，单独开启后 `unsubscribe` / `folder_delete` 才注册）；
 - **传输口径**：stdio 与 HTTP 一致——写能力同样受开关约束；HTTP 侧按连接持有 token 判定（读 token 会话看不到写工具，写 token 会话可见可用）；
 - 无权限时返回**工具级错误**（`write_scope_required` / `write_disabled` / `dangerous_tool_disabled`），不是 401（已认证、无授权）；
