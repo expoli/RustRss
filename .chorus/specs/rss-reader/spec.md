@@ -176,3 +176,5 @@ created: 2026-09-20
 
 - [x] 字体建议异步更新：外观/阅读/Aa 加载完成即刷新建议，不重置焦点与草稿；失败允许下次打开重试，已关闭编辑器忽略晚到刷新。两条复现测试先红后绿；运行证据见 [后续体验检查](2026-09-23-theme-preview/file-probe-ui-followup.md)。
 - [x] MCP 文件600秒真实时钟回收：无模型客户端脚本检查创建/重拍/保存/取消/PNG权限尺寸/SQLite回读，等待期间无新MCP请求，605.01秒三文件均回收；见 [补验报告](2026-09-23-theme-preview/file-probe-ui-followup.md)。
+
+- [x] KDE原生Wayland补验：外屏125%/150%主界面与设置弹窗、用户清晰度确认和真实点击通过；真实系统浅/深切换跟随system，显式light/dark不受影响，SQLite无写与正文锚点保持，结束恢复原桌面。范围见 [原生验收](2026-09-23-theme-preview/native-settings.md)。

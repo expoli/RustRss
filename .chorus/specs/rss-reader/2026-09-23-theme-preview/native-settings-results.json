@@ -1,0 +1,469 @@
+{
+  "automated": {
+    "original_output": {
+      "name": "HDMI-A-1",
+      "scale": 1.1,
+      "pos": {
+        "x": 0,
+        "y": 0
+      },
+      "currentModeId": "28",
+      "enabled": true
+    },
+    "original_scheme": "BreezeLight",
+    "checks": [
+      "compositor output scale 1.25",
+      "isolated windows on HDMI-A-1 at 1.25",
+      "main layout fits at 1.25",
+      "settings dialog fits at 1.25",
+      "native Wayland capture at 1.25",
+      "PNG file readable at 1.25",
+      "compositor output scale 1.5",
+      "isolated windows on HDMI-A-1 at 1.5",
+      "main layout fits at 1.5",
+      "settings dialog fits at 1.5",
+      "native Wayland capture at 1.5",
+      "PNG file readable at 1.5",
+      "OS preference does not persist config: system/BreezeDark",
+      "OS preference preserves paragraph: system/BreezeDark",
+      "OS preference does not persist config: system/BreezeLight",
+      "OS preference preserves paragraph: system/BreezeLight",
+      "OS preference does not persist config: light/BreezeDark",
+      "OS preference preserves paragraph: light/BreezeDark",
+      "OS preference does not persist config: dark/BreezeLight",
+      "OS preference preserves paragraph: dark/BreezeLight"
+    ],
+    "scales": [
+      {
+        "scale": 1.25,
+        "geometry": [
+          {
+            "caption": "RustRss",
+            "frame": {
+              "x": 60,
+              "y": 60,
+              "width": 1240,
+              "height": 820
+            },
+            "output": "HDMI-A-1"
+          }
+        ],
+        "page": {
+          "mediaDark": false,
+          "theme": "light",
+          "dpr": 2,
+          "viewport": [
+            1240,
+            820
+          ],
+          "bodyWidth": 1240,
+          "bg": "#f7f8fa",
+          "articleSame": true,
+          "paragraphOffset": 0.09375
+        },
+        "dialog": {
+          "x": 100,
+          "y": 50,
+          "width": 1040,
+          "height": 720,
+          "top": 50,
+          "right": 1140,
+          "bottom": 770,
+          "left": 100
+        },
+        "capture": {
+          "capture_ms": 174.567076,
+          "captured_at": 1790222311885,
+          "display_backend": "GdkWaylandDisplay",
+          "fonts": {
+            "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+            "glyph_fallback": "unknown",
+            "requested": {
+              "line_height": 1.55,
+              "mono_family": [
+                "JetBrains Mono",
+                "Cascadia Mono",
+                "Menlo",
+                "monospace"
+              ],
+              "mono_size": 13,
+              "read_family": [
+                "-apple-system",
+                "Noto Sans CJK SC",
+                "Segoe UI",
+                "sans-serif"
+              ],
+              "read_size": 14,
+              "ui_family": [
+                "-apple-system",
+                "Noto Sans CJK SC",
+                "Segoe UI",
+                "sans-serif"
+              ],
+              "ui_size": 14
+            }
+          },
+          "freshness_marker_verified": true,
+          "logical_size": [
+            960,
+            640
+          ],
+          "output_scale": 1,
+          "pixel_size": [
+            1920,
+            1280
+          ],
+          "scale_factor": 2
+        }
+      },
+      {
+        "scale": 1.5,
+        "geometry": [
+          {
+            "caption": "RustRss",
+            "frame": {
+              "x": 60,
+              "y": 60,
+              "width": 1240,
+              "height": 820
+            },
+            "output": "HDMI-A-1"
+          }
+        ],
+        "page": {
+          "mediaDark": false,
+          "theme": "light",
+          "dpr": 2,
+          "viewport": [
+            1240,
+            820
+          ],
+          "bodyWidth": 1240,
+          "bg": "#f7f8fa",
+          "articleSame": true,
+          "paragraphOffset": 0.09375
+        },
+        "dialog": {
+          "x": 100,
+          "y": 50,
+          "width": 1040,
+          "height": 720,
+          "top": 50,
+          "right": 1140,
+          "bottom": 770,
+          "left": 100
+        },
+        "capture": {
+          "capture_ms": 178.63848399999998,
+          "captured_at": 1790222315370,
+          "display_backend": "GdkWaylandDisplay",
+          "fonts": {
+            "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+            "glyph_fallback": "unknown",
+            "requested": {
+              "line_height": 1.55,
+              "mono_family": [
+                "JetBrains Mono",
+                "Cascadia Mono",
+                "Menlo",
+                "monospace"
+              ],
+              "mono_size": 13,
+              "read_family": [
+                "-apple-system",
+                "Noto Sans CJK SC",
+                "Segoe UI",
+                "sans-serif"
+              ],
+              "read_size": 14,
+              "ui_family": [
+                "-apple-system",
+                "Noto Sans CJK SC",
+                "Segoe UI",
+                "sans-serif"
+              ],
+              "ui_size": 14
+            }
+          },
+          "freshness_marker_verified": true,
+          "logical_size": [
+            960,
+            640
+          ],
+          "output_scale": 1,
+          "pixel_size": [
+            1920,
+            1280
+          ],
+          "scale_factor": 2
+        }
+      }
+    ],
+    "modes": [
+      {
+        "app_mode": "system",
+        "desktop_scheme": "BreezeDark",
+        "page": {
+          "mediaDark": true,
+          "theme": "dark",
+          "dpr": 2,
+          "viewport": [
+            1240,
+            820
+          ],
+          "bodyWidth": 1240,
+          "bg": "#14161a",
+          "articleSame": true,
+          "paragraphOffset": 0.09375
+        }
+      },
+      {
+        "app_mode": "system",
+        "desktop_scheme": "BreezeLight",
+        "page": {
+          "mediaDark": false,
+          "theme": "light",
+          "dpr": 2,
+          "viewport": [
+            1240,
+            820
+          ],
+          "bodyWidth": 1240,
+          "bg": "#f7f8fa",
+          "articleSame": true,
+          "paragraphOffset": 0.09375
+        }
+      },
+      {
+        "app_mode": "light",
+        "desktop_scheme": "BreezeDark",
+        "page": {
+          "mediaDark": true,
+          "theme": "light",
+          "dpr": 2,
+          "viewport": [
+            1240,
+            820
+          ],
+          "bodyWidth": 1240,
+          "bg": "#f7f8fa",
+          "articleSame": true,
+          "paragraphOffset": 0.09375
+        }
+      },
+      {
+        "app_mode": "dark",
+        "desktop_scheme": "BreezeLight",
+        "page": {
+          "mediaDark": false,
+          "theme": "dark",
+          "dpr": 2,
+          "viewport": [
+            1240,
+            820
+          ],
+          "bodyWidth": 1240,
+          "bg": "#14161a",
+          "articleSame": true,
+          "paragraphOffset": 0.09375
+        }
+      }
+    ],
+    "limits": [
+      "DOM geometry/input only; native pointer and perceived sharpness require human observation",
+      "GTK integer buffer scale is distinct from compositor fractional output scale"
+    ],
+    "passed": true,
+    "restore_errors": [],
+    "restored_outputs": [
+      {
+        "name": "eDP-1",
+        "scale": 1.5,
+        "pos": {
+          "x": 2328,
+          "y": 0
+        },
+        "currentModeId": "2",
+        "enabled": true
+      },
+      {
+        "name": "HDMI-A-1",
+        "scale": 1.1,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "currentModeId": "28",
+        "enabled": true
+      }
+    ],
+    "restored_scheme": "You have the following color schemes on your system:\n * BreezeClassic\n * BreezeDark\n * BreezeLight (current color scheme)\n * Oxygen\n * OxygenCold"
+  },
+  "manual": [
+    {
+      "original_output": {
+        "name": "HDMI-A-1",
+        "scale": 1.1,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "currentModeId": "28",
+        "enabled": true
+      },
+      "original_scheme": "BreezeLight",
+      "checks": [
+        "trusted button coordinates at native scale 1.25"
+      ],
+      "scales": [],
+      "modes": [],
+      "limits": [
+        "DOM geometry/input only; native pointer and perceived sharpness require human observation",
+        "GTK integer buffer scale is distinct from compositor fractional output scale"
+      ],
+      "manual_geometry": [
+        {
+          "caption": "RustRss",
+          "frame": {
+            "x": 60,
+            "y": 60,
+            "width": 1240,
+            "height": 820
+          },
+          "output": "HDMI-A-1"
+        }
+      ],
+      "native_clicks": [
+        {
+          "id": "btn-settings",
+          "trusted": true,
+          "x": 1087,
+          "y": 35,
+          "inside": true
+        },
+        {
+          "id": "tab-reading",
+          "trusted": true,
+          "x": 213,
+          "y": 155,
+          "inside": true
+        }
+      ],
+      "manual_scale": 1.25,
+      "passed": true,
+      "restore_errors": [],
+      "restored_outputs": [
+        {
+          "name": "eDP-1",
+          "scale": 1.5,
+          "pos": {
+            "x": 2328,
+            "y": 0
+          },
+          "currentModeId": "2",
+          "enabled": true
+        },
+        {
+          "name": "HDMI-A-1",
+          "scale": 1.1,
+          "pos": {
+            "x": 0,
+            "y": 0
+          },
+          "currentModeId": "28",
+          "enabled": true
+        }
+      ],
+      "restored_scheme": "You have the following color schemes on your system:\n * BreezeClassic\n * BreezeDark\n * BreezeLight (current color scheme)\n * Oxygen\n * OxygenCold"
+    },
+    {
+      "original_output": {
+        "name": "HDMI-A-1",
+        "scale": 1.1,
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "currentModeId": "28",
+        "enabled": true
+      },
+      "original_scheme": "BreezeLight",
+      "checks": [
+        "trusted button coordinates at native scale 1.5"
+      ],
+      "scales": [],
+      "modes": [],
+      "limits": [
+        "DOM geometry/input only; native pointer and perceived sharpness require human observation",
+        "GTK integer buffer scale is distinct from compositor fractional output scale"
+      ],
+      "manual_geometry": [
+        {
+          "caption": "RustRss",
+          "frame": {
+            "x": 60,
+            "y": 60,
+            "width": 1240,
+            "height": 820
+          },
+          "output": "HDMI-A-1"
+        }
+      ],
+      "native_clicks": [
+        {
+          "id": "btn-settings",
+          "trusted": true,
+          "x": 1066,
+          "y": 19,
+          "inside": true
+        },
+        {
+          "id": "tab-reading",
+          "trusted": true,
+          "x": 208,
+          "y": 154,
+          "inside": true
+        }
+      ],
+      "manual_scale": 1.5,
+      "passed": true,
+      "restore_errors": [],
+      "restored_outputs": [
+        {
+          "name": "eDP-1",
+          "scale": 1.5,
+          "pos": {
+            "x": 2328,
+            "y": 0
+          },
+          "currentModeId": "2",
+          "enabled": true
+        },
+        {
+          "name": "HDMI-A-1",
+          "scale": 1.1,
+          "pos": {
+            "x": 0,
+            "y": 0
+          },
+          "currentModeId": "28",
+          "enabled": true
+        }
+      ],
+      "restored_scheme": "You have the following color schemes on your system:\n * BreezeClassic\n * BreezeDark\n * BreezeLight (current color scheme)\n * Oxygen\n * OxygenCold"
+    }
+  ],
+  "human_observation": {
+    "1.25": "user confirmed clear text/icons, normal layout, clicks completed",
+    "1.5": "user confirmed clear text/icons, normal layout, clicks completed"
+  },
+  "final_restore": {
+    "HDMI-A-1": 1.1,
+    "eDP-1": 1.5,
+    "scheme": "BreezeLight",
+    "verified": true
+  },
+  "baseline": "aabbfe6",
+  "production_changes": false,
+  "cleanup": "Isolated desktop exited via exit_app; launcher exit 0. This run temporary directory and generated pycache removed; prior run retained artifacts untouched."
+}

@@ -14,6 +14,8 @@
 
 主题 MCP 的 `validate_theme`、`update_theme`、`preview_theme` 在工具目录直接发布 core 的对象 patch schema；传 JSON 对象，不传编码后的字符串。Codex CLI 已完成收图→调整→保存/取消补验，用户终端仅显示图片标记；GUI 图片展示仍未验收，见 [客户端报告](.chorus/specs/rss-reader/2026-09-23-theme-preview/t7-codex-client.md)。
 
+原生 KDE Wayland 的125%/150%缩放、设置弹窗与真实点击已补验，用户确认清晰；系统明暗切换跟随及手动模式保持也通过。仅覆盖本机外屏，详情见 [原生验收](.chorus/specs/rss-reader/2026-09-23-theme-preview/native-settings.md)。
+
 ### 字体建议加载
 
 外观、阅读与 Aa 共用系统字体建议。首次异步加载完成后，已打开的编辑器会更新建议，保留当前焦点、输入文字和未保存草稿；加载失败时，下次打开可重试。也可以手动输入逗号分隔的字体族与通用回退字体。
