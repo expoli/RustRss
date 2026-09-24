@@ -173,3 +173,6 @@ created: 2026-09-20
 - [x] Codex CLI 实际客户端模型收图、调整、保存/取消与 SQLite 回读；主题工具发布 core 对象 patch schema，回归先红后绿。终端仅图片标记，未代替第三方 GUI 验收；修复后新 Codex 会话目录已复测：对象声明、validate/preview 首次成功，见 [报告](2026-09-23-theme-preview/t7-codex-client.md)。
 
 - [x] MCP 截图文件契约：preview/capture 返回绝对 PNG 路径及到期时间，不返回内联图片；工具描述要求本地读图，能力声明共享文件系统前提；core 管理私有文件、配额、到期/失权回收，保存取消保留文件，桌面退出主动清理。单元/协议验收及运行范围见 [文件输出报告](2026-09-23-theme-preview/mcp-preview-files.md)。
+
+- [x] 字体建议异步更新：外观/阅读/Aa 加载完成即刷新建议，不重置焦点与草稿；失败允许下次打开重试，已关闭编辑器忽略晚到刷新。两条复现测试先红后绿；运行证据见 [后续体验检查](2026-09-23-theme-preview/file-probe-ui-followup.md)。
+- [x] MCP 文件600秒真实时钟回收：无模型客户端脚本检查创建/重拍/保存/取消/PNG权限尺寸/SQLite回读，等待期间无新MCP请求，605.01秒三文件均回收；见 [补验报告](2026-09-23-theme-preview/file-probe-ui-followup.md)。

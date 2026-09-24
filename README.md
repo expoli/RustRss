@@ -14,7 +14,13 @@
 
 主题 MCP 的 `validate_theme`、`update_theme`、`preview_theme` 在工具目录直接发布 core 的对象 patch schema；传 JSON 对象，不传编码后的字符串。Codex CLI 已完成收图→调整→保存/取消补验，用户终端仅显示图片标记；GUI 图片展示仍未验收，见 [客户端报告](.chorus/specs/rss-reader/2026-09-23-theme-preview/t7-codex-client.md)。
 
+### 字体建议加载
+
+外观、阅读与 Aa 共用系统字体建议。首次异步加载完成后，已打开的编辑器会更新建议，保留当前焦点、输入文字和未保存草稿；加载失败时，下次打开可重试。也可以手动输入逗号分隔的字体族与通用回退字体。
+
 ### MCP 预览截图文件
+
+可用 `/usr/bin/python3 scripts/verify-theme-preview-files.py` 代替模型执行文件协议验收：隔离 Xvfb 实例中创建、重拍、保存、取消、读取 PNG 与 SQLite，并实际等待600秒回收；需先构建桌面与 `theme_fixture` 示例。此脚本验证文件交付，不判断模型是否理解图片。
 
 `preview_theme` / `capture_theme_preview` **只返回本地文件信息，不再返回内联图片或 base64**。成功响应的文本和 `structuredContent` 包含 `image_path`（绝对路径）、`image_mime_type`、`image_bytes`、`image_expires_at_ms`、`image_read_instruction`；原有 `capture.pixel_size`、预览版本和配置 hash 仍用于核对。
 

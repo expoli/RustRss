@@ -1,0 +1,374 @@
+{
+  "settings": {
+    "captures": [
+      {
+        "bytes": 121862,
+        "file": "appearance-draft.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "bytes": 170048,
+        "file": "aa-reading.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "bytes": 81715,
+        "file": "reading-narrow-zh.png",
+        "logical_size": [
+          900,
+          600
+        ],
+        "pixels": [
+          900,
+          600
+        ],
+        "scale": 1
+      }
+    ],
+    "checks": [
+      "bilingual key sets and markup",
+      "empty reader survives system preference en/false",
+      "empty reader survives system preference en/true",
+      "empty reader survives system preference zh-CN/false",
+      "empty reader survives system preference zh-CN/true",
+      "system preference changes never persist",
+      "disposed renderer releases preference listener",
+      "late font suggestions preserve focused text and existing draft",
+      "draft preview has zero persistent writes",
+      "independent light and dark presets",
+      "sparse override saved",
+      "save retains article and row nodes",
+      "save preserves paragraph offset",
+      "discard does not write",
+      "history restore creates a new revision",
+      "stale draft fails CAS and remains editable",
+      "Aa saves shared reading fields",
+      "font family and generic fallback persist via Aa",
+      "reading settings reflect Aa",
+      "narrow window has no horizontal overflow",
+      "reading fields fit at CSS zoom 1.25",
+      "reading fields fit at CSS zoom 1.5",
+      "disposed editor ignores late font refresh"
+    ],
+    "final_revision": 4,
+    "limitations": [
+      "system preference events are synthetic",
+      "fractional checks use CSS zoom, not native Wayland scaling"
+    ]
+  },
+  "desktop": {
+    "output": "/tmp/rustrss-theme-desktop-wn8npfn8",
+    "keyboard_categories": 7,
+    "focus_wrap": true,
+    "aa_draft_no_write": true,
+    "read_size": 23,
+    "revision": 1,
+    "article_renders": [
+      1,
+      1
+    ],
+    "restart_preserved": true
+  },
+  "automated": {
+    "rust_passed": 413,
+    "rust_failed": 0,
+    "rust_result_sections": 26,
+    "node_passed": 42,
+    "node_failed": 0,
+    "clippy": "exit 0; three existing core warnings"
+  },
+  "negative_controls": {
+    "late_fonts_before_fix": "expected appearance/reading/aa notifications, actual []",
+    "retry_before_fix": "expected 2 calls, actual 1",
+    "after_fix": "both tests pass"
+  },
+  "files": {
+    "checks": [
+      "read_token_rejected",
+      "png_dimensions_and_permissions",
+      "unique_recapture",
+      "temporary_no_write",
+      "idempotent_save",
+      "cancel_no_write",
+      "finish_retains_files",
+      "real_600s_expiration_without_requests"
+    ],
+    "samples": [
+      {
+        "elapsed_seconds": 2.3,
+        "desktop_rss": "VmRSS:\t  210980 kB",
+        "disk_available_bytes": 58784759808,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 62.32,
+        "desktop_rss": "VmRSS:\t  205760 kB",
+        "disk_available_bytes": 58777722880,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 122.34,
+        "desktop_rss": "VmRSS:\t  205760 kB",
+        "disk_available_bytes": 58777432064,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 182.37,
+        "desktop_rss": "VmRSS:\t  205252 kB",
+        "disk_available_bytes": 57703325696,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 242.39,
+        "desktop_rss": "VmRSS:\t  205268 kB",
+        "disk_available_bytes": 57649274880,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 302.41,
+        "desktop_rss": "VmRSS:\t  205272 kB",
+        "disk_available_bytes": 57648787456,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 362.43,
+        "desktop_rss": "VmRSS:\t  205000 kB",
+        "disk_available_bytes": 57650073600,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 422.45,
+        "desktop_rss": "VmRSS:\t  205008 kB",
+        "disk_available_bytes": 57649086464,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 482.47,
+        "desktop_rss": "VmRSS:\t  205008 kB",
+        "disk_available_bytes": 57641988096,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 542.49,
+        "desktop_rss": "VmRSS:\t  204992 kB",
+        "disk_available_bytes": 57641873408,
+        "remaining_files": 3
+      },
+      {
+        "elapsed_seconds": 602.51,
+        "desktop_rss": "VmRSS:\t  204992 kB",
+        "disk_available_bytes": 57641496576,
+        "remaining_files": 3
+      }
+    ],
+    "captures": [
+      {
+        "affected": 0,
+        "base_revision": 0,
+        "capture": {
+          "capture_ms": 1101.862075,
+          "captured_at": 1790221008456,
+          "display_backend": "GdkX11Display",
+          "fonts": {
+            "computed": "\"Noto Serif CJK SC\", Georgia, serif",
+            "glyph_fallback": "unknown",
+            "requested": {
+              "line_height": 1.9,
+              "mono_family": [
+                "JetBrains Mono",
+                "Cascadia Mono",
+                "Menlo",
+                "monospace"
+              ],
+              "mono_size": 13,
+              "read_family": [
+                "Noto Serif CJK SC",
+                "Georgia",
+                "serif"
+              ],
+              "read_size": 18,
+              "ui_family": [
+                "-apple-system",
+                "Noto Sans CJK SC",
+                "Segoe UI",
+                "sans-serif"
+              ],
+              "ui_size": 14
+            }
+          },
+          "freshness_marker_verified": true,
+          "logical_size": [
+            1280,
+            900
+          ],
+          "output_scale": 1,
+          "pixel_size": [
+            1280,
+            900
+          ],
+          "scale_factor": 1
+        },
+        "config_hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+        "fixture_version": 1,
+        "image_bytes": 250758,
+        "image_expires_at_ms": 1790221608456,
+        "image_mime_type": "image/png",
+        "image_path": "/tmp/rustrss-preview-QegbHC/capture-MbEGoP.png",
+        "image_read_instruction": "Open image_path with view_image or your client's local image-reading tool before evaluating or saving. The absolute path requires access to the desktop host's filesystem. If unavailable, report visual verification unavailable; do not infer image contents from metadata. No inline image is returned. Files survive save/cancel until expiry, but token revocation or desktop exit removes them early.",
+        "mode": "light",
+        "ok": true,
+        "persisted": false,
+        "preview_id": "4b4183f7-45de-41f6-8799-741b23ab8c69",
+        "preview_revision": 1,
+        "request_id": "bb837d11-a243-4561-a9c1-d80bc15ccddc",
+        "scene": "article"
+      },
+      {
+        "affected": 0,
+        "base_revision": 0,
+        "capture": {
+          "capture_ms": 92.069649,
+          "captured_at": 1790221008573,
+          "display_backend": "GdkX11Display",
+          "fonts": {
+            "computed": "\"Noto Serif CJK SC\", Georgia, serif",
+            "glyph_fallback": "unknown",
+            "requested": {
+              "line_height": 1.9,
+              "mono_family": [
+                "JetBrains Mono",
+                "Cascadia Mono",
+                "Menlo",
+                "monospace"
+              ],
+              "mono_size": 13,
+              "read_family": [
+                "Noto Serif CJK SC",
+                "Georgia",
+                "serif"
+              ],
+              "read_size": 18,
+              "ui_family": [
+                "-apple-system",
+                "Noto Sans CJK SC",
+                "Segoe UI",
+                "sans-serif"
+              ],
+              "ui_size": 14
+            }
+          },
+          "freshness_marker_verified": true,
+          "logical_size": [
+            1280,
+            900
+          ],
+          "output_scale": 1,
+          "pixel_size": [
+            1280,
+            900
+          ],
+          "scale_factor": 1
+        },
+        "config_hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+        "fixture_version": 1,
+        "image_bytes": 250757,
+        "image_expires_at_ms": 1790221608573,
+        "image_mime_type": "image/png",
+        "image_path": "/tmp/rustrss-preview-QegbHC/capture-fVMbfM.png",
+        "image_read_instruction": "Open image_path with view_image or your client's local image-reading tool before evaluating or saving. The absolute path requires access to the desktop host's filesystem. If unavailable, report visual verification unavailable; do not infer image contents from metadata. No inline image is returned. Files survive save/cancel until expiry, but token revocation or desktop exit removes them early.",
+        "mode": "light",
+        "ok": true,
+        "persisted": false,
+        "preview_id": "4b4183f7-45de-41f6-8799-741b23ab8c69",
+        "preview_revision": 1,
+        "request_id": "054beb4e-a76d-41e9-98d9-6c4e029d6674",
+        "scene": "article"
+      },
+      {
+        "affected": 0,
+        "base_revision": 1,
+        "capture": {
+          "capture_ms": 1014.3667519999999,
+          "captured_at": 1790221009632,
+          "display_backend": "GdkX11Display",
+          "fonts": {
+            "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+            "glyph_fallback": "unknown",
+            "requested": {
+              "line_height": 1.7,
+              "mono_family": [
+                "JetBrains Mono",
+                "Cascadia Mono",
+                "Menlo",
+                "monospace"
+              ],
+              "mono_size": 13,
+              "read_family": [
+                "-apple-system",
+                "Noto Sans CJK SC",
+                "Segoe UI",
+                "sans-serif"
+              ],
+              "read_size": 16,
+              "ui_family": [
+                "-apple-system",
+                "Noto Sans CJK SC",
+                "Segoe UI",
+                "sans-serif"
+              ],
+              "ui_size": 14
+            }
+          },
+          "freshness_marker_verified": true,
+          "logical_size": [
+            1280,
+            900
+          ],
+          "output_scale": 1,
+          "pixel_size": [
+            1280,
+            900
+          ],
+          "scale_factor": 1
+        },
+        "config_hash": "0566413fff1ee226fced9b5d3336e7b7c56f6fb9ae74bdb88b5f72ff77f4d9da",
+        "fixture_version": 1,
+        "image_bytes": 271560,
+        "image_expires_at_ms": 1790221609632,
+        "image_mime_type": "image/png",
+        "image_path": "/tmp/rustrss-preview-QegbHC/capture-aHucAz.png",
+        "image_read_instruction": "Open image_path with view_image or your client's local image-reading tool before evaluating or saving. The absolute path requires access to the desktop host's filesystem. If unavailable, report visual verification unavailable; do not infer image contents from metadata. No inline image is returned. Files survive save/cancel until expiry, but token revocation or desktop exit removes them early.",
+        "mode": "light",
+        "ok": true,
+        "persisted": false,
+        "preview_id": "5016816e-28e1-4ab1-ba5d-f47e0839f96e",
+        "preview_revision": 1,
+        "request_id": "739ff143-9710-493c-a4c2-e2269f618a4e",
+        "scene": "article"
+      }
+    ],
+    "elapsed_seconds": 605.01,
+    "limitations": [
+      "Xvfb only; no model image understanding asserted",
+      "RSS is desktop process only, not WebKit subprocess tree"
+    ],
+    "passed": true
+  },
+  "temporary_artifacts": "UI fixture directories removed. Final file probe directory /tmp/rustrss-preview-files-vyqxv35c and /tmp/rustrss-ui-followup-*.log retained because shell guard rejected cleanup; no bypass."
+}

@@ -54,3 +54,27 @@ test('language switching cannot silently discard a theme draft',()=>{
  assert.match(block,/if \(themeEditors\.some\(editor => editor\.dirty\)\) throw new Error/);
  assert.ok(block.indexOf('editor.dirty')<block.indexOf("invoke('set_ui_locale'"));
 });
+test('late font discovery refreshes every live editor without resetting drafts',async()=>{
+ const source=fs.readFileSync('ui/app.js','utf8');
+ const start=source.indexOf('function prefetchFontFamilies()');
+ const end=source.indexOf('\n}',start)+2;
+ let resolve;const refreshed=[];
+ const c=vm.createContext({state:{fontFamiliesLoaded:false,fontFamilies:[]},
+  invoke:()=>new Promise(r=>resolve=r),refreshSettingDropdowns(){},log(){},
+  themeEditors:[{refreshFonts(){refreshed.push('appearance');}},{refreshFonts(){refreshed.push('reading');}}],
+  aaEditor:{refreshFonts(){refreshed.push('aa');}}});
+ vm.runInContext(source.slice(start,end),c);
+ vm.runInContext('prefetchFontFamilies()',c);resolve(['Noto Serif']);
+ await new Promise(r=>setImmediate(r));
+ assert.deepEqual(refreshed,['appearance','reading','aa']);
+ assert.deepEqual(plain(c.state.fontFamilies),['Noto Serif']);
+});
+test('failed font discovery can be retried on the next opening',async()=>{
+ const source=fs.readFileSync('ui/app.js','utf8');const start=source.indexOf('function prefetchFontFamilies()');
+ let calls=0;const c=vm.createContext({state:{fontFamiliesLoaded:false,fontFamilies:[]},
+  invoke:async()=>{calls++;throw Error('temporary failure');},refreshSettingDropdowns(){},log(){}});
+ vm.runInContext(source.slice(start,source.indexOf('\n}',start)+2),c);
+ vm.runInContext('prefetchFontFamilies();prefetchFontFamilies()',c);
+ await new Promise(r=>setImmediate(r));assert.equal(calls,1);
+ vm.runInContext('prefetchFontFamilies()',c);await new Promise(r=>setImmediate(r));assert.equal(calls,2);
+});

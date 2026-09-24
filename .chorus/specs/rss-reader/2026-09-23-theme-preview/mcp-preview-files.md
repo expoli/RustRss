@@ -27,7 +27,7 @@
 - cargo test --workspace：413 passed / 0 failed；Node：40 passed；clippy仅原有3条core告警；cargo build --workspace成功。
 - 新产物原生 KDE Wayland：verify-theme-preview.py --display wayland，24图均从路径读取并检查PNG/像素尺寸；同库独立stdio桥接、临时不写库、幂等保存和失权回收通过。本轮不重新验证原生点击，本脚本 local_cancel=false。
 
-机器结果见 [文件输出证据](mcp-preview-files-results.json)。未重复 Xvfb 双档矩阵或30分钟长测；文件600秒TTL覆盖来自单调时钟边界测试，不标为真实10分钟墙钟通过。Windows/macOS仍未运行验收。
+机器结果见 [文件输出证据](mcp-preview-files-results.json)。未重复 Xvfb 双档矩阵或30分钟长测；该次文件600秒TTL覆盖来自单调时钟边界测试；后续已以无模型脚本补验真实600秒回收，见 [补验报告](file-probe-ui-followup.md)。Windows/macOS仍未运行验收。
 
 ## 实际读图与正常退出
 

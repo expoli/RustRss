@@ -3915,13 +3915,15 @@ function settingDropdownLabel(d) {
 }
 
 /// 预取系统字体族：**只在第一次打开设置页时**跑（fc-list 是子进程，不进启动路径）；
-/// 共享外观/阅读/Aa 编辑器的 fontNames 回调读取此缓存；输入框聚焦时刷新建议。
+/// 共享外观/阅读/Aa 编辑器读取此缓存；加载完成即刷新建议，失败后允许下次重试。
 function prefetchFontFamilies() {
   if (state.fontFamiliesLoaded) return;
   state.fontFamiliesLoaded = true; // 先置位：多次打开不重复 spawn
   invoke('list_font_families')
     .then((families) => {
       state.fontFamilies = Array.isArray(families) ? families : [];
+      themeEditors.forEach(editor => editor.refreshFonts());
+      aaEditor?.refreshFonts();
       refreshSettingDropdowns();
       log(
         state.fontFamilies.length
@@ -3931,6 +3933,7 @@ function prefetchFontFamilies() {
     })
     .catch((e) => {
       state.fontFamilies = [];
+      state.fontFamiliesLoaded = false;
       log(`list_font_families failed: ${e.message}（字体下拉只有「跟随主题」）`);
     });
 }

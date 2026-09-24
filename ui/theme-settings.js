@@ -70,6 +70,10 @@
     mode.onchange = () => { previewMode = mode.value; validate(); };
     host.replaceChildren(node('p', t(readOnly ? 'themePreview.readOnly' : 'theme.draftHint'), 'dim'), form, mode, sample, status, actions);
     const fonts = node('datalist'); fonts.id = host.id + '-fonts'; host.append(fonts);
+    function refreshFonts() {
+      if (disposed) return;
+      fonts.replaceChildren(...fontNames().map(name => { const o = node('option'); o.value = name; return o; }));
+    }
     function paint(snapshot) {
       renderer ||= global.RustRssTheme.createRenderer(sample, { media: null });
       renderer.apply({ ...snapshot, config: { ...snapshot.config, mode: previewMode } });
@@ -103,7 +107,7 @@
         input = node('input'); input.type = type === 'boolean' ? 'checkbox' : type === 'color' ? 'color' : typeof type === 'number' ? 'number' : 'text';
         if (typeof type === 'number') { input.min = type; input.max = max; input.step = step; }
         if (type === 'font') { input.maxLength = 515; input.placeholder = 'system-ui'; input.setAttribute('list', fonts.id);
-          input.onfocus = () => { fonts.replaceChildren(...fontNames().map(name => { const o = node('option'); o.value = name; return o; })); }; }
+          input.onfocus = refreshFonts; }
       }
       input.dataset.themeField = path;
       input.setAttribute('aria-label', label.textContent);
@@ -181,9 +185,9 @@
       if (!session.dirty || !form.reportValidity()) return;
       await persist(() => invoke('update_ui_theme', { expectedRevision: session.base.config.revision, patch: session.patch }));
     }
-    fill();
+    fill(); refreshFonts();
     if (readOnly) { form.disabled = true; mode.disabled = true; actions.remove(); }
-    return { refresh() { if (!session.dirty && !busy) reset(); else if (session.base.config.revision !== getSnapshot().config.revision) status.textContent = t('theme.changedElsewhere'); }, dispose() { disposed = true; session.reset(getSnapshot()); renderer?.dispose(); }, get dirty() { return session.dirty; } };
+    return { refreshFonts, refresh() { if (!session.dirty && !busy) reset(); else if (session.base.config.revision !== getSnapshot().config.revision) status.textContent = t('theme.changedElsewhere'); }, dispose() { disposed = true; session.reset(getSnapshot()); renderer?.dispose(); }, get dirty() { return session.dirty; } };
   }
   global.RustRssThemeSettings = { fields, put, parseField, draftSession, createEditor };
 })(typeof window === 'undefined' ? globalThis : window);
