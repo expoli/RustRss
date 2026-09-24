@@ -4146,6 +4146,9 @@ async function boot() {
         window.__TAURI__.core.invoke('exit_app');
       });
       log('startup refusal overlay shown');
+      // 拒绝态下左侧的「窗口自隐」还没被解除（正常路径在下方 show_main_window 处解除），
+      // 不提前显示会让用户先面对一个约 5 秒的空白窗。
+      window.__TAURI__.core.invoke('show_main_window').catch(() => {});
       return;
     }
   } catch (error) {

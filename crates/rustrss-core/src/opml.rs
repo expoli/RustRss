@@ -33,6 +33,10 @@ pub fn export(store: &Store) -> Result<String, crate::store::StoreError> {
             folder_id: f.folder_id,
         })
         .collect();
+    // 导出顺序与只读通路对齐（按标题、再按 URL）：否则两条路径对同一批订阅产出不同行序，
+    // 「只读导出 == 正常导出」就只能对恰好同序的夹具成立（评审 NOTE）。
+    let mut feeds = feeds;
+    feeds.sort_by(|a, b| a.title.cmp(&b.title).then_with(|| a.url.cmp(&b.url)));
     Ok(render(&folders, &feeds))
 }
 
@@ -42,6 +46,9 @@ pub fn export(store: &Store) -> Result<String, crate::store::StoreError> {
 /// 只读打开、只查 v1 就有的最小列（`feeds` 的 url/title/site_url/folder_id 与 `folders` 的
 /// id/name），因此对旧链任意版本的库都能工作；导出过程**不写一个字节**（不给候选库
 /// 建 WAL 边车、不写 PRAGMA）。
+/// 与正常导出的差异（如实记下、不假装等价）：这里用**源站标题**（旧库不一定有
+/// `custom_title`）且按「标题, URL」定序；库里存在自定义标题或手动排序时，标题与行序
+/// 会与应用的导出不同——这是「抢救订阅」的路径。
 pub fn export_read_only(path: &std::path::Path) -> Result<String, crate::store::StoreError> {
     let conn = rusqlite::Connection::open_with_flags(
         path,
@@ -57,7 +64,7 @@ pub fn export_read_only(path: &std::path::Path) -> Result<String, crate::store::
     };
     let feeds: Vec<ExportFeed> = {
         let mut st =
-            conn.prepare("SELECT url, title, site_url, folder_id FROM feeds ORDER BY title")?;
+            conn.prepare("SELECT url, title, site_url, folder_id FROM feeds ORDER BY title, url")?;
         let rows = st.query_map([], |r| {
             Ok(ExportFeed {
                 url: r.get(0)?,

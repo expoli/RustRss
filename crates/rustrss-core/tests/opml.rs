@@ -245,5 +245,6 @@ fn export_read_only_rescues_feeds_from_a_legacy_database() {
     fresh.add_feed("rsshub://old/route", Some("旧源 B")).unwrap();
     let folder = fresh.add_folder("旧分组").unwrap();
     fresh.assign_folder(f1, Some(folder)).unwrap();
+    // 字节等价的前提：标题即显示名、无自定义标题/手动排序（只读通路读源站标题并按标题定序）。
     assert_eq!(opml::export_read_only(&path).unwrap(), opml::export(&fresh).unwrap());
 }
