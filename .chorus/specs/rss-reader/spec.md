@@ -170,4 +170,6 @@ created: 2026-09-20
 
 - [x] T7 评审 P2 收尾：移除 app.js 已失效的旧主题/字体控件路径；全部 UI JS 的静态 ID 创建契约、脚本/样式资源服务契约及变异校验已通过，见 [收尾报告](2026-09-23-theme-preview/p2-contract-cleanup.md)。本项不关闭原生 Wayland 输入 open item。
 
-- [x] Codex CLI 实际客户端模型收图、调整、保存/取消与 SQLite 回读；主题工具发布 core 对象 patch schema，回归先红后绿。终端仅图片标记，未代替第三方 GUI 验收；修复后实际客户端目录刷新待复测，见 [报告](2026-09-23-theme-preview/t7-codex-client.md)。
+- [x] Codex CLI 实际客户端模型收图、调整、保存/取消与 SQLite 回读；主题工具发布 core 对象 patch schema，回归先红后绿。终端仅图片标记，未代替第三方 GUI 验收；修复后新 Codex 会话目录已复测：对象声明、validate/preview 首次成功，见 [报告](2026-09-23-theme-preview/t7-codex-client.md)。
+
+- [x] MCP 截图文件契约：preview/capture 返回绝对 PNG 路径及到期时间，不返回内联图片；工具描述要求本地读图，能力声明共享文件系统前提；core 管理私有文件、配额、到期/失权回收，保存取消保留文件，桌面退出主动清理。单元/协议验收及运行范围见 [文件输出报告](2026-09-23-theme-preview/mcp-preview-files.md)。

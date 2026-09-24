@@ -92,7 +92,7 @@
     "after": "validate_theme/update_theme/preview_theme publish core object patch schema",
     "red_before_fix": true,
     "http_tools_list_test_passed": true,
-    "actual_codex_after_fix": "existing session cached old parameter declaration; both object patches succeeded first attempt; fresh catalog normalization remains untested",
+    "actual_codex_after_fix": "fresh session sees object patch; validate and preview first attempt successful; nested overrides displayed as unknown | null",
     "rebuilt_stdio_binary": "all three patch parameters type object, additionalProperties false"
   },
   "validation": {
@@ -200,6 +200,44 @@
       "preview2 full",
       "capture2 full; subjectively larger line spacing",
       "settings capture full"
+    ]
+  },
+  "fresh_session": {
+    "session_id": "01a0d155-2047-76c0-8efd-4db80722ce98",
+    "baseline": "3c203de",
+    "patch_declaration": "object; client renders nested overrides as unknown | null",
+    "validate_preview_first_attempt": true,
+    "preview_visual": "full image read",
+    "capture_visual": "model reports color strip only",
+    "images": [
+      {
+        "bytes": 317113,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "994127128074e3ebc77f73d3f34bb5f38563c9455a7cd743d0bdc0d5a3221186"
+      },
+      {
+        "bytes": 317116,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "ae6f8ccf04114356e746f04b8579769409a47697163d7ce1a666b30ce2b40d43"
+      }
+    ],
+    "changed_bbox": [
+      0,
+      0,
+      64,
+      8
+    ],
+    "sqlite_unchanged": true,
+    "audit": [
+      "2026-09-24T10:54:30.980+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":1,\"patch_fields\":[\"overrides\"]} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:54:46.719+08:00 INFO  mcp: mcp-write tool=capture_theme_preview args={\"expected_preview_revision\":1} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:55:02.136+08:00 INFO  mcp: mcp-write tool=finish_theme_preview args={\"action\":\"cancel\",\"expected_preview_revision\":1} affected=0 ok=true dry_run=false error_code=-"
     ]
   }
 }

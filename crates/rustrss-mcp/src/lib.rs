@@ -659,15 +659,15 @@ impl RustRssMcp {
 
 #[tool_router]
 impl RustRssMcp {
-    #[tool(description = "Create or patch an in-memory theme preview and return a PNG of fixed local UI fixtures. Requires write scope. Supply base_revision from get_theme. For updates also supply preview_id and expected_preview_revision. No settings are saved until finish_theme_preview(save).")]
+    #[tool(description = "Create or patch an in-memory theme preview and return an absolute local PNG image_path of fixed UI fixtures (no inline image). Open image_path using view_image or an equivalent local image-reading tool before judging or saving. Requires access to the desktop host filesystem; if the client cannot read it, report visual verification unavailable. Files expire after 600s and can be removed earlier on token revocation or desktop exit. Requires write scope. Supply base_revision from get_theme. For updates also supply preview_id and expected_preview_revision. No settings are saved until finish_theme_preview(save).")]
     async fn preview_theme(&self, Parameters(p): Parameters<preview::PreviewParams>, context: RequestContext<RoleServer>) -> CallToolResult {
         self.preview_call("preview_theme", serde_json::to_value(p).unwrap(), &context).await
     }
-    #[tool(description = "Capture a fixed scene from an owned theme preview at expected_preview_revision. Returns one bounded PNG plus render/version metadata. Requires write scope.")]
+    #[tool(description = "Capture a fixed scene from an owned theme preview at expected_preview_revision. Returns an absolute local PNG image_path plus image_expires_at_ms and render/version metadata, never an inline image. Open image_path with view_image or your local image-reading tool to inspect the complete screenshot. Requires access to the desktop host filesystem; a path or metadata alone does not prove visual verification. Files survive save/cancel until their 600s expiry, unless token revocation or desktop exit removes them early. Requires write scope.")]
     async fn capture_theme_preview(&self, Parameters(p): Parameters<preview::CaptureParams>, context: RequestContext<RoleServer>) -> CallToolResult {
         self.preview_call("capture_theme_preview", serde_json::to_value(p).unwrap(), &context).await
     }
-    #[tool(description = "Save or cancel an owned preview. Save uses CAS against its base_revision; conflicts preserve the candidate. Repeating the same finish is idempotent for the last 16 finishes within ten minutes. Requires write scope.")]
+    #[tool(description = "Save or cancel an owned preview. Save uses CAS against its base_revision; conflicts preserve the candidate. Screenshot files are retained until their original expiry (unless permission is revoked or the desktop exits). Repeating the same finish is idempotent for the last 16 finishes within ten minutes. Requires write scope.")]
     async fn finish_theme_preview(&self, Parameters(p): Parameters<preview::FinishParams>, context: RequestContext<RoleServer>) -> CallToolResult {
         self.preview_call("finish_theme_preview", serde_json::to_value(p).unwrap(), &context).await
     }

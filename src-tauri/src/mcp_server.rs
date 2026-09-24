@@ -33,12 +33,14 @@ pub use rustrss_mcp::config::{
 
 pub struct McpRuntime {
     handle: Mutex<Option<HttpHandle>>,
+    preview_cleanup: Mutex<Option<Box<dyn Fn() + Send + Sync>>>,
 }
 
 impl Default for McpRuntime {
     fn default() -> Self {
         Self {
             handle: Mutex::new(None),
+            preview_cleanup: Mutex::new(None),
         }
     }
 }
@@ -57,6 +59,11 @@ impl McpRuntime {
 
     /// 停止服务（端口随之释放）
     pub fn stop(&self) {
+        if let Ok(mut cleanup) = self.preview_cleanup.lock() {
+            if let Some(cleanup) = cleanup.take() {
+                cleanup();
+            }
+        }
         if let Ok(mut guard) = self.handle.lock() {
             if let Some(handle) = guard.take() {
                 handle.shutdown();
@@ -93,6 +100,7 @@ impl McpRuntime {
         let bind: SocketAddr = format!("127.0.0.1:{port}")
             .parse()
             .map_err(|e| format!("端口 {port} 非法: {e}"))?;
+        let cleanup = server.preview_file_cleanup();
         let handle = serve(
             server,
             HttpConfig {
@@ -104,6 +112,9 @@ impl McpRuntime {
         .await
         .map_err(|e| e.to_string())?;
         let addr = handle.addr;
+        if let Ok(mut guard) = self.preview_cleanup.lock() {
+            *guard = Some(Box::new(cleanup));
+        }
         if let Ok(mut guard) = self.handle.lock() {
             *guard = Some(handle);
         }

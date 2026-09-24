@@ -40,6 +40,7 @@ struct Fixture {
     store: Store,
     handle: HttpHandle,
     backend: Arc<Mock>,
+    cleanup_files: Box<dyn Fn() + Send + Sync>,
 }
 impl Fixture {
     async fn new(delay: Duration, fail: bool) -> Self {
@@ -57,6 +58,7 @@ impl Fixture {
         let server = RustRssMcp::open(&path)
             .unwrap()
             .with_preview_backend(backend.clone());
+        let cleanup_files = Box::new(server.preview_file_cleanup());
         let handle = serve(
             server,
             HttpConfig {
@@ -71,12 +73,14 @@ impl Fixture {
             store,
             handle,
             backend,
+            cleanup_files,
         }
     }
     async fn call(&self, token: &str, name: &str, args: Value) -> Value {
         call(&self.handle.url(), token, name, args).await
     }
     fn cleanup(self) {
+        (self.cleanup_files)();
         self.handle.shutdown();
         drop(self.store);
         for suffix in ["", "-wal", "-shm"] {
@@ -90,6 +94,19 @@ async fn call(url: &str, token: &str, name: &str, args: Value) -> Value {
 }
 fn meta(result: &Value) -> &Value {
     &result["structuredContent"]
+}
+fn assert_file(result: &Value) {
+    assert!(result["content"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|c| c["type"] == "text"));
+    let p = meta(result);
+    assert_eq!(p["image_mime_type"], "image/png");
+    assert_eq!(
+        std::fs::read(p["image_path"].as_str().unwrap()).unwrap(),
+        vec![1; 32]
+    );
 }
 fn initial() -> Value {
     json!({"base_revision":0,"patch":{"light_preset":"paper"}})
@@ -106,13 +123,12 @@ async fn temporary_image_patch_cancel_and_permissions() {
     let result = f.call("writer", "preview_theme", initial()).await;
     let p = meta(&result);
     assert_eq!(p["ok"], true);
-    assert_eq!(result["content"][1]["type"], "image");
-    assert_eq!(result["content"][1]["mimeType"], "image/png");
+    assert_file(&result);
     assert_eq!(f.store.all_settings().unwrap(), before);
     let recapture=f.call("writer","capture_theme_preview",json!({"preview_id":p["preview_id"],"expected_preview_revision":1,"scene":"settings","mode":"dark"})).await;
     assert_eq!(meta(&recapture)["preview_revision"], 1);
     assert_eq!(meta(&recapture)["config_hash"], p["config_hash"]);
-    assert_eq!(recapture["content"][1]["type"], "image");
+    assert_file(&recapture);
     let busy = f.call("writer", "preview_theme", initial()).await;
     assert_eq!(meta(&busy)["error_code"], "preview_busy");
     let stale = f
@@ -146,6 +162,7 @@ async fn save_cas_conflict_and_idempotent_finish() {
         .call("writer", "finish_theme_preview", finish(p, "save"))
         .await;
     assert_eq!(meta(&saved)["saved_revision"], 1);
+    assert!(std::path::Path::new(p["image_path"].as_str().unwrap()).exists());
     let retry = f
         .call("writer", "finish_theme_preview", finish(p, "save"))
         .await;
@@ -194,6 +211,7 @@ async fn concurrent_capture_and_rotation_during_render_fail_closed() {
         .unwrap()
         .iter()
         .all(|c| c["type"] != "image"));
+    assert!(meta(&result)["image_path"].is_null());
     assert_eq!(f.store.theme_snapshot().unwrap().config.revision, 0);
     assert!(f.backend.closed.load(Ordering::SeqCst) > 0);
     f.cleanup();
@@ -215,7 +233,7 @@ async fn failed_render_retains_candidate_id_for_cancel() {
     f.cleanup();
 }
 #[tokio::test]
-async fn bridge_checks_profile_and_forwards_image_and_cancel() {
+async fn bridge_checks_profile_and_forwards_file_and_cancel() {
     let f = Fixture::new(Duration::ZERO, false).await;
     f.store.set_bool_setting("mcp.enabled", true).unwrap();
     f.store
@@ -232,8 +250,24 @@ async fn bridge_checks_profile_and_forwards_image_and_cancel() {
     .unwrap();
     let caps = call(&bridge.url(), "reader", "get_theme", json!({})).await;
     assert_eq!(meta(&caps)["capabilities"]["preview"]["available"], true);
+    assert_eq!(
+        meta(&caps)["capabilities"]["preview"]["image_delivery"],
+        "local_file"
+    );
+    assert_eq!(
+        meta(&caps)["capabilities"]["preview"]["requires_shared_filesystem"],
+        true
+    );
     let result = call(&bridge.url(), "writer", "preview_theme", initial()).await;
-    assert_eq!(result["content"][1]["type"], "image");
+    assert_file(&result);
+    let recapture = call(
+        &bridge.url(),
+        "writer",
+        "capture_theme_preview",
+        json!({"preview_id":meta(&result)["preview_id"], "expected_preview_revision":1}),
+    )
+    .await;
+    assert_file(&recapture);
     let cancel = call(
         &bridge.url(),
         "writer",
@@ -258,5 +292,105 @@ async fn bridge_checks_profile_and_forwards_image_and_cancel() {
     assert_eq!(meta(&mismatch)["error_code"], "profile_mismatch");
     other.cleanup();
     bridge.shutdown();
+    f.cleanup();
+}
+
+#[tokio::test]
+async fn screenshots_are_local_files_with_explicit_lifetime_and_no_inline_images() {
+    let f = Fixture::new(Duration::ZERO, false).await;
+    let caps = f.call("reader", "get_theme", json!({})).await;
+    assert_eq!(
+        meta(&caps)["capabilities"]["preview"]["image_delivery"],
+        "local_file"
+    );
+    assert_eq!(
+        meta(&caps)["capabilities"]["preview"]["requires_shared_filesystem"],
+        true
+    );
+    let result = f.call("writer", "preview_theme", initial()).await;
+    let p = meta(&result);
+    assert_eq!(p["ok"], true);
+    assert!(result["content"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|c| c["type"] == "text"));
+    let path = std::path::Path::new(p["image_path"].as_str().unwrap());
+    assert!(path.is_absolute());
+    assert_eq!(std::fs::read(path).unwrap(), vec![1; 32]);
+    assert_eq!(p["image_mime_type"], "image/png");
+    assert_eq!(p["image_bytes"], 32);
+    assert!(p["image_expires_at_ms"].as_u64().unwrap() > 0);
+    assert!(p["image_read_instruction"]
+        .as_str()
+        .unwrap()
+        .contains("view_image"));
+    let recapture = f
+        .call(
+            "writer",
+            "capture_theme_preview",
+            json!({"preview_id":p["preview_id"],"expected_preview_revision":1}),
+        )
+        .await;
+    assert_ne!(meta(&recapture)["image_path"], p["image_path"]);
+    assert_eq!(std::fs::read(path).unwrap(), vec![1; 32]);
+    f.call("writer", "finish_theme_preview", finish(p, "cancel"))
+        .await;
+    assert!(
+        path.exists(),
+        "cancel must retain screenshots for their declared lifetime"
+    );
+    f.store.set_setting("mcp.write_token", "rotated").unwrap();
+    tokio::time::sleep(Duration::from_secs(6)).await;
+    assert!(
+        !path.exists(),
+        "revocation must reap already finished screenshots"
+    );
+    f.cleanup();
+}
+
+#[tokio::test]
+async fn file_limit_and_shutdown_preserve_candidate_for_cancel() {
+    let f = Fixture::new(Duration::ZERO, false).await;
+    let result = f.call("writer", "preview_theme", initial()).await;
+    let p = meta(&result);
+    let args = json!({"preview_id":p["preview_id"],"expected_preview_revision":1});
+    for _ in 1..rustrss_core::theme_preview_files::MAX_FILES {
+        assert_file(
+            &f.call("writer", "capture_theme_preview", args.clone())
+                .await,
+        );
+    }
+    let full = f
+        .call("writer", "capture_theme_preview", args.clone())
+        .await;
+    assert_eq!(meta(&full)["error_code"], "preview_file_limit");
+    assert!(meta(&full)["error_message"]
+        .as_str()
+        .unwrap()
+        .contains("wait"));
+    assert_eq!(meta(&full)["preview_id"], p["preview_id"]);
+    assert!(meta(&full)["image_path"].is_null());
+    let path = std::path::Path::new(p["image_path"].as_str().unwrap());
+    let directory = path.parent().unwrap().to_path_buf();
+    (f.cleanup_files)();
+    assert!(
+        !directory.exists(),
+        "explicit desktop shutdown removes all artifacts"
+    );
+    let closed = f.call("writer", "capture_theme_preview", args).await;
+    assert_eq!(meta(&closed)["error_code"], "preview_file_unavailable");
+    assert!(meta(&closed)["image_path"].is_null());
+    assert!(
+        !directory.exists(),
+        "shutdown must prevent late file publication"
+    );
+    assert_eq!(
+        meta(
+            &f.call("writer", "finish_theme_preview", finish(p, "cancel"))
+                .await
+        )["ok"],
+        true
+    );
     f.cleanup();
 }

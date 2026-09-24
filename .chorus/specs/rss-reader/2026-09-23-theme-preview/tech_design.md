@@ -11,7 +11,7 @@
 ## 分层
 
 1. **core/theme**：ThemeConfig、Patch、Preset、归一化/校验、语义 token、配置指纹、原子 CAS 保存、有限历史；不依赖 Tauri。
-2. **MCP**：工具 schema、权限、审计、结构化响应与 ImageContent；调用 core 和抽象 ThemePreviewBackend，不依赖 WebView 类型。
+2. **MCP**：工具 schema、权限、审计、结构化响应与本地截图路径；调用 core 和抽象 ThemePreviewBackend，不依赖 WebView 类型。
 3. **桌面适配器**：实现预览后端、窗口/事件/平台截图；所有主题语义规则复用 core。
 4. **UI**：原生 JS 模块共享组件和 token 应用器；预览页面注入固定 fixture，禁止加载生产数据库。CSS 变量局部变更并同值短路。
 
@@ -56,7 +56,9 @@ validate 返回字段错误与已计算的色对/对比度；普通文本 4.5:1�
 | capture_theme_preview | write | preview_id/expected_preview_revision、scene/mode → 图及元数据；scene 是枚举，不接受 URL/文件路径 |
 | finish_theme_preview | write | preview_id、expected_preview_revision、action=save/cancel；save 必须 CAS base_revision |
 
-图像工具返回一个 image/png MCP ImageContent（base64）与简短 JSON 文本；若声明 outputSchema，同时提供符合 schema 的 structuredContent 元数据。首版不返回临时路径要求客户端自行读文件。不支持图片的客户端仍能取得元数据，但工具无法保证客户端模型具备视觉能力。
+2026-09-24 契约变更：图像工具只返回简短 JSON 文本与 structuredContent，不返回 MCP ImageContent/base64。返回绝对 `image_path`、`image_mime_type=image/png`、`image_bytes`、`image_expires_at_ms` 和明确的 `image_read_instruction`，保留 render/version/hash 元数据。客户端必须用 view_image 等读图工具实际打开路径；无法访问时报告视觉验证不可用。能力声明 image_delivery=local_file、requires_shared_filesystem=true、inline_images=false，同机共享文件系统是前置条件。
+
+core/theme_preview_files 负责私有目录/独立文件、单图2MiB、每服务32图/32MiB配额与600秒寿命。完整写入并关闭后才公布路径；不覆盖旧图、不提前驱逐未过期文件。保存/取消后保留到期，token失效或正常退出提前清理；MCP每5秒调用sweep，独立stdio仅转发路径。Unix创建目录权限0700、文件0600。容量满/文件失败返回preview_file_limit/preview_file_unavailable并保留可取消的候选。桌面RunEvent::Exit和MCP stop显式关闭文件存储，禁止晚到的渲染重新产生文件；强杀/崩溃残留由OS临时目录维护清理，不扫描其它实例。
 
 错误码：invalid_argument、revision_conflict、preview_busy、preview_expired、preview_backend_unavailable、profile_mismatch、render_timeout、capture_failed、image_too_large，以及现有授权错误。错误附可重试标志，不附 token。预览图和全量 base64 不写日志。
 
@@ -78,7 +80,7 @@ validate 返回字段错误与已计算的色对/对比度；普通文本 4.5:1�
 4. **两次 rAF 不保证所有平台合成器已刷新**。产品 spike 要采用连续变色/标记像素与内容对照确认新帧；必要时增加平台绘制同步，不能用固定 sleep 宣称保证。
 5. 返回 preview/config 版本、主题模式、fixture 版本、scene、逻辑/像素尺寸、缩放因子、字体回退信息、capture_ms 与 captured_at。
 
-默认请求 1280×900 CSS px；compositor 约束时协商到 960×640 并等待新的 ready，两档之外返回 viewport_mismatch。截图前限制 physical pixel 总量 ≤6MP；PNG 原始数据 ≤2MiB（base64 后约 2.67MiB）；一请求一图。首版超限直接拒绝（image_too_large），不做降采样；output_scale=1。需验证各客户端消息上限，Linux 100%/200% 与当前 KDE Wayland 已验收，见 T6 报告。
+默认请求 1280×900 CSS px；compositor 约束时协商到 960×640 并等待新的 ready，两档之外返回 viewport_mismatch。截图前限制 physical pixel 总量 ≤6MP；PNG 文件 ≤2MiB（MCP 响应不携带图片字节）；一请求一图。首版超限直接拒绝（image_too_large），不做降采样；output_scale=1。需验证各客户端消息上限，Linux 100%/200% 与当前 KDE Wayland 已验收，见 T6 报告。
 
 首版 10 秒 deadline，超时取消原生请求（若平台支持）并以 generation 丢弃迟到回调。图像编码/缩放在允许的平台线程之外完成，store 锁不跨 await。隐藏/最小化窗口若不可可靠绘制则返回状态或使用明确可见预览窗口，不捕获桌面其它内容。
 

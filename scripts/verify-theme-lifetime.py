@@ -1,7 +1,7 @@
 """Real 600s idle / 1800s absolute preview expiry; no test clocks or shortened TTLs.
-Two isolated profiles run concurrently in one Xvfb. No PNG files are retained.
+Two isolated profiles run concurrently in one Xvfb. The probe retains no PNG copies;
+the desktop manages returned screenshot files with its bounded TTL.
 """
-import base64
 import json
 import os
 from pathlib import Path
@@ -44,9 +44,11 @@ def value(result):
 
 def frame(p, result):
     v = value(result)
-    images = [c for c in result['content'] if c['type'] == 'image']
-    assert len(images) == 1
-    data = base64.b64decode(images[0]['data'])
+    assert all(c['type'] == 'text' for c in result['content'])
+    path = Path(v['image_path'])
+    assert path.is_absolute() and v['image_expires_at_ms'] > time.time()*1000
+    data = path.read_bytes()
+    assert len(data) == v['image_bytes']
     assert len(data) <= 2 * 1024 * 1024 and data.startswith(b'\x89PNG')
     assert v['capture']['freshness_marker_verified']
     assert v['capture']['display_backend'] == 'GdkX11Display'

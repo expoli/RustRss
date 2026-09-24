@@ -6,7 +6,6 @@ Requires distro Python's websockets package. No screenshot of the user's desktop
 """
 import argparse
 import asyncio
-import base64
 import json
 from pathlib import Path
 import re
@@ -88,8 +87,10 @@ async def main():
         result=await capture_with_retry({'base_revision':revision,'patch':{'mode':'light','overrides':{'typography':{'read_size':read_size},'reader':{'width':width}}},'scene':'article','mode':'light'})
         p=content(result)
         check(p['capture']['display_backend']=='GdkWaylandDisplay','native GdkWaylandDisplay capture (not Xwayland)')
-        image=next(c for c in result['content'] if c['type']=='image')
-        (root/'native-preview.png').write_bytes(base64.b64decode(image['data']))
+        assert all(c['type']=='text' for c in result['content'])
+        image_path=Path(p['image_path']);assert image_path.is_absolute()
+        data=image_path.read_bytes();assert len(data)==p['image_bytes']
+        (root/'native-preview.png').write_bytes(data)
         report['capture']=p['capture']
         preview_state=json.loads(await evaluate(measure))
         check(preview_state==report['before'],'temporary preview preserves main reader position and nodes')

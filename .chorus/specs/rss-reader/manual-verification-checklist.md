@@ -1033,8 +1033,21 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 - [x] 用户启动实际客户端；模型描述两版图片差异；临时不落库、保存 revision1、取消不改正式配置，SQLite 直接回读。
 - [x] 修复三工具 patch 的无约束 schema，HTTP 工具目录回归先红后绿；Rust406/Node40通过，Clippy仅原有3告警。
-- [ ] 修复后实际 Codex 客户端刷新目录、第三方 GUI 图片显示、重拍模型解释异常的归因。终端图片标记不算 GUI 验收。
+- [x] 修复后新 Codex 会话刷新目录：patch 为对象结构，validate/preview 对象参数首次成功；取消后 SQLite 配置不变。
+- [ ] 第三方 GUI 图片显示、重拍模型解释异常的归因。终端图片标记不算 GUI 验收。
 
 证据及限制见 [客户端报告](2026-09-23-theme-preview/t7-codex-client.md)。
 
-同会话补验：对象 patch 两次首次成功；两次 preview、revision2 article/settings capture 均被模型读到完整画面；revision1 capture 仍只报告色条。原始两组文章图仅64×8标记不同，正文像素完全一致。取消后 SQLite 配置不变；新会话 schema 目录转换仍未测。
+同会话补验：对象 patch 两次首次成功；两次 preview、revision2 article/settings capture 均被模型读到完整画面；revision1 capture 仍只报告色条。原始两组文章图仅64×8标记不同，正文像素完全一致。取消后 SQLite 配置不变；随后新会话 schema 目录转换已测通过，详见报告最新小节。
+
+### 24.12 MCP 本地截图文件输出（2026-09-24）
+
+- [x] 无内联图，返回路径/过期时间；工具提示本地读图，共享文件系统能力声明。
+- [x] 私有权限、独立文件、容量/到期边界、失权回收、保存取消可读、桥接文件、shutdown清理与禁止晚写的自动测试。
+- [x] Rust413/Node40；clippy仅原有3告警；重建后原生Wayland一档24图从文件读回。
+- [ ] 文件10分钟墙钟与其它平台/容器路径可达性，本轮未验收。
+
+见 [文件输出报告](2026-09-23-theme-preview/mcp-preview-files.md)。
+
+- [x] 原生Wayland：实际文件权限/PNG尺寸/取消保留/SQLite无写入；正常exit_app后截图目录消失。
+- [ ] 实际客户端连续近似图视觉稳定性：文件路径读图仍有第二图色条观测；非交互Codex另被其MCP审批策略阻断，不计完整自动闭环通过。

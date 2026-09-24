@@ -1,0 +1,508 @@
+{
+  "output": "/tmp/rustrss-theme-preview-vg85_iuk",
+  "captures": [
+    {
+      "label": "clear-light-overview",
+      "bytes": 200530,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 1752.948785,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-light-article",
+      "bytes": 335250,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 308.314179,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-light-settings",
+      "bytes": 203320,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 404.14491200000003,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-dark-overview",
+      "bytes": 201767,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 176.518325,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-dark-article",
+      "bytes": 335800,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 208.396222,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-dark-settings",
+      "bytes": 197902,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 212.992077,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-light-overview",
+      "bytes": 200253,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 223.857325,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-light-article",
+      "bytes": 316269,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 163.61307,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-light-settings",
+      "bytes": 200504,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 184.46601900000002,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-dark-overview",
+      "bytes": 199971,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 216.70223,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-dark-article",
+      "bytes": 315203,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 226.075926,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-dark-settings",
+      "bytes": 192534,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 250.936308,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-light-overview",
+      "bytes": 209795,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 248.225062,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-light-article",
+      "bytes": 317460,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 260.543047,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-light-settings",
+      "bytes": 207651,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 252.865988,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-dark-overview",
+      "bytes": 209171,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 219.492083,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-dark-article",
+      "bytes": 315882,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 218.57572,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-dark-settings",
+      "bytes": 200886,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 238.27981400000002,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "recapture",
+      "bytes": 209798,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 192.137916,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "reopen-0",
+      "bytes": 335249,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 2385.6871260000003,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "reopen-1",
+      "bytes": 335248,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 1647.3772840000001,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "reopen-2",
+      "bytes": 335248,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 1723.099437,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "stdio-paper",
+      "bytes": 316270,
+      "revision": 1,
+      "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+      "capture_ms": 1720.048102,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "revoke",
+      "bytes": 316269,
+      "revision": 1,
+      "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+      "capture_ms": 1883.948433,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2,
+      "display_backend": "GdkWaylandDisplay"
+    }
+  ],
+  "temporary_no_write": true,
+  "stdio_bridge_file": true,
+  "saved_revision": 1,
+  "idempotent_save": true,
+  "display": "wayland",
+  "requested_scale": null,
+  "local_cancel": false,
+  "revocation_reaped": true,
+  "article_renders_before_after": [
+    0,
+    0
+  ],
+  "contract": "local_file; text metadata only",
+  "tests": {
+    "rust_passed": 413,
+    "rust_failed": 0,
+    "node_passed": 40,
+    "clippy": "exit 0; existing 3 core warnings",
+    "build": "cargo build --workspace exit 0",
+    "red_before_fix": "screenshots_are_local_files_with_explicit_lifetime_and_no_inline_images failed: image_delivery null, expected local_file",
+    "permission_negative_control": "directory permission assertion failed before explicit 0700 creation; passed after fix"
+  },
+  "not_rerun": [
+    "Xvfb 100%/200% matrix",
+    "30-minute preview lifetime",
+    "10-minute file TTL wall clock; monotonic boundary tests cover 599/600 seconds",
+    "Windows/macOS"
+  ],
+  "runtime_file_delivery": {
+    "files": [
+      {
+        "path": "/tmp/rustrss-preview-XZZqwA/capture-tM2v5k.png",
+        "bytes": 317116,
+        "sha256": "3a7271079b100e5ea876f6084cd87d5ead7badbae5687a15e4cd3daab8232d39",
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "expires_at_ms": 1790220907954
+      },
+      {
+        "path": "/tmp/rustrss-preview-XZZqwA/capture-6b9qB1.png",
+        "bytes": 317115,
+        "sha256": "f31c38b8c7d1f8a4f40da05c206ed1af52d5a5dd84d0ce877392a2e9e0268116",
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "expires_at_ms": 1790220908656
+      }
+    ],
+    "native_backend": "GdkWaylandDisplay",
+    "cancel_preserves_files": true,
+    "formal_theme_unchanged": true,
+    "capabilities": {
+      "available": true,
+      "backend": "native_webview",
+      "deadline_seconds": 10,
+      "file_cleanup": "expiry (5s sweep), token revocation, or normal desktop service exit; save/cancel retain files; process crashes may leave files for OS temp cleanup",
+      "file_ttl_seconds": 600,
+      "fixture_version": 1,
+      "idle_seconds": 600,
+      "image_delivery": "local_file",
+      "inline_images": false,
+      "max_file_bytes_total": 33554432,
+      "max_files": 32,
+      "max_pixels": 6000000,
+      "max_png_bytes": 2097152,
+      "max_seconds": 1800,
+      "requires_shared_filesystem": true,
+      "viewports": [
+        [
+          1280,
+          900
+        ],
+        [
+          960,
+          640
+        ]
+      ]
+    },
+    "noninteractive_client": "blocked at get_theme: MCP tool call requires approval, but approval policy is never",
+    "preview_capture_pixel_diff_bbox": [
+      0,
+      0,
+      64,
+      8
+    ],
+    "client_file_visual": [
+      "first view_image: full interface with typography/link details",
+      "second view_image: model reports narrow color strip; full interface not visually confirmed"
+    ],
+    "sqlite_no_formal_write": true,
+    "normal_desktop_exit_removed_directory": true
+  }
+}

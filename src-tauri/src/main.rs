@@ -345,8 +345,14 @@ fn main() {
                 }
             }
         })
-        .run(tauri::generate_context!())
-        .expect("RustRss 启动失败");
+        .build(tauri::generate_context!())
+        .expect("RustRss 启动失败")
+        .run(|app, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                use tauri::Manager;
+                app.state::<crate::state::AppState>().mcp.stop();
+            }
+        });
 }
 
 #[cfg(test)]

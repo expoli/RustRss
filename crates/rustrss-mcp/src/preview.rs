@@ -4,14 +4,14 @@ use crate::{
     theme_tools::{failure, response, GetThemeParams},
     RustRssMcp,
 };
-use base64::Engine;
 use rmcp::{
-    model::{CallToolResult, ContentBlock},
+    model::CallToolResult,
     service::{RequestContext, RoleServer},
 };
 use rustrss_core::{
     theme::{ThemePatch, ThemeSnapshot},
     theme_preview::Preview,
+    theme_preview_files::{FileError, PreviewFiles, MAX_BYTES, MAX_FILES, TTL_SECONDS},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -116,7 +116,13 @@ struct State {
     active: Option<Preview>,
     finished: std::collections::VecDeque<Finished>,
 }
+#[derive(Default)]
+struct Files {
+    closed: bool,
+    store: Option<PreviewFiles>,
+}
 pub struct Service {
+    files: Arc<std::sync::Mutex<Files>>,
     backend: Option<Arc<dyn Backend>>,
     state: tokio::sync::Mutex<State>,
     started: Instant,
@@ -124,6 +130,7 @@ pub struct Service {
 impl Default for Service {
     fn default() -> Self {
         Self {
+            files: Default::default(),
             backend: None,
             state: Default::default(),
             started: Instant::now(),
@@ -143,12 +150,17 @@ impl Service {
     }
     pub fn capability(&self) -> Value {
         if self.backend.is_some() {
-            json!({"available":true,"backend":"native_webview","fixture_version":1,"idle_seconds":600,"max_seconds":1800,"viewports":[[1280,900],[960,640]],"deadline_seconds":10,"max_pixels":6000000,"max_png_bytes":2097152})
+            json!({"available":true,"backend":"native_webview","fixture_version":1,"idle_seconds":600,"max_seconds":1800,"viewports":[[1280,900],[960,640]],"deadline_seconds":10,"max_pixels":6000000,"max_png_bytes":2097152,"image_delivery":"local_file","requires_shared_filesystem":true,"inline_images":false,"file_ttl_seconds":TTL_SECONDS,"max_files":MAX_FILES,"max_file_bytes_total":MAX_BYTES,"file_cleanup":"expiry (5s sweep), token revocation, or normal desktop service exit; save/cancel retain files; process crashes may leave files for OS temp cleanup"})
         } else {
             json!({"available":false,"reason":"preview_backend_unavailable"})
         }
     }
     fn sweep(&self, state: &mut State, owner: Option<&str>) {
+        if let Ok(mut files) = self.files.lock() {
+            if let Some(store) = &mut files.store {
+                store.sweep(self.now(), owner);
+            }
+        }
         if state.active.as_ref().is_some_and(|p| {
             p.expired(self.now())
                 || Some(p.owner.as_str()) != owner
@@ -178,9 +190,21 @@ fn owner_from_store(store: &rustrss_core::Store) -> Option<String> {
         .map(|t| fingerprint(&t))
 }
 impl RustRssMcp {
+    /// Desktop lifecycle hook: revoke future file publication and remove current artifacts.
+    /// Separate from the async preview lock so shutdown can clean files during a pending render.
+    pub fn preview_file_cleanup(&self) -> impl Fn() + Send + Sync + 'static {
+        let files = self.preview.files.clone();
+        move || {
+            if let Ok(mut files) = files.lock() {
+                files.closed = true;
+                files.store = None;
+            }
+        }
+    }
     #[must_use]
     pub fn with_preview_backend(mut self, backend: Arc<dyn Backend>) -> Self {
         self.preview = Arc::new(Service {
+            files: Default::default(),
             backend: Some(backend),
             state: Default::default(),
             started: Instant::now(),
@@ -534,16 +558,54 @@ impl RustRssMcp {
                 return response(metadata);
             }
         };
-        if frame.png.len() > 2 * 1024 * 1024 {
-            return error("image_too_large");
-        }
         metadata["capture"] = frame.metadata;
-        let mut result = response(metadata);
-        result.content.push(ContentBlock::image(
-            base64::engine::general_purpose::STANDARD.encode(frame.png),
-            "image/png",
-        ));
-        result
+        let file_result = (|| {
+            let mut files = service
+                .files
+                .lock()
+                .map_err(|_| FileError::Io(std::io::Error::other("screenshot lock poisoned")))?;
+            if files.closed {
+                return Err(FileError::Io(std::io::Error::other(
+                    "preview service closed",
+                )));
+            }
+            if files.store.is_none() {
+                files.store = Some(PreviewFiles::new()?);
+            }
+            let wall_ms = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64;
+            files
+                .store
+                .as_mut()
+                .unwrap()
+                .write(&frame.png, owner, service.now(), wall_ms)
+        })();
+        match file_result {
+            Ok(file) => {
+                metadata["image_path"] = json!(file.image_path);
+                metadata["image_bytes"] = json!(file.image_bytes);
+                metadata["image_expires_at_ms"] = json!(file.image_expires_at_ms);
+                metadata["image_mime_type"] = json!("image/png");
+                metadata["image_read_instruction"] = json!("Open image_path with view_image or your client's local image-reading tool before evaluating or saving. The absolute path requires access to the desktop host's filesystem. If unavailable, report visual verification unavailable; do not infer image contents from metadata. No inline image is returned. Files survive save/cancel until expiry, but token revocation or desktop exit removes them early.");
+            }
+            Err(e) => {
+                metadata["ok"] = json!(false);
+                metadata["error_code"] = json!(match &e {
+                    FileError::ImageTooLarge => "image_too_large",
+                    FileError::Limit => "preview_file_limit",
+                    FileError::Io(_) => "preview_file_unavailable",
+                });
+                metadata["retryable"] = json!(!matches!(e, FileError::ImageTooLarge));
+                metadata["error_message"] = json!(e.to_string());
+            }
+        }
+        if self.preview_owner().as_deref() != Some(owner) {
+            service.sweep(&mut state, self.preview_owner().as_deref());
+            return error("preview_permission_revoked");
+        }
+        response(metadata)
     }
 }
 
@@ -605,6 +667,7 @@ mod tests {
             cancelled: Arc::new(AtomicU64::new(0)),
         });
         let service = Service {
+            files: Default::default(),
             backend: Some(backend.clone()),
             state: Default::default(),
             started: Instant::now() - Duration::from_secs(600),

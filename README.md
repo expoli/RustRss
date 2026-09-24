@@ -14,6 +14,14 @@
 
 主题 MCP 的 `validate_theme`、`update_theme`、`preview_theme` 在工具目录直接发布 core 的对象 patch schema；传 JSON 对象，不传编码后的字符串。Codex CLI 已完成收图→调整→保存/取消补验，用户终端仅显示图片标记；GUI 图片展示仍未验收，见 [客户端报告](.chorus/specs/rss-reader/2026-09-23-theme-preview/t7-codex-client.md)。
 
+### MCP 预览截图文件
+
+`preview_theme` / `capture_theme_preview` **只返回本地文件信息，不再返回内联图片或 base64**。成功响应的文本和 `structuredContent` 包含 `image_path`（绝对路径）、`image_mime_type`、`image_bytes`、`image_expires_at_ms`、`image_read_instruction`；原有 `capture.pixel_size`、预览版本和配置 hash 仍用于核对。
+
+Agent 应先用 `view_image` 或客户端读图工具打开 `image_path`，实际看图后再调整/保存；不能读文件时应报告视觉验证不可用，不能根据路径或元数据声称看过图。`get_theme.capabilities.preview` 声明 `image_delivery=local_file`、`requires_shared_filesystem=true`、`inline_images=false`：需要与桌面进程共享文件系统和访问权限，远程客户端或隔离容器不自动可用。独立 stdio 沿同库桥接返回桌面写出的同一路径。
+
+截图位于系统临时目录（Linux 通常 `/tmp/rustrss-preview-*`），每次生成独立 PNG；Unix 目录0700、文件0600。单张≤2MiB，每个桌面预览服务最多32张/32MiB。生成后600秒到期（后台每5秒清理），保存/取消不提前删图；token失效、关闭 MCP、桌面正常退出会提前清理。容量满返回 `preview_file_limit`，应等旧文件到期；文件I/O失败返回 `preview_file_unavailable`，候选ID仍可取消。崩溃/强杀可能留下该次私有目录，由系统临时目录维护回收；程序不扫描删除其它实例的文件。旧客户端需重新加载工具目录并适配文件返回契约。
+
 ## 已定决策
 
 | 项 | 选择 |

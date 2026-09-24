@@ -1,6 +1,5 @@
 """Real embedded HTTP + independent stdio writes, observed in rebuilt desktop UI."""
 import argparse
-import base64
 import io
 import json
 import os
@@ -67,9 +66,10 @@ def metadata(result):
 
 def capture(result,label):
     value=metadata(result)
-    images=[c for c in result['content'] if c['type']=='image']
-    assert len(images)==1 and images[0]['mimeType']=='image/png'
-    data=base64.b64decode(images[0]['data']);assert len(data)<=2*1024*1024
+    assert all(c['type']=='text' for c in result['content']), 'Inline image is no longer supported'
+    path=Path(value['image_path']);assert path.is_absolute() and value['image_mime_type']=='image/png'
+    assert value['image_expires_at_ms'] > time.time()*1000
+    data=path.read_bytes();assert len(data)==value['image_bytes'] and len(data)<=2*1024*1024
     (root/(label+'.png')).write_bytes(data)
     image=Image.open(io.BytesIO(data)).convert('RGB')
     assert list(image.size)==value['capture']['pixel_size']
@@ -138,7 +138,7 @@ try:
     # Re-enable writes and confirm the revoked session cannot be saved.
     with sqlite3.connect(dbpath) as db:db.execute("UPDATE settings SET value='true' WHERE key='mcp.write_enabled'")
     assert http('finish_theme_preview',done(p,'save'))['isError']
-    report={'output':str(root),'captures':captures,'temporary_no_write':True,'stdio_bridge_image':True,'saved_revision':1,'idempotent_save':True,'display':options.display,'requested_scale':options.scale if options.display=='xvfb' else None,'local_cancel':options.display=='xvfb','revocation_reaped':True,'article_renders_before_after':[initial_renders,logfile.read_text().count('renderReader id=')]}
+    report={'output':str(root),'captures':captures,'temporary_no_write':True,'stdio_bridge_file':True,'saved_revision':1,'idempotent_save':True,'display':options.display,'requested_scale':options.scale if options.display=='xvfb' else None,'local_cancel':options.display=='xvfb','revocation_reaped':True,'article_renders_before_after':[initial_renders,logfile.read_text().count('renderReader id=')]}
     (root/'results.json').write_text(json.dumps(report,indent=2));print(json.dumps({k:v for k,v in report.items() if k!='captures'}));print('captures:',len(captures))
 finally:
     for child in [stdio,app]:

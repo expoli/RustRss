@@ -18,6 +18,7 @@ pub mod rsshub;
 pub mod store;
 pub mod theme;
 pub mod theme_preview;
+pub mod theme_preview_files;
 
 pub use ai::{AiClient, AiConfig, AiError, Provider, RequestPreview};
 pub use discover::{discover, DiscoverError, Discovery, DiscoveryVia};

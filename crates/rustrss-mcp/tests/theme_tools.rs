@@ -258,3 +258,22 @@ async fn theme_patch_tool_schemas_publish_the_core_object_contract() {
     }
     f.cleanup();
 }
+
+#[tokio::test]
+async fn preview_tool_descriptions_require_local_image_reading() {
+    let f = Fixture::new(None).await;
+    let result = f.rpc("writer", "tools/list", json!({})).await;
+    for name in ["preview_theme", "capture_theme_preview"] {
+        let tool = result["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["name"] == name)
+            .unwrap();
+        let description = tool["description"].as_str().unwrap();
+        for required in ["image_path", "view_image", "filesystem", "inline", "600s"] {
+            assert!(description.contains(required), "{name}: missing {required}");
+        }
+    }
+    f.cleanup();
+}
