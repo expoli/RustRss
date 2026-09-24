@@ -1,0 +1,34 @@
+{
+  "binary": "target/release/rustrss-desktop",
+  "build_kind": "release",
+  "checked_at": "2026-09-24T12:57:53Z",
+  "queries": {
+    "broad_cold": {
+      "needle": "common",
+      "cache": "cold(新拷贝库,零驻留页)",
+      "ui_ms": 288,
+      "rows": 200
+    },
+    "broad_warm": {
+      "needle": "common",
+      "cache": "warm(同进程二次查询)",
+      "ui_ms": 267,
+      "rows": 200
+    },
+    "single_char_warm": {
+      "needle": "稀",
+      "cache": "warm",
+      "ui_ms": 254,
+      "rows": 1
+    }
+  },
+  "checks": [
+    "WebView input -> list render end-to-end for broad and single-char queries"
+  ],
+  "samples": {
+    "broad_cold_ms": 288,
+    "broad_warm_ms": 267,
+    "single_char_warm_ms": 254
+  },
+  "screenshot": ".chorus/specs/rss-reader/2026-09-24-local-acceptance-closeout/search-e2e-list.png"
+}
