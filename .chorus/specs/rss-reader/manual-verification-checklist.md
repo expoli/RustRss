@@ -1157,3 +1157,11 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 本机 Xvfb 隔离运行通过 2 项：WebView 从临时 loopback HTTP 服务取到 1×1 PNG，服务端收到的请求没有 `Referer`；更新主题配置后同一图片节点隐藏、无列表行重建。
 - **已验证（2026-09-24，证据均在 [缩略图外呼口径](2026-09-24-thumbnail-egress-policy/prd.md) 变更目录下）**：① 公网真 feed 全链路——`github.blog/feed/` @10:16:43Z 解析 10 条、4 条回填 `thumbnail_url`（SQLite 回读）并在真实 WebView 渲染（`thumbnail-public-feed-results.json` + `thumbnail-public-feed.png`）；② 404 / 不可达主机 / **403 热链拒绝（本地夹具）** 三腿静默失败，无阻塞式 dialog、无行重建、无布局跳动（行几何前后逐项一致、缩略图槽位恒为 48×48）、仍可滚动（`thumbnail-remote-results.json` + `-failures.png` + `-desktop.log`）；③ 离线（私有 netns 仅 lo，`unshare -rn` 单命令复跑）列表可读可滚、缩略图静默失败、缓存正文可读（`thumbnail-offline-results.json`）；④ **关闭缩略图开关后零图片请求**（`egress-strace-toggle-off.log`：该相位 **AF_INET/AF_INET6 连接数为 0**，`toggle_off_destinations` 为空；日志里另有 16 条 `AF_UNIX` connect 是 X11/dbus 的本地 IPC，不算网络外呼）。
 - **仍未验证（保留 open）**：① 公网图片站的**热链策略**未实测——用本地 403 夹具替代（站点策略不可控、测了不可复现）；② 未用**公网 RSSHub 实例**跑一次（本轮用本地实例验证 `rsshub://` 解析到实例主机这一步）；③ 本环境 **IPv6 不可达**，AAAA 目标只记录了连接尝试，IPv6 实际可用时的行为未验；④ `spec.md` 的**重定向逐跳归类**规则未被执行（本次 capture 未出现重定向）。
+
+## 25. 首发 schema 基线压平与老库拒绝（2026-09-24-release-schema-baseline）
+
+- [x] 迁移链压平成一份基线 + `application_id = 0x52535331`；老库（旧链任意版本，含 v=1 冻结库）按魔数识别并在任何写入之前拒绝（结构等价断言 + 变异校验 + `detect()` 级 v1 反例）。
+- [x] 拒绝不写库：`durability` 断言文件字节不变；`validate_backup` 只读校验且不写候选文件（五类输入：自家 / 文本 / 空库 / 带魔数的更高版本 / 旧库无魔数）。
+- [x] 安全出口：`opml::export_read_only` 对旧库只读导出（零写入、无 WAL 边车、与 `Store` 通路按标题定序等价）；桌面遮罩 + 独立 MCP 二进制 `exit=1` + 可读错误（实测）。
+- [x] 运行时验收 `scripts/verify-legacy-refusal-ui.py`（exit=0）：遮罩渲染 + 旧库 SHA256 不变 + 备份可读 + 重建后 `application_id=0x52535331`/`user_version=1` 且抓取成功；截图与结果 JSON 见 `2026-09-24-release-schema-baseline/`。
+- [ ] **未验（保留 open）**：① 面板上的「导出 OPML」走原生 GTK 保存对话框，无 WM 的 Xvfb 驱动不了 → 只断言按钮存在，导出语义由 core 测试覆盖；② 三平台安装包体积与 CI 结论因 GitHub Actions 账单/消费上限停跑而无法取得（`gh run view 35981648535`）；③ Windows/macOS 上的拒绝界面与只读导出未验。

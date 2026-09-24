@@ -201,3 +201,25 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod refusal_tests {
+    use super::*;
+
+    /// 回归守卫：`AppState::open` 会把 Store 错误包成
+    /// 「打开数据库失败（路径）: 数据库不兼容: …」——前缀匹配会漏，
+    /// 漏了就会 panic 退出、降级界面根本不出现（实测 exit=101）。
+    #[test]
+    fn refusal_is_detected_inside_a_wrapped_message() {
+        assert!(is_schema_refusal(
+            "打开数据库失败（/tmp/x.sqlite）: 数据库不兼容: 缺少应用标识（user_version=13）"
+        ));
+        assert!(is_schema_refusal("数据库不兼容: 库版本 2 与基线 1 不一致"));
+    }
+
+    #[test]
+    fn unrelated_startup_failures_are_not_refusals() {
+        assert!(!is_schema_refusal("创建数据目录失败: permission denied"));
+        assert!(!is_schema_refusal("初始化 HTTP 客户端失败"));
+    }
+}
