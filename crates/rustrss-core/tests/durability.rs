@@ -86,6 +86,35 @@ fn structure_dump(conn: &Connection) -> String {
             }
         }
         {
+            // 外键维度：`ON DELETE` 行为（CASCADE / SET NULL）是本仓「零孤儿」不变量的地方，
+            // 光比列/索引/触发器看不到它——“少了 ON DELETE CASCADE”也算等价是假绿。
+            let mut st = conn
+                .prepare(&format!("PRAGMA foreign_key_list({t})"))
+                .unwrap();
+            let mut rows = st
+                .query_map([], |r| {
+                    Ok((
+                        r.get::<_, i64>(0)?,
+                        r.get::<_, i64>(1)?,
+                        r.get::<_, String>(2)?,
+                        r.get::<_, String>(3)?,
+                        r.get::<_, Option<String>>(4)?,
+                        r.get::<_, String>(5)?,
+                        r.get::<_, String>(6)?,
+                        r.get::<_, String>(7)?,
+                    ))
+                })
+                .unwrap()
+                .collect::<rusqlite::Result<Vec<_>>>()
+                .unwrap();
+            rows.sort();
+            for (id, seq, target, from, to, on_update, on_delete, match_) in rows {
+                out.push_str(&format!(
+                    "  FK {id}.{seq} -> {target}.{to:?} from={from} on_update={on_update} on_delete={on_delete} match={match_}\n"
+                ));
+            }
+        }
+        {
             let mut st = conn.prepare(&format!("PRAGMA index_list({t})")).unwrap();
             let rows = st
                 .query_map([], |r| {
@@ -167,6 +196,38 @@ fn structure_dump(conn: &Connection) -> String {
     out
 }
 
+/// 基线对象数（表 / 显式索引 / 触发器 / 外键）。
+///
+/// 为什么要有这组数字：结构化 dump 是「逐对象比对」，若某一**整类**对象在两边都缺失
+/// （例如外键或触发器整体没建），逐对象比对照样相等——那是假绿。数量钉死后，丢整类会
+/// 立刻变红。改基线必须同步这里，改动因此必须是有意的。
+const BASELINE_COUNTS: (i64, i64, i64, i64) = (12, 11, 3, 5);
+
+fn object_counts(conn: &Connection) -> (i64, i64, i64, i64) {
+    let scalar = |sql: &str| -> i64 { conn.query_row(sql, [], |r| r.get(0)).unwrap() };
+    let tables = scalar(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+    );
+    let indexes = scalar(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND sql IS NOT NULL",
+    );
+    let triggers = scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='trigger'");
+    let tables_list: Vec<String> = {
+        let mut st = conn
+            .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            .unwrap();
+        st.query_map([], |r| r.get::<_, String>(0))
+            .unwrap()
+            .collect::<rusqlite::Result<Vec<_>>>()
+            .unwrap()
+    };
+    let mut foreign_keys = 0i64;
+    for t in tables_list {
+        foreign_keys += scalar(&format!("SELECT COUNT(*) FROM pragma_foreign_key_list('{t}')"));
+    }
+    (tables, indexes, triggers, foreign_keys)
+}
+
 #[test]
 fn legacy_chain_fixture_is_intact() {
     assert_eq!(
@@ -203,12 +264,50 @@ fn baseline_schema_is_equivalent_to_legacy_terminal_state() {
     assert_eq!(app_id(&baseline), BASELINE_APPLICATION_ID as i64);
     assert_eq!(app_id(&legacy), 0, "旧链任何版本都不写 application_id");
 
-    // 变异校验：少一个对象必须让等价断言变红（证明 dump 不是空跑）
-    baseline.execute_batch("DROP INDEX idx_entries_starred;").unwrap();
+    // 对象数下限（按类别钉死）：防「某一整类对象在两边都缺失」的假绿
+    assert_eq!(
+        object_counts(&baseline),
+        BASELINE_COUNTS,
+        "基线对象数与钉死的数字不符（改了基线就要同步 BASELINE_COUNTS）"
+    );
+    assert_eq!(
+        object_counts(&legacy),
+        BASELINE_COUNTS,
+        "旧链终态对象数应与基线一致"
+    );
+
+    // 变异校验：**删**与**改**两半都要能变红，且都在独立 scratch 库上做
+    // （不与已打开的 Store 并发改 schema）
+    let removal = Connection::open_in_memory().unwrap();
+    removal
+        .execute_batch(&MIGRATIONS.join(";").replace(
+            "CREATE INDEX idx_entries_starred ON entries(starred) WHERE starred = 1",
+            "-- 变异：删掉星标部分索引",
+        ))
+        .unwrap();
     assert_ne!(
-        structure_dump(&baseline),
+        structure_dump(&removal),
         structure_dump(&legacy),
-        "删掉 idx_entries_starred 后 dump 必须不再相等"
+        "删掉一个索引后必须不再等价"
+    );
+
+    let modification = Connection::open_in_memory().unwrap();
+    modification
+        .execute_batch(
+            &MIGRATIONS
+                .join(";")
+                .replace("ON DELETE CASCADE", "ON DELETE SET NULL"),
+        )
+        .unwrap();
+    assert_ne!(
+        structure_dump(&modification),
+        structure_dump(&legacy),
+        "把外键的 ON DELETE CASCADE 改成 SET NULL 后必须不再等价（外键维度不能被漏掉）"
+    );
+    assert_ne!(
+        object_counts(&removal),
+        object_counts(&legacy),
+        "对象数校验也应对「删」敏感（删了一个索引：11 → 10）"
     );
 }
 
