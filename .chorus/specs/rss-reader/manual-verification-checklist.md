@@ -1164,7 +1164,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 拒绝不写库：`durability` 断言文件字节不变；`validate_backup` 只读校验且不写候选文件（五类输入：自家 / 文本 / 空库 / 带魔数的更高版本 / 旧库无魔数）。
 - [x] 安全出口：`opml::export_read_only` 对旧库只读导出（零写入、无 WAL 边车、与 `Store` 通路按标题定序等价）；桌面遮罩 + 独立 MCP 二进制 `exit=1` + 可读错误（实测）。
 - [x] 运行时验收 `scripts/verify-legacy-refusal-ui.py`（exit=0）：遮罩渲染 + 旧库 SHA256 不变 + 备份可读 + 重建后 `application_id=0x52535331`/`user_version=1` 且抓取成功；截图与结果 JSON 见 `2026-09-24-release-schema-baseline/`。
-- [ ] **未验（保留 open）**：① 面板上的「导出 OPML」走原生 GTK 保存对话框，无 WM 的 Xvfb 驱动不了 → 只断言按钮存在，导出语义由 core 测试覆盖；② 三平台安装包体积与 CI 结论因 GitHub Actions 账单/消费上限停跑而无法取得（`gh run view 35981648535`）；③ Windows/macOS 上的拒绝界面与只读导出未验。
+- [ ] **未验（保留 open）**：⓪ **release.yml 的体积记录步骤从未真正跑过**（只做过 YAML 语法校验；CI 因账单停跑，见 ①）；① 面板上的「导出 OPML」走原生 GTK 保存对话框，无 WM 的 Xvfb 驱动不了 → 只断言按钮存在，导出语义由 core 测试覆盖；② 三平台安装包体积与 CI 结论因 GitHub Actions 账单/消费上限停跑而无法取得（`gh run view 35981648535`）；③ Windows/macOS 上的拒绝界面与只读导出未验。
 
 ## 26. 本机可测验收收口：键盘 / 搜索 / 离线与外部图片 / 本地化（2026-09-24-local-acceptance-closeout）
 
