@@ -46,6 +46,8 @@ pub enum Mode {
 #[serde(deny_unknown_fields)]
 pub struct PreviewParams {
     pub base_revision: u64,
+    /// Sparse theme patch as a JSON object, not a JSON-encoded string.
+    #[schemars(schema_with = "crate::theme_tools::patch_input_schema")]
     pub patch: Value,
     pub preview_id: Option<String>,
     pub expected_preview_revision: Option<u64>,

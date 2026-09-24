@@ -6,6 +6,11 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
+pub(crate) fn patch_input_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
+    schemars::Schema::try_from(rustrss_core::theme::patch_schema())
+        .expect("core theme patch schema is an object")
+}
+
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
 pub struct GetThemeParams {
@@ -22,6 +27,7 @@ pub struct ThemePatchParams {
     /// Sparse theme patch. Obtain its schema via get_theme(include_schema=true).
     /// Omitted keys preserve values; overrides:null clears overrides;
     /// nested null removes an override and inherits the selected preset.
+    #[schemars(schema_with = "patch_input_schema")]
     pub patch: Value,
 }
 #[derive(Debug, Deserialize, JsonSchema)]

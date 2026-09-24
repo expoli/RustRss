@@ -1028,3 +1028,13 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] 自动portal指针分支、其它平台等本轮未验；未请求授权弹窗。
 
 [机器证据](2026-09-23-theme-preview/t7-wayland-input-results.json)。本轮隔离实例退出、临时产物已清理。
+
+### 24.11 Codex CLI 客户端补验（2026-09-24）
+
+- [x] 用户启动实际客户端；模型描述两版图片差异；临时不落库、保存 revision1、取消不改正式配置，SQLite 直接回读。
+- [x] 修复三工具 patch 的无约束 schema，HTTP 工具目录回归先红后绿；Rust406/Node40通过，Clippy仅原有3告警。
+- [ ] 修复后实际 Codex 客户端刷新目录、第三方 GUI 图片显示、重拍模型解释异常的归因。终端图片标记不算 GUI 验收。
+
+证据及限制见 [客户端报告](2026-09-23-theme-preview/t7-codex-client.md)。
+
+同会话补验：对象 patch 两次首次成功；两次 preview、revision2 article/settings capture 均被模型读到完整画面；revision1 capture 仍只报告色条。原始两组文章图仅64×8标记不同，正文像素完全一致。取消后 SQLite 配置不变；新会话 schema 目录转换仍未测。

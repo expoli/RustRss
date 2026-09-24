@@ -169,3 +169,5 @@ created: 2026-09-20
 - [x] T7 真实墙钟寿命：空闲599.75秒/绝对1800.52秒回收，过期保存被拒、临时零写；60次RSS/目录/磁盘采样，详见 T7 报告。
 
 - [x] T7 评审 P2 收尾：移除 app.js 已失效的旧主题/字体控件路径；全部 UI JS 的静态 ID 创建契约、脚本/样式资源服务契约及变异校验已通过，见 [收尾报告](2026-09-23-theme-preview/p2-contract-cleanup.md)。本项不关闭原生 Wayland 输入 open item。
+
+- [x] Codex CLI 实际客户端模型收图、调整、保存/取消与 SQLite 回读；主题工具发布 core 对象 patch schema，回归先红后绿。终端仅图片标记，未代替第三方 GUI 验收；修复后实际客户端目录刷新待复测，见 [报告](2026-09-23-theme-preview/t7-codex-client.md)。

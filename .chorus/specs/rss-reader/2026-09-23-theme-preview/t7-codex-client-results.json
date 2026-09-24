@@ -1,0 +1,205 @@
+{
+  "date": "2026-09-24",
+  "baseline": "76e6c05",
+  "client": "Codex CLI launched by user",
+  "locally_installed_version": "0.156.1",
+  "transport": "streamable HTTP loopback",
+  "config": "per-process -c override; global config unchanged",
+  "protocol_and_persistence": "passed",
+  "client_image_display": "user confirmed text/image markers only; GUI image display not accepted",
+  "model_image_understanding": "client described both previews and their wrapping differences; recapture interpretation uncertain",
+  "temporary_observations": [
+    {
+      "observed_at": "2026-09-24T02:28:24.346578+00:00",
+      "formal_config": null,
+      "audit": [
+        "2026-09-24T10:27:11.693+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":0} affected=0 ok=false dry_run=false error_code=invalid_argument",
+        "2026-09-24T10:27:23.038+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":0,\"patch_fields\":[\"mode\",\"light_preset\",\"overrides\"]} affected=0 ok=true dry_run=false error_code=-",
+        "2026-09-24T10:27:56.344+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":0,\"expected_preview_revision\":1,\"patch_fields\":[\"overrides\"]} affected=0 ok=true dry_run=false error_code=-",
+        "2026-09-24T10:28:08.328+08:00 INFO  mcp: mcp-write tool=capture_theme_preview args={\"expected_preview_revision\":2} affected=0 ok=true dry_run=false error_code=-"
+      ]
+    }
+  ],
+  "final": {
+    "observed_at": "2026-09-24T02:29:34.307058+00:00",
+    "current": {
+      "schema_version": 1,
+      "revision": 1,
+      "mode": "light",
+      "light_preset": "paper",
+      "dark_preset": "clear",
+      "overrides": {
+        "reader": {
+          "width": 540.0
+        },
+        "typography": {
+          "read_size": 22.0
+        }
+      }
+    },
+    "audit": [
+      "2026-09-24T10:27:11.693+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":0} affected=0 ok=false dry_run=false error_code=invalid_argument",
+      "2026-09-24T10:27:23.038+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":0,\"patch_fields\":[\"mode\",\"light_preset\",\"overrides\"]} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:27:56.344+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":0,\"expected_preview_revision\":1,\"patch_fields\":[\"overrides\"]} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:28:08.328+08:00 INFO  mcp: mcp-write tool=capture_theme_preview args={\"expected_preview_revision\":2} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:28:26.854+08:00 INFO  mcp: mcp-write tool=finish_theme_preview args={\"action\":\"save\",\"expected_preview_revision\":2} affected=1 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:28:26.864+08:00 INFO  ui: [ui] theme applied revision=1 hash=f16ecab1f902a82af2cabd30eb424f61642d799cf0d2cff1034e88b23af2f847",
+      "2026-09-24T10:28:49.998+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":1,\"patch_fields\":[\"mode\"]} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:28:59.194+08:00 INFO  mcp: mcp-write tool=finish_theme_preview args={\"action\":\"cancel\",\"expected_preview_revision\":1} affected=0 ok=true dry_run=false error_code=-"
+    ]
+  },
+  "source_directory": "/tmp/rustrss-t7-native-5skr8fia",
+  "image_analysis": {
+    "images": [
+      {
+        "label": "client-preview1",
+        "bytes": 316270,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "12bf0eaa0d49857351ac6e3440818d73f476a7f6b3bc6eabc27eaaa46f895422"
+      },
+      {
+        "label": "client-preview2",
+        "bytes": 321548,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "f86a1072f457d5b1f6b4de82270b05befcd754c7ee6c6d37eece7372cc631807"
+      },
+      {
+        "label": "client-recapture",
+        "bytes": 321549,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "f55cb66158829cf3c7a972ac3d4f2eac9717ebda23f49291d8584bad44c5df5c"
+      }
+    ],
+    "preview2_vs_recapture_changed_bbox": [
+      0,
+      0,
+      64,
+      8
+    ],
+    "source": "exact user-selected Codex session tool outputs; PNG decoded without modifying pixels"
+  },
+  "schema_regression": {
+    "before": "patch: true; client first sent JSON string and received invalid_argument, then retried with object",
+    "after": "validate_theme/update_theme/preview_theme publish core object patch schema",
+    "red_before_fix": true,
+    "http_tools_list_test_passed": true,
+    "actual_codex_after_fix": "existing session cached old parameter declaration; both object patches succeeded first attempt; fresh catalog normalization remains untested",
+    "rebuilt_stdio_binary": "all three patch parameters type object, additionalProperties false"
+  },
+  "validation": {
+    "rust_passed": 406,
+    "rust_failed": 0,
+    "node_passed": 40,
+    "node_failed": 0,
+    "clippy": "exit 0, existing 3 core warnings only",
+    "build": "cargo build --workspace exit 0"
+  },
+  "isolation": "assistant desktop stopped; user client working directory retained",
+  "recheck": {
+    "images": [
+      {
+        "timestamp": "2026-09-24T02:47:47.608Z",
+        "call_id": "call_PNbkBw1E59DqB3d4icxcGWl9",
+        "bytes": 316269,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "df0308e7f9cd4186d22d3901b72a8f761bb76b7a4896fac7e15c1bc9d0e6e848"
+      },
+      {
+        "timestamp": "2026-09-24T02:48:02.713Z",
+        "call_id": "call_Zm99j5G3C9oB3433LBUFdboI",
+        "bytes": 316268,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "f15d5f26fd9f013eeddb9b0802696dcab83b921a292ad58db5e27b1e3e5e0724"
+      },
+      {
+        "timestamp": "2026-09-24T02:48:17.143Z",
+        "call_id": "call_7vJiMMYecwiryUTS0rI2iUyS",
+        "bytes": 321548,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "2c02557ad1be9079a32a262015a2414023dcd72d14e209e3b1f07fbd2500c7d9"
+      },
+      {
+        "timestamp": "2026-09-24T02:48:24.991Z",
+        "call_id": "call_06bM1DSmdemPD4NFDuQp1Y1e",
+        "bytes": 321549,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "4a5ab5ded24932c6c60567dd595ef3a54769d15f3b6a562e6353fc5b27dd7cb1"
+      },
+      {
+        "timestamp": "2026-09-24T02:48:38.052Z",
+        "call_id": "call_SxC9R4E4P0xPoKAGzJ7lvu69",
+        "bytes": 199566,
+        "dimensions": [
+          1920,
+          1280
+        ],
+        "sha256": "6dafb97854d062e4167276f1110d9d2cef5d9aaf6233d88f08651052b5b86ca1"
+      }
+    ],
+    "preview_capture_changed_bbox": [
+      [
+        0,
+        0,
+        64,
+        8
+      ],
+      [
+        0,
+        0,
+        64,
+        8
+      ]
+    ],
+    "formal_config": {
+      "schema_version": 1,
+      "revision": 1,
+      "mode": "light",
+      "light_preset": "paper",
+      "dark_preset": "clear",
+      "overrides": {
+        "reader": {
+          "width": 540.0
+        },
+        "typography": {
+          "read_size": 22.0
+        }
+      }
+    },
+    "audit": [
+      "2026-09-24T10:47:47.553+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":1,\"patch_fields\":[\"mode\",\"light_preset\",\"overrides\"]} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:48:02.124+08:00 INFO  mcp: mcp-write tool=capture_theme_preview args={\"expected_preview_revision\":1} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:48:17.075+08:00 INFO  mcp: mcp-write tool=preview_theme args={\"base_revision\":1,\"expected_preview_revision\":1,\"patch_fields\":[\"overrides\"]} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:48:24.940+08:00 INFO  mcp: mcp-write tool=capture_theme_preview args={\"expected_preview_revision\":2} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:48:38.011+08:00 INFO  mcp: mcp-write tool=capture_theme_preview args={\"expected_preview_revision\":2} affected=0 ok=true dry_run=false error_code=-",
+      "2026-09-24T10:48:44.935+08:00 INFO  mcp: mcp-write tool=finish_theme_preview args={\"action\":\"cancel\",\"expected_preview_revision\":2} affected=0 ok=true dry_run=false error_code=-"
+    ],
+    "client_observation": [
+      "preview1 full",
+      "capture1 color strip only",
+      "preview2 full",
+      "capture2 full; subjectively larger line spacing",
+      "settings capture full"
+    ]
+  }
+}

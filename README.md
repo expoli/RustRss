@@ -12,6 +12,8 @@
 - 设置现分为外观与主题、阅读、订阅与更新、AI、外部集成、数据与备份、通用七类。外观页可独立选择浅/深色 Clear / Paper / Slate，并编辑颜色、字体、列表和栏宽；切换预设保留覆盖，只有“使用整套预设”清除全部覆盖。修改先在局部示例预览，保存后应用；关闭放弃草稿。支持单项跟随预设、最近 10 份历史恢复与版本冲突提示。
 - 正文工具栏 **Aa** 与阅读设置共用排版字段和 core 保存路径；保存后保留当前正文节点与段落锚点。当前视图批量标读/未读移至列表头 **✓** 菜单，scope 与原确认流程不变。设置支持方向键/Home/End 切页、Tab 焦点回环、Esc 关闭。见 [T4 实现与验收](.chorus/specs/rss-reader/2026-09-23-theme-preview/t4-settings.md)。
 
+主题 MCP 的 `validate_theme`、`update_theme`、`preview_theme` 在工具目录直接发布 core 的对象 patch schema；传 JSON 对象，不传编码后的字符串。Codex CLI 已完成收图→调整→保存/取消补验，用户终端仅显示图片标记；GUI 图片展示仍未验收，见 [客户端报告](.chorus/specs/rss-reader/2026-09-23-theme-preview/t7-codex-client.md)。
+
 ## 已定决策
 
 | 项 | 选择 |

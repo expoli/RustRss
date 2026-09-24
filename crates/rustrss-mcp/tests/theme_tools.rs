@@ -228,3 +228,33 @@ fn audit_does_not_log_theme_values_or_unknown_input() {
     assert!(!line.contains("PRIVATE"));
     assert!(!line.contains("SECRET"));
 }
+
+#[tokio::test]
+async fn theme_patch_tool_schemas_publish_the_core_object_contract() {
+    let f = Fixture::new(None).await;
+    let tools = f.rpc("writer", "tools/list", json!({})).await;
+    let expected = rustrss_core::theme::patch_schema();
+    for name in ["validate_theme", "update_theme", "preview_theme"] {
+        let tool = tools["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|tool| tool["name"] == name)
+            .unwrap();
+        let patch = &tool["inputSchema"]["properties"]["patch"];
+        assert_eq!(
+            patch["type"], "object",
+            "{name}: patch must not be an unconstrained schema or JSON string"
+        );
+        assert_eq!(patch["additionalProperties"], false);
+        assert_eq!(
+            patch["properties"], expected["properties"],
+            "{name}: publish the same sparse/null/bounds contract as core"
+        );
+        assert_eq!(
+            patch["max_serialized_bytes"],
+            expected["max_serialized_bytes"]
+        );
+    }
+    f.cleanup();
+}
