@@ -98,6 +98,10 @@ fn main() {
     let mut context = tauri::generate_context!("examples/snapshot-probe/tauri.conf.json");
     context.config_mut().app.windows.clear();
     let settings_probe = std::env::args().any(|arg| arg == "--settings");
+    // Empty-data variant of the same harness: the main fixture renders 30 entries
+    // and two feeds, so PRD line 47's empty-state half was never captured.
+    let empty_probe = std::env::args().any(|arg| arg == "--empty");
+    assert!(!(settings_probe && empty_probe), "--settings and --empty are exclusive");
     tauri::Builder::default()
         .manage(EditorStore(std::sync::Mutex::new(rustrss_core::Store::open(":memory:").unwrap())))
         .manage(Output(output))
@@ -111,7 +115,13 @@ fn main() {
                 ),
                 "/fixture.js" => (
                     "text/javascript",
-                    if settings_probe { include_bytes!("theme-ui/settings-fixture.js").to_vec() } else { include_bytes!("theme-ui/fixture.js").to_vec() },
+                    if empty_probe {
+                        include_bytes!("theme-ui/empty-fixture.js").to_vec()
+                    } else if settings_probe {
+                        include_bytes!("theme-ui/settings-fixture.js").to_vec()
+                    } else {
+                        include_bytes!("theme-ui/fixture.js").to_vec()
+                    },
                 ),
                 "/theme-settings.js" => ("text/javascript", include_bytes!("../../ui/theme-settings.js").to_vec()),
                 "/theme.js" => (

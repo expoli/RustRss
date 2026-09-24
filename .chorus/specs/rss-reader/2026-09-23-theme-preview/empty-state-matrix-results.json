@@ -1,0 +1,802 @@
+{
+  "probe": "verify-theme-empty-states",
+  "fixture": {
+    "captures": [
+      {
+        "background": "#f7f8fa",
+        "bytes": 37114,
+        "file": "empty-clear-light-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-light-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 37114,
+        "file": "empty-clear-light-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-light-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 37114,
+        "file": "empty-clear-light-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-light-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#ffffff"
+      },
+      {
+        "background": "#14161a",
+        "bytes": 36628,
+        "file": "empty-clear-dark-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-dark-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#14161a",
+        "bytes": 36628,
+        "file": "empty-clear-dark-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-dark-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#14161a",
+        "bytes": 36628,
+        "file": "empty-clear-dark-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-dark-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#1a1d23"
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 36842,
+        "file": "empty-paper-light-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-light-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 36842,
+        "file": "empty-paper-light-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-light-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 36842,
+        "file": "empty-paper-light-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-light-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#faf7f0"
+      },
+      {
+        "background": "#302b22",
+        "bytes": 36900,
+        "file": "empty-paper-dark-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-dark-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#302b22",
+        "bytes": 36900,
+        "file": "empty-paper-dark-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-dark-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#302b22",
+        "bytes": 36900,
+        "file": "empty-paper-dark-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-dark-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#2b271f"
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 36942,
+        "file": "empty-slate-light-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-light-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 36942,
+        "file": "empty-slate-light-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-light-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 36942,
+        "file": "empty-slate-light-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-light-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#f5f7f8"
+      },
+      {
+        "background": "#242d31",
+        "bytes": 36748,
+        "file": "empty-slate-dark-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-dark-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#242d31",
+        "bytes": 36748,
+        "file": "empty-slate-dark-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-dark-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#242d31",
+        "bytes": 36748,
+        "file": "empty-slate-dark-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-dark-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#20272b"
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 36080,
+        "file": "empty-clear-light-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-light-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 36080,
+        "file": "empty-clear-light-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-light-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 36080,
+        "file": "empty-clear-light-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-light-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#ffffff"
+      },
+      {
+        "background": "#14161a",
+        "bytes": 35943,
+        "file": "empty-clear-dark-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-dark-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#14161a",
+        "bytes": 35943,
+        "file": "empty-clear-dark-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-dark-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#14161a",
+        "bytes": 35943,
+        "file": "empty-clear-dark-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-clear-dark-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#1a1d23"
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 36037,
+        "file": "empty-paper-light-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-light-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 36037,
+        "file": "empty-paper-light-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-light-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 36037,
+        "file": "empty-paper-light-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-light-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#faf7f0"
+      },
+      {
+        "background": "#302b22",
+        "bytes": 36703,
+        "file": "empty-paper-dark-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-dark-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#302b22",
+        "bytes": 36703,
+        "file": "empty-paper-dark-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-dark-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#302b22",
+        "bytes": 36703,
+        "file": "empty-paper-dark-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-paper-dark-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#2b271f"
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 36051,
+        "file": "empty-slate-light-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-light-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 36051,
+        "file": "empty-slate-light-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-light-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 36051,
+        "file": "empty-slate-light-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-light-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#f5f7f8"
+      },
+      {
+        "background": "#242d31",
+        "bytes": 36460,
+        "file": "empty-slate-dark-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-dark-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#242d31",
+        "bytes": 36460,
+        "file": "empty-slate-dark-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-dark-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1
+      },
+      {
+        "background": "#242d31",
+        "bytes": 36460,
+        "file": "empty-slate-dark-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "empty-slate-dark-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#20272b"
+      }
+    ],
+    "checks": [
+      "i18n key sets and markup",
+      "list empty copy zh-CN",
+      "reader empty copy zh-CN",
+      "reader empty paragraphs zh-CN",
+      "failed feed state zh-CN",
+      "no article rows zh-CN",
+      "reader empty copy kept zh-CN/light/overview",
+      "reader empty copy kept zh-CN/light/article",
+      "reader empty copy kept zh-CN/light/settings",
+      "settings overlay covers list region zh-CN/light/settings",
+      "settings surface follows light zh-CN",
+      "reader empty copy kept zh-CN/dark/overview",
+      "reader empty copy kept zh-CN/dark/article",
+      "reader empty copy kept zh-CN/dark/settings",
+      "settings overlay covers list region zh-CN/dark/settings",
+      "settings surface follows dark zh-CN",
+      "reader empty copy kept zh-CN/light/overview",
+      "reader empty copy kept zh-CN/light/article",
+      "reader empty copy kept zh-CN/light/settings",
+      "settings overlay covers list region zh-CN/light/settings",
+      "settings surface follows light zh-CN",
+      "reader empty copy kept zh-CN/dark/overview",
+      "reader empty copy kept zh-CN/dark/article",
+      "reader empty copy kept zh-CN/dark/settings",
+      "settings overlay covers list region zh-CN/dark/settings",
+      "settings surface follows dark zh-CN",
+      "reader empty copy kept zh-CN/light/overview",
+      "reader empty copy kept zh-CN/light/article",
+      "reader empty copy kept zh-CN/light/settings",
+      "settings overlay covers list region zh-CN/light/settings",
+      "settings surface follows light zh-CN",
+      "reader empty copy kept zh-CN/dark/overview",
+      "reader empty copy kept zh-CN/dark/article",
+      "reader empty copy kept zh-CN/dark/settings",
+      "settings overlay covers list region zh-CN/dark/settings",
+      "settings surface follows dark zh-CN",
+      "list empty copy en",
+      "reader empty copy en",
+      "reader empty paragraphs en",
+      "failed feed state en",
+      "no article rows en",
+      "reader empty copy kept en/light/overview",
+      "reader empty copy kept en/light/article",
+      "reader empty copy kept en/light/settings",
+      "settings overlay covers list region en/light/settings",
+      "settings surface follows light en",
+      "reader empty copy kept en/dark/overview",
+      "reader empty copy kept en/dark/article",
+      "reader empty copy kept en/dark/settings",
+      "settings overlay covers list region en/dark/settings",
+      "settings surface follows dark en",
+      "reader empty copy kept en/light/overview",
+      "reader empty copy kept en/light/article",
+      "reader empty copy kept en/light/settings",
+      "settings overlay covers list region en/light/settings",
+      "settings surface follows light en",
+      "reader empty copy kept en/dark/overview",
+      "reader empty copy kept en/dark/article",
+      "reader empty copy kept en/dark/settings",
+      "settings overlay covers list region en/dark/settings",
+      "settings surface follows dark en",
+      "reader empty copy kept en/light/overview",
+      "reader empty copy kept en/light/article",
+      "reader empty copy kept en/light/settings",
+      "settings overlay covers list region en/light/settings",
+      "settings surface follows light en",
+      "reader empty copy kept en/dark/overview",
+      "reader empty copy kept en/dark/article",
+      "reader empty copy kept en/dark/settings",
+      "settings overlay covers list region en/dark/settings",
+      "settings surface follows dark en",
+      "empty copy differs between locales"
+    ],
+    "dpr": 1,
+    "empty_copy": {
+      "en": {
+        "list": "No subscriptions yet. Use Add feed above, or import OPML in Settings.",
+        "reader": "Pick an article from the list.",
+        "tooltip": "Last fetch: http_503 | The server returned HTTP 503. Try later or check the feed address.\nDouble-click to retry"
+      },
+      "zh-CN": {
+        "list": "还没有订阅。点击上方「添加订阅」，或在设置中导入 OPML。",
+        "reader": "从中间列表选一篇文章。",
+        "tooltip": "上次抓取：http_503｜服务器返回 HTTP 503，请稍后重试或检查订阅地址。\n双击可重试"
+      }
+    },
+    "fixture": "empty",
+    "fixture_version": 1,
+    "fonts": "requested/computed stacks only; glyph fallback not inferred",
+    "viewport": [
+      1240,
+      820
+    ]
+  },
+  "binary": "target/debug/examples/theme_ui",
+  "binary_sha256": "3ba2e43e87c993918d2832c3bb3e70bed8ea5be471e2659e238896ee499e2d12",
+  "binary_mtime": "2026-09-24T22:38:25",
+  "captured_at": "2026-09-24T14:38:30+00:00",
+  "checks": [
+    "fixture reports the empty variant",
+    "native background pixel verified for 36 captures",
+    "36 empty-state cells present (3 presets x 2 modes x 2 locales x 3 scenes)",
+    "empty copy differs between zh-CN and en and is non-empty in both"
+  ],
+  "failures": [],
+  "run_exit": 0,
+  "run_log": "/tmp/rustrss-theme-empty-0gwuyct2/run.log",
+  "empty_copy": {
+    "en": {
+      "list": "No subscriptions yet. Use Add feed above, or import OPML in Settings.",
+      "reader": "Pick an article from the list.",
+      "tooltip": "Last fetch: http_503 | The server returned HTTP 503. Try later or check the feed address.\nDouble-click to retry"
+    },
+    "zh-CN": {
+      "list": "还没有订阅。点击上方「添加订阅」，或在设置中导入 OPML。",
+      "reader": "从中间列表选一篇文章。",
+      "tooltip": "上次抓取：http_503｜服务器返回 HTTP 503，请稍后重试或检查订阅地址。\n双击可重试"
+    }
+  },
+  "fixture_checks": [
+    "i18n key sets and markup",
+    "list empty copy zh-CN",
+    "reader empty copy zh-CN",
+    "reader empty paragraphs zh-CN",
+    "failed feed state zh-CN",
+    "no article rows zh-CN",
+    "reader empty copy kept zh-CN/light/overview",
+    "reader empty copy kept zh-CN/light/article",
+    "reader empty copy kept zh-CN/light/settings",
+    "settings overlay covers list region zh-CN/light/settings",
+    "settings surface follows light zh-CN",
+    "reader empty copy kept zh-CN/dark/overview",
+    "reader empty copy kept zh-CN/dark/article",
+    "reader empty copy kept zh-CN/dark/settings",
+    "settings overlay covers list region zh-CN/dark/settings",
+    "settings surface follows dark zh-CN",
+    "reader empty copy kept zh-CN/light/overview",
+    "reader empty copy kept zh-CN/light/article",
+    "reader empty copy kept zh-CN/light/settings",
+    "settings overlay covers list region zh-CN/light/settings",
+    "settings surface follows light zh-CN",
+    "reader empty copy kept zh-CN/dark/overview",
+    "reader empty copy kept zh-CN/dark/article",
+    "reader empty copy kept zh-CN/dark/settings",
+    "settings overlay covers list region zh-CN/dark/settings",
+    "settings surface follows dark zh-CN",
+    "reader empty copy kept zh-CN/light/overview",
+    "reader empty copy kept zh-CN/light/article",
+    "reader empty copy kept zh-CN/light/settings",
+    "settings overlay covers list region zh-CN/light/settings",
+    "settings surface follows light zh-CN",
+    "reader empty copy kept zh-CN/dark/overview",
+    "reader empty copy kept zh-CN/dark/article",
+    "reader empty copy kept zh-CN/dark/settings",
+    "settings overlay covers list region zh-CN/dark/settings",
+    "settings surface follows dark zh-CN",
+    "list empty copy en",
+    "reader empty copy en",
+    "reader empty paragraphs en",
+    "failed feed state en",
+    "no article rows en",
+    "reader empty copy kept en/light/overview",
+    "reader empty copy kept en/light/article",
+    "reader empty copy kept en/light/settings",
+    "settings overlay covers list region en/light/settings",
+    "settings surface follows light en",
+    "reader empty copy kept en/dark/overview",
+    "reader empty copy kept en/dark/article",
+    "reader empty copy kept en/dark/settings",
+    "settings overlay covers list region en/dark/settings",
+    "settings surface follows dark en",
+    "reader empty copy kept en/light/overview",
+    "reader empty copy kept en/light/article",
+    "reader empty copy kept en/light/settings",
+    "settings overlay covers list region en/light/settings",
+    "settings surface follows light en",
+    "reader empty copy kept en/dark/overview",
+    "reader empty copy kept en/dark/article",
+    "reader empty copy kept en/dark/settings",
+    "settings overlay covers list region en/dark/settings",
+    "settings surface follows dark en",
+    "reader empty copy kept en/light/overview",
+    "reader empty copy kept en/light/article",
+    "reader empty copy kept en/light/settings",
+    "settings overlay covers list region en/light/settings",
+    "settings surface follows light en",
+    "reader empty copy kept en/dark/overview",
+    "reader empty copy kept en/dark/article",
+    "reader empty copy kept en/dark/settings",
+    "settings overlay covers list region en/dark/settings",
+    "settings surface follows dark en",
+    "empty copy differs between locales"
+  ],
+  "captures": 36,
+  "output": "/tmp/rustrss-theme-empty-0gwuyct2"
+}

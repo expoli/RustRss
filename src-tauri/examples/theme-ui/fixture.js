@@ -4,6 +4,20 @@
   const report = { fixture_version: 1, captures: [], checks: [], fonts: 'requested/computed stacks only; glyph fallback not inferred' };
   const assert = (ok, name) => { if (!ok) throw new Error(name); report.checks.push(name); };
   const el = id => document.getElementById(id);
+  // The settings surface colour must come from the DOM, not from a token name: later
+  // batches changed which token the pane paints, and a stale token made the old
+  // coordinate check pass by coincidence.
+  function paneSurface() {
+    // The opaque surface belongs to the dialog, not to the pane div.
+    const surfaceEl = el('pane-appearance').closest('.settings-dialog') || el('pane-appearance');
+    const raw = getComputedStyle(surfaceEl).backgroundColor;
+    const m = /^rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)$/.exec(raw);
+    if (!m || (m[4] !== undefined && Number(m[4]) < 0.9)) throw new Error(`settings pane surface is not opaque: ${raw}`);
+    const parts = [m[1], m[2], m[3]].map((n) => Number(n).toString(16).padStart(2, '0'));
+    const hex = '#' + parts.join('');
+    const lum = (0.2126 * Number(m[1]) + 0.7152 * Number(m[2]) + 0.0722 * Number(m[3])) / 255;
+    return { hex, lum };
+  }
   const settle = async () => { await document.fonts.ready; await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); };
   try {
     let editor;
@@ -47,8 +61,22 @@
           el('settings-overlay').classList.toggle('hidden',scene!=='settings');
           await settle();
           const name=`${['clear','paper','slate'][i]}-${mode}-${locale}-${scene}`;
-          report.captures.push({...await invoke('capture_scene',{name}),name,background:v.colors.background,
-            ...(scene==='settings'?{settings_background:v.colors.panel,occlusion_point:[Math.round(el('entries').getBoundingClientRect().right-5),150]}:{})});
+          if (scene==='settings') {
+            // The claim is "the settings overlay covers the list region", so assert it
+            // structurally: the element at the list's right edge must not be the list.
+            // (A pixel here used to be compared against the panel colour and passed only
+            // because the removed stale controls happened to paint that point.)
+            const probeX=Math.round(el('entries').getBoundingClientRect().right-5);
+            const top=document.elementFromPoint(probeX,150);
+            assert(!el('entries').contains(top) && !document.querySelector('.sidebar').contains(top),
+              `settings overlay covers list region ${i}/${mode}/${locale}`);
+            const surface=paneSurface();
+            assert(mode==='light'?surface.lum>0.5:surface.lum<0.5,`settings surface follows ${mode} ${i}/${locale}`);
+            report.captures.push({...await invoke('capture_scene',{name}),name,background:v.colors.background,
+              settings_background:surface.hex,occlusion_point:[probeX,150]});
+          } else {
+            report.captures.push({...await invoke('capture_scene',{name}),name,background:v.colors.background});
+          }
         }
         assert(el('entries').firstElementChild===firstRow && el('reader').querySelector('.article')===firstArticle,`DOM identity ${i}/${mode}/${locale}`);
       }
@@ -71,7 +99,7 @@
     assert(getComputedStyle(firstRow.querySelector('.summary')).display==='none','zero summary lines');
     assert(getComputedStyle(firstRow.querySelector('.entry-thumbnail')).display==='none','thumbnail hidden without rebuilding rows');
     assert(el('entries').clientWidth>0 && document.querySelector('.sidebar').clientWidth>0,'focus retains navigation');
-    report.captures.push(await invoke('capture_scene',{name:'layout-focus'}));
+    report.captures.push({...await invoke('capture_scene',{name:'layout-focus'}),name:'layout-focus'});
     s.light.typography.read_family=['RustRss Missing Fixture Font','serif'];renderer.apply(s);await settle();
     assert(el('reader').querySelector('.article').getBoundingClientRect().height>100,'missing font retains readable layout via fallback');
     await invoke('narrow');
@@ -79,11 +107,11 @@
     await settle();
     assert(innerWidth<=950,'narrow viewport acknowledged');
     assert(document.querySelector('.right-col').getBoundingClientRect().right<=innerWidth+1,'narrow reader stays within viewport');
-    report.captures.push(await invoke('capture_scene',{name:'narrow-article'}));
+    report.captures.push({...await invoke('capture_scene',{name:'narrow-article'}),name:'narrow-article'});
     el('settings-overlay').classList.remove('hidden');await settle();
     const button=el('appearance-editor').querySelector('[data-preset]').getBoundingClientRect();
     assert(button.right<innerWidth && button.left>0,'narrow theme picker remains reachable');
-    report.captures.push(await invoke('capture_scene',{name:'narrow-settings'}));
+    report.captures.push({...await invoke('capture_scene',{name:'narrow-settings'}),name:'narrow-settings'});
     report.viewport=[innerWidth,innerHeight];report.dpr=devicePixelRatio;
   } catch(error) { report.error=String(error.stack||error); }
   await invoke('finish',{report});

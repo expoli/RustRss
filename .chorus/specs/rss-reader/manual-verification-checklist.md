@@ -1182,7 +1182,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 空/错误状态：无订阅 / 无搜索匹配 / 首次抓取失败不误报，失败保留缓存（`empty-error-states.md`）。
 - [x] 分数缩放：KDE Wayland 125%/150% 与 Xvfb 100%/200%（`native-settings.md`）；原生 Wayland 真实点击取消 + 正文位置（`t7-wayland-input-results.json`，用户在场补验）。
 - [x] MCP 预览文件契约：绝对路径 + 到期时间、尺寸/体积/配额/TTL 回收（`mcp-preview-files.md`）。
-- [ ] **未验（保留 open，全部环境/他人依赖）**：① Windows/macOS 原生截图与真实客户端闭环；② 第三方 GUI 客户端（本轮仅 Codex CLI 收图）；③ GNOME / 无 XWayland / 读屏器；④ **用户侧独立聚合评审**（T7 报告明确 fresh reviewer 由用户另派，未派）；⑤ 企业证书/认证代理（与 §26 同源）。
+- [ ] **未验（保留 open）——**注：此前写成「全部环境/他人依赖」是错的**：空状态夹具矩阵本机可跑（已在 2026-09-24 补跑：`empty-state-matrix.md` / `empty-state-matrix-results.json`，36 格 + 变异校验），读屏器（本机有 `/usr/bin/orca`）与原生弹窗键盘路径同样本机可验而未验；真正外部的只有 Windows / macOS / GNOME-Wayland（未装 GNOME 会话）与第三方 GUI MCP 客户端**：① Windows/macOS 原生截图与真实客户端闭环；② 第三方 GUI 客户端（本轮仅 Codex CLI 收图）；③ GNOME / 无 XWayland / 读屏器；④ **用户侧独立聚合评审**（T7 报告明确 fresh reviewer 由用户另派，未派）；⑤ 企业证书/认证代理（与 §26 同源）。
 
 ## 28. 搜索端到端（release 口径）（2026-09-24-local-acceptance-closeout / 任务 94422722）
 
@@ -1203,6 +1203,13 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 - [x] **无 WM 的 Xvfb 里 `import -window root` 取帧不可靠**：实测两次**不同探针、不同运行**产出的 PNG **逐字节相同**（`search-e2e-list.png` 与 `https-tunnel-list.png`，已删除）；键盘探针曾抓到**另一个探针的拒绝界面**（`3ec4bec` 删除）。因此凡依赖 `import` 的像素证据都不作数。
 - [x] 处置：受影响的探针（键盘 / 搜索 / HTTPS 隧道）**已停止截图**并在 JSON 里写明限制；证据一律以 **DOM 断言 + SQLite 回读** 为准。
-- [ ] 存量 PNG 的定性（保留以便追溯，**不作为权威证据**）：`legacy-refusal-overlay.png`（拒绝界面，评审看过内容）、`thumbnail-public-feed.png`（列表缩略图）、`thumbnail-remote-failures.png`（失败图）——三者均由评审以图片形式查看过，但取帧路径与上述缺陷相同，故**只能算「人工查看过」，不算机械证据**；需要像素级结论时必须在**真实桌面会话**重拍。
+- [ ] 存量 PNG 的定性（保留以便追溯，**不作为权威证据**）：`legacy-refusal-overlay.png`（拒绝界面，评审看过内容）、`thumbnail-public-feed.png`（列表缩略图）、`thumbnail-remote-failures.png`（失败图）、`t4-appearance.png` / `t4-aa-reading.png`（T4 设置探针，取图走 `import -window <window-id>`——与 §30 实测失效的 `-window root` **不是同一类**，但同属「依赖 import」；其像素断言（选中色、焦点环绕）因此只作辅助证据）——这些均由评审以图片形式查看过，但取帧路径与上述缺陷相同，故**只能算「人工查看过」，不算机械证据**；需要像素级结论时必须在**真实桌面会话**重拍。
 
 - [ ] 后续改进（评审 NOTE，不阻塞）：契约测试的码清单目前是 JS 里手工维护的常量（有注释指向 Rust 出处），可改为从 `fetch.rs` / `network.rs` / `discover.rs` 派生，避免两处漂移。
+
+## 31. 原生截帧的「场景级」陈旧（2026-09-24，第二种陈旧模式）
+
+- [x] **实测**：主矩阵 39 张图中每个（预设/模式/语言）单元格的 overview/article/settings 三张**逐字节相同**（12 个单元格 → 12 帧）；延长 settle 到 400ms 后不变。
+- [x] 处置：矩阵探针**记录** `scene_frames_per_cell`（全 1）不再按场景断像素；逐场景主张改由 DOM 断言承担（设置场景新增「列表右缘最上层元素不得属于侧栏/列表」的语义断言）；§30 的口径补充此模式。
+- [x] 结论影响：既有「每后端 39 图 / 24 像素断言」中，**逐场景**像素不成立，逐主题/模式/语言成立；要逐场景像素证据需在**真有合成器的桌面会话**重跑。
+- [x] 空状态矩阵（`empty-state-matrix-results.json`，36 格）：逐格 DOM 断言 + 逐主题像素背景；同样受本限制。

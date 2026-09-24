@@ -33,11 +33,12 @@
   "t6Commit": "951d7e9",
   "t7Evidence": "t7-results.json",
   "t7Report": "t7-aggregate.md",
-  "independentAggregateReview": "passed (user-reported fresh reviewer verdict)",
+  "independentAggregateReview": "round 1 verdict by chorus-code-reviewer on idea comment 4d2c4ff1: FAIL (1 BLOCKER: empty-state matrix misclassified as environment-dependent; 4 NOTE). Round 2 pending. The previous \"passed (user-reported...)\" line was hearsay with no artifact.",
   "t7OpenItems": [
     "third-party GUI MCP client image loop",
-    "empty-state fixture matrix",
     "other platforms, fractional scaling and accessibility"
   ],
-  "t7WaylandInputEvidence": "t7-wayland-input-results.json"
+  "t7WaylandInputEvidence": "t7-wayland-input-results.json",
+  "emptyStateMatrixEvidence": "empty-state-matrix-results.json",
+  "emptyStateMatrixVerified": true
 }

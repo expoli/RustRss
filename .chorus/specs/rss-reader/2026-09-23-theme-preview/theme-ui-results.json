@@ -1,181 +1,739 @@
 {
-  "date": "2026-09-23",
-  "stage": "T3",
-  "rust_tests": {
-    "passed": 386,
-    "failed": 0
-  },
-  "node_tests": {
-    "passed": 22,
-    "failed": 0
-  },
-  "clippy": "three pre-existing core warnings; no new warnings",
-  "builds": [
-    "rustrss-desktop",
-    "theme_ui with snapshot-probe"
-  ],
-  "fixture_runs": [
+  "captures": [
     {
-      "environment": "xvfb-100",
-      "backend": "libEGL warning: DRI3 error: Could not get DRI3 device\nlibEGL warning: Ensure your X server supports DRI3 to get accelerated rendering\n\n** (theme_ui:2595775): WARNING **: 21:58:23.284: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.\nactual_display_backend=GdkX11Display",
-      "output": "/tmp/rustrss-theme-ui-f4gxoodr",
-      "captures": 39,
-      "checks": [
-        "i18n key sets and markup",
-        "DOM identity 0/light/zh-CN",
-        "DOM identity 0/dark/zh-CN",
-        "DOM identity 1/light/zh-CN",
-        "DOM identity 1/dark/zh-CN",
-        "DOM identity 2/light/zh-CN",
-        "DOM identity 2/dark/zh-CN",
-        "DOM identity 0/light/en",
-        "DOM identity 0/dark/en",
-        "DOM identity 1/light/en",
-        "DOM identity 1/dark/en",
-        "DOM identity 2/light/en",
-        "DOM identity 2/dark/en",
-        "same-value zero DOM mutations",
-        "paragraph anchor after font and width change",
-        "color change preserves scroll",
-        "zero summary lines",
-        "thumbnail hidden without rebuilding rows",
-        "focus retains navigation",
-        "missing font retains readable layout via fallback",
-        "narrow viewport acknowledged",
-        "narrow reader stays within viewport",
-        "narrow theme picker remains reachable"
+      "background": "#f7f8fa",
+      "bytes": 37114,
+      "file": "clear-light-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        820
       ],
-      "background_pixel_checks": 12,
-      "modal_occlusion_pixel_checks": 12,
-      "dpr": 1,
-      "final_narrow_viewport": [
+      "name": "clear-light-zh-CN-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 37114,
+      "file": "clear-light-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-light-zh-CN-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 37114,
+      "file": "clear-light-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-light-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#ffffff"
+    },
+    {
+      "background": "#14161a",
+      "bytes": 36628,
+      "file": "clear-dark-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-dark-zh-CN-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#14161a",
+      "bytes": 36628,
+      "file": "clear-dark-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-dark-zh-CN-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#14161a",
+      "bytes": 36628,
+      "file": "clear-dark-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-dark-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#1a1d23"
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 36842,
+      "file": "paper-light-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-light-zh-CN-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 36842,
+      "file": "paper-light-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-light-zh-CN-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 36842,
+      "file": "paper-light-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-light-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#faf7f0"
+    },
+    {
+      "background": "#302b22",
+      "bytes": 36900,
+      "file": "paper-dark-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-dark-zh-CN-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#302b22",
+      "bytes": 36900,
+      "file": "paper-dark-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-dark-zh-CN-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#302b22",
+      "bytes": 36900,
+      "file": "paper-dark-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-dark-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#2b271f"
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 36942,
+      "file": "slate-light-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-light-zh-CN-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 36942,
+      "file": "slate-light-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-light-zh-CN-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 36942,
+      "file": "slate-light-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-light-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#f5f7f8"
+    },
+    {
+      "background": "#242d31",
+      "bytes": 36748,
+      "file": "slate-dark-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-dark-zh-CN-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#242d31",
+      "bytes": 36748,
+      "file": "slate-dark-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-dark-zh-CN-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#242d31",
+      "bytes": 36748,
+      "file": "slate-dark-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-dark-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#20272b"
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 36080,
+      "file": "clear-light-en-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-light-en-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 36080,
+      "file": "clear-light-en-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-light-en-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 36080,
+      "file": "clear-light-en-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-light-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#ffffff"
+    },
+    {
+      "background": "#14161a",
+      "bytes": 35943,
+      "file": "clear-dark-en-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-dark-en-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#14161a",
+      "bytes": 35943,
+      "file": "clear-dark-en-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-dark-en-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#14161a",
+      "bytes": 35943,
+      "file": "clear-dark-en-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "clear-dark-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#1a1d23"
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 36037,
+      "file": "paper-light-en-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-light-en-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 36037,
+      "file": "paper-light-en-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-light-en-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 36037,
+      "file": "paper-light-en-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-light-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#faf7f0"
+    },
+    {
+      "background": "#302b22",
+      "bytes": 36703,
+      "file": "paper-dark-en-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-dark-en-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#302b22",
+      "bytes": 36703,
+      "file": "paper-dark-en-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-dark-en-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#302b22",
+      "bytes": 36703,
+      "file": "paper-dark-en-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "paper-dark-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#2b271f"
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 36051,
+      "file": "slate-light-en-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-light-en-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 36051,
+      "file": "slate-light-en-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-light-en-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 36051,
+      "file": "slate-light-en-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-light-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#f5f7f8"
+    },
+    {
+      "background": "#242d31",
+      "bytes": 36460,
+      "file": "slate-dark-en-overview.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-dark-en-overview",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#242d31",
+      "bytes": 36460,
+      "file": "slate-dark-en-article.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-dark-en-article",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#242d31",
+      "bytes": 36460,
+      "file": "slate-dark-en-settings.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "slate-dark-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1,
+      "settings_background": "#20272b"
+    },
+    {
+      "bytes": 36080,
+      "file": "layout-focus.png",
+      "logical_size": [
+        1240,
+        820
+      ],
+      "name": "layout-focus",
+      "pixels": [
+        1240,
+        820
+      ],
+      "scale": 1
+    },
+    {
+      "bytes": 33869,
+      "file": "narrow-article.png",
+      "logical_size": [
         900,
         600
       ],
-      "max_png_bytes": 248579
-    },
-    {
-      "environment": "xvfb-200",
-      "backend": "libEGL warning: DRI3 error: Could not get DRI3 device\nlibEGL warning: Ensure your X server supports DRI3 to get accelerated rendering\n\n** (theme_ui:2595774): WARNING **: 21:58:23.285: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.\nactual_display_backend=GdkX11Display",
-      "output": "/tmp/rustrss-theme-ui-xfhi1tm_",
-      "captures": 39,
-      "checks": [
-        "i18n key sets and markup",
-        "DOM identity 0/light/zh-CN",
-        "DOM identity 0/dark/zh-CN",
-        "DOM identity 1/light/zh-CN",
-        "DOM identity 1/dark/zh-CN",
-        "DOM identity 2/light/zh-CN",
-        "DOM identity 2/dark/zh-CN",
-        "DOM identity 0/light/en",
-        "DOM identity 0/dark/en",
-        "DOM identity 1/light/en",
-        "DOM identity 1/dark/en",
-        "DOM identity 2/light/en",
-        "DOM identity 2/dark/en",
-        "same-value zero DOM mutations",
-        "paragraph anchor after font and width change",
-        "color change preserves scroll",
-        "zero summary lines",
-        "thumbnail hidden without rebuilding rows",
-        "focus retains navigation",
-        "missing font retains readable layout via fallback",
-        "narrow viewport acknowledged",
-        "narrow reader stays within viewport",
-        "narrow theme picker remains reachable"
-      ],
-      "background_pixel_checks": 12,
-      "modal_occlusion_pixel_checks": 12,
-      "dpr": 2,
-      "final_narrow_viewport": [
+      "name": "narrow-article",
+      "pixels": [
         900,
         600
       ],
-      "max_png_bytes": 555991
+      "scale": 1
     },
     {
-      "environment": "kde-wayland",
-      "backend": "actual_display_backend=GdkWaylandDisplay",
-      "output": "/tmp/rustrss-theme-ui-8orjony0",
-      "captures": 39,
-      "checks": [
-        "i18n key sets and markup",
-        "DOM identity 0/light/zh-CN",
-        "DOM identity 0/dark/zh-CN",
-        "DOM identity 1/light/zh-CN",
-        "DOM identity 1/dark/zh-CN",
-        "DOM identity 2/light/zh-CN",
-        "DOM identity 2/dark/zh-CN",
-        "DOM identity 0/light/en",
-        "DOM identity 0/dark/en",
-        "DOM identity 1/light/en",
-        "DOM identity 1/dark/en",
-        "DOM identity 2/light/en",
-        "DOM identity 2/dark/en",
-        "same-value zero DOM mutations",
-        "paragraph anchor after font and width change",
-        "color change preserves scroll",
-        "zero summary lines",
-        "thumbnail hidden without rebuilding rows",
-        "focus retains navigation",
-        "missing font retains readable layout via fallback",
-        "narrow viewport acknowledged",
-        "narrow reader stays within viewport",
-        "narrow theme picker remains reachable"
-      ],
-      "background_pixel_checks": 12,
-      "modal_occlusion_pixel_checks": 12,
-      "dpr": 2,
-      "final_narrow_viewport": [
+      "bytes": 33869,
+      "file": "narrow-settings.png",
+      "logical_size": [
         900,
         600
       ],
-      "max_png_bytes": 544054
+      "name": "narrow-settings",
+      "pixels": [
+        900,
+        600
+      ],
+      "scale": 1
     }
   ],
-  "production_desktop": {
-    "output": "/tmp/rustrss-theme-desktop-0bcds6kg",
-    "preset": "paper",
-    "revision": 2,
-    "read_size": 25.0,
-    "restart_preserved": true
+  "checks": [
+    "i18n key sets and markup",
+    "settings overlay covers list region 0/light/zh-CN",
+    "settings surface follows light 0/zh-CN",
+    "DOM identity 0/light/zh-CN",
+    "settings overlay covers list region 0/dark/zh-CN",
+    "settings surface follows dark 0/zh-CN",
+    "DOM identity 0/dark/zh-CN",
+    "settings overlay covers list region 1/light/zh-CN",
+    "settings surface follows light 1/zh-CN",
+    "DOM identity 1/light/zh-CN",
+    "settings overlay covers list region 1/dark/zh-CN",
+    "settings surface follows dark 1/zh-CN",
+    "DOM identity 1/dark/zh-CN",
+    "settings overlay covers list region 2/light/zh-CN",
+    "settings surface follows light 2/zh-CN",
+    "DOM identity 2/light/zh-CN",
+    "settings overlay covers list region 2/dark/zh-CN",
+    "settings surface follows dark 2/zh-CN",
+    "DOM identity 2/dark/zh-CN",
+    "settings overlay covers list region 0/light/en",
+    "settings surface follows light 0/en",
+    "DOM identity 0/light/en",
+    "settings overlay covers list region 0/dark/en",
+    "settings surface follows dark 0/en",
+    "DOM identity 0/dark/en",
+    "settings overlay covers list region 1/light/en",
+    "settings surface follows light 1/en",
+    "DOM identity 1/light/en",
+    "settings overlay covers list region 1/dark/en",
+    "settings surface follows dark 1/en",
+    "DOM identity 1/dark/en",
+    "settings overlay covers list region 2/light/en",
+    "settings surface follows light 2/en",
+    "DOM identity 2/light/en",
+    "settings overlay covers list region 2/dark/en",
+    "settings surface follows dark 2/en",
+    "DOM identity 2/dark/en",
+    "same-value zero DOM mutations",
+    "paragraph anchor after font and width change",
+    "color change preserves scroll",
+    "zero summary lines",
+    "thumbnail hidden without rebuilding rows",
+    "focus retains navigation",
+    "missing font retains readable layout via fallback",
+    "narrow viewport acknowledged",
+    "narrow reader stays within viewport",
+    "narrow theme picker remains reachable"
+  ],
+  "dpr": 1,
+  "fixture_version": 1,
+  "fonts": "requested/computed stacks only; glyph fallback not inferred",
+  "viewport": [
+    900,
+    600
+  ],
+  "native_background_pixel_checks": 12,
+  "settings_frames": 12,
+  "settings_frame_panel_pixels": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "scene_frames_per_cell": {
+    "clear-dark-en": 1,
+    "clear-dark-zh": 1,
+    "clear-light-en": 1,
+    "clear-light-zh": 1,
+    "paper-dark-en": 1,
+    "paper-dark-zh": 1,
+    "paper-light-en": 1,
+    "paper-light-zh": 1,
+    "slate-dark-en": 1,
+    "slate-dark-zh": 1,
+    "slate-light-en": 1,
+    "slate-light-zh": 1
   },
-  "limitations": [
-    "Windows/macOS/GNOME not run",
-    "Actual system theme switch and cross-monitor fractional scaling not run",
-    "Real feed thumbnails lack metadata; existing image style only",
-    "No MCP theme tools or preview sessions",
-    "No per-glyph font resolution proof",
-    "Remote delayed image reflow not covered"
-  ],
-  "sample_images": [
-    {
-      "file": "t3-paper-light.png",
-      "sha256": "9d705e9ad66a30250a491579c83f47db674d59b8f0022e73b76de5b098e141c3"
-    },
-    {
-      "file": "t3-slate-dark.png",
-      "sha256": "f8004357c5262c0ec7702657e94788cac79ed494b6d32218423dc735e99a279c"
-    }
-  ],
-  "xvfb_environment_isolation_recheck": {
-    "inherited": {
-      "GDK_BACKEND": "wayland",
-      "WAYLAND_DISPLAY": "wayland-invalid",
-      "EGL_PLATFORM": "wayland"
-    },
-    "fixture_output": "/tmp/rustrss-theme-ui-dkrmlsoz",
-    "fixture_counts": [
-      39,
-      23,
-      24
-    ],
-    "desktop": {
-      "output": "/tmp/rustrss-theme-desktop-7oa2onjp",
-      "preset": "paper",
-      "revision": 2,
-      "read_size": 25.0,
-      "restart_preserved": true
-    }
-  }
+  "scene_frames_note": "1 distinct frame per cell means scene toggles did not refresh the native snapshot in this environment; DOM assertions carry the per-scene claims",
+  "display": "xvfb",
+  "run_log": "/tmp/rustrss-theme-ui-ydsvmb2c/run.log",
+  "binary": "target/debug/examples/theme_ui",
+  "binary_sha256": "771249bb01e9dcb2ad421bfd5869dc5aaf45487f7a0cfd00665d0f554f0aae87",
+  "binary_mtime": "2026-09-24T22:38:51",
+  "captured_at": "2026-09-24T14:38:55+00:00"
 }

@@ -1,4 +1,6 @@
 """Real embedded HTTP + independent stdio writes, observed in rebuilt desktop UI."""
+import datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -50,7 +52,10 @@ try:
     with logfile.open('w') as output:app=subprocess.Popen(['target/debug/rustrss-desktop'],env=env,stdout=output,stderr=output)
     wait_for(lambda:'loaded feeds=' in logfile.read_text(),'desktop boot')
     window=run('xdotool','search','--onlyvisible','--name','^RustRss$').splitlines()[0]
-    run('xdotool','windowfocus',window,'mousemove','330','120','click','1')
+    # Keyboard instead of a coordinate click: later batches changed the list markup, so the
+    # old (330,120) point no longer lands on a row, and the app's own bindings are stable.
+    run('xdotool','windowfocus',window)
+    run('xdotool','key','j'); time.sleep(.3); run('xdotool','key','Return')
     wait_for(lambda:'renderReader id=' in logfile.read_text(),'article opened')
     renders=logfile.read_text().count('renderReader id=')
     g=http('get_theme',{},'fixture-read');assert g['capabilities']['change_notification'] is True
@@ -76,7 +81,12 @@ try:
     assert logfile.read_text().count('renderReader id=')==renders,'theme sync rebuilt article'
     with sqlite3.connect(dbpath) as db:current=json.loads(db.execute("SELECT value FROM settings WHERE key='ui.theme_config'").fetchone()[0])['current']
     assert current['revision']==3 and current['light_preset']=='paper'
-    report={'output':str(root),'embedded_event':True,'stdio_polling':True,'restore':True,'read_token_rejected':True,'article_renders_before_after':[renders,logfile.read_text().count('renderReader id=')],'revision':3,'pixel_checks':2,'preview_available':g['capabilities']['preview']['available']}
+    binary=Path('target/debug/rustrss-desktop')
+    report={'output':str(root),
+            'binary':str(binary),
+            'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),
+            'binary_mtime':datetime.datetime.fromtimestamp(binary.stat().st_mtime).isoformat(timespec='seconds'),
+            'captured_at':datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),'embedded_event':True,'stdio_polling':True,'restore':True,'read_token_rejected':True,'article_renders_before_after':[renders,logfile.read_text().count('renderReader id=')],'revision':3,'pixel_checks':2,'preview_available':g['capabilities']['preview']['available']}
     (root/'results.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))
 finally:
     for child in [stdio,app]:
