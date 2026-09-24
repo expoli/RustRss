@@ -1,6 +1,6 @@
 {
   "unreachable_thumbnail": "https://raw.githubusercontent.com/github/explore/main/topics/rust/rust.png",
-  "checked_at": "2026-09-24T10:24:07Z",
+  "checked_at": "2026-09-24T10:43:34Z",
   "network": "private netns, lo only",
   "checks": [
     "list renders offline (entries visible)",
@@ -13,7 +13,7 @@
     29,
     28
   ],
-  "app_log_tail": "持.\n\n(rustrss-desktop:2784711): libayatana-appindicator-WARNING **: 18:24:07.517: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.\n\n** (process:2784735): WARNING **: 18:24:07.551: Can't connect to a11y bus: 用尽了所有可用的认证机制（已尝试：EXTERNAL）（可用的：EXTERNAL）\n",
+  "app_log_tail": "持.\n\n(rustrss-desktop:2805836): libayatana-appindicator-WARNING **: 18:43:35.260: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.\n\n** (process:2805860): WARNING **: 18:43:35.288: Can't connect to a11y bus: 用尽了所有可用的认证机制（已尝试：EXTERNAL）（可用的：EXTERNAL）\n",
   "thumbnail_state": {
     "present": true,
     "width": 0,

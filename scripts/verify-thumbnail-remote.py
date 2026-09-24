@@ -128,6 +128,12 @@ async def main():
             await probe.js("window.__thumbEnable={done:false};window.__TAURI__.core.invoke('get_theme_update',{knownRevision:null}).then(snapshot=>window.__TAURI__.core.invoke('update_ui_theme',{expectedRevision:snapshot.config.revision,patch:{overrides:{list:{thumbnail:true}}}})).then(()=>window.__thumbEnable.done=true,error=>window.__thumbEnable.error=String(error));true")
             await probe.until('window.__thumbEnable.done===true')
             await probe.until("document.documentElement.dataset.thumbnails==='true'")
+            # 布局基线：失败图落定前的行几何（AC2「不引起布局跳动」的机械断言基础）
+            geom_js = ("JSON.stringify(Array.from(document.querySelectorAll('#entries li[data-id]'))"
+                       ".slice(0,8).map(li=>{const r=li.getBoundingClientRect();"
+                       "return [li.dataset.id,Math.round(r.top),Math.round(r.height)]}))")
+            await probe.until("!!document.querySelector('#entries li[data-id]')")
+            geom_before = await probe.js(geom_js)
 
             # 1) 公网图片加载完成（给它充裕时间：真实外网）
             loaded = False
@@ -155,9 +161,17 @@ async def main():
                 % (ids[1], ids[2], ids[3]))
             report['failure_cases'] = broken
             assert broken['missing'] and broken['missing']['w'] == 0, broken
+            assert broken['unreachable'] and broken['unreachable']['w'] == 0, broken
             assert broken['forbidden'] and broken['forbidden']['w'] == 0, broken
             assert not broken['dialog'], '图片失败不应弹出阻塞式对话框'
             report['checks'].append('404 / unreachable / 403-hotlink-rejected images all fail silently')
+
+            # 布局不跳动（机械断言，不只靠截图）：失败图落定后行几何必须与基线完全一致
+            geom_after = await probe.js(geom_js)
+            report['geometry_before'] = geom_before
+            report['geometry_after'] = geom_after
+            assert geom_before == geom_after, f'失败图引起了布局跳动: {geom_before} -> {geom_after}'
+            report['checks'].append('failed images do not shift list geometry (no layout jump)')
 
             # 3) 失败不重建行、列表仍可滚动
             before = await probe.js("Array.from(document.querySelectorAll('#entries li[data-id]')).map(li=>li.dataset.id).join(',')")
@@ -169,6 +183,16 @@ async def main():
             report['scrolled'] = await probe.js("document.getElementById('entries').scrollTop>0")
             assert before == after, '图片失败不应引起列表行重建'
             report['checks'].append('failed images neither rebuilt rows nor blocked scrolling')
+            # AC2 要求「截图 + 日志」：截图给失败态的视觉证据，日志尾随证据一起落盘
+            if OUT_DIR:
+                OUT_DIR.mkdir(parents=True, exist_ok=True)
+                png = OUT_DIR / 'thumbnail-remote-failures.png'
+                subprocess.run(['import', '-display', env['DISPLAY'], '-window', 'root', str(png)],
+                               check=True, timeout=60)
+                report['screenshot'] = str(png)
+                log_copy = OUT_DIR / 'thumbnail-remote-desktop.log'
+                log_copy.write_text(log_path.read_text()[-20000:])
+                report['app_log'] = str(log_copy)
             report['evidence_file'] = write_evidence('thumbnail-remote-results.json', report)
             print(json.dumps(report, ensure_ascii=False))
         finally:

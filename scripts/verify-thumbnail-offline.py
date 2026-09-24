@@ -2,9 +2,12 @@
 
 用法（**必须**在独立网络命名空间里跑，否则测的不是离线）：
 
-    sudo unshare -rn env PATH="$PATH" HOME=/tmp/... python3 scripts/verify-thumbnail-offline.py [证据目录]
+    unshare -rn bash -c 'cd <repo 根目录> && python3 scripts/verify-thumbnail-offline.py <证据目录>'
 
-为什么整个探针都要在命名空间里：应用的 WebKit inspector 绑在环回上，命名空间外连不到它。
+两个坑已在脚本里自理：
+- 新 netns 里 `lo` 默认 **DOWN**（不拉起会 Network is unreachable）——脚本先 `bring_lo_up()`；
+- 应用的 WebKit inspector 绑在环回上，命名空间外连不到，所以整个探针都跑在命名空间里。
+`offline_guard()` 随后断言：只有 lo **且 lo 已 UP**，否则拒绍出结论。
 
 断言（离线＝只有 lo、且缩略图指向公网主机 → 必然失败）：
 1. 列表渲染出条目（离线可读）；
@@ -52,15 +55,28 @@ def free_port():
         return sock.getsockname()[1]
 
 
+def bring_lo_up():
+    """新 netns 里 `lo` 默认是 **DOWN** 的：不先拉起，连本地 inspector/DNS 都会报 Network is unreachable
+    （实测：只跑 `unshare -rn python3 …` 直接崩）。脚本自己拉起，这样文档里那一行命令就是完整可复现的。"""
+    subprocess.run(['ip', 'link', 'set', 'lo', 'up'], check=True, timeout=10)
+
+
 def offline_guard():
-    """确认真的在「只有 lo」的网络命名空间里：有非 lo 接口就直接失败，避免测出假结论。"""
+    """确认真的在「只有 lo 且 lo 已 UP」的网络命名空间里。
+
+    只看接口名不够：fresh netns 里 lo 也存在但 DOWN（此时根本没网，测出来的「离线」不是我们要的场景）。
+    有非 lo 接口、或 lo 未 UP，都直接失败。
+    """
     out = subprocess.run(['ip', '-o', 'link', 'show'], capture_output=True, text=True, timeout=10).stdout
     ifaces = [line.split(':')[1].strip() for line in out.splitlines() if ':' in line]
     others = [i for i in ifaces if i != 'lo']
     assert not others, f'命名空间里存在非 lo 接口 {others}：这不是离线环境，拒绝出结论'
+    lo_line = next((line for line in out.splitlines() if ': lo:' in line), '')
+    assert 'UP' in lo_line, f'lo 未 UP（新 netns 默认 DOWN），先 bring_lo_up: {lo_line!r}'
 
 
 async def main():
+    bring_lo_up()
     offline_guard()
     report = {'unreachable_thumbnail': UNREACHABLE_THUMBNAIL,
               'checked_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
