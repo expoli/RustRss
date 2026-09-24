@@ -3,6 +3,14 @@
 2026-09-24。基线 `5abd0c6`（T4），本次包含发现后的契约修复。
 这是执行证据汇总，**不是独立聚合评审或全平台通过声明**。未创建 Chorus proposal/task；fresh reviewer 由用户另派。
 
+## 2026-09-24 用户在场补验
+
+原生 Wayland“真实点击取消＋正文位置”组合项已通过，关闭下文历史 open item。[新证据](t7-wayland-input-results.json)，基线 `04960a3`。本次用户亲手点击取消，未触发 KDE 输入授权：`isTrusted=true`；原生 `GdkWaylandDisplay`、DPR2。保存24→22px/宽度540→620后及本地取消后，文章/选中行/段落节点保留，段落偏移均为0.09375 CSS px；取消不改正式配置、预览销毁，再保存返回 `preview_expired`。
+
+命令：先 `scripts/start-theme-wayland-probe.py`，再以新 instance.json 连续运行 `verify-theme-wayland.py` 与 `verify-theme-wayland-cancel.py`（不加 `--portal`）；看到记录器就绪提示后用户点击。首次用户在记录器启动前关闭窗口，脚本因目标不存在退出；未计为成功或产品失败，重新准备并挂好记录器后单跑通过。隔离实例已退出，本轮临时目录已清理；未重跑矩阵、长测或其它平台。自动 portal 指针分支仍未验证。用户已告知原独立评审 VERDICT 通过，本次不重做独立评审。
+
+以下为原 T7 执行时的历史记录，保留当时的证据边界。
+
 ## 结论与证据来源
 
 T4 设置重组破坏了 T6 固定预览契约，已修复并重建后复验。Linux 共享组件矩阵、MCP Xvfb 生命周期回归、配置跨入口一致性通过。真实墙钟生命周期结果见下节和 [机器数据](t7-results.json)。

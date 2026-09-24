@@ -1019,3 +1019,12 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] 原生Wayland输入等原有open item未在本轮复跑；不扩大P2范围。
 
 删改依据、静态检查局限与机器结果见 [P2报告](2026-09-23-theme-preview/p2-contract-cleanup.md)。用户已告知独立评审VERDICT通过；本次不自任独立评审。
+
+
+### 24.10 原生 Wayland 用户在场补验（2026-09-24）
+
+- [x] 基线04960a3，GdkWaylandDisplay/DPR2；保存24→22px及用户本地取消后，段落偏移0.09375px不变，文章/行/段落节点保留。
+- [x] 记录器就绪后用户真实点击，isTrusted=true；预览销毁、正式配置未变、取消后保存被拒。关闭24.8/24.9中的该历史open item。
+- [ ] 自动portal指针分支、其它平台等本轮未验；未请求授权弹窗。
+
+[机器证据](2026-09-23-theme-preview/t7-wayland-input-results.json)。本轮隔离实例退出、临时产物已清理。

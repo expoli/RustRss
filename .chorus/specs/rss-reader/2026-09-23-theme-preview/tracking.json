@@ -11,7 +11,7 @@
   },
   "implementationTasksMaterialized": false,
   "productImplemented": false,
-  "nextTask": "user-present Wayland input rerun and user-appointed independent review",
+  "nextTask": "remaining client/platform verification only as directed by user",
   "remainingCapturePlatforms": [
     "windows",
     "macos",
@@ -33,12 +33,11 @@
   "t6Commit": "951d7e9",
   "t7Evidence": "t7-results.json",
   "t7Report": "t7-aggregate.md",
-  "independentAggregateReview": "pending_user_reviewer",
+  "independentAggregateReview": "passed (user-reported fresh reviewer verdict)",
   "t7OpenItems": [
-    "native Wayland trusted cancel click plus reader position (user absent)",
     "third-party GUI MCP client image loop",
     "empty-state fixture matrix",
-    "other platforms, fractional scaling and accessibility",
-    "user-appointed independent aggregate review"
-  ]
+    "other platforms, fractional scaling and accessibility"
+  ],
+  "t7WaylandInputEvidence": "t7-wayland-input-results.json"
 }

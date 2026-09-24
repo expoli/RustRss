@@ -1,0 +1,166 @@
+{
+  "date": "2026-09-24",
+  "baseline": "04960a316a3b928412ecfae066f92ff2f05f7845",
+  "input": "user manual mouse click; no portal authorization requested",
+  "reader_and_save": {
+    "input_method": "WebKit inspector DOM automation; native pointer cancellation reported separately",
+    "checks": [
+      "native GdkWaylandDisplay capture (not Xwayland)",
+      "temporary preview preserves main reader position and nodes",
+      "save preserves real article/row/paragraph identities",
+      "save preserves paragraph offset within 2 CSS px",
+      "saved configuration confirmed directly in isolated SQLite"
+    ],
+    "before": {
+      "offset": 0.09375,
+      "before": 0.09375,
+      "sameArticle": true,
+      "sameRow": true,
+      "sameParagraph": true,
+      "scrollTop": 2229,
+      "font": "24px",
+      "dpr": 2
+    },
+    "requested": {
+      "read_size": 22,
+      "width": 620
+    },
+    "capture": {
+      "capture_ms": 1666.5866660000002,
+      "captured_at": 1790215750623,
+      "display_backend": "GdkWaylandDisplay",
+      "fonts": {
+        "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+        "glyph_fallback": "unknown",
+        "requested": {
+          "line_height": 1.55,
+          "mono_family": [
+            "JetBrains Mono",
+            "Cascadia Mono",
+            "Menlo",
+            "monospace"
+          ],
+          "mono_size": 13,
+          "read_family": [
+            "-apple-system",
+            "Noto Sans CJK SC",
+            "Segoe UI",
+            "sans-serif"
+          ],
+          "read_size": 22,
+          "ui_family": [
+            "-apple-system",
+            "Noto Sans CJK SC",
+            "Segoe UI",
+            "sans-serif"
+          ],
+          "ui_size": 14
+        }
+      },
+      "freshness_marker_verified": true,
+      "logical_size": [
+        960,
+        640
+      ],
+      "output_scale": 1,
+      "pixel_size": [
+        1920,
+        1280
+      ],
+      "scale_factor": 2
+    },
+    "after_save": {
+      "offset": 0.09375,
+      "before": 0.09375,
+      "sameArticle": true,
+      "sameRow": true,
+      "sameParagraph": true,
+      "scrollTop": 1589,
+      "font": "22px",
+      "dpr": 2
+    },
+    "saved_revision": 2,
+    "local_cancel_candidate": {
+      "preview_id": "d72b8a4e-45b7-41ce-964b-b4630d6ccba7",
+      "expected_preview_revision": 1,
+      "base_revision": 2,
+      "capture": {
+        "capture_ms": 1815.0320669999999,
+        "captured_at": 1790215752729,
+        "display_backend": "GdkWaylandDisplay",
+        "fonts": {
+          "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+          "glyph_fallback": "unknown",
+          "requested": {
+            "line_height": 1.55,
+            "mono_family": [
+              "JetBrains Mono",
+              "Cascadia Mono",
+              "Menlo",
+              "monospace"
+            ],
+            "mono_size": 13,
+            "read_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "read_size": 22,
+            "ui_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "ui_size": 14
+          }
+        },
+        "freshness_marker_verified": true,
+        "logical_size": [
+          960,
+          640
+        ],
+        "output_scale": 1,
+        "pixel_size": [
+          1920,
+          1280
+        ],
+        "scale_factor": 2
+      }
+    },
+    "before_cancel": {
+      "offset": 0.09375,
+      "before": 0.09375,
+      "sameArticle": true,
+      "sameRow": true,
+      "sameParagraph": true,
+      "scrollTop": 1589,
+      "font": "22px",
+      "dpr": 2
+    }
+  },
+  "native_cancel": {
+    "trusted_click": {
+      "trusted": true,
+      "type": "click"
+    },
+    "reader": {
+      "offset": 0.09375,
+      "sameArticle": true,
+      "sameRow": true,
+      "sameParagraph": true
+    },
+    "formal_unchanged": true,
+    "preview_destroyed": true,
+    "save_rejected": {
+      "affected": 0,
+      "error_code": "preview_expired",
+      "ok": false,
+      "retryable": false
+    }
+  },
+  "trusted_click_log": [
+    "2026-09-24T10:09:40.634+08:00 INFO  ui: [ui] T7_LOCAL_CANCEL_4f5c52dd11cc4f66b6f302cdd4b35dd8 {\"trusted\":true,\"type\":\"click\"}"
+  ]
+}
