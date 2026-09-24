@@ -1004,7 +1004,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] Xvfb100%/200%完整主题×模式×场景×双语72组合；当前KDE Wayland200%另36组合，加布局9张，共117图；每档23行为/24像素断言。
 - [x] 真桌面MCP Xvfb100% 25图：HTTP/stdio、临时零写、幂等保存、取消、失权回收、正文1→1。
 - [ ] Open：原生Wayland真实点击取消+正文位置；用户不在场，停止授权重试。辅助DOM测量单独记录，不当成通过。
-- [ ] 第三方GUI客户端、其它平台/空状态专项/原生弹层/读屏器/分数缩放；独立评审由用户安排。
+- [ ] 第三方 GUI 客户端（本轮仅 Codex CLI 收图）、其它平台（Windows/macOS/GNOME-Wayland）、原生弹层（select/字体建议弹窗的深色与键盘路径，本机可验而未验）、其它合成器/跨屏的分数缩放。**已闭合**：空状态专项（36 格 + 变异校验，`empty-state-matrix.md`）、**读屏器（2026-09-25 本机验通，§32 + `screen-reader-results.json`）**、KDE Wayland 125%/150% 与 Xvfb 100%/200% 缩放（`native-settings.md`）。**独立评审已由用户安排并完成**：round 1 FAIL（`4d2c4ff1`）→ round 2 **PASS WITH NOTES**（`4310c308`，0 BLOCKER）。
 
 范围、数据来源、现场单跑脚本与前置条件：[T7执行报告](2026-09-23-theme-preview/t7-aggregate.md)。
 
@@ -1019,6 +1019,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] 原生Wayland输入等原有open item未在本轮复跑；不扩大P2范围。
 
 删改依据、静态检查局限与机器结果见 [P2报告](2026-09-23-theme-preview/p2-contract-cleanup.md)。用户已告知独立评审VERDICT通过；本次不自任独立评审。
+  → **2026-09-25 更正**：该「用户告知的通过」**没有留下任何评审产物**（round 1 评审在 `tracking.json` 里发现同源问题，见 N3）。**有产物的独立裁决是**：fresh `chorus-code-reviewer` 对 ③ 的聚合评审 round 1 **FAIL**（1 BLOCKER，评论 `4d2c4ff1`）→ 修复 `178757a`/`a33f29e`/`13107bc` → round 2 **PASS WITH NOTES**（0 BLOCKER，评论 `4310c308`）。
 
 
 ### 24.10 原生 Wayland 用户在场补验（2026-09-24）
@@ -1088,6 +1089,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] DNS注入、短时限头前/正文超时、429缓存保护与手动恢复、发现错误DTO回归。Rust418/Node47通过，clippy仅原有3警告，i18n485 keys。
 - [x] 重建后Xvfb真实生产30秒正文超时、自签名TLS拒绝、429单次请求、缓存保护及恢复通过；英文档有TLS正对照及无中文诊断断言。
 - [ ] 系统真实DNS、其它TLS错误、代理、Retry-After后台退避及其它产品错误路径全面本地化未验收。
+  → **部分已被取代**（2026-09-24，§29）：代理族 5 码已映射并有双语文案 + 契约测试（变异校验），429/503/404/非 feed 的双语运行时证据见 `2026-09-24-local-acceptance-closeout/error-localization-results.json`；**仍 open**：系统真实 DNS、其它 TLS 错误的**原始后端详情呈现深度**、非抓取类 Rust 文案（全文抓取/AI/命令层）。
 
 [详细报告](2026-09-23-theme-preview/network-error-followup.md)。原始诊断不丢弃，TLS校验不放宽；未使用用户正式库或修改桌面设置。
 
@@ -1097,6 +1099,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 重建后Xvfb英文浅色34项、中文深色24项通过：代理设置保存、路由/绕过/直连、重启保持；英文另含真实30秒超时、TLS拒绝和期限内零请求。
 - [x] 代理夹具：HTTP环境代理/NO_PROXY/407、自定义切换/不可达无回退、HTTPS CONNECT拒绝、AI请求与MCP配置动态回读。
 - [ ] HTTPS代理自身TLS及真实公网成功隧道、认证/SOCKS、原生Wayland与其它平台本轮未验；不将本地夹具结论扩展到这些环境。
+  → **其中「真实公网成功隧道」已于 2026-09-24 补验**（本地 CONNECT 代理日志出现 `github.blog:443` + 经隧道抓回 10 条 + 对照组，见 `2026-09-24-local-acceptance-closeout/https-connect-tunnel-results.json`）；**仍 open**：HTTPS 代理自身 TLS、认证/SOCKS、原生 Wayland 与其它平台。
 - 报告：`2026-09-23-theme-preview/network-proxy-backoff.md`；结果JSON同目录。
 
 ### 24.18 订阅排序、正文安全与数据库持久性
@@ -1115,6 +1118,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] v15覆盖feed_id修复分组首屏查询；真实SQL字节码复现先红、旧索引负对照三档均检出；逐版本迁移自动扩展至v14→v15，原分页矩阵通过。
 - [x] Rust440/0（30段）、Node51/0，clippy原有3警告；脚本AST与git diff --check通过。
 - [ ] release/原生Wayland体感、其它平台、竞品对照与完整外呼抓包尚未验。性能修复尚未重新构建桌面端做整窗测量，不以core测量替代。
+  → **部分已被取代**：完整外呼抓包已做（`scripts/verify-egress-destinations.py`，见 §27）；release 整窗测量已做（② T2：冷 265 / 热 263ms，未达即时，见 §28）；**仍 open**：原生 Wayland 体感、其它平台、竞品对照。
 - 报告与原始JSON：`2026-09-23-theme-preview/scheduler-performance.md`。
 
 ### 24.20 键盘帮助与万篇搜索
@@ -1122,7 +1126,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 补齐`?`双语帮助、智能视图/订阅行键盘聚焦激活、导航焦点交接；负对照与4条新测试。
 - [x] 重建桌面后Xvfb真实Tab/空格/问号/j/Enter/搜索/Esc串联12项通过；万篇稀疏英文FTS热查询2–4ms。
 - [x] Rust440/0，Node55/0；clippy原有3警告，git diff --check通过。
-- [ ] 完整键盘AC、原生Wayland按键、读屏器未闭合；宽泛英文UI搜索和英文/中文core查询见24.23。报告：`2026-09-23-theme-preview/keyboard-search.md`。
+- [ ] **仍未闭合**：原生 Wayland 按键、原生 Wayland 会话下的搜索输入。**已于后续批次验通**：完整键盘串联（`2026-09-24-local-acceptance-closeout/keyboard-mainflow-results.json`，含 `A`=全部标记已读）；**读屏器（2026-09-25 本机验通，§32 + `screen-reader-results.json`）**；宽泛英文 UI 搜索已按 release 口径实测（冷 265 / 热 263ms，**未达「即时」故该口径仍 open**，见 §28）；英文/中文 core 查询见 24.23。报告：`2026-09-23-theme-preview/keyboard-search.md`。
 
 ### 24.21 搜索冷页反例与隔离断网
 
@@ -1172,7 +1176,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 键盘主流程闭环：新增 `A` = 当前视图全部标记已读（与菜单同入口 `markAll`，双语帮助 + 自检守护）；探针 `scripts/verify-keyboard-mainflow.py` exit=0，含库回读 `unread_left=0`、`r` 刷新 30→31 条、`?` 帮助含 `A`。
 - [x] 离线：既有 16 项命名空间证据（`2026-09-23-theme-preview/offline-namespace-results.json`）+ `scripts/verify-thumbnail-offline.py`（列表可读可滚、缩略图静默失败、缓存正文 7344 字可读，`unshare -rn` 单命令可复现）。
 - [x] HTTPS 代理成功隧道：`scripts/verify-https-connect-tunnel.py` exit=0 —— 本地 CONNECT 代理日志出现 `github.blog:443`（证明确实走隧道而非直连），经隧道抓回 10 条；对照组「代理不可达」给出可读 `connection_error` 且缓存 10 条仍在。
-- [ ] **未验（保留 open）**：① **企业证书 / 需要认证的代理**（需真实网关与凭据，本机无此环境）；② 原生 Wayland 会话下的搜索输入；③ release 构建下 10k 库的搜索「即时」口径（core 口径 16–18ms / 65–77ms 已测，release 整窗未测）；④ 读屏器与跨平台缩放。
+- [ ] **未验（保留 open）**：① **企业证书 / 需要认证的代理**（需真实网关与凭据，本机无此环境）；② 原生 Wayland 会话下的搜索输入；③ release 构建下 10k 库的搜索「即时」口径（**已实测**：冷 265 / 热 263ms，未达即时 → 该口径保留 open，见 §28）；④ 跨平台缩放（其它合成器/跨屏；KDE Wayland 125%/150% 与 Xvfb 100%/200% 已验）。**读屏器不在本清单**：已于 2026-09-25 本机验通（§32 + `screen-reader-results.json`，三态之 ①）；其余真 open 的是**真实桌面下的语音/盲文输出与动态播报**。
 
 ## 27. 完整视觉主题 / 设置重构 / MCP 预览批次的台账回写（2026-09-24）
 
