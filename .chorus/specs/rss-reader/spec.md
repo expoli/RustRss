@@ -1,7 +1,7 @@
 ---
 slug: rss-reader
 title: 跨平台 RSS 阅读器（Rust + Tauri 2，AI 双通道）
-status: done
+status: active
 created: 2026-09-20
 ---
 
