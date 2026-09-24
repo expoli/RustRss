@@ -172,6 +172,32 @@ async def main():
             report['geometry_after'] = geom_after
             assert geom_before == geom_after, f'失败图引起了布局跳动: {geom_before} -> {geom_after}'
             report['checks'].append('failed images do not shift list geometry (no layout jump)')
+            # 图片槽位尺寸（成功与失败都要是固定 48px 的盒子，不能塔陷、不能隐身）：
+            # 这也能解释截图：成功图是真实照片，失败图是浏览器的破图占位符，两者占位相同。
+            report['image_boxes'] = await probe.js(
+                "(()=>Array.from(document.querySelectorAll('#entries .entry-thumbnail')).slice(0,4).map(n=>{"
+                "const r=n.getBoundingClientRect();return {id:n.closest('li').dataset.id,"
+                "w:Math.round(r.width),h:Math.round(r.height),display:getComputedStyle(n).display,"
+                "nw:n.naturalWidth,src:n.src.slice(0,60)}}))()")
+            for box in report['image_boxes']:
+                assert box['display'] != 'none' and box['w'] > 0 and box['h'] > 0, \
+                    f'缩略图槽位应恒为可见固定尺寸（失败时也不能塔陷）: {box}'
+            report['checks'].append('thumbnail slots keep a fixed visible box for loaded and failed images alike')
+
+            # 截图**必须在滚动之前**拍，并显式回到列表顶部：失败行（首屏 id 30–27）在视口内，
+            # 滚动后画面只剩无图行（"End of list"），截图中一个失败图都看不到，等于没证据。
+            await probe.js("(()=>{const l=document.getElementById('entries');l.scrollTop=0;return true})()")
+            await asyncio.sleep(.5)
+            if OUT_DIR:
+                OUT_DIR.mkdir(parents=True, exist_ok=True)
+                png = OUT_DIR / 'thumbnail-remote-failures.png'
+                subprocess.run(['import', '-display', env['DISPLAY'], '-window', 'root', str(png)],
+                               check=True, timeout=60)
+                report['screenshot'] = str(png)
+                log_copy = OUT_DIR / 'thumbnail-remote-desktop.log'
+                log_copy.write_text(log_path.read_text()[-20000:])
+                report['app_log'] = str(log_copy)
+            report['checks'].append('failure-state screenshot taken at the top of the list, before scrolling')
 
             # 3) 失败不重建行、列表仍可滚动
             before = await probe.js("Array.from(document.querySelectorAll('#entries li[data-id]')).map(li=>li.dataset.id).join(',')")
@@ -183,16 +209,6 @@ async def main():
             report['scrolled'] = await probe.js("document.getElementById('entries').scrollTop>0")
             assert before == after, '图片失败不应引起列表行重建'
             report['checks'].append('failed images neither rebuilt rows nor blocked scrolling')
-            # AC2 要求「截图 + 日志」：截图给失败态的视觉证据，日志尾随证据一起落盘
-            if OUT_DIR:
-                OUT_DIR.mkdir(parents=True, exist_ok=True)
-                png = OUT_DIR / 'thumbnail-remote-failures.png'
-                subprocess.run(['import', '-display', env['DISPLAY'], '-window', 'root', str(png)],
-                               check=True, timeout=60)
-                report['screenshot'] = str(png)
-                log_copy = OUT_DIR / 'thumbnail-remote-desktop.log'
-                log_copy.write_text(log_path.read_text()[-20000:])
-                report['app_log'] = str(log_copy)
             report['evidence_file'] = write_evidence('thumbnail-remote-results.json', report)
             print(json.dumps(report, ensure_ascii=False))
         finally:

@@ -2,14 +2,16 @@
   "public_image": "https://raw.githubusercontent.com/github/explore/main/topics/rust/rust.png",
   "missing_image": "https://raw.githubusercontent.com/github/explore/main/topics/rust/definitely-missing.png",
   "unreachable_image": "http://10.255.255.1/never.png",
-  "checked_at": "2026-09-24T10:43:10Z",
+  "checked_at": "2026-09-24T10:54:24Z",
   "checks": [
     "public image loaded in the real WebView (lazy, no-referrer)",
     "404 / unreachable / 403-hotlink-rejected images all fail silently",
     "failed images do not shift list geometry (no layout jump)",
+    "thumbnail slots keep a fixed visible box for loaded and failed images alike",
+    "failure-state screenshot taken at the top of the list, before scrolling",
     "failed images neither rebuilt rows nor blocked scrolling"
   ],
-  "forbidden_image": "http://127.0.0.1:33659/forbidden.png",
+  "forbidden_image": "http://127.0.0.1:38337/forbidden.png",
   "entry_ids": [
     30,
     29,
@@ -39,9 +41,43 @@
   },
   "geometry_before": "[[\"30\",124,140],[\"29\",264,140],[\"28\",404,140],[\"27\",544,140],[\"26\",684,101],[\"25\",785,101],[\"24\",886,101],[\"23\",987,101]]",
   "geometry_after": "[[\"30\",124,140],[\"29\",264,140],[\"28\",404,140],[\"27\",544,140],[\"26\",684,101],[\"25\",785,101],[\"24\",886,101],[\"23\",987,101]]",
+  "image_boxes": [
+    {
+      "id": "30",
+      "w": 48,
+      "h": 48,
+      "display": "block",
+      "nw": 288,
+      "src": "https://raw.githubusercontent.com/github/explore/main/topics"
+    },
+    {
+      "id": "29",
+      "w": 48,
+      "h": 48,
+      "display": "block",
+      "nw": 0,
+      "src": "https://raw.githubusercontent.com/github/explore/main/topics"
+    },
+    {
+      "id": "28",
+      "w": 48,
+      "h": 48,
+      "display": "block",
+      "nw": 0,
+      "src": "http://10.255.255.1/never.png"
+    },
+    {
+      "id": "27",
+      "w": 48,
+      "h": 48,
+      "display": "block",
+      "nw": 0,
+      "src": "http://127.0.0.1:38337/forbidden.png"
+    }
+  ],
+  "screenshot": ".chorus/specs/rss-reader/2026-09-24-thumbnail-egress-policy/thumbnail-remote-failures.png",
+  "app_log": ".chorus/specs/rss-reader/2026-09-24-thumbnail-egress-policy/thumbnail-remote-desktop.log",
   "row_ids_before": "30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1",
   "row_ids_after": "30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1",
-  "scrolled": true,
-  "screenshot": ".chorus/specs/rss-reader/2026-09-24-thumbnail-egress-policy/thumbnail-remote-failures.png",
-  "app_log": ".chorus/specs/rss-reader/2026-09-24-thumbnail-egress-policy/thumbnail-remote-desktop.log"
+  "scrolled": true
 }
