@@ -1,0 +1,38 @@
+{
+  "checked_at": "2026-09-24T12:02:48Z",
+  "checks": [
+    "refusal overlay rendered with i18n copy and both actions",
+    "legacy database byte-identical after refusal",
+    "rebuild produced a baseline database (marker + version 1)",
+    "rebuilt database fetched a feed successfully"
+  ],
+  "legacy": {
+    "sha256_before": "ea2da5d5c7e38f77733daf998bae3429d91f8e6639117f269e697ea87e67ed37",
+    "application_id": 0,
+    "user_version": 13,
+    "sha256_after": "ea2da5d5c7e38f77733daf998bae3429d91f8e6639117f269e697ea87e67ed37"
+  },
+  "overlay": {
+    "title": "数据库不兼容，已停止加载",
+    "body": "这个数据库来自旧版本（缺少当前版本的应用标识）。为避免误读旧数据，应用不会打开它。可以先把订阅导出为 OPML，再重建数据目录。",
+    "path": "/tmp/rustrss-legacy-refusal-vvxzzobz/rustrss.sqlite",
+    "export": "导出 OPML",
+    "quit": "退出",
+    "visible": true
+  },
+  "screenshot": ".chorus/specs/rss-reader/2026-09-24-release-schema-baseline/legacy-refusal-overlay.png",
+  "app_log_tail": "libEGL warning: DRI3 error: Could not get DRI3 device\nlibEGL warning: Ensure your X server supports DRI3 to get accelerated rendering\n\n** (rustrss-desktop:2913209): WARNING **: 20:02:48.815: Disabled hardware acceleration because GTK failed to initialize GL: 已通过 GDK_DEBUG 停用 GL 支持.\n",
+  "backup": {
+    "path": "/tmp/rustrss-legacy-refusal-vvxzzobz/RustRss-backup-legacy.sqlite",
+    "sha256": "ea2da5d5c7e38f77733daf998bae3429d91f8e6639117f269e697ea87e67ed37",
+    "readable_pragmas": {
+      "application_id": 0,
+      "user_version": 13
+    }
+  },
+  "rebuilt": {
+    "application_id": 1381192497,
+    "user_version": 1
+  },
+  "rebuilt_entries": 1
+}

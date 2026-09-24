@@ -24,8 +24,12 @@ pub use rustrss_core::RefreshFlight;
 pub const SCHEMA_REFUSED_PREFIX: &str = "数据库不兼容";
 
 /// 这条启动失败是否属于「库不兼容」
+///
+/// 用 `contains` 而不是 `starts_with`：`AppState::open` 会把 Store 错误包成
+/// 「打开数据库失败（路径）: 数据库不兼容: …」，前缀匹配会漏（实测：漏了就会 panic 退出，
+/// 降级界面根本不会出现）。
 pub fn is_schema_refusal(message: &str) -> bool {
-    message.starts_with(SCHEMA_REFUSED_PREFIX)
+    message.contains(SCHEMA_REFUSED_PREFIX)
 }
 
 pub struct AppState {
