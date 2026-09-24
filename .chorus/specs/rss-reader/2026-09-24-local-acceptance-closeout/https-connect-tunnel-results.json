@@ -1,0 +1,19 @@
+{
+  "https_feed": "https://github.blog/feed/",
+  "checked_at": "2026-09-24T12:51:48Z",
+  "checks": [
+    "refresh over a local CONNECT tunnel reached the public HTTPS feed",
+    "unreachable proxy fails readably and cached entries survive"
+  ],
+  "proxy": "http://127.0.0.1:33837",
+  "entries_after_tunnel": 10,
+  "connect_log": [
+    "github.blog:443"
+  ],
+  "refresh_error": null,
+  "control_failure": {
+    "result": "{\"fetched\":0,\"not_modified\":0,\"inserted\":0,\"updated\":0,\"unchanged\":0,\"failures\":[{\"code\":\"connection_error\",\"feed_id\":1,\"url\":\"https://github.blog/feed/\",\"error\":\"连接失败: error sending request for url (https://github.blog/feed/)\"}]}",
+    "entries_still_cached": 10
+  },
+  "screenshot": ".chorus/specs/rss-reader/2026-09-24-local-acceptance-closeout/https-tunnel-list.png"
+}

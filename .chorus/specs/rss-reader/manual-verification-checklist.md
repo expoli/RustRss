@@ -1128,7 +1128,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 - [x] 生产upsert万篇中英文夹具，9类查询结果数/重复ID一致/不带正文断言；SSD每词前mincore零驻留页证据。
 - [x] v15性能反例已复现：宽泛FTS冷查214–238ms，稀疏/无结果单字LIKE冷查661–706ms；零驻留页，不以tmpfs热查替代。v16/v17优化见24.22–24.23。
-- [x] 独立网络命名空间仅lo，真实键盘r刷新失败后仍可j打开缓存，10000条未丢；共15项通过，不改主机网络。
+- [x] 独立网络命名空间仅lo，真实键盘r刷新失败后仍可j打开缓存，10000条未丢；共 **16** 项通过（以 `offline-namespace-results.json` 的 `checks` 长度为准；此前清单写 15、报告写 16，现统一为 16），不改主机网络。
 - [ ] 外部图片离线、原生Wayland/其它平台、逐篇阅读未验。报告：`2026-09-23-theme-preview/search-offline.md`。
 
 ### 24.22 单字搜索索引
@@ -1165,3 +1165,10 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 安全出口：`opml::export_read_only` 对旧库只读导出（零写入、无 WAL 边车、与 `Store` 通路按标题定序等价）；桌面遮罩 + 独立 MCP 二进制 `exit=1` + 可读错误（实测）。
 - [x] 运行时验收 `scripts/verify-legacy-refusal-ui.py`（exit=0）：遮罩渲染 + 旧库 SHA256 不变 + 备份可读 + 重建后 `application_id=0x52535331`/`user_version=1` 且抓取成功；截图与结果 JSON 见 `2026-09-24-release-schema-baseline/`。
 - [ ] **未验（保留 open）**：① 面板上的「导出 OPML」走原生 GTK 保存对话框，无 WM 的 Xvfb 驱动不了 → 只断言按钮存在，导出语义由 core 测试覆盖；② 三平台安装包体积与 CI 结论因 GitHub Actions 账单/消费上限停跑而无法取得（`gh run view 35981648535`）；③ Windows/macOS 上的拒绝界面与只读导出未验。
+
+## 26. 本机可测验收收口：键盘 / 搜索 / 离线与外部图片 / 本地化（2026-09-24-local-acceptance-closeout）
+
+- [x] 键盘主流程闭环：新增 `A` = 当前视图全部标记已读（与菜单同入口 `markAll`，双语帮助 + 自检守护）；探针 `scripts/verify-keyboard-mainflow.py` exit=0，含库回读 `unread_left=0`、`r` 刷新 30→31 条、`?` 帮助含 `A`。
+- [x] 离线：既有 16 项命名空间证据（`2026-09-23-theme-preview/offline-namespace-results.json`）+ `scripts/verify-thumbnail-offline.py`（列表可读可滚、缩略图静默失败、缓存正文 7344 字可读，`unshare -rn` 单命令可复现）。
+- [x] HTTPS 代理成功隧道：`scripts/verify-https-connect-tunnel.py` exit=0 —— 本地 CONNECT 代理日志出现 `github.blog:443`（证明确实走隧道而非直连），经隧道抓回 10 条；对照组「代理不可达」给出可读 `connection_error` 且缓存 10 条仍在。
+- [ ] **未验（保留 open）**：① **企业证书 / 需要认证的代理**（需真实网关与凭据，本机无此环境）；② 原生 Wayland 会话下的搜索输入；③ release 构建下 10k 库的搜索「即时」口径（core 口径 16–18ms / 65–77ms 已测，release 整窗未测）；④ 读屏器与跨平台缩放。
