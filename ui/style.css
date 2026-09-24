@@ -1201,6 +1201,10 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   padding: 24px;
 }
 
+.startup-refusal[hidden] {
+  display: none;
+}
+
 .startup-refusal__card {
   max-width: 560px;
   display: flex;
