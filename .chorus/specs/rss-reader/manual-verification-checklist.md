@@ -1189,3 +1189,10 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 时延实测量与口径标注：宽泛查询冷页 **268ms**、热 **267ms**（200 行封顶页）；单字 CJK 热 **254ms**。库文件每轮新拷贝 → 首查为零驻留页（冷）。
 - [ ] **未达「可感知为即时」** → 全文搜索条目保持 open（core 口径 16–18ms/65–77ms 不能代替 UI 成本）。
 - [ ] **未验（保留 open）**：① 原生 Wayland 会话下的搜索输入（需用户在场）；② fcitx5 / ibus 候选窗与合成输入（外部依赖）；③ release 口径下的 500 源/其它平台整窗表现。
+
+## 29. 剩余错误本地化：代理族码 + 双语运行时证据（2026-09-24-local-acceptance-closeout / 任务 40c124dc）
+
+- [x] **代理族 5 个失败码**接入界面：`proxy_client_lock` / `proxy_client_setup` / `proxy_invalid_url` / `proxy_invalid_config` / `proxy_credentials_not_supported` → `fetchError.*` 双语文案（此前一律落到「抓取失败，请稍后重试」，用户看不出是代理配置坏了）。
+- [x] **契约测试**（机制而非自觉）：`scripts/tests/fetch-error-mapping.test.cjs` —— ① core 能发的码集合必须全被 `fetchFailureMessage` 映射；② 每个映射 key 在两份字典里各有一份。变异校验：删掉 `proxy_client_lock` 那条映射 → 该测试 exit=1；还原 → exit=0。
+- [x] **运行时双语证据**：`scripts/verify-error-localization.py`（本地故障夹具 + 隔离实例 + zh-CN / en 各启动一次）exit=0 —— 429（限流文案）、503、404、非 feed（`parse_error`）在侧栏 tooltip 里**两种语言文案不同**，且库里的 `last_status` 码先被断言为非 ok。
+- [ ] **未验（保留 open）**：① 非抓取类 Rust 文案（全文抓取 / AI / 命令层）仍是中文，需返回错误码由界面翻译；② fcitx5/ibus 候选窗与合成输入；③ DNS/TLS 原始后端详情在界面上的呈现深度；④ 其它平台。

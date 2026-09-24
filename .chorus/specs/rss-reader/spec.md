@@ -132,6 +132,7 @@ created: 2026-09-20
 - [ ] zh-CN 与 en 两份文案的 key 集合完全一致，缺 key 数为 0；界面无硬编码文案
   → **前两项已机械验证**：启动时自检比对两份字典并上报（现 109 个 key，`i18n selftest ok`）；`index.html` 里已无游离在 `data-i18n` 之外的面向用户中文。
   → **仍缺**：Rust 侧的错误文案仍是中文（如「打开数据库失败」「只允许打开 http/https 链接」）。要做得多返回错误码、由界面翻译，本轮未做（已知缺口）。
+  → 2026-09-24 补：**代理族的 5 个失败码**（`proxy_client_lock` / `proxy_client_setup` / `proxy_invalid_url` / `proxy_invalid_config` / `proxy_credentials_not_supported`）已接入 `fetchFailureMessage` 并有 zh-CN/en 双语文案，由 `scripts/tests/fetch-error-mapping.test.cjs` 守契约（码集合必须全被映射 + 两份字典都要有该 key；去掉任一条映射该测试即红）；运行时双语证据（429 / 503 / 404 / 非 feed 解析失败）见 `2026-09-24-local-acceptance-closeout/error-localization-results.json`。**仍缺**：非抓取类 Rust 文案（全文抓取 / AI / 命令层）仍是中文，需返回错误码由界面翻译。
 - [ ] 安装包体积报出实测值（三平台分别记录）
 
 ## Non-goals

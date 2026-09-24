@@ -1,0 +1,71 @@
+{
+  "checked_at": "2026-09-24T13:14:57Z",
+  "binary": "target/release/rustrss-desktop",
+  "locales": {
+    "zh-CN": {
+      "rows": [
+        {
+          "title": "r404",
+          "tooltip": "上次抓取：http_404｜服务器返回 HTTP 404，请稍后重试或检查订阅地址。\n双击可重试",
+          "failed": true
+        },
+        {
+          "title": "r429",
+          "tooltip": "上次抓取：http_429｜服务器限制了请求频率，请稍后再刷新。\n双击可重试",
+          "failed": true
+        },
+        {
+          "title": "r503",
+          "tooltip": "上次抓取：http_503｜服务器返回 HTTP 503，请稍后重试或检查订阅地址。\n双击可重试",
+          "failed": true
+        },
+        {
+          "title": "rhtml",
+          "tooltip": "上次抓取：parse_error｜返回内容不是可解析的订阅源，请检查地址。\n双击可重试",
+          "failed": true
+        }
+      ],
+      "refresh_error": null
+    },
+    "en": {
+      "rows": [
+        {
+          "title": "r404",
+          "tooltip": "Last fetch: http_404 | The server returned HTTP 404. Try later or check the feed address.\nDouble-click to retry",
+          "failed": true
+        },
+        {
+          "title": "r429",
+          "tooltip": "Last fetch: http_429 | The server is limiting requests. Wait before refreshing again.\nDouble-click to retry",
+          "failed": true
+        },
+        {
+          "title": "r503",
+          "tooltip": "Last fetch: http_503 | The server returned HTTP 503. Try later or check the feed address.\nDouble-click to retry",
+          "failed": true
+        },
+        {
+          "title": "rhtml",
+          "tooltip": "Last fetch: parse_error | The response could not be parsed as a feed. Check the address.\nDouble-click to retry",
+          "failed": true
+        }
+      ],
+      "refresh_error": null
+    }
+  },
+  "checks": [
+    "per-feed error text is visible and differs between zh-CN and en"
+  ],
+  "zh": {
+    "r404": "上次抓取：http_404｜服务器返回 HTTP 404，请稍后重试或检查订阅地址。\n双击可重试",
+    "r429": "上次抓取：http_429｜服务器限制了请求频率，请稍后再刷新。\n双击可重试",
+    "r503": "上次抓取：http_503｜服务器返回 HTTP 503，请稍后重试或检查订阅地址。\n双击可重试",
+    "rhtml": "上次抓取：parse_error｜返回内容不是可解析的订阅源，请检查地址。\n双击可重试"
+  },
+  "en": {
+    "r404": "Last fetch: http_404 | The server returned HTTP 404. Try later or check the feed address.\nDouble-click to retry",
+    "r429": "Last fetch: http_429 | The server is limiting requests. Wait before refreshing again.\nDouble-click to retry",
+    "r503": "Last fetch: http_503 | The server returned HTTP 503. Try later or check the feed address.\nDouble-click to retry",
+    "rhtml": "Last fetch: parse_error | The response could not be parsed as a feed. Check the address.\nDouble-click to retry"
+  }
+}

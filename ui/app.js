@@ -604,7 +604,11 @@ function feedRow(f, existing) {
 function fetchFailureMessage(code, fallback = '') {
   const keys = { retry_deferred: 'deferred', timeout: 'timeout', connection_error: 'connection', network_error: 'network',
     redirect_error: 'redirect', invalid_url: 'invalidUrl', too_large: 'tooLarge',
-    body_error: 'body', parse_error: 'parse', no_feed_link: 'noFeed', unexpected_response: 'response' };
+    body_error: 'body', parse_error: 'parse', no_feed_link: 'noFeed', unexpected_response: 'response',
+    // 代理族：core 的 network.rs 会以这五个码回失败，不映射就会落到 fetchError.unknown，
+    // 用户看不出「是代理配置坏了」。码集合由 scripts/tests/fetch-error-mapping.test.cjs 守着。
+    proxy_client_lock: 'proxyLock', proxy_client_setup: 'proxySetup', proxy_invalid_url: 'proxyUrl',
+    proxy_invalid_config: 'proxyConfig', proxy_credentials_not_supported: 'proxyCredentials' };
   if (code === 'http_429') return t('fetchError.rateLimited');
   if (/^http_[45]\d\d$/.test(code || '')) return t('fetchError.http', { status: code.slice(5) });
   // Older versions stored response-body failures as http_2xx. Do not describe
