@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-24T13:05:55Z",
+  "checked_at": "2026-09-24T14:18:57Z",
   "steps": [
     {
       "step": "move j/j/k",
@@ -49,6 +49,8 @@
       "help_chars": 522
     }
   ],
+  "binary": "target/debug/rustrss-desktop",
+  "binary_mtime": "2026-09-24T22:18:55",
   "checks": [
     "full keyboard chain (move/open/back/view/search/read/refresh/mark-all-read)",
     "help dialog and the in-app shortcut selftest agree with the handler"

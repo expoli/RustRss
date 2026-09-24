@@ -1,24 +1,25 @@
 {
   "binary": "target/release/rustrss-desktop",
   "build_kind": "release",
-  "checked_at": "2026-09-24T13:23:27Z",
+  "binary_mtime": "2026-09-24T21:25:02",
+  "checked_at": "2026-09-24T14:19:07Z",
   "queries": {
     "broad_cold": {
       "needle": "common",
       "cache": "冷(SQLite 连接级：库文件每轮新拷贝；OS 页缓存不保证冷)",
-      "ui_ms": 283,
+      "ui_ms": 265.0,
       "rows": 200
     },
     "broad_warm": {
       "needle": "common",
       "cache": "warm(同进程二次查询)",
-      "ui_ms": 267,
+      "ui_ms": 263,
       "rows": 200
     },
     "single_char_warm": {
       "needle": "稀",
       "cache": "warm",
-      "ui_ms": 255.0,
+      "ui_ms": 255,
       "rows": 1
     }
   },
@@ -26,9 +27,9 @@
     "WebView input -> list render end-to-end for broad and single-char queries"
   ],
   "samples": {
-    "broad_cold_ms": 283,
-    "broad_warm_ms": 267,
-    "single_char_warm_ms": 255.0
+    "broad_cold_ms": 265.0,
+    "broad_warm_ms": 263,
+    "single_char_warm_ms": 255
   },
   "screenshot": null,
   "screenshot_note": "无 WM 的 Xvfb 中 import 取帧不可靠（不同探针产出逐字节相同的 PNG），故不作像素证据；本任务证据为 DOM/MutationObserver + SQLite 回读"

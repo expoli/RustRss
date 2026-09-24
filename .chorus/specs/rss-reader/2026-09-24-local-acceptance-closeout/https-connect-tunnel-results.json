@@ -1,11 +1,13 @@
 {
+  "binary": "target/release/rustrss-desktop",
+  "binary_mtime": "2026-09-24T21:25:02",
   "https_feed": "https://github.blog/feed/",
-  "checked_at": "2026-09-24T13:22:30Z",
+  "checked_at": "2026-09-24T14:17:49Z",
   "checks": [
     "refresh over a local CONNECT tunnel reached the public HTTPS feed",
     "unreachable proxy fails readably and cached entries survive"
   ],
-  "proxy": "http://127.0.0.1:36951",
+  "proxy": "http://127.0.0.1:40239",
   "entries_after_tunnel": 10,
   "connect_log": [
     "github.blog:443"
@@ -15,5 +17,6 @@
     "result": "{\"fetched\":0,\"not_modified\":0,\"inserted\":0,\"updated\":0,\"unchanged\":0,\"failures\":[{\"code\":\"connection_error\",\"feed_id\":1,\"url\":\"https://github.blog/feed/\",\"error\":\"连接失败: error sending request for url (https://github.blog/feed/)\"}]}",
     "entries_still_cached": 10
   },
-  "screenshot": null
+  "screenshot": null,
+  "screenshot_note": "无 WM 的 Xvfb 中 import 取帧不可靠（实测不同探针产出逐字节相同的 PNG），故不作像素证据；本任务证据为代理日志 + 抓取计数 + DOM/库回读"
 }

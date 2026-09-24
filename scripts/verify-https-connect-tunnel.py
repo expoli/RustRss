@@ -123,7 +123,9 @@ def stop(proc):
 
 
 async def main():
-    report = {'https_feed': HTTPS_FEED,
+    binary = Path('target/release/rustrss-desktop')
+    report = {'binary': str(binary),
+              'binary_mtime': datetime.fromtimestamp(binary.stat().st_mtime).isoformat(timespec='seconds'),'https_feed': HTTPS_FEED,
               'checked_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'checks': []}
     proxy = ConnectProxy(('127.0.0.1', 0), ConnectHandler)
     proxy_port = proxy.server_address[1]
@@ -208,6 +210,8 @@ async def main():
             report['checks'].append('unreachable proxy fails readably and cached entries survive')
             # 像素证据不可靠（见搜索探针的说明）：无 WM 的 Xvfb 会取到陈旧帧
             report['screenshot'] = None
+            report['screenshot_note'] = ('无 WM 的 Xvfb 中 import 取帧不可靠（实测不同探针产出逐字节相同的 PNG），'
+                                         '故不作像素证据；本任务证据为代理日志 + 抓取计数 + DOM/库回读')
             report['evidence_file'] = write_evidence('https-connect-tunnel-results.json', report)
             print(json.dumps(report, ensure_ascii=False))
         finally:

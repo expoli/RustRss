@@ -106,7 +106,10 @@ async def main():
                 env['DISPLAY'] = ':' + pipe.readline().strip()
             log_path = root / 'desktop.log'
             with log_path.open('w') as log:
-                app = subprocess.Popen(['target/debug/rustrss-desktop'], env=env, stdout=log, stderr=log,
+                binary = Path('target/debug/rustrss-desktop')
+                report['binary'] = str(binary)
+                report['binary_mtime'] = datetime.fromtimestamp(binary.stat().st_mtime).isoformat(timespec='seconds')
+                app = subprocess.Popen([str(binary)], env=env, stdout=log, stderr=log,
                                        start_new_session=True)
             window = None
             for _ in range(200):

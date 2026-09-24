@@ -96,6 +96,7 @@ MEASURE_JS = """(()=>{
 async def main():
     binary, build_kind = pick_binary()
     report = {'binary': binary, 'build_kind': build_kind,
+              'binary_mtime': datetime.fromtimestamp(Path(binary).stat().st_mtime).isoformat(timespec='seconds'),
               'checked_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
               'queries': {}, 'checks': []}
     with tempfile.TemporaryDirectory(prefix='rustrss-search-e2e-') as temporary:

@@ -78,7 +78,7 @@ created: 2026-09-20
 - [x] 深浅色主题跟随系统，也可手动固定；选择跨会话保持
 - [x] 字体可配置（设置 → 通用 → 字体）：界面 / 正文 / 等宽三类字体族互相独立（默认内置字体栈，正文字体跟随界面字体）；正文字号 13–18px、行高 1.5–1.8 可调；CSS 变量驱动，改完即时生效、无需重启，重启后保持；Linux 枚举 fontconfig 系统字体（`fc-list`，超时/失败降级为空表），Windows / macOS 本版只支持「跟随系统」；字号/行高滑块拖动即时预览、松手才写库；i18n 双语
 - [x] 键盘可完成主流程：上下移动、打开、返回、切换视图、搜索、标记已读、刷新、**全部标记已读**；`?` 显示快捷键一览（2026-09-24：新增 `A` = 当前视图全部已读（与菜单同入口），探针 `scripts/verify-keyboard-mainflow.py` 在隔离实例里跑通全串联——j/j/k 移动、Enter 打开（正文 + 库回读已读 +1）、Esc 返回、`U` 只看未读、`/` 搜索无匹配词过滤到 0 行且 Esc 恢复、`u` 库回读 3→2、`r` 从本地 feed 抓回 30→31、**`A` 后库回读 `unread_left=0`**、`?` 帮助含 `A` 且日志有 `shortcut selftest ok`；见 `2026-09-24-local-acceptance-closeout/keyboard-mainflow-results.json`。**仍未验**：原生 Wayland 会话输入、读屏器）
-  → 2026-09-24补齐`?`弹窗与侧栏Tab/Enter/空格，Xvfb真实按键验证视图切换、j/Enter打开、搜索与Esc；完整批量菜单/刷新串联及原生Wayland仍待验，见keyboard-search.md。
+  → 2026-09-24补齐`?`弹窗与侧栏Tab/Enter/空格，Xvfb真实按键验证视图切换、j/Enter打开、搜索与Esc；完整批量菜单/刷新串联及原生Wayland仍待验，见keyboard-search.md（**已被取代**：2026-09-24 的 `scripts/verify-keyboard-mainflow.py` 已在隔离实例里验完整串联——j/k 移动、Return 打开、Esc 返回、U 未读过滤、搜索 0 行过滤与 Esc 恢复、u 3→2、r 30→31、`A` 后库回读未读=0、`?` 含 A 且日志有 `shortcut selftest ok`；**原生 Wayland 仍 open**，见本条目下方的 open 注记）。
 - [ ] 全文搜索（标题 + 正文）可返回结果并按相关度/时间排序，10k 篇文章库内查询响应可感知为即时
   → 2026-09-24万篇SSD冷页反例：宽泛FTS214–238ms，稀疏/无结果中文单字LIKE661–706ms；即时性能未闭合，见search-offline.md。
   → v16单字候选索引后稀疏/无结果冷查16–18ms；v17相关度查询延迟读取文章元数据后，宽泛FTS首次65–77ms、热查约25ms；Xvfb桌面键入到200行渲染95ms。计划负对照及结果顺序/隐藏已读回归通过；原生Wayland/release/其它平台仍待验，AC保持开放，见search-unigrams.md。
