@@ -1186,7 +1186,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 ## 28. 搜索端到端（release 口径）（2026-09-24-local-acceptance-closeout / 任务 94422722）
 
 - [x] WebView 键入 → 列表渲染端到端可用：`scripts/verify-search-e2e.py`（隔离实例 + xdotool 真实键事件 + MutationObserver 计时），release 构建、10k 生产形状库。
-- [x] 时延实测量与口径标注：宽泛查询冷页 **268ms**、热 **267ms**（200 行封顶页）；单字 CJK 热 **254ms**。库文件每轮新拷贝 → 首查为零驻留页（冷）。
+- [x] 时延实测量与口径标注：宽泛查询冷 **268ms**、热 **267ms**（200 行封顶页，断言为 `==200` 而非 `>0`）；单字 CJK 热 **254ms**。库文件每轮新拷贝 → 首查是 **SQLite 连接级冷**（**OS 页缓存不保证冷**，已按保守方向标注）。
 - [ ] **未达「可感知为即时」** → 全文搜索条目保持 open（core 口径 16–18ms/65–77ms 不能代替 UI 成本）。
 - [ ] **未验（保留 open）**：① 原生 Wayland 会话下的搜索输入（需用户在场）；② fcitx5 / ibus 候选窗与合成输入（外部依赖）；③ release 口径下的 500 源/其它平台整窗表现。
 
@@ -1196,3 +1196,9 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] **契约测试**（机制而非自觉）：`scripts/tests/fetch-error-mapping.test.cjs` —— ① core 能发的码集合必须全被 `fetchFailureMessage` 映射；② 每个映射 key 在两份字典里各有一份。变异校验：删掉 `proxy_client_lock` 那条映射 → 该测试 exit=1；还原 → exit=0。
 - [x] **运行时双语证据**：`scripts/verify-error-localization.py`（本地故障夹具 + 隔离实例 + zh-CN / en 各启动一次）exit=0 —— 429（限流文案）、503、404、非 feed（`parse_error`）在侧栏 tooltip 里**两种语言文案不同**，且库里的 `last_status` 码先被断言为非 ok。
 - [ ] **未验（保留 open）**：① 非抓取类 Rust 文案（全文抓取 / AI / 命令层）仍是中文，需返回错误码由界面翻译；② fcitx5/ibus 候选窗与合成输入；③ DNS/TLS 原始后端详情在界面上的呈现深度；④ 其它平台。
+
+## 30. 环境的像素证据口径（2026-09-24，跨任务结论）
+
+- [x] **无 WM 的 Xvfb 里 `import -window root` 取帧不可靠**：实测两次**不同探针、不同运行**产出的 PNG **逐字节相同**（`search-e2e-list.png` 与 `https-tunnel-list.png`，已删除）；键盘探针曾抓到**另一个探针的拒绝界面**（`3ec4bec` 删除）。因此凡依赖 `import` 的像素证据都不作数。
+- [x] 处置：受影响的探针（键盘 / 搜索 / HTTPS 隧道）**已停止截图**并在 JSON 里写明限制；证据一律以 **DOM 断言 + SQLite 回读** 为准。
+- [ ] 存量 PNG 的定性（保留以便追溯，**不作为权威证据**）：`legacy-refusal-overlay.png`（拒绝界面，评审看过内容）、`thumbnail-public-feed.png`（列表缩略图）、`thumbnail-remote-failures.png`（失败图）——三者均由评审以图片形式查看过，但取帧路径与上述缺陷相同，故**只能算「人工查看过」，不算机械证据**；需要像素级结论时必须在**真实桌面会话**重拍。

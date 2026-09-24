@@ -1,24 +1,24 @@
 {
   "binary": "target/release/rustrss-desktop",
   "build_kind": "release",
-  "checked_at": "2026-09-24T13:12:46Z",
+  "checked_at": "2026-09-24T13:23:27Z",
   "queries": {
     "broad_cold": {
       "needle": "common",
-      "cache": "cold(新拷贝库,零驻留页)",
-      "ui_ms": 268,
+      "cache": "冷(SQLite 连接级：库文件每轮新拷贝；OS 页缓存不保证冷)",
+      "ui_ms": 283,
       "rows": 200
     },
     "broad_warm": {
       "needle": "common",
       "cache": "warm(同进程二次查询)",
-      "ui_ms": 267.0,
+      "ui_ms": 267,
       "rows": 200
     },
     "single_char_warm": {
       "needle": "稀",
       "cache": "warm",
-      "ui_ms": 254,
+      "ui_ms": 255.0,
       "rows": 1
     }
   },
@@ -26,9 +26,10 @@
     "WebView input -> list render end-to-end for broad and single-char queries"
   ],
   "samples": {
-    "broad_cold_ms": 268,
-    "broad_warm_ms": 267.0,
-    "single_char_warm_ms": 254
+    "broad_cold_ms": 283,
+    "broad_warm_ms": 267,
+    "single_char_warm_ms": 255.0
   },
-  "screenshot": ".chorus/specs/rss-reader/2026-09-24-local-acceptance-closeout/search-e2e-list.png"
+  "screenshot": null,
+  "screenshot_note": "无 WM 的 Xvfb 中 import 取帧不可靠（不同探针产出逐字节相同的 PNG），故不作像素证据；本任务证据为 DOM/MutationObserver + SQLite 回读"
 }

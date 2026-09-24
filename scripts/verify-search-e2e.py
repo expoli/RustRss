@@ -4,7 +4,7 @@
 
 口径（AC2 要求「标注构建类型与冷页/热缓存」）：
 - 被测二进制由 `--bin` 决定（默认 `target/release/rustrss-desktop`，缺则退 debug 并在报告里**如实标注**）；
-- 库用 `search_scale init` 生成的 **10k 篇**生产形状夹具，每轮拷一份**新文件**（SSD 零驻留页）→ 首个查询算冷页；
+- 库用 `search_scale init` 生成的 **10k 篇**生产形状夹具，每轮拷一份**新文件** → 首个查询是 **SQLite 连接级冷**（OS 页缓存不保证冷，已按保守方向标注）；
 - 同一进程内的后续查询算热缓存；
 - 时延口径 = **输入事件 → 列表完成渲染**（MutationObserver + performance.now），与既有脚本同源。
 
@@ -161,20 +161,21 @@ async def main():
                 await probe.until("document.querySelectorAll('#entries li[data-id]').length>1")
                 return data
 
-            first = await measure('broad_cold', BROAD, 'cold(新拷贝库,零驻留页)')
+            first = await measure('broad_cold', BROAD, '冷(SQLite 连接级：库文件每轮新拷贝；OS 页缓存不保证冷)')
             second = await measure('broad_warm', BROAD, 'warm(同进程二次查询)')
             third = await measure('single_char_warm', NARROW, 'warm')
-            assert first['count'] > 0 and second['count'] > 0, '宽泛查询应渲染出结果'
+            assert first['count'] == 200 and second['count'] == 200, \
+            f'宽泛查询应渲染封顶的 200 行（而非仅 >0）: {first["count"]}/{second["count"]}'
+            assert third['count'] >= 1, f'单字查询应至少 1 行: {third["count"]}'
             report['checks'].append('WebView input -> list render end-to-end for broad and single-char queries')
             report['samples'] = {'broad_cold_ms': report['queries']['broad_cold']['ui_ms'],
                                  'broad_warm_ms': report['queries']['broad_warm']['ui_ms'],
                                  'single_char_warm_ms': report['queries']['single_char_warm']['ui_ms']}
-            if OUT_DIR:
-                OUT_DIR.mkdir(parents=True, exist_ok=True)
-                png = OUT_DIR / 'search-e2e-list.png'
-                subprocess.run(['import', '-display', env['DISPLAY'], '-window', 'root', str(png)],
-                               check=True, timeout=60)
-                report['screenshot'] = str(png)
+            # 不落像素证据：无 WM 的 Xvfb 里 `import -window root` 会拿到陈旧帧
+            # （实测：本探针与 HTTPS 隧道探针两次不同运行产出的 PNG **逐字节相同**）。
+            report['screenshot'] = None
+            report['screenshot_note'] = ('无 WM 的 Xvfb 中 import 取帧不可靠（不同探针产出逐字节相同的 PNG），'
+                                         '故不作像素证据；本任务证据为 DOM/MutationObserver + SQLite 回读')
             report['evidence_file'] = write_evidence('search-e2e-results.json', report)
             print(json.dumps(report, ensure_ascii=False))
         finally:

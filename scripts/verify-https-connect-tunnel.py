@@ -206,12 +206,8 @@ async def main():
             assert 'connection_error' in failed, f'代理不可用应给出可读的 connection_error: {failed}'
             assert after_failure >= got, '代理不可用时已缓存条目必须仍在'
             report['checks'].append('unreachable proxy fails readably and cached entries survive')
-            if OUT_DIR:
-                OUT_DIR.mkdir(parents=True, exist_ok=True)
-                png = OUT_DIR / 'https-tunnel-list.png'
-                subprocess.run(['import', '-display', env['DISPLAY'], '-window', 'root', str(png)],
-                               check=True, timeout=60)
-                report['screenshot'] = str(png)
+            # 像素证据不可靠（见搜索探针的说明）：无 WM 的 Xvfb 会取到陈旧帧
+            report['screenshot'] = None
             report['evidence_file'] = write_evidence('https-connect-tunnel-results.json', report)
             print(json.dumps(report, ensure_ascii=False))
         finally:
