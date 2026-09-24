@@ -1631,7 +1631,7 @@ function selfTestShortcutKeys() {
     seen.add(k);
   }
   if (!seen.has('t')) problems.push('缺少 t 快捷键');
-  for (const k of ['j', 'k', 'u', 's', 'l', 'r', 'g', 'G', 'U']) {
+  for (const k of ['j', 'k', 'u', 's', 'l', 'r', 'g', 'G', 'U', 'A']) {
     if (!seen.has(k)) problems.push(`既有键位丢失: ${k}`);
   }
   log(
@@ -4722,6 +4722,10 @@ function onGlobalKeydown(e) {
       case 't': e.preventDefault(); openTagPicker(state.readerEntry?.id ?? state.selectedId ?? state.entries[0]?.id).catch((err) => setStatus(err.message, true)); break;
       // 大写 U = 「只看未读」列表总开关（小写 u 是切换当前这篇的已读态，两者语义正交）
       case 'U': e.preventDefault(); toggleUnreadOnly().catch((err) => setStatus(err.message, true)); break;
+      // 大写 A = 「当前视图全部标为已读」（与菜单里的同名动作同一个入口 markAll）。
+      // 用小写 a 容易误触（它是高频字母），且「全部已读」是不可逆的批量操作，
+      // 跟 U / G 一样用大写。markAll 内部按当前视图 scope 走，无额外确认弹窗。
+      case 'A': e.preventDefault(); markAll(true).catch((err) => setStatus(err.message, true)); break;
       case 'r': e.preventDefault(); doRefresh(); break;
       case 'g': e.preventDefault(); jump(false); break;
       case 'G': e.preventDefault(); jump(true); break;

@@ -180,9 +180,9 @@ const DICTS = {
     'tags.reorderFailed': '标签顺序未保存：{error}',
 
     'reader.empty': '从中间列表选一篇文章。',
-    'reader.shortcuts': '快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除',
+    'reader.shortcuts': '快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · A 全部标为已读 · r 刷新 · / 搜索 · Esc 清除',
     'keyboard.title': '快捷键一览',
-    'keyboard.extra': 'g 首篇 · G 末篇 · U 只看未读 · ? 打开此帮助',
+    'keyboard.extra': 'g 首篇 · G 末篇 · U 只看未读 · A 全部标为已读（当前视图） · ? 打开此帮助',
     'keyboard.navigation': 'Tab / Shift+Tab 移动焦点，Enter / 空格激活按钮。可聚焦侧栏切换视图，或在列表批量操作菜单中标记当前视图全部已读。Esc 关闭弹窗；搜索或标签视图中返回未读。输入文字时不触发全局快捷键。',
     'reader.markRead': '标为已读',
     'reader.markUnread': '标为未读',
@@ -723,10 +723,10 @@ const DICTS = {
 
     'reader.empty': 'Pick an article from the list.',
     'keyboard.title': 'Keyboard shortcuts',
-    'keyboard.extra': 'g First article · G Last article · U Unread only · ? Open this help',
+    'keyboard.extra': 'g First article · G Last article · U Unread only · A Mark this view read · ? Open this help',
     'keyboard.navigation': 'Tab / Shift+Tab moves focus; Enter / Space activates buttons. Focus the sidebar to switch views, or use the list bulk menu to mark the current view read. Esc closes dialogs or returns from search and tags to Unread. Global shortcuts stay inactive while typing.',
     'reader.shortcuts':
-      'Shortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear',
+      'Shortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · A mark this view read · r refresh · / search · Esc clear',
     'reader.markRead': 'Mark read',
     'reader.markUnread': 'Mark unread',
     'reader.addStar': 'Star',

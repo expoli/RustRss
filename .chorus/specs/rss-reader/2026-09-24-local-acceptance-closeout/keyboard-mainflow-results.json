@@ -1,0 +1,60 @@
+{
+  "checked_at": "2026-09-24T12:50:37Z",
+  "steps": [
+    {
+      "step": "move j/j/k",
+      "sel1": "29",
+      "sel2": "28",
+      "sel3_back": "29"
+    },
+    {
+      "step": "move k back"
+    },
+    {
+      "step": "Enter opens article",
+      "article_chars": 7344,
+      "read_in_db": 2
+    },
+    {
+      "step": "Escape returns to list (selection kept)"
+    },
+    {
+      "step": "U unread-only toggle",
+      "aria_pressed": "true"
+    },
+    {
+      "step": "search filters list",
+      "rows": 30
+    },
+    {
+      "step": "Escape clears search"
+    },
+    {
+      "step": "u toggles read",
+      "read_before": 3,
+      "read_after": 2
+    },
+    {
+      "step": "r refreshes",
+      "entries_before": 30,
+      "entries_after": 31
+    },
+    {
+      "step": "A marks all read",
+      "unread_left": 0
+    },
+    {
+      "step": "? help lists A",
+      "help_chars": 522
+    }
+  ],
+  "checks": [
+    "full keyboard chain (move/open/back/view/search/read/refresh/mark-all-read)",
+    "help dialog and the in-app shortcut selftest agree with the handler"
+  ],
+  "screenshot": ".chorus/specs/rss-reader/2026-09-24-local-acceptance-closeout/keyboard-mainflow-help.png",
+  "fixture": {
+    "entries_before": 30,
+    "entries_after": 31
+  }
+}
