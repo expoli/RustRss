@@ -151,7 +151,10 @@ documentUuid:
 ## 9. 待用户决策
 
 1. **应用名与包名**（影响 crate 名、bundle id、数据目录，越早定越省事）。
-2. **许可证**（folo 为 AGPL-3.0，MrRSS/Papr 为 GPL 系；选 AGPL 会限制闭源与上架，选 MIT/Apache 更宽松）。
+2. ~~**许可证**（folo 为 AGPL-3.0，MrRSS/Papr 为 GPL 系；选 AGPL 会限制闭源与上架，选 MIT/Apache 更宽松）。~~
+   **已决策（2026-09-24）：改为 AGPL-3.0-or-later + 商业授权双轨**（原 MIT OR Apache-2.0 仅对切换前版本有效）。
+   决策理由、剔除的备选方案与依赖兼容性复核见 `.chorus/specs/rss-reader/2026-09-24-license-policy/adr.md`；
+   落地面见同目录 `prd.md`。已知代价：不上 Mac App Store；排除 copyleft 的企业需购买商业授权。
 3. **定位是「自用」还是「发布」**——直接决定签名/公证、自动更新、i18n 完整度、文档与 issue 模板的投入。
 4. **是否在本仓建 Chorus 项目并把本文件镜像为 Document**（当前 `proposalUuid` / `documentUuid` 为空，尚未镜像）。
 5. **首次提交的 JIRA ID**：仓库仍无任何 commit。按提交规范需要 JIRA ID，或你明确同意用 `[cr_id_skip]`。

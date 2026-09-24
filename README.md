@@ -43,4 +43,10 @@ RustRss 面向 Linux、Windows 和 macOS 桌面。已发布的安装包和版本
 
 ## 许可证
 
-[MIT](LICENSE-MIT) OR [Apache-2.0](LICENSE-APACHE)
+[AGPL-3.0-or-later](LICENSE)：任何人可自由使用、修改、分发，**包括商业用途**；附加的唯一约束是源码开放义务（第 4、5、13 条）。因此若你修改 RustRss 并以网络服务形式对外提供，需向使用者提供完整的对应源码（本仓库即为对应源码）。
+
+**需要闭源分发、把修改版作为商业产品出货，或不愿承担源码开放义务**时，请另行取得[商业授权](LICENSE-COMMERCIAL.md)。
+
+- 历史版本（提交 `cfaf0dc` 及更早，含切换前的 `nightly` 安装包）仍按 MIT OR Apache-2.0 授权，其授权不可撤销，文本见 [`LICENSES/`](LICENSES/README.md)。
+- 版权许可不授予商标权，修改版分发请遵守[商标政策](TRADEMARK.md)。
+- 贡献代码前请阅读[贡献指南](CONTRIBUTING.md) 中的贡献授权条款。
