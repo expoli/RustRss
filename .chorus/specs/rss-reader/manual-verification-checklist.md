@@ -1172,3 +1172,13 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 离线：既有 16 项命名空间证据（`2026-09-23-theme-preview/offline-namespace-results.json`）+ `scripts/verify-thumbnail-offline.py`（列表可读可滚、缩略图静默失败、缓存正文 7344 字可读，`unshare -rn` 单命令可复现）。
 - [x] HTTPS 代理成功隧道：`scripts/verify-https-connect-tunnel.py` exit=0 —— 本地 CONNECT 代理日志出现 `github.blog:443`（证明确实走隧道而非直连），经隧道抓回 10 条；对照组「代理不可达」给出可读 `connection_error` 且缓存 10 条仍在。
 - [ ] **未验（保留 open）**：① **企业证书 / 需要认证的代理**（需真实网关与凭据，本机无此环境）；② 原生 Wayland 会话下的搜索输入；③ release 构建下 10k 库的搜索「即时」口径（core 口径 16–18ms / 65–77ms 已测，release 整窗未测）；④ 读屏器与跨平台缩放。
+
+## 27. 完整视觉主题 / 设置重构 / MCP 预览批次的台账回写（2026-09-24）
+
+本批（2026-09-23-theme-preview，T1–T7 及后续网络/搜索/缩略图）**没有 Chorus proposal/task**，交付以提交 + 该目录产物留痕；本节把「已交付」与「未验」按证据分开登记，避免台账与证据再次不一致。
+
+- [x] 三套整套视觉预设与用户覆盖、UI/MCP 共用校验/CAS/版本/恢复（spec.md:160 已勾选并引四条证据）。
+- [x] 空/错误状态：无订阅 / 无搜索匹配 / 首次抓取失败不误报，失败保留缓存（`empty-error-states.md`）。
+- [x] 分数缩放：KDE Wayland 125%/150% 与 Xvfb 100%/200%（`native-settings.md`）；原生 Wayland 真实点击取消 + 正文位置（`t7-wayland-input-results.json`，用户在场补验）。
+- [x] MCP 预览文件契约：绝对路径 + 到期时间、尺寸/体积/配额/TTL 回收（`mcp-preview-files.md`）。
+- [ ] **未验（保留 open，全部环境/他人依赖）**：① Windows/macOS 原生截图与真实客户端闭环；② 第三方 GUI 客户端（本轮仅 Codex CLI 收图）；③ GNOME / 无 XWayland / 读屏器；④ **用户侧独立聚合评审**（T7 报告明确 fresh reviewer 由用户另派，未派）；⑤ 企业证书/认证代理（与 §26 同源）。

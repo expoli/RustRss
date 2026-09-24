@@ -157,7 +157,7 @@ created: 2026-09-20
 
 - [x] 主题/设置/MCP 预览方案与任务草案落库；Linux 独立 WebKitGTK 原生截图探针成功（6 次，固定示例；仅底层可行性，不代表 Tauri/MCP 产品交付）。
 - [x] Linux Tauri 隔离截图 example 在 Xvfb 100%/200% 各完成 100 帧像素验证，覆盖隐藏/尺寸与字节预算/超时/失效版本/并发/关闭错误；可选 feature，不接入正式产品。证据见 [T1 报告](2026-09-23-theme-preview/tauri-capture-spike.md)；Windows/macOS/Wayland 与真实 WM 最小化未验收。
-- [ ] 三套整套视觉预设与用户覆盖，统一配色/字体/列表/阅读区参数；UI/MCP 共用校验/迁移/版本/恢复。
+- [x] 三套整套视觉预设与用户覆盖，统一配色/字体/列表/阅读区参数；UI/MCP 共用校验/迁移/版本/恢复（2026-09-23/24 交付：core 三预设+明暗+严格 patch+CAS+历史恢复见 [core 交付](2026-09-23-theme-preview/core-theme-model.md)；UI 接入见 [T3](2026-09-23-theme-preview/shared-theme-renderer.md)；MCP 五工具共用校验/CAS/历史见 [MCP 配置](2026-09-23-theme-preview/mcp-theme-config.md)；截图文件版本/配额/TTL 见 [文件契约](2026-09-23-theme-preview/mcp-preview-files.md)）
 - [x] T2 core 数据模型与存储：三预设明暗值、严格 patch 校验、旧设置只读映射、CAS/同值零写、最近 10 份历史与单调恢复；13 项专项测试覆盖。当时仅 core，后续 UI/MCP 接入见 T3/T5；见 [core 交付](2026-09-23-theme-preview/core-theme-model.md)。
 - [x] 当前 KDE 原生 Wayland 的隔离截图探针通过 100 帧与 8 类边界检查；实际 GdkWaylandDisplay，WebView 内容尺寸与 JS viewport/DPR 相符，修正装饰区域导致的尺寸误报。仅当前会话验收，跨屏/GNOME/真实最小化/生产 MCP 仍未验收，见 [Wayland 证据](2026-09-23-theme-preview/wayland-snapshot-results.json)。
 - [x] T3 UI 接入 core：现有主题/字体设置统一存储，三套预设选择、共享语义 CSS 参数与真实组件 fixture、同值零写/阅读锚点保护；Linux X11/当前 KDE Wayland 专项验证见 [T3 报告](2026-09-23-theme-preview/shared-theme-renderer.md)。
@@ -165,14 +165,14 @@ created: 2026-09-20
 - [x] T4 设置七类重组、独立外观页与 Aa 共用排版、草稿预览/保存/历史恢复；旧非主题控件 ID 保留，批量操作移至列表头。Linux Xvfb 真产物七类键盘导航/焦点回环与双语检查通过，见 [T4 证据](2026-09-23-theme-preview/t4-settings.md)。跨平台和读屏器未验收。
 - [x] T6 Linux：MCP 临时修改→真实组件渲染→PNG 与版本→再调整→保存/取消；内嵌与独立 stdio 同库桥接验证通过，见 [T6 报告](2026-09-23-theme-preview/mcp-theme-preview.md)。其它平台及第三方 GUI 客户端未验收。
 - [x] T6 Linux：临时配置不落库、CAS 防覆盖、ready/原生像素双确认、超时取消与失权回收；Xvfb 正文无重建。TTL 用时钟边界测试，未做 30 分钟墙钟长测；阅读锚点由 T3 复用，Wayland 正文位置未在 T6 重验。
-- [ ] Windows/macOS/Linux X11/Wayland 原生截图及真实客户端闭环完成运行验证；图片尺寸/体积有界。
+- [ ] Windows/macOS/Linux X11/Wayland 原生截图及真实客户端闭环完成运行验证；图片尺寸/体积有界。（**已验**：Linux X11/Xvfb 100%/200% 像素验证 + 当前 KDE Wayland 原生探针 100 帧；截图**尺寸/体积有界**已在文件契约里落地[文件契约](2026-09-23-theme-preview/mcp-preview-files.md)。**未验**：Windows/macOS 原生截图与真实客户端闭环 → 环境依赖，保留 open）
 
 - [x] T5 MCP 主题配置五工具：共用 core 校验/CAS/历史；默认权限、轮换、审计；内嵌事件与独立 stdio 前台轮询同步，Linux Xvfb 真产物验证见 [T5 报告](2026-09-23-theme-preview/mcp-theme-config.md)。本项不代表截图接口或跨平台验收。
 
 - [x] T7 跨阶段契约修复：固定预览适配 T4 共享外观编辑器与资源协议；ID/脚本/CSS token 回归测试，重建后 Linux MCP 25 图通过。
 - [x] T7 共享组件完整矩阵：三预设×明暗×三场景×双语，在 Xvfb 100%/200% 覆盖72组合；当前 KDE Wayland 200%另36组合，见 [T7报告](2026-09-23-theme-preview/t7-aggregate.md)。
 - [x] T7 原生 Wayland 真实点击取消 + 正文位置：2026-09-24 用户在场补验通过，isTrusted=true、取消不落库、窗口销毁、节点/偏移保留；见 [现场证据](2026-09-23-theme-preview/t7-wayland-input-results.json)。原先因用户不在场而保留的 open item 已关闭。
-- [ ] T7 第三方GUI客户端、空状态专项、其它平台/读屏器/分数缩放及用户侧独立聚合评审。
+- [ ] T7 第三方GUI客户端、空状态专项、其它平台/读屏器/分数缩放及用户侧独立聚合评审。（**已验**：空/错误状态双语与失败保留缓存见 [空态报告](2026-09-23-theme-preview/empty-error-states.md)；分数缩放 KDE Wayland 125%/150% 与 Xvfb 100%/200% 见 [原生验收](2026-09-23-theme-preview/native-settings.md)。**未验**：第三方 GUI 客户端（仅 Codex CLI 收图）、读屏器、GNOME/无 XWayland、**用户侧独立聚合评审**（T7 报告明确 fresh reviewer 由用户另派）→ 保留 open）
 
 - [x] T7 真实墙钟寿命：空闲599.75秒/绝对1800.52秒回收，过期保存被拒、临时零写；60次RSS/目录/磁盘采样，详见 T7 报告。
 
