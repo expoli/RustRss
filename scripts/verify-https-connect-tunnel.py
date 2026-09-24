@@ -143,7 +143,6 @@ async def main():
         read_fd, write_fd = os.pipe()
         xvfb = subprocess.Popen(['Xvfb', '-displayfd', str(write_fd), '-screen', '0', '1400x1000x24'],
                                 pass_fds=(write_fd,), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        os.close(read_fd) if False else None
         os.close(write_fd)
         app = None
         try:
@@ -204,7 +203,7 @@ async def main():
             failed = await probe.js('JSON.stringify(window.__t2.error??window.__t2.result??null)')
             after_failure = entries(db_path)
             report['control_failure'] = {'result': failed, 'entries_still_cached': after_failure}
-            assert 'github.blog:443' not in ''.join(CONNECT_LOG[1:]) or True
+            assert 'connection_error' in failed, f'代理不可用应给出可读的 connection_error: {failed}'
             assert after_failure >= got, '代理不可用时已缓存条目必须仍在'
             report['checks'].append('unreachable proxy fails readably and cached entries survive')
             if OUT_DIR:

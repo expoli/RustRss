@@ -89,7 +89,7 @@ created: 2026-09-20
 - [x] 订阅右键菜单的「刷新间隔」与「移动到」以**子菜单**呈现（悬浮向右展开、点击父项切换；父项显示当前档位/当前分组，子菜单对当前项打勾）；空间不足时自动翻转/钳位不溢出视口（见 2026-09-23-submenu）
 - [x] 标签（文章级）：给文章打/取消标签、按标签筛选；侧栏标签区（未读计数、置顶、颜色、拖拽排序）；打开选择器支持最近使用优先与新建；MCP 可按权限增删改查标签（`delete_tag` 需 `confirm` + `dry_run`，不进危险工具集合）（见 2026-09-23-tags）——已交付 T1 `73a4433` / T2 `4bee3cf` / T3 `f397762` / T4 `14ac1a0`，逐条证据见验证清单第 21 节
 - [x] 无网络时可阅读已抓取的全部文章，不出现阻塞式错误弹窗（2026-09-24：独立命名空间仅 lo 的 16 项证据 `2026-09-23-theme-preview/offline-namespace-results.json`；离线列表可读可滚 + 缩略图静默失败 + 缓存正文可读见 `2026-09-24-thumbnail-egress-policy/thumbnail-offline-results.json`；代理不可达时失败可读且缓存仍在见 `2026-09-24-local-acceptance-closeout/https-connect-tunnel-results.json` 的对照组）
-  → 2026-09-24独立网络命名空间仅lo，缓存阅读、真实刷新失败后继续导航、10000条未丢通过；未逐篇打开/覆盖外部图片，见search-offline.md。
+  → 2026-09-24独立网络命名空间仅lo：缓存阅读、真实刷新失败后继续导航、10000条未丢通过（16 项）。**已补**：逐篇打开（缓存正文可读）与外部图片（离线缩略图静默失败、不阻塞阅读）见 `2026-09-24-thumbnail-egress-policy/thumbnail-offline-results.json`；代理不可用时的失败可读与缓存保留见 `2026-09-24-local-acceptance-closeout/https-connect-tunnel-results.json`。**仍未验**：原生 Wayland 与其它平台。
 - [x] 初始化失败时窗口仍可关闭（最小事件绑定集无条件生效，见 2026-09-22-audit-remediation-1）
 - [x] 阅读中标记已读/星标/稍后读不重置正文滚动位置、不清空 AI 面板内容（行级 patch 而非整区重建，见 2026-09-22-audit-remediation-1）
 
