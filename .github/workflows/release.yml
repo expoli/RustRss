@@ -49,6 +49,22 @@ jobs:
       - name: Build bundles
         run: npx --yes @tauri-apps/cli@^2 build --bundles ${{ matrix.bundles }}
 
+      # 产物体积记录：写进 job summary（发布后把三平台数字回填 spec 的「安装包体积实测值」条目）。
+      # 用 `wc -c` 而不是 `ls -l`/`du -b`：三个 runner 上都可用，且不吃 ls 的输出格式差异。
+      # `workflow_dispatch` 只跑本 job（release job 限定 tag），所以量体积不必先打 tag。
+      - name: Record bundle size
+        shell: bash
+        run: |
+          {
+            echo "### Bundle size: ${{ matrix.artifact }}"
+            echo ''
+            echo '```'
+            for f in ${{ matrix.glob }}; do
+              printf '%12s bytes  %s\n' "$(wc -c < "$f")" "$f"
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
@@ -79,5 +95,5 @@ jobs:
           gh release create "$TAG" dist/* \
             --title "RustRss $TAG" \
             --generate-notes \
-            --notes "三平台安装包：Linux deb（ubuntu-22.04 基线）、Windows NSIS、macOS dmg（arm64，未签名，首次打开右键→打开）。" \
+            --notes "三平台安装包：Linux deb（ubuntu-22.04 基线）、Windows NSIS、macOS dmg（arm64，未签名，首次打开右键→打开）。产物体积见同一次 run 的 build job summary，并回填 spec 的安装包体积条目。" \
           || gh release upload "$TAG" dist/* --clobber

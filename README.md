@@ -340,6 +340,18 @@ npx -y @tauri-apps/cli@latest build --bundles deb
 - **反馈问题**：设置 → 关于 →「打开日志目录」用系统文件管理器打开该目录，把**最新的那个文件**附在 issue 里。启动器起不来（如裸容器没装 `xdg-open`）会在状态栏给出可读错误（含原因）且应用不崩溃。**已知取舍**：启动器在、但它自己打不开（环境里没有文件管理器）时无法检测——`spawn` 成功不等于目录真的打开（实测 Xvfb 下 `xdg-open` 静默 `exit 0`），此时只显示「已**请**系统文件管理器打开」，文案刻意不说「已打开」；与既有「浏览器打开」同一口径。
 - **初始化失败不阻断启动**：日志目录不可写（权限 / 磁盘满）时降级为「本次不写日志文件」，只在 stderr 打印一行原因，其余功能照常。
 
+## 发布步骤
+
+版本号在**两处**同步：根 `Cargo.toml` 的 `[workspace.package].version` 与 `src-tauri/tauri.conf.json` 的 `version`（当前均为 `0.0.0`，首发前一起 bump）。
+
+1. bump 上述两处版本号；
+2. 更新 `CHANGELOG.md`——**尚未创建**：首次发布前按 Added / Changed / Fixed 分组建起来；
+3. 提交后打 tag 并推送：`git tag vX.Y.Z && git push origin vX.Y.Z` → 触发 `.github/workflows/release.yml`，产出 Linux deb（ubuntu-22.04 基线）/ Windows NSIS / macOS dmg（arm64，未签名，首次打开需右键→打开）并自动创建 GitHub Release（自动生成变更说明）；
+4. **体积记录**：release workflow 的 `Record bundle size` 步骤把每个平台的产物体积写进该 job 的 summary；把三平台数字回填 `.chorus/specs/rss-reader/spec.md` 的「安装包体积报出实测值」条目；
+5. **只量体积、不发版**：`gh workflow run release.yml`（`workflow_dispatch`；`release` job 限定 tag，因此不会创建 Release）——**不要为了拿数字先打 tag**。
+
+CI（`.github/workflows/ci.yml`）在 push / PR 时必跑 `cargo test --workspace --locked`；clippy 目前是 report-only，另有 3 条既有告警待清零。
+
 ## 进度
 
 ### M1 · core 数据层（进行中）
