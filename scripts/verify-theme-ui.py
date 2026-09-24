@@ -90,7 +90,7 @@ try:
     if args.evidence:
         args.evidence.write_text(json.dumps(report, ensure_ascii=False, indent=2))
         print('evidence:', args.evidence)
-    print(json.dumps({'output': str(root), 'captures': len(report['captures']), 'checks': len(report['checks']), 'pixel_checks': 24}))
+    print(json.dumps({'output': str(root), 'captures': len(report['captures']), 'checks': len(report['checks']), 'pixel_checks': report['native_background_pixel_checks']}))
 finally:
     if xvfb:
         xvfb.terminate()

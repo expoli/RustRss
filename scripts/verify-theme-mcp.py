@@ -4,10 +4,12 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import pathlib
 import select
 import socket
 import sqlite3
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.request
@@ -87,7 +89,11 @@ try:
             'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),
             'binary_mtime':datetime.datetime.fromtimestamp(binary.stat().st_mtime).isoformat(timespec='seconds'),
             'captured_at':datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),'embedded_event':True,'stdio_polling':True,'restore':True,'read_token_rejected':True,'article_renders_before_after':[renders,logfile.read_text().count('renderReader id=')],'revision':3,'pixel_checks':2,'preview_available':g['capabilities']['preview']['available']}
-    (root/'results.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))
+    (root/'results.json').write_text(json.dumps(report,indent=2))
+    # Optional evidence path so the JSON can prove which binary it ran (red line #10).
+    if len(sys.argv)>1:
+        pathlib.Path(sys.argv[1]).write_text(json.dumps(report,ensure_ascii=False,indent=2));report['evidence_file']=sys.argv[1]
+    print(json.dumps(report))
 finally:
     for child in [stdio,app]:
         if child and child.poll() is None:

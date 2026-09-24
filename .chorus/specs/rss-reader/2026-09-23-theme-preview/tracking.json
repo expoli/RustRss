@@ -33,12 +33,13 @@
   "t6Commit": "951d7e9",
   "t7Evidence": "t7-results.json",
   "t7Report": "t7-aggregate.md",
-  "independentAggregateReview": "round 1 verdict by chorus-code-reviewer on idea comment 4d2c4ff1: FAIL (1 BLOCKER: empty-state matrix misclassified as environment-dependent; 4 NOTE). Round 2 pending. The previous \"passed (user-reported...)\" line was hearsay with no artifact.",
+  "independentAggregateReview": "round 1 (comment 4d2c4ff1): FAIL - 1 BLOCKER (empty-state matrix misclassified as environment-dependent) + 4 NOTE. round 2 (comment 4310c308) on fixes 178757a/a33f29e: PASS WITH NOTES - blocker resolved with mutation-checked evidence, N1/N2/N3 fixed, N4 closed by regenerating mcp-theme-results.json with fingerprints; no new blocker or note.",
   "t7OpenItems": [
     "third-party GUI MCP client image loop",
     "other platforms, fractional scaling and accessibility"
   ],
   "t7WaylandInputEvidence": "t7-wayland-input-results.json",
   "emptyStateMatrixEvidence": "empty-state-matrix-results.json",
-  "emptyStateMatrixVerified": true
+  "emptyStateMatrixVerified": true,
+  "sceneLevelCaptureLimitation": "native WebView snapshot refreshes per theme but not per scene in this headless environment: the three scene files of each (preset, mode, locale) cell are byte-identical (36 files, 12 frames); per-scene claims rest on DOM assertions - see manual-verification-checklist section 31"
 }

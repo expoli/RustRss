@@ -1,14 +1,18 @@
 {
-  "output": "/tmp/rustrss-theme-mcp-4s6f33e9",
+  "output": "/tmp/rustrss-theme-mcp-y5mb0c2b",
+  "binary": "target/debug/rustrss-desktop",
+  "binary_sha256": "89d001275d9206ef8c2b549017ec9fd4eec8de9cc01a54cdb0dee9eafbc813f6",
+  "binary_mtime": "2026-09-24T22:43:28",
+  "captured_at": "2026-09-24T14:47:58+00:00",
   "embedded_event": true,
   "stdio_polling": true,
   "restore": true,
   "read_token_rejected": true,
   "article_renders_before_after": [
-    1,
-    1
+    2,
+    2
   ],
   "revision": 3,
   "pixel_checks": 2,
-  "preview_available": false
+  "preview_available": true
 }
