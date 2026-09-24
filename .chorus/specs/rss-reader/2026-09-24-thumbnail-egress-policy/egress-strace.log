@@ -1,241 +1,255 @@
-2792289 +++ exited with 0 +++
-2792284 connect(4, {sa_family=AF_UNIX, sun_path="/tmp/rustrss-egress-71h8wz04/runtime/wayland-0"}, 49) = -1 ENOENT (没有那个文件或目录)
-2792284 connect(4, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
-2792284 connect(7, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
-2792284 connect(7, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
-2792284 sendto(7, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
-2792284 sendto(7, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2792284 sendto(7, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792284 sendto(7, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792284 connect(6, {sa_family=AF_UNIX, sun_path="/run/user/1000/at-spi/bus_0"}, 29) = 0
-2792284 sendto(6, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
-2792284 sendto(6, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2792284 sendto(6, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792284 sendto(6, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792284 connect(10, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 110) = 0
-2792284 sendto(10, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792284 sendto(10, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
-2792284 sendto(10, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792284 sendto(10, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792284 sendto(10, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792284 connect(11, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
-2792284 sendto(11, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
-2792284 sendto(11, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2792284 sendto(11, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792284 sendto(11, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792294 connect(13, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
-2792284 connect(14, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
-2792284 connect(5, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
-2792284 sendto(5, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
-2792284 sendto(5, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2792284 sendto(5, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792284 sendto(5, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792299 +++ exited with 0 +++
-2792300 sendto(6, [{nlmsg_len=17, nlmsg_type=RTM_GETROUTE, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=0, nlmsg_pid=0}, {rtm_family=AF_UNSPEC, ...}], 20, MSG_NOSIGNAL, NULL, 0) = 20
-2792300 connect(8, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
-2792300 sendto(8, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792300 sendto(8, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
-2792300 sendto(8, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792300 sendto(8, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792300 sendto(8, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792309 +++ exited with 0 +++
-2792308 +++ exited with 0 +++
-2792307 +++ exited with 0 +++
-2792306 +++ exited with 0 +++
-2792284 connect(39, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
-2792284 sendto(39, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792284 sendto(39, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
-2792284 sendto(39, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792284 sendto(39, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792284 sendto(39, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792300 connect(15, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 110) = 0
-2792300 sendto(15, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792300 sendto(15, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
-2792300 sendto(15, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792300 sendto(15, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792300 sendto(15, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792351 connect(14, {sa_family=AF_UNIX, sun_path="/run/user/1000/at-spi/bus_0"}, 110) = 0
-2792351 sendto(14, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792351 sendto(14, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2792351 sendto(14, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792351 sendto(14, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792351 connect(20, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
-2792351 sendto(20, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792351 sendto(20, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
-2792351 sendto(20, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792351 sendto(20, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792351 sendto(20, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792284 connect(43, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
-2792284 sendto(43, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
-2792284 sendto(43, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2792284 sendto(43, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792284 sendto(43, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792364 sendto(24, [{nlmsg_len=20, nlmsg_type=RTM_GETLINK, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790245850, nlmsg_pid=0}, {ifi_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
-2792364 sendto(24, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790245851, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
-2792364 sendto(24, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790245850, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
-2792364 connect(25, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (没有那个文件或目录)
-2792364 connect(24, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (没有那个文件或目录)
-2792365 sendto(25, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790245850, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
-2792365 connect(24, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
-2792364 connect(25, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16 <unfinished ...>
-2792365 sendto(24, "%\t\1 \0\1\0\0\0\0\0\1\3raw\21githubusercontent\3com\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", 54, MSG_NOSIGNAL, NULL, 0 <unfinished ...>
-2792364 <... connect resumed>)          = 0
-2792365 <... sendto resumed>)           = 54
-2792364 sendto(25, "O\303\1 \0\1\0\0\0\0\0\1\3raw\21githubusercontent\3com\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", 54, MSG_NOSIGNAL, NULL, 0) = 54
-2792365 connect(24, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("185.199.110.133")}, 16) = 0
-2792364 connect(25, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8001::154", &sin6_addr), sin6_scope_id=0}, 28 <unfinished ...>
-2792365 connect(24, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
-2792364 <... connect resumed>)          = -1 ENETUNREACH (网络不可达)
-2792365 connect(24, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("185.199.109.133")}, 16 <unfinished ...>
-2792364 connect(25, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16 <unfinished ...>
-2792365 <... connect resumed>)          = 0
-2792364 <... connect resumed>)          = 0
-2792365 connect(24, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16 <unfinished ...>
-2792364 connect(25, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8002::154", &sin6_addr), sin6_scope_id=0}, 28 <unfinished ...>
-2792365 <... connect resumed>)          = 0
-2792365 connect(24, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("185.199.111.133")}, 16 <unfinished ...>
-2792364 <... connect resumed>)          = -1 ENETUNREACH (网络不可达)
-2792365 <... connect resumed>)          = 0
-2792364 connect(25, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16 <unfinished ...>
-2792365 connect(24, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16 <unfinished ...>
-2792364 <... connect resumed>)          = 0
-2792365 <... connect resumed>)          = 0
-2792365 connect(24, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("185.199.108.133")}, 16 <unfinished ...>
-2792364 connect(25, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8000::154", &sin6_addr), sin6_scope_id=0}, 28 <unfinished ...>
-2792365 <... connect resumed>)          = 0
-2792364 <... connect resumed>)          = -1 ENETUNREACH (网络不可达)
-2792364 connect(25, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
-2792364 connect(25, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8003::154", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (网络不可达)
-2792300 connect(25, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("185.199.110.133")}, 16) = -1 EINPROGRESS (操作现在正在进行)
-2792343 sendto(25, "\26\3\3\2\0\1\0\1\374\3\3!\227k\350\21\30z\r\265\223\216t>\260\203\364\26(\363\30\262\t\371\243B\342\22\t\261W=( \3343;p\34\356\f|s'\303\242\35\334o\306\270qjc\27\fn&\256\203\0326 $\224\342\0:\23\2\23\3\23\1\23\4\300,\314\251\300\255\300\n\300+\300\254\300\t\3000\314\250\300\24\300/\300\23\0\235\300\235\0005\0\234\300\234\0/\0\237\314\252\300\237\09\0\236\300\236\0003\1\0\1y\0+\0\5\4\3\4\3\3\0\34\0\2@\1\377\1\0\1\0\0-\0\3\2\1\0\0\n\0\26\0\24\0\27\0\30\0\31\0\35\0\36\1\0\1\1\1\2\1\3\1\4\0\5\0\5\1\0\0"..., 517, MSG_NOSIGNAL, NULL, 0) = 517
-2792343 sendto(25, "\24\3\3\0\1\1", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792343 sendto(25, "\27\3\3\0005Z\247\272\301\245\307\337\10H!dk\335\346\352\235\335xZ\346\326#\341'\332\247\326\304\345\301\223\336\274>\253\366W\241\340&\255\323-_\323\16\375\26Zf\220U\314", 58, MSG_NOSIGNAL, NULL, 0) = 58
-2792300 sendto(25, "\27\3\3\0)bds\303\0W\351\277hF\273G%\375\253\237\321~O\27\35)p.\2261-Y\330\233\226\344\237\fTE\261\21`om", 46, MSG_NOSIGNAL, NULL, 0) = 46
-2792300 sendto(25, "\27\3\3\0,7\275/\3\343@C\1c\327!\370\26\226\325\234\v\362iJ@\35bn\22a\243\tNw\232D\252\t\225\262\360\234\f\34\217\3}\356", 49, MSG_NOSIGNAL, NULL, 0) = 49
-2792300 sendto(25, "\27\3\3\0\36\335\2660`\372\232\370bB\235\20&\213\223i\373\327p\20\331\247\366\217\230\n\226\363r\256q", 35, MSG_NOSIGNAL, NULL, 0) = 35
-2792300 sendto(25, "\27\3\3\0014\366\240\371 ]\200\27\260\354q\200\235\262*\320\370\332\33&\334,\2573\321l\5\302\360\361\246[#M%\245\252*\224\364\20~\241\246(\207\214\312\351]Xg\340,I\332-\216\220\351\355\337\276\244_\212lu\343\36\207\307\255\235\212\0\7\257\250\276\21&}\370^\30\243\217\35\220q\20\355\177\254)\344\2$\261\32\232-K?\351\266\24z\31\333\316\352\347\331\212\200\220\376-.\0\206\205CW\212\263\212WN%\v\2272\277j\10d)R\33A\214\270\177\224\250E\374_\255N\264:}\37BRl\201\320\365JWA\310,\256\30\177voX\347\200\v@\2428}\v\6\373\346\357\365@\305\311o\327@\271ce"..., 313, MSG_NOSIGNAL, NULL, 0) = 313
-2792300 sendto(25, "\27\3\3\0\32X\267\34\311\4\324\6\210\346\306\242Y\367\272\354\336?\0@r\275\236\235\376\346g", 31, MSG_NOSIGNAL, NULL, 0) = 31
-2792336 +++ exited with 0 +++
-2792327 connect(49, {sa_family=AF_INET, sin_port=htons(41217), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (操作现在正在进行)
-2792535 connect(50, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (没有那个文件或目录)
-2792535 connect(50, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (没有那个文件或目录)
-2792535 connect(49, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
-2792327 connect(49, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("192.0.66.2")}, 16) = -1 EINPROGRESS (操作现在正在进行)
-2792358 +++ exited with 0 +++
-2792284 connect(52, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
-2792284 sendto(52, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
-2792284 sendto(52, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2792284 sendto(52, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
-2792284 sendto(52, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
-2792364 sendto(26, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790245861, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
-2792343 sendto(26, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790245861, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
-2792364 connect(26, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16 <unfinished ...>
-2792343 connect(28, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16 <unfinished ...>
-2792364 <... connect resumed>)          = 0
-2792343 <... connect resumed>)          = 0
-2792364 sendto(26, "\343m\1 \0\1\0\0\0\0\0\1\6github\4blog\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", 40, MSG_NOSIGNAL, NULL, 0 <unfinished ...>
-2792343 sendto(28, "\337\236\1 \0\1\0\0\0\0\0\1\6github\4blog\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", 40, MSG_NOSIGNAL, NULL, 0 <unfinished ...>
-2792364 <... sendto resumed>)           = 40
-2792343 <... sendto resumed>)           = 40
-2792364 connect(26, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
-2792364 sendto(26, "E\311\1 \0\1\0\0\0\0\0\1\6github\4blog\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", 40, MSG_NOSIGNAL, NULL, 0) = 40
-2792300 connect(26, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("192.0.66.2")}, 16) = -1 EINPROGRESS (操作现在正在进行)
-2792365 sendto(26, "\26\3\3\2\0\1\0\1\374\3\3\372T\357\207s\200}\2\233ds\314Rk\20Y\340\254\337\302\tF\226_\24\17?\345\255\255\326\300 {\n\0172\n\377\271\321\303\36\26\222\205[\267\20\177o\242yw\223s\3624\340\277\304\36\325\30\325\0:\23\2\23\3\23\1\23\4\300,\314\251\300\255\300\n\300+\300\254\300\t\3000\314\250\300\24\300/\300\23\0\235\300\235\0005\0\234\300\234\0/\0\237\314\252\300\237\09\0\236\300\236\0003\1\0\1y\0\n\0\26\0\24\0\27\0\30\0\31\0\35\0\36\1\0\1\1\1\2\1\3\1\4\0\20\0\27\0\25\2h2\10http/1.1\10http/1.0\377\1\0\1\0\0\0"..., 517, MSG_NOSIGNAL, NULL, 0) = 517
-2792385 +++ exited with 0 +++
-2792365 sendto(26, "\24\3\3\0\1\1", 6, MSG_NOSIGNAL, NULL, 0) = 6
-2792365 sendto(26, "\27\3\3\0005o\251kU\360C\32\253F.O\303\217\10\226\202L\357\236(\333@\325o\301\27\225\314VX\313x\3160:\256\316\26492\340Y\36s\277g\17\377K\371\224\303Q", 58, MSG_NOSIGNAL, NULL, 0) = 58
-2792300 sendto(26, "\27\3\3\0)`\257\33\1\252\375\346\210`\345c\213a\330\335\223P\\'5\316\32\314\205\266C\332-\305M\326\27\272\23\334\320\304Y\264\26\202", 46, MSG_NOSIGNAL, NULL, 0) = 46
-2792300 sendto(26, "\27\3\3\0,K4Z\370F\334\342\376_\235\344\226\245`Gb\334\364\221\312v\270\341\200h\226r\372\340'h\257\273\217\323\326&l\201\212;~\302\305", 49, MSG_NOSIGNAL, NULL, 0) = 49
-2792300 sendto(26, "\27\3\3\0\36p\351\356H\227\322\7E\222 {\205.i\274b\265\242nJ\274\262\220\310\345\27j\22\tp", 35, MSG_NOSIGNAL, NULL, 0) = 35
-2792300 sendto(26, "\27\3\3\1Jwe\320\7\315dN\30\2362\334\371\31\215\36\24\372S\303%r5[\36=\315{\10\321*w\25L\333\356<\365P\202rIK`\1\356\220\32\234gA\320,\351\205\354Z\5l?\272\203\325\311\217\203k\225\204\263\320\251\366\365O!\6\32\242\16\242\37-QO\352k\253\224\235\237j\374K#\247A\300\341\267\221\254\202\355ll\233\24\1\212/`\202K\20X\335\367\362\202#\327\346T\336(\333\301\207\221j\344R\\\320\341\307\276\310\31A\21\213Fk\372\357\364\273\260\240\236\355\r\223\273\315\31{\361\7\266-s\250%@nk\250\275\275\0\335Mh\nF$\207\200\247n(v.\226O\301\317M\323\253\276\206\243"..., 335, MSG_NOSIGNAL, NULL, 0) = 335
-2792300 sendto(26, "\27\3\3\0Z~\312p\221Wz\\\346\312\24\315\225\207\352\357\27\244\v\0372\355c\263\360\253Y\306\35a-l\224\226\323\\\370\5Y~\332\375`\307N\204\1qJ~<z8\203\305\\\323\363#\240\375\353\266/\365\230p\335\247\226\262\336\262\34\350 \25\264d\370\226\22\263\344\3Z\350\274\207\302%", 95, MSG_NOSIGNAL, NULL, 0) = 95
-2792300 sendto(26, "\27\3\3\0[\\\277\265e\270\325sq\325\30R{\364\202\212\322z\2041,\206\347\337\271\222\204\34^\303\361\352\340\332\232\307{\326\333\210\272\356\fhP^\372\263\34:[\303\256\5\2415\224\324\347\232p\353\352\357\227\227\205K\241\331y7=\352\300\fJQ?Hv\341\31(\301R\310\313\221\376\261\343", 96, MSG_NOSIGNAL, NULL, 0) = 96
-2792300 sendto(26, "\27\3\3\0]\340N4\30\341X\353\7\20\360\252t\314\340:-\221\313\311)\351\240ae\241\325?\351Z\367e\240iF\245\363s\247:\23\343\254\332\312\f\324\35\323%j\232\303\t\366\261+I}\357A\32F\v\236V\20\5\232F\311\374\315QrNL\277\276\333\302\331\310\35\200\370^c\227\266\351\232\26q", 98, MSG_NOSIGNAL, NULL, 0) = 98
-2792300 sendto(26, "\27\3\3\0\32\272\200\3S\361\237(\261\212\273\215-R\3418}`\244\300U^\371\313\361\6\366", 31, MSG_NOSIGNAL, NULL, 0) = 31
-2792318 +++ exited with 0 +++
-2792319 +++ exited with 0 +++
-2792351 +++ exited with 0 +++
-2792535 +++ exited with 0 +++
-2792537 +++ exited with 0 +++
-2792357 +++ exited with 0 +++
-2792639 +++ exited with 0 +++
-2792382 +++ exited with 0 +++
-2792379 +++ exited with 0 +++
-2792383 +++ exited with 0 +++
-2792381 +++ exited with 0 +++
-2792378 +++ exited with 0 +++
-2792380 +++ exited with 0 +++
-2792384 +++ exited with 0 +++
-2792301 +++ exited with 0 +++
-2792356 +++ exited with 0 +++
-2792343 +++ exited with 0 +++
-2792364 +++ exited with 0 +++
-2792365 +++ exited with 0 +++
-2793006 +++ exited with 0 +++
-2792362 +++ exited with 0 +++
-2792300 sendto(26, "\27\3\3\0\23\216g\270wy\253B\306_l\223>X\310\320u\323\317\215", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2793443 +++ exited with 0 +++
-2793552 +++ exited with 0 +++
-2793442 +++ exited with 0 +++
-2792300 sendto(25, "\27\3\3\0\"\205\333\21F\226]\333\253\351\332\"\242\217\302\27\212\227xB\230\224C\22\266p:\225\204Y\237l\200R\31", 39, MSG_NOSIGNAL, NULL, 0) = 39
-2792300 sendto(25, "\27\3\3\0\23\"\r\272W\362*\232\231?,:@T\347\343\256P\23L", 24, MSG_NOSIGNAL, NULL, 0) = 24
-2794376 +++ exited with 0 +++
-2794208 +++ exited with 0 +++
-2795122 +++ exited with 0 +++
-2792311 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2791881, si_uid=1000} ---
-2792300 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2791881, si_uid=1000} ---
-2792284 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2791881, si_uid=1000} ---
-2792353 +++ killed by SIGTERM +++
-2792349 +++ killed by SIGTERM +++
-2792348 +++ killed by SIGTERM +++
-2792347 +++ killed by SIGTERM +++
-2792342 +++ killed by SIGTERM +++
-2792341 +++ killed by SIGTERM +++
-2792340 +++ killed by SIGTERM +++
-2792316 +++ killed by SIGTERM +++
-2792315 +++ killed by SIGTERM +++
-2792313 +++ killed by SIGTERM +++
-2792350 +++ killed by SIGTERM +++
-2792305 +++ killed by SIGTERM +++
-2792304 +++ killed by SIGTERM +++
-2792303 +++ killed by SIGTERM +++
-2792302 +++ killed by SIGTERM +++
-2792355 +++ killed by SIGTERM +++
-2792354 +++ killed by SIGTERM +++
-2792339 +++ killed by SIGTERM +++
-2792314 +++ killed by SIGTERM +++
-2792352 +++ killed by SIGTERM +++
-2792312 +++ killed by SIGTERM +++
-2792338 +++ killed by SIGTERM +++
-2792337 +++ killed by SIGTERM +++
-2792334 +++ killed by SIGTERM +++
-2792333 +++ killed by SIGTERM +++
-2792332 +++ killed by SIGTERM +++
-2792331 +++ killed by SIGTERM +++
-2792330 +++ killed by SIGTERM +++
-2792329 +++ killed by SIGTERM +++
-2792328 +++ killed by SIGTERM +++
-2792327 +++ killed by SIGTERM +++
-2792326 +++ killed by SIGTERM +++
-2792325 +++ killed by SIGTERM +++
-2792324 +++ killed by SIGTERM +++
-2792323 +++ killed by SIGTERM +++
-2792322 +++ killed by SIGTERM +++
-2792321 +++ killed by SIGTERM +++
-2792310 +++ killed by SIGTERM +++
-2792298 +++ killed by SIGTERM +++
-2792297 +++ killed by SIGTERM +++
-2792296 +++ killed by SIGTERM +++
-2792295 +++ killed by SIGTERM +++
-2792294 +++ killed by SIGTERM +++
-2792293 +++ killed by SIGTERM +++
-2792335 +++ killed by SIGTERM +++
-2792292 +++ killed by SIGTERM +++
-2792291 +++ killed by SIGTERM +++
-2792290 +++ killed by SIGTERM +++
-2792363 +++ killed by SIGTERM +++
-2792300 +++ killed by SIGTERM +++
-2792359 +++ killed by SIGTERM +++
-2792311 +++ killed by SIGTERM +++
-2792320 +++ killed by SIGTERM +++
-2792284 +++ killed by SIGTERM +++
+2808262 +++ exited with 0 +++
+2808259 connect(5, {sa_family=AF_UNIX, sun_path="/tmp/rustrss-egress-elgigszf/runtime/wayland-0"}, 49) = -1 ENOENT (没有那个文件或目录)
+2808259 connect(5, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
+2808259 connect(7, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
+2808259 connect(7, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2808259 sendto(7, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2808259 sendto(7, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2808259 sendto(7, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808259 sendto(7, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808259 connect(6, {sa_family=AF_UNIX, sun_path="/run/user/1000/at-spi/bus_0"}, 29) = 0
+2808259 sendto(6, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2808259 sendto(6, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2808259 sendto(6, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808259 sendto(6, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808259 connect(11, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 110) = 0
+2808259 sendto(11, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808259 sendto(11, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2808259 sendto(11, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808259 sendto(11, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808259 sendto(11, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808259 connect(13, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2808259 sendto(13, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2808259 sendto(13, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2808259 sendto(13, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808259 sendto(13, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808267 connect(12, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
+2808259 connect(15, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
+2808259 connect(4, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2808259 sendto(4, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2808259 sendto(4, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2808259 sendto(4, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808259 sendto(4, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808272 +++ exited with 0 +++
+2808273 sendto(6, [{nlmsg_len=17, nlmsg_type=RTM_GETROUTE, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=0, nlmsg_pid=0}, {rtm_family=AF_UNSPEC, ...}], 20, MSG_NOSIGNAL, NULL, 0) = 20
+2808273 connect(8, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
+2808273 sendto(8, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808273 sendto(8, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2808273 sendto(8, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808273 sendto(8, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808273 sendto(8, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808282 +++ exited with 0 +++
+2808281 +++ exited with 0 +++
+2808279 +++ exited with 0 +++
+2808278 +++ exited with 0 +++
+2808259 connect(39, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
+2808259 sendto(39, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808259 sendto(39, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2808259 sendto(39, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808259 sendto(39, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808259 sendto(39, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808273 connect(15, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 110) = 0
+2808273 sendto(15, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808273 sendto(15, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2808273 sendto(15, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808273 sendto(15, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808273 sendto(15, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808323 connect(14, {sa_family=AF_UNIX, sun_path="/run/user/1000/at-spi/bus_0"}, 110) = 0
+2808323 sendto(14, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808323 sendto(14, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2808323 sendto(14, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808323 sendto(14, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808323 connect(20, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
+2808323 sendto(20, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808323 sendto(20, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2808323 sendto(20, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808323 sendto(20, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808323 sendto(20, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808259 connect(43, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2808259 sendto(43, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2808259 sendto(43, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2808259 sendto(43, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808259 sendto(43, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808341 sendto(24, [{nlmsg_len=20, nlmsg_type=RTM_GETLINK, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790246741, nlmsg_pid=0}, {ifi_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2808341 sendto(24, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790246742, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2808341 sendto(24, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790246741, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2808341 connect(25, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (没有那个文件或目录)
+2808341 connect(24, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (没有那个文件或目录)
+2808342 sendto(25, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790246741, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2808343 sendto(25, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790246741, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2808344 sendto(24, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1790246741, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2808342 connect(24, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16 <unfinished ...>
+2808341 connect(25, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16 <unfinished ...>
+2808342 <... connect resumed>)          = 0
+2808341 <... connect resumed>)          = 0
+2808342 sendto(24, "TC\1 \0\1\0\0\0\0\0\1\3raw\21githubusercontent\3com\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", 54, MSG_NOSIGNAL, NULL, 0 <unfinished ...>
+2808341 sendto(25, "\4p\1 \0\1\0\0\0\0\0\1\3raw\21githubusercontent\3com\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", 54, MSG_NOSIGNAL, NULL, 0 <unfinished ...>
+2808342 <... sendto resumed>)           = 54
+2808341 <... sendto resumed>)           = 54
+2808344 connect(26, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+2808343 connect(27, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16 <unfinished ...>
+2808344 sendto(26, "q\251\1 \0\1\0\0\0\0\0\1\6github\4blog\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", 40, MSG_NOSIGNAL, NULL, 0 <unfinished ...>
+2808343 <... connect resumed>)          = 0
+2808343 sendto(27, "\325\307\1 \0\1\0\0\0\0\0\1\6github\4blog\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", 40, MSG_NOSIGNAL, NULL, 0 <unfinished ...>
+2808344 <... sendto resumed>)           = 40
+2808343 <... sendto resumed>)           = 40
+2808342 connect(24, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("185.199.109.133")}, 16 <unfinished ...>
+2808341 connect(25, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8003::154", &sin6_addr), sin6_scope_id=0}, 28 <unfinished ...>
+2808342 <... connect resumed>)          = 0
+2808341 <... connect resumed>)          = -1 ENETUNREACH (网络不可达)
+2808341 connect(25, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16 <unfinished ...>
+2808342 connect(24, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+2808341 <... connect resumed>)          = 0
+2808342 connect(24, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("185.199.111.133")}, 16 <unfinished ...>
+2808341 connect(25, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8002::154", &sin6_addr), sin6_scope_id=0}, 28 <unfinished ...>
+2808342 <... connect resumed>)          = 0
+2808341 <... connect resumed>)          = -1 ENETUNREACH (网络不可达)
+2808341 connect(25, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16 <unfinished ...>
+2808342 connect(24, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16 <unfinished ...>
+2808341 <... connect resumed>)          = 0
+2808342 <... connect resumed>)          = 0
+2808341 connect(25, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8001::154", &sin6_addr), sin6_scope_id=0}, 28 <unfinished ...>
+2808342 connect(24, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("185.199.110.133")}, 16 <unfinished ...>
+2808341 <... connect resumed>)          = -1 ENETUNREACH (网络不可达)
+2808342 <... connect resumed>)          = 0
+2808341 connect(25, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+2808341 connect(25, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8000::154", &sin6_addr), sin6_scope_id=0}, 28 <unfinished ...>
+2808342 connect(24, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16 <unfinished ...>
+2808341 <... connect resumed>)          = -1 ENETUNREACH (网络不可达)
+2808342 <... connect resumed>)          = 0
+2808342 connect(24, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("185.199.108.133")}, 16) = 0
+2808273 connect(25, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:50c0:8003::154", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (网络不可达)
+2808343 connect(26, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+2808343 sendto(26, "\366\240\1 \0\1\0\0\0\0\0\1\6github\4blog\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", 40, MSG_NOSIGNAL, NULL, 0) = 40
+2808273 connect(25, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("185.199.109.133")}, 16) = -1 EINPROGRESS (操作现在正在进行)
+2808315 sendto(25, "\26\3\3\2\0\1\0\1\374\3\3\1\311'\23\357\320\212a\207\260\342\311YW\377Ia5\202'\vN$\205\233\336\264\261\203\265z\232 \342\302w>\240T\361\347X9p\322'@\236:F3\2229\313\256z\363\330\354\352\240\276\254:\"\0:\23\2\23\3\23\1\23\4\300,\314\251\300\255\300\n\300+\300\254\300\t\3000\314\250\300\24\300/\300\23\0\235\300\235\0005\0\234\300\234\0/\0\237\314\252\300\237\09\0\236\300\236\0003\1\0\1y\0\34\0\2@\1\377\1\0\1\0\0#\0\0\0\n\0\26\0\24\0\27\0\30\0\31\0\35\0\36\1\0\1\1\1\2\1\3\1\4\0\r\0(\0&\t\4\t\5\t\6\4\1\10\t\10\4\4"..., 517, MSG_NOSIGNAL, NULL, 0 <unfinished ...>
+2808273 connect(26, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("192.0.66.2")}, 16 <unfinished ...>
+2808315 <... sendto resumed>)           = 517
+2808273 <... connect resumed>)          = -1 EINPROGRESS (操作现在正在进行)
+2808345 sendto(26, "\26\3\3\2\0\1\0\1\374\3\3nA\24\3549U8\220W\360\376\233\230\\\376\207\250\16\240U\252\216\354X\304\\K\215<{f\324 \v\34\362\222\327\323v\355\373\272\312C\264\343\334\321\v'\307vu\274E\342Qbe95\24\300o\0:\23\2\23\3\23\1\23\4\300,\314\251\300\255\300\n\300+\300\254\300\t\3000\314\250\300\24\300/\300\23\0\235\300\235\0005\0\234\300\234\0/\0\237\314\252\300\237\09\0\236\300\236\0003\1\0\1y\0\34\0\2@\1\0\n\0\26\0\24\0\27\0\30\0\31\0\35\0\36\1\0\1\1\1\2\1\3\1\4\0-\0\3\2\1\0\377\1\0\1\0\0#\0\0\0\0\0\20\0\16\0\0\vgit"..., 517, MSG_NOSIGNAL, NULL, 0) = 517
+2808345 sendto(26, "\24\3\3\0\1\1", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808345 sendto(26, "\27\3\3\0005\t\332RoP\372\356\22,\330\256\215\267\370,\263<V\217P\332\30\315\30}\344\261\377h_\233H\260\240\375\216rc\21\207\323\\|c\266\252Wg\351\35\356\364\321", 58, MSG_NOSIGNAL, NULL, 0) = 58
+2808273 sendto(26, "\27\3\3\0)\311\205\351[x\275\273\270\323\36\304\26\357\26\\\262\207_\257\335\27\37q^M\267Z\2431\236\234\243\255\302\2179\352p\21\267\313", 46, MSG_NOSIGNAL, NULL, 0) = 46
+2808273 sendto(26, "\27\3\3\0,m\312F\312\225\0303F\v\360\265?RaHWr\322\252\374):S0<=\354W\226\203\17NH\347\217\247\373M\n\360\2324\363\241", 49, MSG_NOSIGNAL, NULL, 0) = 49
+2808273 sendto(26, "\27\3\3\0\36\233!\250\365\374\337Z\314\233\234Z\265\356\4\257\241\301\213Vc[\3509#,8\227\7\234e", 35, MSG_NOSIGNAL, NULL, 0) = 35
+2808273 sendto(26, "\27\3\3\1Jn\357\3)O:\275\262 \7\320N\271\347\227\v\227\234WG\301\4e\206\307o\203W\207\21\240I\344r\301\267\223\272\254\231\5\2\f\r\27\306(^\373V\244\247H\20.7<\\\3173\243\213y\200\222[La\313\235\222\241D\22?\266\35^\251\321y\263\t;\316\276\254e\303\343W\33m\36\0a\241\201*\264\203\270YpZ\17\366E9\347~\265\332C\315En\0K\273\fT0\221\250\344\r\341\3/\317\31Wk%\337\336\355\3465\35e?\237\244\347\242\275\205\234\21\246\37\374D\246\263\267\330%\225\273\325/\34\367\242\252\25\234\35\360\241\33\10\24\364.\313\3337\353W\nP0|\266\36\323\"\16\323\340\205"..., 335, MSG_NOSIGNAL, NULL, 0) = 335
+2808273 sendto(26, "\27\3\3\0Z2\276\r\1777|\3\374\20{{2s|\206\276r\vE\267\342\371=>\200\227\20\316\36M\257\361Oi\373\344\37112L\210\316$\362\177r\322\1\3377[\202.U\32\261\371\366T\253\356\331\177\277\315\346\242\351&:\200P\256u\350\246\313j \302\t\313o\261<\232P\0170(", 95, MSG_NOSIGNAL, NULL, 0) = 95
+2808273 sendto(26, "\27\3\3\0[nJ\3503\322\207)\200bID^\3067i\206\304\306\234\fi\225\230\313\360H;\17\27\310\320\246i\336\255\355F,>Vb\361%\32c\252r\262\241Z\354\335\216~\337\251[\207\356\253\304\34\366\304\f\31W7\3235|;X\277F\255c\225\303\2t\351r\222 \253\234\277F\235\r", 96, MSG_NOSIGNAL, NULL, 0) = 96
+2808273 sendto(26, "\27\3\3\0]\233\223\25\364\32\256\4dj\334\205\341TO\32\361DM\236\223\37\323\363\324\300\0350y\27\340\216s\201\32\305\346\214M\240e6\335(,\254T\263b\v3\370\351G\323Ms\5\5tG0\fIx\365\206\331h? \261\374e\353=\0\347\343\230[\225+\250'\242k\300\201=G\242\26_", 98, MSG_NOSIGNAL, NULL, 0) = 98
+2808315 sendto(25, "\24\3\3\0\1\1", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2808315 sendto(25, "\27\3\3\0005\360\270A6\2508\24\321\367oI\255\201\n\7\341s#`Y\353\"\3447\263\n\350\341v\26F\224\315+\267\301\251\374\241ET\360\377\274\305=\216\210\377P\300-\342", 58, MSG_NOSIGNAL, NULL, 0) = 58
+2808273 sendto(25, "\27\3\3\0)%\366\301\30izES\230G\347\221\327\356l\232\277\356E\214Lw0;\30\20\10\371D\310\206\20\316\366\16\301Mx|\233_", 46, MSG_NOSIGNAL, NULL, 0) = 46
+2808273 sendto(25, "\27\3\3\0,?\222&\355\t\223\322qji\315\301I\17\267;\330\301\36001p\277\243#!\340\356\344\346\330\300\\r]y\376\236#]\277H\304\343", 49, MSG_NOSIGNAL, NULL, 0) = 49
+2808273 sendto(25, "\27\3\3\0\36\206\306\6\201Qc\342z`T\230M[\266T\230s\326\363<9f\346\354%k\251\301,k", 35, MSG_NOSIGNAL, NULL, 0) = 35
+2808273 sendto(25, "\27\3\3\0014\fE\363%\314\246\0303\3611\304+\26\263\f\315$\373\362B`z\216\2334\37gUgk\227\312$b\10\362\203\217\v\246\240)\274\251\242\371eT%YA\2226\24\335q\24\354\234\177\321\233\224Z9\342X\232\300o\336\363\316\361\35\342\337}\262\267\267?\211\213\217\375 \17\301\222\347\2724{S#b\364\30'\30\206\237\327b\326\253x>\317\210t\250nQ\236\2\274\316\257k\223~t\212\267\n\2413{]Z\227\201\207\330\266O\2506\377\214\36<\332t1\302C\223\221\2\316%\24m$\257\20*\205O\364\220\177\304_\240\371\376\6c/\vc\r\23\326$\3\31\354\2305\317\22e\273w\330Kx\31 C"..., 313, MSG_NOSIGNAL, NULL, 0) = 313
+2808273 sendto(26, "\27\3\3\0\32\337\370Y\317p\306L\375\334\265\262\321\326\23\307\220\345K!C\267\263O\303\261M", 31, MSG_NOSIGNAL, NULL, 0) = 31
+2808273 sendto(25, "\27\3\3\0\32!<^\232\270\336\35\203\335l\351\350\206\233\4\0#\riB\337\\-&\206_", 31, MSG_NOSIGNAL, NULL, 0) = 31
+2808308 +++ exited with 0 +++
+2808292 connect(49, {sa_family=AF_INET, sin_port=htons(45671), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (操作现在正在进行)
+2808572 connect(50, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (没有那个文件或目录)
+2808572 connect(50, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (没有那个文件或目录)
+2808572 connect(49, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+2808304 connect(49, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("192.0.66.2")}, 16) = -1 EINPROGRESS (操作现在正在进行)
+2808336 +++ exited with 0 +++
+2808259 connect(52, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2808259 sendto(52, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2808259 sendto(52, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2808259 sendto(52, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2808259 sendto(52, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2808274 +++ exited with 0 +++
+2808291 +++ exited with 0 +++
+2808290 +++ exited with 0 +++
+2808323 +++ exited with 0 +++
+2808344 +++ exited with 0 +++
+2808341 +++ exited with 0 +++
+2808342 +++ exited with 0 +++
+2808343 +++ exited with 0 +++
+2808345 +++ exited with 0 +++
+2808315 +++ exited with 0 +++
+2808572 +++ exited with 0 +++
+2808580 +++ exited with 0 +++
+2808404 +++ exited with 0 +++
+2808403 +++ exited with 0 +++
+2808402 +++ exited with 0 +++
+2808397 +++ exited with 0 +++
+2808401 +++ exited with 0 +++
+2808398 +++ exited with 0 +++
+2808400 +++ exited with 0 +++
+2808399 +++ exited with 0 +++
+2808335 +++ exited with 0 +++
+2808334 +++ exited with 0 +++
+2808339 +++ exited with 0 +++
+2809043 +++ exited with 0 +++
+2808273 sendto(26, "\27\3\3\0\"\27\10\354\270\301\262\23\f\345jHl\34\235\355\223:8\317\330e\331\265\371W\361\234\276;9\213\317\33b", 39, MSG_NOSIGNAL, NULL, 0) = 39
+2808273 sendto(26, "\27\3\3\0\23\300\344\24\365.\tL\203\3246E7\207\322\330\375RD\241", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2809558 +++ exited with 0 +++
+2809875 +++ exited with 0 +++
+2809557 +++ exited with 0 +++
+2808273 sendto(25, "\27\3\3\0\"K#\245\252\3112H\327\35Xb8'\371\203\373\365\234R\177\5\365Y\266&}9\261\253\351\24`\0\36", 39, MSG_NOSIGNAL, NULL, 0) = 39
+2808273 sendto(25, "\27\3\3\0\23M2L\342d\355b\30\6\35\2117\24\306\357\240\226r\316", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2811454 +++ exited with 0 +++
+2811450 +++ exited with 0 +++
+2811452 +++ exited with 0 +++
+2811449 +++ exited with 0 +++
+2811448 +++ exited with 0 +++
+2811453 +++ exited with 0 +++
+2811451 +++ exited with 0 +++
+2811483 +++ exited with 0 +++
+2811243 +++ exited with 0 +++
+2808259 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2807905, si_uid=1000} ---
+2808273 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2807905, si_uid=1000} ---
+2808284 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2807905, si_uid=1000} ---
+2808310 +++ killed by SIGTERM +++
+2808309 +++ killed by SIGTERM +++
+2808307 +++ killed by SIGTERM +++
+2808305 +++ killed by SIGTERM +++
+2808304 +++ killed by SIGTERM +++
+2808301 +++ killed by SIGTERM +++
+2808299 +++ killed by SIGTERM +++
+2808298 +++ killed by SIGTERM +++
+2808295 +++ killed by SIGTERM +++
+2808293 +++ killed by SIGTERM +++
+2808292 +++ killed by SIGTERM +++
+2808283 +++ killed by SIGTERM +++
+2808271 +++ killed by SIGTERM +++
+2808270 +++ killed by SIGTERM +++
+2808269 +++ killed by SIGTERM +++
+2808268 +++ killed by SIGTERM +++
+2808267 +++ killed by SIGTERM +++
+2808266 +++ killed by SIGTERM +++
+2808265 +++ killed by SIGTERM +++
+2808264 +++ killed by SIGTERM +++
+2808263 +++ killed by SIGTERM +++
+2808340 +++ killed by SIGTERM +++
+2808337 +++ killed by SIGTERM +++
+2808333 +++ killed by SIGTERM +++
+2808332 +++ killed by SIGTERM +++
+2808331 +++ killed by SIGTERM +++
+2808324 +++ killed by SIGTERM +++
+2808322 +++ killed by SIGTERM +++
+2808321 +++ killed by SIGTERM +++
+2808320 +++ killed by SIGTERM +++
+2808314 +++ killed by SIGTERM +++
+2808313 +++ killed by SIGTERM +++
+2808312 +++ killed by SIGTERM +++
+2808311 +++ killed by SIGTERM +++
+2808303 +++ killed by SIGTERM +++
+2808300 +++ killed by SIGTERM +++
+2808297 +++ killed by SIGTERM +++
+2808296 +++ killed by SIGTERM +++
+2808288 +++ killed by SIGTERM +++
+2808287 +++ killed by SIGTERM +++
+2808286 +++ killed by SIGTERM +++
+2808285 +++ killed by SIGTERM +++
+2808280 +++ killed by SIGTERM +++
+2808277 +++ killed by SIGTERM +++
+2808276 +++ killed by SIGTERM +++
+2808275 +++ killed by SIGTERM +++
+2808302 +++ killed by SIGTERM +++
+2808306 +++ killed by SIGTERM +++
+2808319 +++ killed by SIGTERM +++
+2808273 +++ killed by SIGTERM +++
+2808294 +++ killed by SIGTERM +++
+2808259 +++ killed by SIGTERM +++
+2808289 +++ killed by SIGTERM +++
+2808284 +++ killed by SIGTERM +++

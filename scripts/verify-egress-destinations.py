@@ -54,8 +54,25 @@ class RssHubHandler(BaseHTTPRequestHandler):
         pass
 CONNECT_RE = re.compile(
     r'connect\(\d+, \{sa_family=(AF_INET6?), sin_port=htons\((\d+)\), sin_addr=inet_addr\("([0-9a-f.:]+)"\)')
+CONNECT6_RE = re.compile(
+    r'connect\(\d+, \{sa_family=AF_INET6, sin6_port=htons\((\d+)\)'
+    r'.*?inet_pton\(AF_INET6, "([0-9a-fA-F:]+)"')
 DNS_RE = re.compile(r'sendto\(\d+, .*sin_port=htons\(53\)')
 OUT_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+
+
+def parse_connect(line):
+    """从一行 strace 里取出 (family, port, ip)；不匹配返回 None。
+
+    IPv4 与 IPv6 都要认：只认 IPv4 会在双栈环境里**默默漏计目的地**（评审 N1）。
+    """
+    m = CONNECT_RE.search(line)
+    if m:
+        return ('AF_INET6' if m.group(1) == 'AF_INET6' else 'AF_INET', int(m.group(2)), m.group(3))
+    m = CONNECT6_RE.search(line)
+    if m:
+        return ('AF_INET6', int(m.group(1)), m.group(2))
+    return None
 
 
 def write_evidence(name, payload):
@@ -217,13 +234,13 @@ async def main():
             by_ip = {}
             unfinished = 0
             for line in text.splitlines():
-                m = CONNECT_RE.search(line)
-                if not m:
+                parsed = parse_connect(line)
+                if parsed is None:
                     continue
                 is_unfinished = '<unfinished' in line
                 if is_unfinished:
                     unfinished += 1
-                family, port, ip = m.group(1), int(m.group(2)), m.group(3)
+                family, port, ip = parsed
                 slot = by_ip.setdefault((ip, family), {'count': 0, 'ports': set()})
                 slot['count'] += 1
                 slot['ports'].add(port)
@@ -266,6 +283,52 @@ async def main():
             assert not report['unclassified'], f"白名单外目的地: {report['unclassified']}"
             report['checks'].append('complete refresh cycle: only feed host, image host, DNS and loopback')
             report['checks'].append('WebKit-side image traffic visible through strace connect()')
+
+            # 5) 开关关闭态对照（提案评审 NOTE N3）：关掉列表缩略图后，同一次启动里
+            #    不得再出现任何**图片站**连接——即「关闭开关后该类请求消失」不是口号。
+            with sqlite3.connect(dbpath) as db:
+                row = db.execute("SELECT value FROM settings WHERE key='ui.theme_config'").fetchone()
+                theme = json.loads(row[0]) if row and row[0] else {}
+                theme.setdefault('overrides', {}).setdefault('list', {})['thumbnail'] = False
+                db.execute("UPDATE settings SET value=? WHERE key='ui.theme_config'",
+                           (json.dumps(theme),))
+                db.execute("UPDATE settings SET value='false' WHERE key='refresh.on_start'")
+            off_log = (OUT_DIR / 'egress-strace-toggle-off.log') if OUT_DIR else Path('/tmp/egress-off.log')
+            if off_log.exists():
+                off_log.unlink()
+            with log_path.open('a') as log:
+                app = subprocess.Popen(
+                    ['strace', '-f', '-e', 'trace=connect,sendto', '-o', str(off_log),
+                     '-s', '200', 'target/debug/rustrss-desktop'],
+                    env=env, stdout=log, stderr=log, start_new_session=True)
+            for _ in range(120 * 5):
+                if 'loaded feeds=' in log_path.read_text():
+                    break
+                await asyncio.sleep(.2)
+            await asyncio.sleep(45)
+            stop(app)
+            app = None
+            off_text = off_log.read_text(errors='replace') if off_log.exists() else ''
+            off_dests = {}
+            for line in off_text.splitlines():
+                parsed = parse_connect(line)
+                if parsed is None:
+                    continue
+                family, port, ip = parsed
+                off_dests.setdefault((ip, family), {'count': 0, 'ports': set()})
+                off_dests[(ip, family)]['count'] += 1
+                off_dests[(ip, family)]['ports'].add(port)
+            report['toggle_off_raw_log'] = str(off_log)
+            report['toggle_off_destinations'] = [
+                {'ip': ip, 'family': fam, 'count': slot['count'], 'ports': sorted(slot['ports']),
+                 'owner': owner_of(ip, slot['ports'])}
+                for (ip, fam), slot in sorted(off_dests.items(), key=lambda kv: -kv[1]['count'])]
+            off_kinds = {d['owner'] for d in report['toggle_off_destinations']}
+            assert 'image_host' not in off_kinds, \
+                f'关闭缩略图开关后仍出现图片站连接: {report["toggle_off_destinations"]}'
+            assert not [d for d in report['toggle_off_destinations'] if d['owner'] == 'UNCLASSIFIED'], \
+                f"关闭态出现白名单外目的地: {report['toggle_off_destinations']}"
+            report['checks'].append('thumbnail toggle off: no image-host connection at all')
             report['evidence_file'] = write_evidence('egress-destinations-results.json', report)
             print(json.dumps(report, ensure_ascii=False))
         finally:

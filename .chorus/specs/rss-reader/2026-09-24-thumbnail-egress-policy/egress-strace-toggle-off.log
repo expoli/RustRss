@@ -1,0 +1,158 @@
+2814094 +++ exited with 0 +++
+2814089 connect(4, {sa_family=AF_UNIX, sun_path="/tmp/rustrss-egress-elgigszf/runtime/wayland-0"}, 49) = -1 ENOENT (没有那个文件或目录)
+2814089 connect(4, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
+2814089 connect(6, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
+2814089 connect(6, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2814089 sendto(6, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2814089 sendto(6, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2814089 sendto(6, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814089 sendto(6, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814089 connect(7, {sa_family=AF_UNIX, sun_path="/run/user/1000/at-spi/bus_0"}, 29) = 0
+2814089 sendto(7, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2814089 sendto(7, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2814089 sendto(7, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814089 sendto(7, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814089 connect(10, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 110) = 0
+2814089 sendto(10, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814089 sendto(10, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2814089 sendto(10, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814089 sendto(10, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814089 sendto(10, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814089 connect(11, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2814089 sendto(11, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2814089 sendto(11, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2814089 sendto(11, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814089 sendto(11, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814099 connect(14, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
+2814089 connect(15, {sa_family=AF_UNIX, sun_path=@"/tmp/.X11-unix/X1"}, 20) = 0
+2814089 connect(5, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2814089 sendto(5, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2814089 sendto(5, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2814089 sendto(5, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814089 sendto(5, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814111 +++ exited with 0 +++
+2814112 sendto(6, [{nlmsg_len=17, nlmsg_type=RTM_GETROUTE, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=0, nlmsg_pid=0}, {rtm_family=AF_UNSPEC, ...}], 20, MSG_NOSIGNAL, NULL, 0) = 20
+2814112 connect(8, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
+2814112 sendto(8, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814112 sendto(8, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2814112 sendto(8, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814112 sendto(8, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814112 sendto(8, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814128 +++ exited with 0 +++
+2814125 +++ exited with 0 +++
+2814123 +++ exited with 0 +++
+2814122 +++ exited with 0 +++
+2814089 connect(39, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
+2814089 sendto(39, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814089 sendto(39, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2814089 sendto(39, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814089 sendto(39, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814089 sendto(39, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814112 connect(15, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 110) = 0
+2814112 sendto(15, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814112 sendto(15, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2814112 sendto(15, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814112 sendto(15, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814112 sendto(15, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814170 connect(14, {sa_family=AF_UNIX, sun_path="/run/user/1000/at-spi/bus_0"}, 110) = 0
+2814170 sendto(14, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814170 sendto(14, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2814170 sendto(14, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814170 sendto(14, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814170 connect(20, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 110) = 0
+2814170 sendto(20, "AUTH\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814170 sendto(20, "AUTH EXTERNAL\r\n", 15, MSG_NOSIGNAL, NULL, 0) = 15
+2814170 sendto(20, "DATA\r\n", 6, MSG_NOSIGNAL, NULL, 0) = 6
+2814170 sendto(20, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814170 sendto(20, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814089 connect(42, {sa_family=AF_UNIX, sun_path="/run/user/1000/bus"}, 20) = 0
+2814089 sendto(42, "\0", 1, MSG_NOSIGNAL, NULL, 0) = 1
+2814089 sendto(42, "AUTH EXTERNAL 31303030\r\n", 24, MSG_NOSIGNAL, NULL, 0) = 24
+2814089 sendto(42, "NEGOTIATE_UNIX_FD\r\n", 19, MSG_NOSIGNAL, NULL, 0) = 19
+2814089 sendto(42, "BEGIN\r\n", 7, MSG_NOSIGNAL, NULL, 0) = 7
+2814155 +++ exited with 0 +++
+2814190 +++ exited with 0 +++
+2814187 +++ exited with 0 +++
+2814114 +++ exited with 0 +++
+2814138 +++ exited with 0 +++
+2814137 +++ exited with 0 +++
+2814136 +++ exited with 0 +++
+2814162 +++ exited with 0 +++
+2814170 +++ exited with 0 +++
+2814458 +++ exited with 0 +++
+2814479 +++ exited with 0 +++
+2814262 +++ exited with 0 +++
+2814258 +++ exited with 0 +++
+2814264 +++ exited with 0 +++
+2814261 +++ exited with 0 +++
+2814260 +++ exited with 0 +++
+2814263 +++ exited with 0 +++
+2814259 +++ exited with 0 +++
+2814457 +++ exited with 0 +++
+2814186 +++ exited with 0 +++
+2814201 +++ exited with 0 +++
+2814681 +++ exited with 0 +++
+2814911 +++ exited with 0 +++
+2814910 +++ exited with 0 +++
+2815209 +++ exited with 0 +++
+2815317 +++ exited with 0 +++
+2815208 +++ exited with 0 +++
+2816940 +++ exited with 0 +++
+2816997 +++ exited with 0 +++
+2814089 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2807905, si_uid=1000} ---
+2814130 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2807905, si_uid=1000} ---
+2814112 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=2807905, si_uid=1000} ---
+2817269 +++ killed by SIGTERM +++
+2814191 +++ killed by SIGTERM +++
+2814185 +++ killed by SIGTERM +++
+2814181 +++ killed by SIGTERM +++
+2814180 +++ killed by SIGTERM +++
+2814175 +++ killed by SIGTERM +++
+2814169 +++ killed by SIGTERM +++
+2814168 +++ killed by SIGTERM +++
+2814166 +++ killed by SIGTERM +++
+2814165 +++ killed by SIGTERM +++
+2814161 +++ killed by SIGTERM +++
+2814159 +++ killed by SIGTERM +++
+2814158 +++ killed by SIGTERM +++
+2814157 +++ killed by SIGTERM +++
+2814156 +++ killed by SIGTERM +++
+2814154 +++ killed by SIGTERM +++
+2814153 +++ killed by SIGTERM +++
+2814152 +++ killed by SIGTERM +++
+2814151 +++ killed by SIGTERM +++
+2814150 +++ killed by SIGTERM +++
+2814148 +++ killed by SIGTERM +++
+2814147 +++ killed by SIGTERM +++
+2814146 +++ killed by SIGTERM +++
+2814145 +++ killed by SIGTERM +++
+2814144 +++ killed by SIGTERM +++
+2814143 +++ killed by SIGTERM +++
+2814142 +++ killed by SIGTERM +++
+2814141 +++ killed by SIGTERM +++
+2814140 +++ killed by SIGTERM +++
+2814139 +++ killed by SIGTERM +++
+2814135 +++ killed by SIGTERM +++
+2814134 +++ killed by SIGTERM +++
+2814133 +++ killed by SIGTERM +++
+2814131 +++ killed by SIGTERM +++
+2814129 +++ killed by SIGTERM +++
+2814127 +++ killed by SIGTERM +++
+2814124 +++ killed by SIGTERM +++
+2814121 +++ killed by SIGTERM +++
+2814120 +++ killed by SIGTERM +++
+2814110 +++ killed by SIGTERM +++
+2814109 +++ killed by SIGTERM +++
+2814101 +++ killed by SIGTERM +++
+2814100 +++ killed by SIGTERM +++
+2814099 +++ killed by SIGTERM +++
+2814098 +++ killed by SIGTERM +++
+2814097 +++ killed by SIGTERM +++
+2814096 +++ killed by SIGTERM +++
+2814095 +++ killed by SIGTERM +++
+2814132 +++ killed by SIGTERM +++
+2814130 +++ killed by SIGTERM +++
+2814160 +++ killed by SIGTERM +++
+2814112 +++ killed by SIGTERM +++
+2814149 +++ killed by SIGTERM +++
+2814089 +++ killed by SIGTERM +++
