@@ -8,6 +8,8 @@
 - 同一进程内的后续查询算热缓存；
 - 时延口径 = **输入事件 → 列表完成渲染**（MutationObserver + performance.now），与既有脚本同源。
 
+夹具说明（如实）：10k 条目的**生产 Store 形状**库；正文约 **0.9KB**，小于生产的约 **11.5KB**，所以延迟**不可**视为与真实生产库完全相同。
+
 输入法说明（AC1 要求）：xdotool 注入的是**真实键盘事件**（`isTrusted=true`），走浏览器默认输入路径；
 中文输入法的候选/合成（fcitx5 / ibus）不在本探针范围 → 如实标为外部依赖。
 """
@@ -101,7 +103,8 @@ async def main():
         seed = root / 'seed.sqlite'
         subprocess.run(['target/debug/examples/search_scale', 'init', str(seed)],
                        check=True, timeout=180)
-        # 每轮拷一份新文件：SSD 零驻留页 → 第一个查询是冷页口径
+        # 每轮拷一份新文件：第一个查询是 **SQLite 连接级冷**（新拷贝的库立刻在 OS 页缓存里，
+        # 所以这里**不**宣称「SSD 零驻留页」；保守口径见 docstring）
         db_path = root / 'live.sqlite'
         shutil.copy(seed, db_path)
         runtime = root / 'runtime'

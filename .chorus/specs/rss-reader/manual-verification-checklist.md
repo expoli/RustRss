@@ -1186,6 +1186,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 ## 28. 搜索端到端（release 口径）（2026-09-24-local-acceptance-closeout / 任务 94422722）
 
 - [x] WebView 键入 → 列表渲染端到端可用：`scripts/verify-search-e2e.py`（隔离实例 + xdotool 真实键事件 + MutationObserver 计时），release 构建、10k 生产形状库。
+- [x] 夹具如实：10k 条目的生产 Store 形状库，正文约 **0.9KB**（生产约 **11.5KB**），延迟不能视为与真实生产库完全相同。
 - [x] 时延实测量与口径标注：宽泛查询冷 **268ms**、热 **267ms**（200 行封顶页，断言为 `==200` 而非 `>0`）；单字 CJK 热 **254ms**。库文件每轮新拷贝 → 首查是 **SQLite 连接级冷**（**OS 页缓存不保证冷**，已按保守方向标注）。
 - [ ] **未达「可感知为即时」** → 全文搜索条目保持 open（core 口径 16–18ms/65–77ms 不能代替 UI 成本）。
 - [ ] **未验（保留 open）**：① 原生 Wayland 会话下的搜索输入（需用户在场）；② fcitx5 / ibus 候选窗与合成输入（外部依赖）；③ release 口径下的 500 源/其它平台整窗表现。
