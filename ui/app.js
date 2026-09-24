@@ -863,6 +863,14 @@ function renderListCount() {
   if (target.textContent !== text) target.textContent = text; // 同值零写入
 }
 
+function listEmptyKey() {
+  if (state.view.kind === 'search') return 'list.emptySearch';
+  if (!state.feeds.length) return 'list.emptySubscriptions';
+  if (state.view.kind === 'unread') return 'list.emptyUnread';
+  if (state.view.kind === 'tag') return 'tags.empty';
+  return 'list.empty';
+}
+
 function renderList() {
   const __t0 = performance.now();
   el('list-title').textContent = viewTitle();
@@ -876,13 +884,7 @@ function renderList() {
     const li = document.createElement('li');
     li.className = 'dim';
     li.style.cursor = 'default';
-    li.textContent = t(
-      state.view.kind === 'unread'
-        ? 'list.emptyUnread'
-        : state.view.kind === 'tag'
-          ? 'tags.empty'
-          : 'list.empty'
-    );
+    li.textContent = t(listEmptyKey());
     list.appendChild(li);
     installSentinel();
     return;
@@ -3396,7 +3398,12 @@ async function doAddFeed() {
     setStatus(t('status.adding'));
     log(`add_feed id=${id} url=${found.feed_url}`);
     const r = await invoke('refresh_feed', { feedId: id, concurrency: 1 });
-    setStatus(t('status.added', { inserted: r.inserted }));
+    if (r.failures.length) {
+      setStatus(t('status.addedFetchFailed', { error: r.failures[0].error }), true);
+      log(`add_feed initial fetch failed: ${r.failures[0].error}`);
+    } else {
+      setStatus(t('status.added', { inserted: r.inserted }));
+    }
     input.value = '';
     await loadAll();
   } catch (e) {

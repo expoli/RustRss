@@ -178,3 +178,5 @@ created: 2026-09-20
 - [x] MCP 文件600秒真实时钟回收：无模型客户端脚本检查创建/重拍/保存/取消/PNG权限尺寸/SQLite回读，等待期间无新MCP请求，605.01秒三文件均回收；见 [补验报告](2026-09-23-theme-preview/file-probe-ui-followup.md)。
 
 - [x] KDE原生Wayland补验：外屏125%/150%主界面与设置弹窗、用户清晰度确认和真实点击通过；真实系统浅/深切换跟随system，显式light/dark不受影响，SQLite无写与正文锚点保持，结束恢复原桌面。范围见 [原生验收](2026-09-23-theme-preview/native-settings.md)。
+
+- [x] 区分无订阅与空搜索提示；初次抓取失败不误报成功，保留订阅并提示刷新重试。回环HTTP的503/无效RSS/断连接与恢复均保留缓存，双语UI补验见 [空态与失败报告](2026-09-23-theme-preview/empty-error-states.md)。

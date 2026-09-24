@@ -1,0 +1,747 @@
+{
+  "baseline_commit": "4555e42",
+  "baseline": {
+    "checks": [
+      "fresh profile empty layout",
+      "discovery failure preserves empty database and reports error",
+      "discovery failure retains URL for retry",
+      "first fetch failure retains subscription and shows badge",
+      "retry recovers article and clears error badge",
+      "empty search does not delete cached article",
+      "changing search query restores matching result",
+      "fail preserves cached article and enables retry",
+      "malformed preserves cached article and enables retry",
+      "drop preserves cached article and enables retry",
+      "final retry clears persisted failure without duplicating article"
+    ],
+    "issues": [
+      "empty subscriptions offer an actionable next step",
+      "first fetch failure is not reported as successful addition",
+      "empty search explains there are no matching articles"
+    ],
+    "observations": [
+      {
+        "list": "Nothing unread\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "",
+        "statusError": false,
+        "failed": false,
+        "tooltips": [],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 0,
+        "overflow": false,
+        "label": "no-subscriptions",
+        "database": {
+          "feeds": 0,
+          "entries": 0,
+          "status": []
+        }
+      },
+      {
+        "list": "Nothing unread\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "Could not find a feed: 抓取 http://127.0.0.1:33249/feed 失败：HTTP 503",
+        "statusError": true,
+        "failed": false,
+        "tooltips": [],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 0,
+        "overflow": false,
+        "label": "discovery-503",
+        "database": {
+          "feeds": 0,
+          "entries": 0,
+          "status": []
+        }
+      },
+      {
+        "list": "Nothing unread\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "Added: 0 new articles",
+        "statusError": false,
+        "failed": true,
+        "tooltips": [
+          "Last fetch: http_503 | HTTP 503\nDouble-click to retry"
+        ],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 0,
+        "overflow": false,
+        "label": "first-fetch-503",
+        "database": {
+          "feeds": 1,
+          "entries": 0,
+          "status": [
+            [
+              "http_503",
+              "HTTP 503"
+            ]
+          ]
+        }
+      },
+      {
+        "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "Refreshed: 1 fetched | 0 not modified | 1 new | 0 failed",
+        "statusError": false,
+        "failed": false,
+        "tooltips": [
+          "http://127.0.0.1:33249/feed\nDouble-click to refresh this feed"
+        ],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 1,
+        "overflow": false,
+        "label": "recovered",
+        "database": {
+          "feeds": 1,
+          "entries": 1,
+          "status": [
+            [
+              "ok",
+              null
+            ]
+          ]
+        }
+      },
+      {
+        "list": "No articles here yet\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "Refreshed: 1 fetched | 0 not modified | 1 new | 0 failed",
+        "statusError": false,
+        "failed": false,
+        "tooltips": [
+          "http://127.0.0.1:33249/feed\nDouble-click to refresh this feed"
+        ],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 0,
+        "overflow": false,
+        "label": "empty-search",
+        "database": {
+          "feeds": 1,
+          "entries": 1,
+          "status": [
+            [
+              "ok",
+              null
+            ]
+          ]
+        }
+      },
+      {
+        "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+        "statusError": false,
+        "failed": true,
+        "tooltips": [
+          "Last fetch: http_503 | HTTP 503\nDouble-click to retry"
+        ],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 1,
+        "overflow": false,
+        "label": "refresh-fail",
+        "database": {
+          "feeds": 1,
+          "entries": 1,
+          "status": [
+            [
+              "http_503",
+              "HTTP 503"
+            ]
+          ]
+        }
+      },
+      {
+        "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+        "statusError": false,
+        "failed": true,
+        "tooltips": [
+          "Last fetch: parse_error | feed 解析失败: unable to parse feed: no root element\nDouble-click to retry"
+        ],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 1,
+        "overflow": false,
+        "label": "refresh-malformed",
+        "database": {
+          "feeds": 1,
+          "entries": 1,
+          "status": [
+            [
+              "parse_error",
+              "feed 解析失败: unable to parse feed: no root element"
+            ]
+          ]
+        }
+      },
+      {
+        "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+        "statusError": false,
+        "failed": true,
+        "tooltips": [
+          "Last fetch: network_error | 请求失败: error sending request for url (http://127.0.0.1:33249/feed)\nDouble-click to retry"
+        ],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 1,
+        "overflow": false,
+        "label": "refresh-drop",
+        "database": {
+          "feeds": 1,
+          "entries": 1,
+          "status": [
+            [
+              "network_error",
+              "请求失败: error sending request for url (http://127.0.0.1:33249/feed)"
+            ]
+          ]
+        }
+      },
+      {
+        "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+        "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+        "status": "Refreshed: 1 fetched | 0 not modified | 0 new | 0 failed",
+        "statusError": false,
+        "failed": false,
+        "tooltips": [
+          "http://127.0.0.1:33249/feed\nDouble-click to refresh this feed"
+        ],
+        "addDisabled": false,
+        "refreshDisabled": false,
+        "rows": 1,
+        "overflow": false,
+        "label": "final-recovery",
+        "database": {
+          "feeds": 1,
+          "entries": 1,
+          "status": [
+            [
+              "ok",
+              null
+            ]
+          ]
+        }
+      }
+    ],
+    "captures": [
+      "no-subscriptions.png",
+      "first-fetch-503.png",
+      "empty-search.png",
+      "refresh-disconnected.png"
+    ],
+    "passed": false
+  },
+  "fixed": [
+    {
+      "locale": "en",
+      "theme": "light",
+      "checks": [
+        "bilingual keys and markup",
+        "requested theme applied",
+        "fresh profile empty layout",
+        "empty subscriptions offer an actionable next step",
+        "discovery failure preserves empty database and reports error",
+        "discovery failure retains URL for retry",
+        "first fetch failure retains subscription and shows badge",
+        "first fetch failure is not reported as successful addition",
+        "retry recovers article and clears error badge",
+        "empty search does not delete cached article",
+        "empty search explains there are no matching articles",
+        "changing search query restores matching result",
+        "fail preserves cached article and enables retry",
+        "malformed preserves cached article and enables retry",
+        "drop preserves cached article and enables retry",
+        "cached body readable while connection fails",
+        "final retry clears persisted failure without duplicating article"
+      ],
+      "issues": [],
+      "observations": [
+        {
+          "list": "No subscriptions yet. Use Add feed above, or import OPML in Settings.\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "no-subscriptions",
+          "database": {
+            "feeds": 0,
+            "entries": 0,
+            "status": []
+          }
+        },
+        {
+          "list": "No subscriptions yet. Use Add feed above, or import OPML in Settings.\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Could not find a feed: 抓取 http://127.0.0.1:44155/feed 失败：HTTP 503",
+          "statusError": true,
+          "failed": false,
+          "tooltips": [],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "discovery-503",
+          "database": {
+            "feeds": 0,
+            "entries": 0,
+            "status": []
+          }
+        },
+        {
+          "list": "Nothing unread\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Subscription added, but fetching failed: HTTP 503. Use Refresh to retry.",
+          "statusError": true,
+          "failed": true,
+          "tooltips": [
+            "Last fetch: http_503 | HTTP 503\nDouble-click to retry"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "first-fetch-503",
+          "database": {
+            "feeds": 1,
+            "entries": 0,
+            "status": [
+              [
+                "http_503",
+                "HTTP 503"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 1 fetched | 0 not modified | 1 new | 0 failed",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:44155/feed\nDouble-click to refresh this feed"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "recovered",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "list": "No matching articles. Try different keywords.\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 1 fetched | 0 not modified | 1 new | 0 failed",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:44155/feed\nDouble-click to refresh this feed"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "empty-search",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "Last fetch: http_503 | HTTP 503\nDouble-click to retry"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-fail",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "http_503",
+                "HTTP 503"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "Last fetch: parse_error | feed 解析失败: unable to parse feed: no root element\nDouble-click to retry"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-malformed",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "parse_error",
+                "feed 解析失败: unable to parse feed: no root element"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "Last fetch: network_error | 请求失败: error sending request for url (http://127.0.0.1:44155/feed)\nDouble-click to retry"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-drop",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "network_error",
+                "请求失败: error sending request for url (http://127.0.0.1:44155/feed)"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Nothing unread\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 1 fetched | 0 not modified | 0 new | 0 failed",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:44155/feed\nDouble-click to refresh this feed"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "final-recovery",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        }
+      ],
+      "captures": [
+        "no-subscriptions.png",
+        "first-fetch-503.png",
+        "empty-search.png",
+        "refresh-disconnected.png"
+      ],
+      "passed": true
+    },
+    {
+      "locale": "zh-CN",
+      "theme": "dark",
+      "checks": [
+        "bilingual keys and markup",
+        "requested theme applied",
+        "fresh profile empty layout",
+        "empty subscriptions offer an actionable next step",
+        "discovery failure preserves empty database and reports error",
+        "discovery failure retains URL for retry",
+        "first fetch failure retains subscription and shows badge",
+        "first fetch failure is not reported as successful addition",
+        "retry recovers article and clears error badge",
+        "empty search does not delete cached article",
+        "empty search explains there are no matching articles",
+        "changing search query restores matching result",
+        "fail preserves cached article and enables retry",
+        "malformed preserves cached article and enables retry",
+        "drop preserves cached article and enables retry",
+        "cached body readable while connection fails",
+        "final retry clears persisted failure without duplicating article"
+      ],
+      "issues": [],
+      "observations": [
+        {
+          "list": "还没有订阅。点击上方「添加订阅」，或在设置中导入 OPML。\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "no-subscriptions",
+          "database": {
+            "feeds": 0,
+            "entries": 0,
+            "status": []
+          }
+        },
+        {
+          "list": "还没有订阅。点击上方「添加订阅」，或在设置中导入 OPML。\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "自动发现失败：抓取 http://127.0.0.1:41731/feed 失败：HTTP 503",
+          "statusError": true,
+          "failed": false,
+          "tooltips": [],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "discovery-503",
+          "database": {
+            "feeds": 0,
+            "entries": 0,
+            "status": []
+          }
+        },
+        {
+          "list": "没有未读文章\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "订阅已添加，但抓取失败：HTTP 503。可点击刷新重试。",
+          "statusError": true,
+          "failed": true,
+          "tooltips": [
+            "上次抓取：http_503｜HTTP 503\n双击可重试"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "first-fetch-503",
+          "database": {
+            "feeds": 1,
+            "entries": 0,
+            "status": [
+              [
+                "http_503",
+                "HTTP 503"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\n已到末尾（共 1 篇）\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 1｜未修改 0｜新增 1｜失败 0",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:41731/feed\n双击刷新此源"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "recovered",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "list": "没有找到匹配的文章，请更换关键词。\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 1｜未修改 0｜新增 1｜失败 0",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:41731/feed\n双击刷新此源"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "empty-search",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\n已到末尾（共 1 篇）\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 0｜未修改 0｜新增 0｜失败 1",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "上次抓取：http_503｜HTTP 503\n双击可重试"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-fail",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "http_503",
+                "HTTP 503"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\n已到末尾（共 1 篇）\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 0｜未修改 0｜新增 0｜失败 1",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "上次抓取：parse_error｜feed 解析失败: unable to parse feed: no root element\n双击可重试"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-malformed",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "parse_error",
+                "feed 解析失败: unable to parse feed: no root element"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\n已到末尾（共 1 篇）\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 0｜未修改 0｜新增 0｜失败 1",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "上次抓取：network_error｜请求失败: error sending request for url (http://127.0.0.1:41731/feed)\n双击可重试"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-drop",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "network_error",
+                "请求失败: error sending request for url (http://127.0.0.1:41731/feed)"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "没有未读文章\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 1｜未修改 0｜新增 0｜失败 0",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:41731/feed\n双击刷新此源"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "final-recovery",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        }
+      ],
+      "captures": [
+        "no-subscriptions.png",
+        "first-fetch-503.png",
+        "empty-search.png",
+        "refresh-disconnected.png"
+      ],
+      "passed": true
+    }
+  ],
+  "tests": {
+    "cargo": {
+      "passed": 413,
+      "failed": 0,
+      "result_sections": 26
+    },
+    "node": {
+      "passed": 45,
+      "failed": 0
+    },
+    "clippy": "exit 0; three existing core warnings",
+    "i18n_keys": 472
+  },
+  "scope": "Xvfb and loopback HTTP; original production UI and IPC. Not native Wayland or remote network acceptance."
+}
