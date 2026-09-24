@@ -1,9 +1,14 @@
-use rustrss_core::{store::schema::MIGRATIONS, Store};
+use rustrss_core::store::backfill::apply_pre_release_backfill;
+use rustrss_core::store::schema::{BASELINE_VERSION, MIGRATIONS};
+use rustrss_core::Store;
 
-fn old_database(path: &std::path::Path) -> rusqlite::Connection {
+/// 基线库 + 预置行（token 只含 bigram、缩略图列为空）——
+/// 相当于压平前需要回填的老数据，用来验证保留件 `store::backfill`。
+fn baseline_database(path: &std::path::Path) -> rusqlite::Connection {
     let db = rusqlite::Connection::open(path).unwrap();
-    for migration in &MIGRATIONS[..12] { db.execute_batch(migration).unwrap(); }
-    db.execute_batch(r#"PRAGMA user_version=12;
+    for migration in MIGRATIONS { db.execute_batch(migration).unwrap(); }
+    db.pragma_update(None, "user_version", BASELINE_VERSION).unwrap();
+    db.execute_batch(r#"
         INSERT INTO feeds(id,url,title,created_at) VALUES(1,'https://example.invalid','Fixture',1);
         INSERT INTO entries(id,feed_id,stable_id,id_origin,title,url,content_html,content_text,search_tokens,read,starred,fetched_at)
         VALUES(1,1,'one','source_data','标题','https://example.invalid/article/1','<p><img src="../cover.jpg"></p>','稀有词','标题 稀有 有词',1,1,10),
@@ -13,9 +18,12 @@ fn old_database(path: &std::path::Path) -> rusqlite::Connection {
 }
 
 #[test]
-fn upgrade_indexes_existing_characters_preserves_fields_and_time_order() {
+fn backfill_indexes_existing_characters_preserves_fields_and_time_order() {
+    // 压平前：跑 v13 迁移时**隐式**回填单字与缩略图；现在回填是保留件，显式调用。
     let dir=tempfile::tempdir().unwrap();let path=dir.path().join("fixture.sqlite");
-    drop(old_database(&path));
+    let db=baseline_database(&path);
+    assert!(apply_pre_release_backfill(&db).unwrap() >= 1, "回填应改写既有行");
+    drop(db);
     let store=Store::open(&path).unwrap();
     assert_eq!(store.search("稀",200).unwrap().iter().map(|r|r.id).collect::<Vec<_>>(),vec![3,1]);
     let entry=store.get_entry(1).unwrap().unwrap();assert!(entry.read && entry.starred);
@@ -37,14 +45,20 @@ fn upgrade_indexes_existing_characters_preserves_fields_and_time_order() {
 }
 
 #[test]
-fn interrupted_upgrade_rolls_back_tokens_and_version_then_retries() {
+fn interrupted_baseline_creation_rolls_back_then_retries() {
+    // 压平前是「迁移中断回滚 + 重试」；现在对应「基线建库中断回滚 + 重试」。
+    // 用一个**非表**对象占位：detect 仍判 Fresh（用户表数为 0），但基线建表必失败。
     let dir=tempfile::tempdir().unwrap();let path=dir.path().join("fixture.sqlite");
-    let db=old_database(&path);
-    db.execute_batch("CREATE TRIGGER fail_upgrade BEFORE UPDATE OF search_tokens ON entries WHEN old.id=2 BEGIN SELECT RAISE(ABORT,'fixture failure'); END;").unwrap();
-    assert!(Store::open(&path).is_err());
-    assert_eq!(db.query_row("PRAGMA user_version",[],|r|r.get::<_,i64>(0)).unwrap(),12);
-    assert_eq!(db.query_row("SELECT search_tokens FROM entries WHERE id=1",[],|r|r.get::<_,String>(0)).unwrap(),"标题 稀有 有词");
-    assert_eq!(db.query_row("SELECT COUNT(*) FROM pragma_table_info('entries') WHERE name='thumbnail_url'",[],|r|r.get::<_,i64>(0)).unwrap(),0);
-    db.execute_batch("DROP TRIGGER fail_upgrade").unwrap();
-    assert_eq!(Store::open(&path).unwrap().search("稀",200).unwrap().len(),2);
+    {
+        let db=rusqlite::Connection::open(&path).unwrap();
+        db.execute_batch("CREATE VIEW feeds AS SELECT 1 AS id;").unwrap();
+    }
+    assert!(Store::open(&path).is_err(),"基线建库失败必须冒泡，不得当成功");
+    let db=rusqlite::Connection::open(&path).unwrap();
+    assert_eq!(db.query_row("PRAGMA user_version",[],|r|r.get::<_,i64>(0)).unwrap(),0,"失败必须回滚版本号");
+    let partial:i64=db.query_row("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='folders'",[],|r|r.get(0)).unwrap();
+    assert_eq!(partial,0,"失败必须回滚已建的基线对象（不留半成品库）");
+    db.execute_batch("DROP VIEW feeds").unwrap();
+    let store=Store::open(&path).unwrap();
+    assert_eq!(store.schema_version().unwrap() as usize,MIGRATIONS.len(),"清理后可重试成功");
 }

@@ -50,14 +50,15 @@ fn group_boundary_is_enforced_and_new_feeds_append() {
 }
 
 #[test]
-fn v13_upgrade_keeps_alphabetical_order_and_cooldown() {
+fn alphabetical_order_and_cooldown_survive_reopen() {
+    // 压平前这条叫 v13_upgrade_...：那时靠「建 v13 夹具 → 让迁移补齐后续列」。
+    // 现在这些列一开始就在基线里，所以直接验证不变量本身：position 为 NULL 的源
+    // 按名称序排，Retry-After 冷却值随重开保留。
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("v13.sqlite");
+    let path = dir.path().join("baseline.sqlite");
+    drop(Store::open(&path).unwrap());
     let conn = rusqlite::Connection::open(&path).unwrap();
-    for migration in &rustrss_core::store::schema::MIGRATIONS[..13] {
-        conn.execute_batch(migration).unwrap();
-    }
-    conn.execute_batch("PRAGMA user_version=13; INSERT INTO feeds(id,url,title,created_at,retry_after_at) VALUES(1,'https://example.test/z','Z',1,1234),(2,'https://example.test/a','A',1,NULL);").unwrap();
+    conn.execute_batch("INSERT INTO feeds(id,url,title,created_at,retry_after_at) VALUES(1,'https://example.test/z','Z',1,1234),(2,'https://example.test/a','A',1,NULL);").unwrap();
     drop(conn);
     let s = Store::open(&path).unwrap();
     assert_eq!(ids(&s), vec![2, 1]);

@@ -326,5 +326,18 @@ fn schema_reaches_fulltext_migration() {
         MIGRATIONS.len(),
         "迁移应把 schema 推到最新版本"
     );
-    assert!(MIGRATIONS.len() >= 7, "全文标记位是第 7 条迁移");
+    // 压平后「第 7 条迁移」这个锚点已不存在（迁移只剩基线一条）：
+    // 改为直接断言全文标记位列在基线里——结构性断言，不靠条数间接代表。
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("schema.sqlite");
+    drop(Store::open(&path).unwrap());
+    let conn = rusqlite::Connection::open(&path).unwrap();
+    let fulltext_flag: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('entries') WHERE name='fulltext_fetched'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(fulltext_flag, 1, "基线必须带 fulltext_fetched（全文标记位）");
 }

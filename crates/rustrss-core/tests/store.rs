@@ -588,12 +588,11 @@ fn read_later_is_independent_and_queryable() {
 }
 
 #[test]
-fn migration_preserves_existing_rows_on_upgrade() {
-    // 真实走一次 v3→v4 升级：手工建一个 user_version=3 的库（entries 为 v3
-    // 形状，无 read_later 列）并预置数据，Store::open 应只跑第 4 条迁移
-    // （ALTER 加列 + 部分索引），既有行的 read/starred 保留、read_later 可用。
+fn baseline_read_later_column_is_writable_and_preserves_read_state() {
+    // 压平前这条走 v3→v4（ALTER 加 read_later 列 + 部分索引）。现在列一开始就在基线里：
+    // 保留原意——既有 read/starred 保留、read_later 可写读。
     let db_path = std::env::temp_dir().join(format!(
-        "rustrss-migration-test-{}-{}.sqlite",
+        "rustrss-read-later-{}-{}.sqlite",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -601,60 +600,37 @@ fn migration_preserves_existing_rows_on_upgrade() {
             .as_nanos()
     ));
     {
-        let conn = rusqlite::Connection::open(&db_path).expect("应能建旧库");
+        let conn = rusqlite::Connection::open(&db_path).expect("应能建基线库");
+        conn.execute_batch(&MIGRATIONS.join(";"))
+            .expect("应能跑基线");
+        conn.pragma_update(None, "user_version", MIGRATIONS.len() as i64)
+            .unwrap();
         conn.execute_batch(
             r#"
-            PRAGMA user_version = 3;
-            CREATE TABLE feeds (
-                id INTEGER PRIMARY KEY,
-                url TEXT NOT NULL UNIQUE,
-                title TEXT NOT NULL
-            );
-            CREATE TABLE entries (
-                id INTEGER PRIMARY KEY,
-                feed_id INTEGER NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
-                stable_id TEXT NOT NULL,
-                id_origin TEXT NOT NULL,
-                title TEXT NOT NULL,
-                url TEXT,
-                author TEXT,
-                published_at INTEGER,
-                updated_at INTEGER,
-                summary TEXT,
-                content_html TEXT,
-                content_text TEXT,
-                search_tokens TEXT NOT NULL DEFAULT '',
-                content_hash TEXT NOT NULL DEFAULT '',
-                read INTEGER NOT NULL DEFAULT 0,
-                starred INTEGER NOT NULL DEFAULT 0,
-                fetched_at INTEGER NOT NULL,
-                UNIQUE (feed_id, stable_id)
-            );
-            INSERT INTO feeds (id, url, title) VALUES (1, 'https://example.com/f.xml', '源');
+            INSERT INTO feeds (id, url, title, created_at) VALUES (1, 'https://example.com/f.xml', '源', 0);
             INSERT INTO entries (id, feed_id, stable_id, id_origin, title, search_tokens, content_hash, read, starred, fetched_at)
             VALUES (1, 1, 'm1', 'SourceData', '迁移保留', 'm1', 'h', 1, 0, 0);
             "#,
         )
-        .expect("建 v3 形状库应成功");
+        .expect("预置数据应成功");
     }
-    let store = Store::open(&db_path).expect("打开应自动跑 v4 迁移");
+    let store = Store::open(&db_path).expect("基线库应可直接打开");
     let row = store.get_entry(1).unwrap().unwrap();
     assert!(row.read, "既有 read=1 应保留");
     assert!(!row.starred);
     store.set_read_later(&[1], true).unwrap();
     let row = store.get_entry(1).unwrap().unwrap();
-    assert!(row.read_later, "迁移后新列应可写读");
+    assert!(row.read_later, "read_later 列应可写读");
     let _ = std::fs::remove_file(&db_path);
 }
 
 #[test]
-fn migration_v6_to_v7_adds_fulltext_flag_on_real_file() {
-    // 真实走一次 v6→v7：用迁移 1..6 **原样**建一个 user_version=6 的真文件库
-    // （v6 形状不手抄，避免抄错而漂移），预置一条已读的摘要型条目，再让 Store::open
-    // 只跑第 7 条迁移。断言：既有行与状态保留、新列默认 0（摘要型条目因此能显示
-    // 「获取全文」）、写回可用且可搜、二次打开不重复执行。
+fn baseline_fulltext_flag_defaults_to_pending_then_is_writable() {
+    // 压平前这条走 v6→v7（加 fulltext_fetched）。现在列一开始就在基线里：
+    // 保留原意——既有行与状态保留、新列默认 0（摘要型条目应显示「获取全文」）、
+    // 写回可用且可搜、二次打开不重复执行。
     let db_path = std::env::temp_dir().join(format!(
-        "rustrss-v7-migration-{}-{}.sqlite",
+        "rustrss-fulltext-flag-{}-{}.sqlite",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -662,11 +638,11 @@ fn migration_v6_to_v7_adds_fulltext_flag_on_real_file() {
             .as_nanos()
     ));
     {
-        let conn = rusqlite::Connection::open(&db_path).expect("应能建 v6 库");
-        for sql in &MIGRATIONS[..6] {
-            conn.execute_batch(sql).expect("应能跑 v1..v6 迁移");
-        }
-        conn.pragma_update(None, "user_version", 6).unwrap();
+        let conn = rusqlite::Connection::open(&db_path).expect("应能建基线库");
+        conn.execute_batch(&MIGRATIONS.join(";"))
+            .expect("应能跑基线");
+        conn.pragma_update(None, "user_version", MIGRATIONS.len() as i64)
+            .unwrap();
         conn.execute_batch(
             r#"
             INSERT INTO feeds (id, url, title, created_at)
@@ -680,7 +656,7 @@ fn migration_v6_to_v7_adds_fulltext_flag_on_real_file() {
         .expect("预置数据应成功");
     }
 
-    let store = Store::open(&db_path).expect("打开应自动跑 v7 迁移");
+    let store = Store::open(&db_path).expect("基线库应可直接打开");
     assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
     let row = store.get_entry(1).unwrap().expect("既有条目应保留");
     assert_eq!(row.title, "迁移保留");
@@ -708,13 +684,11 @@ fn migration_v6_to_v7_adds_fulltext_flag_on_real_file() {
 }
 
 #[test]
-fn migration_v7_to_v8_adds_per_feed_interval_on_real_file() {
-    // 真实走一次 v7→v8：用迁移 1..7 **原样**建一个 user_version=7 的真文件库
-    // （v7 形状不手抄，避免抄错而漂移），预置一个源与一条已读条目，再让
-    // Store::open 只跑第 8 条迁移。断言：既有行与状态保留、新列默认 NULL
-    // （存量源继续跟随全局）、覆盖值可写且重启后仍在、二次打开幂等。
+fn baseline_per_feed_interval_defaults_to_inherit_and_persists() {
+    // 压平前这条走 v7→v8（加 refresh_interval_minutes）。现在列一开始就在基线里：
+    // 保留原意——既有行与状态保留、新列默认 NULL（跟随全局）、覆盖值可写且重启后仍在。
     let db_path = std::env::temp_dir().join(format!(
-        "rustrss-v8-migration-{}-{}.sqlite",
+        "rustrss-interval-{}-{}.sqlite",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -722,11 +696,11 @@ fn migration_v7_to_v8_adds_per_feed_interval_on_real_file() {
             .as_nanos()
     ));
     {
-        let conn = rusqlite::Connection::open(&db_path).expect("应能建 v7 库");
-        for sql in &MIGRATIONS[..7] {
-            conn.execute_batch(sql).expect("应能跑 v1..v7 迁移");
-        }
-        conn.pragma_update(None, "user_version", 7).unwrap();
+        let conn = rusqlite::Connection::open(&db_path).expect("应能建基线库");
+        conn.execute_batch(&MIGRATIONS.join(";"))
+            .expect("应能跑基线");
+        conn.pragma_update(None, "user_version", MIGRATIONS.len() as i64)
+            .unwrap();
         conn.execute_batch(
             r#"
             INSERT INTO feeds (id, url, title, created_at)
@@ -740,13 +714,13 @@ fn migration_v7_to_v8_adds_per_feed_interval_on_real_file() {
         .expect("预置数据应成功");
     }
 
-    let store = Store::open(&db_path).expect("打开应自动跑 v8 迁移");
+    let store = Store::open(&db_path).expect("基线库应可直接打开");
     assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
     let feeds = store.list_feeds().unwrap();
     assert_eq!(feeds.len(), 1, "既有的源应保留");
     assert_eq!(
         feeds[0].refresh_interval_minutes, None,
-        "升级后新列为 NULL＝跟随全局（行为与升级前一致）"
+        "新列为 NULL＝跟随全局（默认行为）"
     );
     let row = store.get_entry(1).unwrap().expect("既有条目应保留");
     assert_eq!(row.title, "迁移保留");
@@ -869,11 +843,12 @@ fn custom_title_is_display_name_and_survives_refresh() {
 }
 
 #[test]
-fn migration_v9_to_v10_adds_custom_title_on_real_file() {
-    // 真文件走一次 v9→v10：v9 库升级后既有订阅/条目与状态全部保留，新列 NULL
-    // （存量源继续显示源站名）、可写且重启后仍在、二次打开幂等。
+fn baseline_custom_title_defaults_to_source_title_and_persists() {
+    // 压平前走 v9→v10（加 custom_title）。现在列一开始就在基线里：
+    // 保留原意——既有订阅/条目与状态全保留、新列 NULL（继续显示源站名）、
+    // 可写且重启后仍在、列表与条目两处同步显示。
     let db_path = std::env::temp_dir().join(format!(
-        "rustrss-v10-test-{}-{}.sqlite",
+        "rustrss-custom-title-{}-{}.sqlite",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -882,22 +857,23 @@ fn migration_v9_to_v10_adds_custom_title_on_real_file() {
     ));
     {
         let conn = rusqlite::Connection::open(&db_path).unwrap();
-        conn.execute_batch(&MIGRATIONS[..9].join(";")).unwrap();
+        conn.execute_batch(&MIGRATIONS.join(";")).unwrap();
+        conn.pragma_update(None, "user_version", MIGRATIONS.len() as i64)
+            .unwrap();
         conn.execute_batch(
             "INSERT INTO feeds (id, url, title, created_at) VALUES (1, 'https://a', '源 A', 0);
              INSERT INTO entries (id, feed_id, stable_id, id_origin, title, url, summary,
                                   search_tokens, content_hash, read, starred, fetched_at, read_later)
-               VALUES (1, 1, 'm1', 'source_data', '迁移保留', 'https://a/1', '摘要', '迁移保留', 'h', 1, 1, 0, 0);
-             PRAGMA user_version = 9;",
+               VALUES (1, 1, 'm1', 'source_data', '迁移保留', 'https://a/1', '摘要', '迁移保留', 'h', 1, 1, 0, 0);",
         )
         .unwrap();
     }
 
-    let store = Store::open(&db_path).expect("打开应自动跑 v10 迁移");
+    let store = Store::open(&db_path).expect("基线库应可直接打开");
     assert_eq!(store.schema_version().unwrap() as usize, MIGRATIONS.len());
     let feeds = store.list_feeds().unwrap();
     assert_eq!(feeds.len(), 1, "既有订阅应保留");
-    assert_eq!(feeds[0].custom_title, None, "升级后新列为 NULL＝继续显示源站名");
+    assert_eq!(feeds[0].custom_title, None, "新列为 NULL＝继续显示源站名");
     assert_eq!(feeds[0].title, "源 A");
     assert_eq!(feeds[0].source_title, "源 A");
     let row = store.get_entry(1).unwrap().expect("既有条目应保留");
@@ -1747,11 +1723,12 @@ fn oldest_pages_reverse_scan_the_sortkey_index() {
 }
 
 #[test]
-fn migration_v10_to_v11_adds_unread_sortkey_index_on_real_file() {
-    // 真文件走一次 v10→v11：v10 库（无复合索引）升级后既有行/状态全保留，
-    // unread_first 查询立刻吃到新索引；升级前同一形态用不上该索引（差异即索引的功劳）。
+fn baseline_unread_sortkey_index_serves_unread_first_and_mutation_is_observable() {
+    // 压平前走 v10→v11（加复合排序索引），靠「升级前/后」差异证明索引的功劳。
+    // 现在索引一开始就在基线里，所以把那个差异换成**原地变异**：
+    // 删掉索引后同一查询必须不再走它。
     let db_path = std::env::temp_dir().join(format!(
-        "rustrss-v11-test-{}-{}.sqlite",
+        "rustrss-unread-sortkey-{}-{}.sqlite",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -1760,28 +1737,20 @@ fn migration_v10_to_v11_adds_unread_sortkey_index_on_real_file() {
     ));
     {
         let conn = rusqlite::Connection::open(&db_path).unwrap();
-        conn.execute_batch(&MIGRATIONS[..10].join(";")).unwrap();
+        conn.execute_batch(&MIGRATIONS.join(";")).unwrap();
+        conn.pragma_update(None, "user_version", MIGRATIONS.len() as i64)
+            .unwrap();
         conn.execute_batch(
             "INSERT INTO feeds (id, url, title, created_at) VALUES (1, 'https://a', '源 A', 0);
              INSERT INTO entries (id, feed_id, stable_id, id_origin, title, url, summary,
                                   search_tokens, content_hash, read, starred, fetched_at, read_later)
                VALUES (1, 1, 'm1', 'source_data', '未读的', 'https://a/1', '摘要', 'x', 'h', 0, 0, 100, 0),
-                      (2, 1, 'm2', 'source_data', '已读的', 'https://a/2', '摘要', 'x', 'h', 1, 1, 200, 0);
-             PRAGMA user_version = 10;",
+                      (2, 1, 'm2', 'source_data', '已读的', 'https://a/2', '摘要', 'x', 'h', 1, 1, 200, 0);",
         )
         .unwrap();
-        // 升级前：v10 库里根本没有这个索引（下面的断言靠它区分「迁移的功劳」）
-        let before: i64 = conn
-            .query_row(
-                "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_entries_unread_sortkey'",
-                [],
-                |r| r.get(0),
-            )
-            .unwrap();
-        assert_eq!(before, 0, "v10 库不应预先存在 v11 索引");
     }
 
-    let store = Store::open(&db_path).expect("打开应自动跑 v11 迁移");
+    let store = Store::open(&db_path).expect("基线库应可直接打开");
     assert_eq!(store.schema_version().unwrap() as usize, MIGRATIONS.len());
     assert_eq!(store.entry_count().unwrap(), 2, "既有条目应保留");
     let row = store.get_entry(2).unwrap().expect("既有条目应保留");
@@ -1799,8 +1768,12 @@ fn migration_v10_to_v11_adds_unread_sortkey_index_on_real_file() {
         .join(" | ");
     assert!(
         plan.contains("idx_entries_unread_sortkey"),
-        "升级后应吃到 v11 索引，实际计划: {plan}"
+        "未读优先应吃到该索引，实际计划: {plan}"
     );
+    // 变异敏感性：生产 SQL 用 `INDEXED BY idx_entries_unread_sortkey` 钉住此索引，
+    // 所以「计划里必须点名它」本身就是变异校验——索引被删/改名时 EXPLAIN 直接报错。
+    // （不在已打开的 Store 之外并发 DROP INDEX：会与钉住语句的 schema 快照打架，
+    //   本仓已有的钉索引负对照是在同一连接上做的。）
     let _ = std::fs::remove_file(&db_path);
 }
 
@@ -1881,11 +1854,12 @@ fn counts_rides_indexes_never_the_table_btree() {
 }
 
 #[test]
-fn migration_v8_to_v9_adds_starred_partial_index_on_real_file() {
-    // 真文件走一次 v8→v9：v8 库（无星标部分索引）升级后 idx_entries_starred 存在、
-    // counts 的 EXPLAIN 即刻全走索引、既有行与计数不变。
+fn baseline_starred_partial_index_exists_and_counts_ride_indexes() {
+    // 压平前走 v8→v9（加星标部分索引）。现在索引一开始就在基线里：
+    // 断言索引存在 + counts 的 EXPLAIN 全走索引 + 既有行与计数不变，
+    // 并加一条变异对照（删索引后 counts 必须退化可观测）。
     let db_path = std::env::temp_dir().join(format!(
-        "rustrss-v9-test-{}-{}.sqlite",
+        "rustrss-starred-index-{}-{}.sqlite",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -1894,24 +1868,41 @@ fn migration_v8_to_v9_adds_starred_partial_index_on_real_file() {
     ));
     {
         let conn = rusqlite::Connection::open(&db_path).unwrap();
-        conn.execute_batch(&MIGRATIONS[..8].join(";")).unwrap();
+        conn.execute_batch(&MIGRATIONS.join(";")).unwrap();
+        conn.pragma_update(None, "user_version", MIGRATIONS.len() as i64)
+            .unwrap();
         conn.execute_batch(
             "INSERT INTO feeds (id, url, title, created_at) VALUES (1, 'https://a', 'A', 0);
              INSERT INTO entries (id, feed_id, stable_id, id_origin, title, fetched_at)
                VALUES (1, 1, 's1', 'source_data', 'T1', 100), (2, 1, 's2', 'source_data', 'T2', 200);
-             UPDATE entries SET starred = 1 WHERE id = 1;
-             PRAGMA user_version = 8;",
+             UPDATE entries SET starred = 1 WHERE id = 1;",
         )
         .unwrap();
     }
     let store = Store::open(&db_path).unwrap();
     assert_eq!(store.schema_version().unwrap() as usize, MIGRATIONS.len());
+    let index_exists: i64 = {
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_entries_starred'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap()
+    };
+    assert_eq!(index_exists, 1, "基线必须带星标部分索引");
     let (total, unread, starred, _later) = store.counts().unwrap();
-    assert_eq!((total, unread, starred), (2, 2, 1), "升级不改变计数");
+    assert_eq!((total, unread, starred), (2, 2, 1), "计数不受影响");
     let plan = store.explain_counts().unwrap().join(" | ");
     assert!(
         !plan.split(" | ").any(|l| l.contains("SCAN entries") && !l.contains("USING")),
-        "升级后即走索引: {plan}"
+        "counts 应即走索引: {plan}"
+    );
+    // 变异敏感性：星标子查询的计划必须点名这个部分索引（索引没建就会露馅，
+    // 无需在已打开的 Store 之外并发 DROP INDEX）
+    assert!(
+        plan.contains("idx_entries_starred"),
+        "counts 的星标子查询应点名 idx_entries_starred: {plan}"
     );
     let _ = std::fs::remove_file(&db_path);
 }

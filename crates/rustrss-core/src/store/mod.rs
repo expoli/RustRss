@@ -8,6 +8,7 @@
 //!
 //! 子模块 [`backup`]：库的在线快照导出与「重启时替换」式恢复（含 WAL 边车顺序不变量）。
 
+pub mod backfill;
 pub mod backup;
 pub mod schema;
 pub mod tokens;
@@ -25,7 +26,7 @@ use sha2::{Digest, Sha256};
 
 use crate::model::{Entry, IdOrigin};
 
-use schema::MIGRATIONS;
+use schema::{SchemaState, MIGRATIONS};
 use tokens::{plan_query, to_tokens};
 
 #[derive(Debug, thiserror::Error)]
@@ -43,6 +44,24 @@ pub enum StoreError {
     /// 标签 id 不存在（改名 / 改色 / 删除 / 打标的目标标签都必须真实存在）。
     #[error("标签不存在: #{0}")]
     TagNotFound(i64),
+    /// 库不是当前版本的 RustRss 库：旧开发库（旧链冻结库）或外来 sqlite 文件，
+    /// 或版本更新于当前基线。**不保开发库**：拒绝打开，由上层提示用户备份/导出 OPML 后重建。
+    #[error("数据库不兼容: {reason}")]
+    SchemaRefused { reason: String },
+}
+
+impl StoreError {
+    /// 稳定的错误码（跨层契约）：桌面与 MCP 按码本地化，不去猜错误文案。
+    pub fn code(&self) -> &'static str {
+        match self {
+            StoreError::Sqlite(_) => "sqlite_error",
+            StoreError::Io(_) => "io_error",
+            StoreError::Invalid(_) => "invalid_data",
+            StoreError::DuplicateTagName(_) => "duplicate_tag_name",
+            StoreError::TagNotFound(_) => "tag_not_found",
+            StoreError::SchemaRefused { .. } => "schema_refused",
+        }
+    }
 }
 
 pub type Result<T, E = StoreError> = std::result::Result<T, E>;
@@ -444,6 +463,27 @@ impl Store {
 
     fn init(conn: Connection) -> Result<Self> {
         conn.busy_timeout(Duration::from_secs(5))?;
+        // 老库 / 外来库必须在**任何写之前**拒绝（探测本身就是只读的：只查 sqlite_master
+        // 与 application_id / user_version）。注意 
+        // `PRAGMA journal_mode=WAL` 是**持久写入**（改库头），不能排在拒绝之前。
+        match schema::detect(&conn)? {
+            SchemaState::Fresh | SchemaState::Current => {}
+            SchemaState::Foreign { user_version } => {
+                return Err(StoreError::SchemaRefused {
+                    reason: format!(
+                        "缺少应用标识（user_version={user_version}）：这是旧版本开发库或其它程序的文件"
+                    ),
+                });
+            }
+            SchemaState::VersionMismatch { user_version } => {
+                return Err(StoreError::SchemaRefused {
+                    reason: format!(
+                        "库版本 {user_version} 与基线 {} 不一致（可能来自更新的版本，或建库被中断的半成品库）",
+                        schema::BASELINE_VERSION
+                    ),
+                });
+            }
+        }
         // journal_mode 会返回一行，必须用 query_row 消费掉
         let _: String = conn.query_row("PRAGMA journal_mode=WAL", [], |r| r.get(0))?;
         conn.execute_batch("PRAGMA foreign_keys=ON; PRAGMA synchronous=NORMAL;")?;
@@ -452,47 +492,15 @@ impl Store {
         Ok(store)
     }
 
+    /// 建库：从 `user_version` 顺序追平 `MIGRATIONS`（首发只有一条基线）。
+    ///
+    /// 老的 v13 数据回填已搬到 [`backfill::apply_pre_release_backfill`]，基线不再调用。
     fn migrate(&mut self) -> Result<()> {
         let mut version: i64 = self.conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         while (version as usize) < MIGRATIONS.len() {
             let tx = self.conn.unchecked_transaction()?;
             tx.execute_batch(MIGRATIONS[version as usize])?;
             version += 1;
-            if version == 13 {
-                let mut cursor = i64::MIN;
-                loop {
-                    let batch: Vec<(i64, String, Option<String>, Option<String>)> = {
-                        let mut statement = tx.prepare(
-                            "SELECT id, search_tokens, url, content_html FROM entries WHERE id > ? ORDER BY id LIMIT 5",
-                        )?;
-                        let rows = statement.query_map([cursor], |row| {
-                            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
-                        })?
-                            .collect::<rusqlite::Result<_>>()?;
-                        rows
-                    };
-                    if batch.is_empty() { break; }
-                    for (id, old_tokens, base, content_html) in batch {
-                        let new_tokens = tokens::with_cjk_unigrams(&old_tokens);
-                        let thumbnail = content_html.as_deref()
-                            .and_then(|html| crate::thumbnail::first_image(html, base.as_deref()));
-                        match (new_tokens != old_tokens, thumbnail) {
-                            (true, Some(thumbnail)) => {
-                                tx.execute("UPDATE entries SET search_tokens=?, thumbnail_url=? WHERE id=?",
-                                    params![new_tokens, thumbnail, id])?;
-                            }
-                            (true, None) => {
-                                tx.execute("UPDATE entries SET search_tokens=? WHERE id=?", params![new_tokens, id])?;
-                            }
-                            (false, Some(thumbnail)) => {
-                                tx.execute("UPDATE entries SET thumbnail_url=? WHERE id=?", params![thumbnail, id])?;
-                            }
-                            (false, None) => {}
-                        }
-                        cursor = id;
-                    }
-                }
-            }
             tx.pragma_update(None, "user_version", version)?;
             tx.commit()?;
         }

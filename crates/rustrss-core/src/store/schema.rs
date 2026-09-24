@@ -1,12 +1,77 @@
-//! 存储层 schema 与迁移。
+//! 存储层 schema 与基线。
 //!
-//! 迁移按 `PRAGMA user_version` 递增；每个迁移在独立事务里执行。
-//! 迁移一旦发布就不再修改（改动只能追加新迁移）。
+//! 首发前把 13 条逐版本迁移**压平成一份基线**：开发期没有需要兼容的用户库，
+//! 版本演进只带来长期维护面与测试面。基线里的 DDL 是「旧链终态」的等价形态
+//! （表/列序/索引/部分索引 WHERE/触发器/FT​S 影子表逐项对齐，见 `tests/durability.rs`
+//! 的结构化等价断言）。
+//!
+//! **老库不保**：旧开发库（旧链 v1..v13 的冻结库）与外来 sqlite 文件不提供兼容
+//! 升级路径，由 [`BASELINE_APPLICATION_ID`]（SQLite `PRAGMA application_id`）识别并
+//! 拒绝，见 [`detect`]。判定**不用 `user_version` 区间**——基线号是 1，而旧链也
+//! 存在 v=1 的冻结库，按区间判断会同时误拒新库与漏放旧库。
+//!
+//! 基线一旦发布，后续改动**只能追加**新迁移（`MIGRATIONS` 追加，不修改既有条目）。
 
-/// 迁移列表：索引 i 对应 user_version i → i+1。
-pub const MIGRATIONS: &[&str] = &[
-    // v1：订阅源 / 文件夹 / 条目 / 全文索引
-    r#"
+use rusqlite::Connection;
+
+/// 基线库的应用标识（写入 `PRAGMA application_id`）。
+///
+/// 十六进制 `0x5253_5331` = ASCII `"RSS1"`。基线创建时写入；旧链任何版本都不写它
+/// （值为 0），因此「有用户表但没有魔数」就是老库/外来文件的判据。
+pub const BASELINE_APPLICATION_ID: i32 = 0x5253_5331;
+
+/// 基线 schema 版本（`PRAGMA user_version`）。
+pub const BASELINE_VERSION: i64 = 1;
+
+/// 迁移列表：索引 i 对应 `user_version` i → i+1。
+///
+/// 首发前只含基线一条。基线发布后，只允许**追加**（新的索引 i+1），
+/// 不得回头修改已发布的条目。
+pub const MIGRATIONS: &[&str] = &[BASELINE];
+
+/// 打开一个**已有**库时看到的 schema 状态。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SchemaState {
+    /// 没有任何用户表：新库，可建基线（0 字节文件与新建空文件都落这里）。
+    Fresh,
+    /// 我们的基线库，且版本一致。
+    Current,
+    /// 有用户表但没有魔数：旧开发库（含旧链 v1 冻结库）或外来 sqlite 文件。
+    Foreign { user_version: i64 },
+    /// 我们的库，但版本与基线不一致（更新的版本，或被外部/中断操作弄成的状态）。
+    VersionMismatch { user_version: i64 },
+}
+
+/// 探测库的 schema 状态。**只读**：不建表、不写 PRAGMA。
+///
+/// 调用方据此决定「建基线 / 直接打开 / 拒绝」（老库拒绝对外呈现见桌面与 MCP 侧）。
+pub fn detect(conn: &Connection) -> rusqlite::Result<SchemaState> {
+    let user_tables: i64 = conn.query_row(
+        "SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+        [],
+        |r| r.get(0),
+    )?;
+    let application_id: i64 = conn.query_row("PRAGMA application_id", [], |r| r.get(0))?;
+    let user_version: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+    Ok(if user_tables == 0 {
+        SchemaState::Fresh
+    } else if application_id != BASELINE_APPLICATION_ID as i64 {
+        SchemaState::Foreign { user_version }
+    } else if user_version == BASELINE_VERSION {
+        SchemaState::Current
+    } else {
+        SchemaState::VersionMismatch { user_version }
+    })
+}
+
+/// 基线 DDL。列序即旧链终态的列序（追加顺序），不要按「逻辑分组」重排——
+/// 结构化等价断言按 `PRAGMA table_info` 的顺序逐列比较。
+///
+/// 行内注释保留了各列的性能/语义理由（AGENTS.md 性能红线的依据），
+/// 但不再保留「哪个版本加的」这类演进叙述。
+const BASELINE: &str = r#"
+    PRAGMA application_id = 0x52535331;
+
     CREATE TABLE folders (
         id       INTEGER PRIMARY KEY,
         name     TEXT NOT NULL UNIQUE,
@@ -16,7 +81,7 @@ pub const MIGRATIONS: &[&str] = &[
     CREATE TABLE feeds (
         id              INTEGER PRIMARY KEY,
         url             TEXT NOT NULL UNIQUE,   -- 归一化后的订阅身份（RSSHub 存 rsshub://path，抓取时解析）
-        title           TEXT NOT NULL,
+        title           TEXT NOT NULL,          -- 源站名（每次抓取 success 都会被刷新覆盖）
         site_url        TEXT,
         description     TEXT,
         language        TEXT,
@@ -27,7 +92,15 @@ pub const MIGRATIONS: &[&str] = &[
         last_fetched_at INTEGER,
         last_status     TEXT,
         last_error      TEXT,
-        created_at      INTEGER NOT NULL
+        created_at      INTEGER NOT NULL,
+        -- 每源刷新间隔覆盖（分钟，NULL = 跟随全局档）；白名单校验在命令层
+        refresh_interval_minutes INTEGER,
+        -- 用户自定义标题：显示层读 COALESCE(custom_title, title)，NULL = 跟随源站名
+        custom_title    TEXT,
+        -- 429/503 的 Retry-After 期限；期限内不发请求
+        retry_after_at  INTEGER,
+        -- 组内手动排序；NULL = 名称序
+        position        INTEGER
     );
 
     CREATE TABLE entries (
@@ -50,11 +123,34 @@ pub const MIGRATIONS: &[&str] = &[
         read          INTEGER NOT NULL DEFAULT 0,
         starred       INTEGER NOT NULL DEFAULT 0,
         fetched_at    INTEGER NOT NULL,
+        -- 稍后读标记
+        read_later       INTEGER NOT NULL DEFAULT 0,
+        -- 全文抓取标记位：摘要型条目一旦抓到原文正文就以此为准（刷新不再覆盖、重开零网络）
+        fulltext_fetched INTEGER NOT NULL DEFAULT 0,
+        -- 列表缩略图（Media RSS > 图片 enclosure > 摘要/正文首图；只存 HTTP(S)）
+        thumbnail_url    TEXT,
         UNIQUE (feed_id, stable_id)
     );
 
+    -- 列表排序键表达式索引：ORDER BY COALESCE(published_at, fetched_at) DESC 是函数列，
+    -- 没有索引会全表扫 + 排序。末列 feed_id 让同 sortkey 的并列行也能被 keyset 游标稳定续扫。
+    CREATE INDEX idx_entries_sortkey
+        ON entries(COALESCE(published_at, fetched_at) DESC, id DESC, feed_id);
+    -- 未读优先档（read ASC, sortkey DESC, id ASC）的复合排序索引：
+    -- 列序/方向必须与 ORDER BY 逐列对应，否则 planner 会选等值索引再加 TEMP B-TREE 排序。
+    CREATE INDEX idx_entries_unread_sortkey
+        ON entries(read, COALESCE(published_at, fetched_at) DESC, id, feed_id);
+    -- 搜索相关度候选取行前的排序索引
+    CREATE INDEX idx_entries_search_order
+        ON entries(id, read, COALESCE(published_at, fetched_at) DESC);
     CREATE INDEX idx_entries_feed_published ON entries(feed_id, published_at DESC);
     CREATE INDEX idx_entries_read_published ON entries(read, published_at DESC);
+    -- 侧栏未读聚合索引（feeds JOIN entries 按 feed 聚合未读走索引扫描）
+    CREATE INDEX idx_entries_feed_read ON entries(feed_id, read);
+    -- 部分索引族：只索引被标记的行（常态体积忽略），计数/筛选全程不碰正文大列所在的表 B 树
+    CREATE INDEX idx_entries_read_later ON entries(read_later) WHERE read_later = 1;
+    CREATE INDEX idx_entries_starred ON entries(starred) WHERE starred = 1;
+    CREATE INDEX idx_entries_unread_id ON entries(id) WHERE read = 0;
 
     -- 外部内容表：正文真身只在 entries 里存一份
     CREATE VIRTUAL TABLE entries_fts USING fts5(
@@ -74,15 +170,14 @@ pub const MIGRATIONS: &[&str] = &[
         VALUES ('delete', old.id, old.title, old.search_tokens);
     END;
 
-    CREATE TRIGGER entries_fts_au AFTER UPDATE ON entries BEGIN
+    CREATE TRIGGER entries_fts_au AFTER UPDATE OF title, search_tokens ON entries BEGIN
         INSERT INTO entries_fts(entries_fts, rowid, title, search_tokens)
         VALUES ('delete', old.id, old.title, old.search_tokens);
         INSERT INTO entries_fts(rowid, title, search_tokens)
         VALUES (new.id, new.title, new.search_tokens);
     END;
-    "#,
-    // v2：AI 结果缓存（同一文章 + 同一任务 + 同一参数 + 同一模型 + 同一 prompt 版本才复用）
-    r#"
+
+    -- AI 结果缓存（同一文章 + 同一任务 + 同一参数 + 同一模型 + 同一 prompt 版本才复用）
     CREATE TABLE ai_cache (
         id             INTEGER PRIMARY KEY,
         entry_id       INTEGER NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
@@ -96,85 +191,17 @@ pub const MIGRATIONS: &[&str] = &[
     );
 
     CREATE INDEX idx_ai_cache_entry ON ai_cache(entry_id);
-    "#,
-    // v3：设置（键值对）。后续 AI provider、凭据引用、并发数等都挂在这里。
-    r#"
+
+    -- 设置（键值对）：AI provider、凭据引用、并发数、主题、网络代理等都挂在这里
     CREATE TABLE settings (
         key        TEXT PRIMARY KEY,
         value      TEXT NOT NULL,
         updated_at INTEGER NOT NULL
     );
-    "#,
-    // v4：稍后读标记 + 部分索引（只索引已标记行，体积与查询都最优）
-    r#"
-    ALTER TABLE entries ADD COLUMN read_later INTEGER NOT NULL DEFAULT 0;
-    CREATE INDEX idx_entries_read_later ON entries(read_later) WHERE read_later = 1;
-    "#,
-    // v5：侧栏未读聚合索引（feeds JOIN entries 按 feed 聚合未读时走索引扫描）
-    r#"
-    CREATE INDEX idx_entries_feed_read ON entries(feed_id, read);
-    "#,
-    // v6：列表排序键表达式索引。list_entries 的 ORDER BY COALESCE(published_at,
-    // fetched_at) DESC, id DESC 是函数列，此前用不了任何索引 → 每次视图切换
-    // 全表扫 + 排序（8k 条库实测 15-19ms）；走本索引后按序取前 N（~1-2ms）。
-    r#"
-    CREATE INDEX idx_entries_sortkey ON entries(COALESCE(published_at, fetched_at) DESC, id DESC);
-    "#,
-    // v7：全文抓取标记位（摘要型条目一旦抓到原文正文，就以此为准）。
-    // 这一位同时支撑两条已定行为：刷新 upsert 不再覆盖已抓正文（只更新元数据）、
-    // 重开同一篇文章零网络（`needs_fulltext` 直接为假）。
-    r#"
-    ALTER TABLE entries ADD COLUMN fulltext_fetched INTEGER NOT NULL DEFAULT 0;
-    "#,
-    // v8：每源刷新间隔覆盖（分钟，NULL=跟随全局档）。白名单校验在命令层
-    // （与全局档共用一张表），迁移只加列：存量源 NULL 即为「跟随全局」，
-    // 行为与升级前一致。
-    r#"
-    ALTER TABLE feeds ADD COLUMN refresh_interval_minutes INTEGER;
-    "#,
-    // v9：星标部分索引。旧版 counts() 是单扫描 4 聚合，starred 不在任何覆盖索引且列在
-    // 正文大列之后 → 全表扫穿溢出页链（冷启动真实库实测 ~100ms/次，侧栏每次刷新都付）。
-    // 改成 4 个子查询后 starred 需要自己的索引；部分索引只含已星标行（常态 0 行，体积忽略）。
-    r#"
-    CREATE INDEX idx_entries_starred ON entries(starred) WHERE starred = 1;
-    "#,
-    // v10：用户自定义订阅源标题。feeds.title 是**源站名**，每次抓取 success 都会被
-    // update_feed_meta 覆盖（源站改名跟着变）；用户改名必须另存一列，否则下次刷新即丢。
-    // 显示层统一读 COALESCE(custom_title, title)，NULL = 跟随源站名。
-    r#"
-    ALTER TABLE feeds ADD COLUMN custom_title TEXT;
-    "#,
-    // v11：未读优先（list.sort=unread_first）的复合排序索引。
-    // 该档 ORDER BY 是 `read ASC, COALESCE(published_at, fetched_at) DESC, id ASC`，
-    // 列序/方向与下面索引逐列对应——只有这样的复合索引才能同时满足「顺序」与
-    // 「read 等值筛选」，否则 planner 会选 idx_entries_feed_read 之类等值索引
-    // 再加 TEMP B-TREE 排序（本程序从不 ANALYZE，planner 没有统计可依）。
-    // 后缀 id 用升序（与 newest 档的 id DESC 不同）：索引最后一列正是 ORDER BY 的
-    // 末列，SQLite 才能只靠索引走完排序，同 sortkey 的并列行也能被 keyset 游标稳定续扫。
-    r#"
-    CREATE INDEX idx_entries_unread_sortkey
-        ON entries(read, COALESCE(published_at, fetched_at) DESC, id);
-    "#,
-    // v12：文章级标签（`tags` + `entry_tags`）
-    // - `tags.name` 是用户可见身份：`UNIQUE COLLATE NOCASE` 让「Rust」与「rust」天然
-    //   是同一个标签（重名报 duplicate_tag_name），应用层不需要再做归一化列；
-    // - `last_used_at`：打标时更新（见 `Store::assign_tags`），选择器「最近使用优先」
-    //   的唯一数据来源；`sort_order` 是侧栏手动顺序（小的在前），`pinned` 置顶优先；
-    // - `entry_tags` 两端 `ON DELETE CASCADE`：删源 / 删条目 / 删标签都必须零孤儿。
-    //   `PRAGMA foreign_keys=ON` 在 `Store::init` 里对每个连接开启（连接级设置），
-    //   写入路径（`remove_feed` / `delete_tag`）另有显式清理兜底——不变量不依赖
-    //   调用方是否记得开这个 pragma；
-    // - `idx_entry_tags_tag(tag_id, entry_id)`：按标签取条目 / 标签计数走它；反向
-    //   （按条目取标签）由主键 `(entry_id, tag_id)` 的隐式索引覆盖；
-    // - `idx_entries_unread_id(id) WHERE read = 0`：标签**未读计数**的覆盖索引
-    //   （部分索引只索引未读行，与 v4/v9 同族）。`read` 列在 entries 里排在 11.5KB
-    //   正文大列之后，按 rowid 回表取它就要穿溢出页链（counts() 教训：冷启动
-    //   83-119ms/次）；这个部分索引把「这行读过没有」变成索引里就有的判断，于是按 tag
-    //   计数全程只扫索引、不碰正文大列所在的表 B 树。之所以不用全量 `(id, read)`：
-    //   实测全量版会夺走 `counts()` 里 `COUNT(*) FROM entries` 子查询的索引选择
-    //   （两版都不碰表 B 树，但「不改既有形态」的爆炸半径更小），而部分索引只含未读行、
-    //   体积也更小。
-    r#"
+
+    -- 文章级标签。`name` 是用户可见身份：UNIQUE COLLATE NOCASE 让「Rust」与「rust」
+    -- 天然是同一个标签；`last_used_at` 供选择器「最近使用优先」；`sort_order`/`pinned`
+    -- 是侧栏手动顺序。`entry_tags` 两端 CASCADE：删源/删条目/删标签都必须零孤儿。
     CREATE TABLE tags (
         id           INTEGER PRIMARY KEY,
         name         TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -192,28 +219,4 @@ pub const MIGRATIONS: &[&str] = &[
     );
 
     CREATE INDEX idx_entry_tags_tag ON entry_tags(tag_id, entry_id);
-    CREATE INDEX idx_entries_unread_id ON entries(id) WHERE read = 0;
-    "#,
-    // v13 is the first unreleased development schema. Keep all pre-release
-    // additions together; once shipped, future migrations become append-only.
-    r#"
-    ALTER TABLE feeds ADD COLUMN retry_after_at INTEGER;
-    ALTER TABLE feeds ADD COLUMN position INTEGER;
-    ALTER TABLE entries ADD COLUMN thumbnail_url TEXT;
-    DROP INDEX idx_entries_sortkey;
-    DROP INDEX idx_entries_unread_sortkey;
-    CREATE INDEX idx_entries_sortkey
-        ON entries(COALESCE(published_at, fetched_at) DESC, id DESC, feed_id);
-    CREATE INDEX idx_entries_unread_sortkey
-        ON entries(read, COALESCE(published_at, fetched_at) DESC, id, feed_id);
-    CREATE INDEX idx_entries_search_order
-        ON entries(id, read, COALESCE(published_at, fetched_at) DESC);
-    DROP TRIGGER IF EXISTS entries_fts_au;
-    CREATE TRIGGER entries_fts_au AFTER UPDATE OF title, search_tokens ON entries BEGIN
-        INSERT INTO entries_fts(entries_fts, rowid, title, search_tokens)
-        VALUES ('delete', old.id, old.title, old.search_tokens);
-        INSERT INTO entries_fts(rowid, title, search_tokens)
-        VALUES (new.id, new.title, new.search_tokens);
-    END;
-    "#,
-];
+"#;

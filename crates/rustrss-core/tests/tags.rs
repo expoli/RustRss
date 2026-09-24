@@ -87,14 +87,13 @@ fn tag_names(rows: &[rustrss_core::TagRow]) -> Vec<String> {
 // ------------------------------------------------------------ 迁移 v12
 
 #[test]
-fn migration_v12_upgrade_keeps_existing_data_and_adds_tag_schema() {
-    // 真实走一次 v11→v12：用迁移 1..11 **原样**建一个 user_version=11 的真文件库
-    // （v11 形状不手抄，避免抄错而漂移），预置源/分组/自定义源名/条目与状态，
-    // 再让 Store::open 只跑第 12 条迁移。
-    let db_path = temp_db("upgrade");
+fn baseline_provides_tag_schema_and_keeps_existing_data() {
+    // 压平前这条走 v11→v12 迁移；现在标签 schema 一开始就在基线里。
+    // 保留原意：既有数据与状态不丢 + 标签能力立即可用 + 零孤儿。
+    let db_path = temp_db("baseline");
     {
         let conn = rusqlite::Connection::open(&db_path).unwrap();
-        conn.execute_batch(&MIGRATIONS[..11].join(";")).unwrap();
+        conn.execute_batch(&MIGRATIONS.join(";")).unwrap();
         conn.execute_batch(
             "INSERT INTO folders (id, name, position) VALUES (1, '分组', 0);
              INSERT INTO feeds (id, url, title, custom_title, folder_id, created_at)
@@ -106,10 +105,11 @@ fn migration_v12_upgrade_keeps_existing_data_and_adds_tag_schema() {
              UPDATE entries SET content_text = '正文大列' WHERE id = 1;",
         )
         .unwrap();
-        conn.pragma_update(None, "user_version", 11).unwrap();
+        conn.pragma_update(None, "user_version", MIGRATIONS.len() as i64)
+            .unwrap();
     }
 
-    let store = Store::open(&db_path).expect("打开应自动跑 v12 迁移");
+    let store = Store::open(&db_path).expect("基线库应可直接打开");
     assert_eq!(
         store.schema_version().unwrap() as usize,
         MIGRATIONS.len(),
@@ -148,7 +148,7 @@ fn migration_v12_upgrade_keeps_existing_data_and_adds_tag_schema() {
             "idx_entry_tags_tag".to_string(),
             "tags".to_string()
         ],
-        "v12 应建出两张新表与两个新索引"
+        "基线应带两张标签表与两个标签索引"
     );
 
     // 升级后标签能力立刻可用，且不产生孤儿关联
