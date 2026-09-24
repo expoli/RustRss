@@ -1152,7 +1152,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 - Media RSS 缩略图优先，其次图片 enclosure，最后摘要/正文首图；相对 URL 按条目源地址解析，只接受 HTTP(S)。
 - 缩略图随条目落库，旧开发库迁移时从正文首图回填；全文后取的图片仅在没有既有缩略图时补入。
-- WebView 列表延迟加载图片，不发送 Referer；图片请求不经过应用订阅代理。外观设置沿用“显示已有缩略图”开关。
+- WebView 列表延迟加载图片，不发送 Referer；图片请求不经过应用订阅代理。外观设置沿用“显示已有缩略图”开关。该行为是 spec「外呼白名单」的**已知例外**（口径与验收见 [缩略图外呼口径 PRD](2026-09-24-thumbnail-egress-policy/prd.md)）；图片请求由 WebKitNetworkProcess 发起，**应用日志看不到**，验收须以代理/抓包侧记录为准。
 - core 解析、存储/重开、全文回填测试与主题开关单测已补；运行时验收命令：`python3 scripts/verify-thumbnail-ui.py`，断言真实 WebView 图片加载、lazy/referrer 属性及主题开关。
 - 本机 Xvfb 隔离运行通过 2 项：WebView 从临时 loopback HTTP 服务取到 1×1 PNG，服务端收到的请求没有 `Referer`；更新主题配置后同一图片节点隐藏、无列表行重建。
-- 尚未验证公网图片站兼容性、外站拒绝嵌入及离线行为；本次使用本机图片服务，不产生公网图片请求。
+- 尚未验证公网图片站兼容性、外站拒绝嵌入及离线行为；本次使用本机图片服务，不产生公网图片请求。开关**关闭态的零请求**尚未实测（现有断言只覆盖节点隐藏与无行重建），也未验证重定向目标的归类；三项由 [2026-09-24-thumbnail-egress-policy](2026-09-24-thumbnail-egress-policy/prd.md) 的 T2/T3 承接。
