@@ -174,7 +174,8 @@ created: 2026-09-20
 - [x] T7 跨阶段契约修复：固定预览适配 T4 共享外观编辑器与资源协议；ID/脚本/CSS token 回归测试，重建后 Linux MCP 25 图通过。
 - [x] T7 共享组件完整矩阵：三预设×明暗×三场景×双语，在 Xvfb 100%/200% 覆盖72组合；当前 KDE Wayland 200%另36组合，见 [T7报告](2026-09-23-theme-preview/t7-aggregate.md)。
 - [x] T7 原生 Wayland 真实点击取消 + 正文位置：2026-09-24 用户在场补验通过，isTrusted=true、取消不落库、窗口销毁、节点/偏移保留；见 [现场证据](2026-09-23-theme-preview/t7-wayland-input-results.json)。原先因用户不在场而保留的 open item 已关闭。
-- [ ] T7 第三方GUI客户端、空状态专项、其它平台/读屏器/分数缩放及用户侧独立聚合评审。（**已验**：空/错误状态双语与失败保留缓存见 [空态报告](2026-09-23-theme-preview/empty-error-states.md)；分数缩放 KDE Wayland 125%/150% 与 Xvfb 100%/200% 见 [原生验收](2026-09-23-theme-preview/native-settings.md)。**未验**：第三方 GUI 客户端（仅 Codex CLI 收图）、读屏器、GNOME/无 XWayland、**用户侧独立聚合评审**（T7 报告明确 fresh reviewer 由用户另派）→ 保留 open）
+- [ ] T7 第三方GUI客户端、空状态专项、其它平台/读屏器/分数缩放及用户侧独立聚合评审。
+  → 2026-09-24 更新（用户侧独立聚合评审已发生）：**round 1 判 FAIL**（1 BLOCKER + 4 NOTE，评论 `4d2c4ff1`）——BLOCKER 是把「空状态夹具矩阵」错误归类为环境依赖、而它本机可跑。修复 `178757a`：补跑空状态矩阵 36 格（`2026-09-23-theme-preview/empty-state-matrix.md`，含变异校验）；同时发现**原生截帧只随主题刷新、不随场景刷新**（同格三场景逐字节相同，清单 §31），故**逐场景像素证据仍缺**；MCP 回归因后续批次的坐标点击失效已改键盘驱动并重跑通过；`tracking.json` 里无凭据的「用户报告独立评审通过」已被替换为本次裁决引用。round 2 待派。**仍 open**：读屏器（本机有 orca，可试未试）、原生弹窗键盘/深色路径、按场景的像素证据（需真实合成器会话）、Windows/macOS/GNOME-Wayland、第三方 GUI MCP 客户端。（**已验**：空/错误状态双语与失败保留缓存见 [空态报告](2026-09-23-theme-preview/empty-error-states.md)；分数缩放 KDE Wayland 125%/150% 与 Xvfb 100%/200% 见 [原生验收](2026-09-23-theme-preview/native-settings.md)。**未验**：第三方 GUI 客户端（仅 Codex CLI 收图）、读屏器、GNOME/无 XWayland、**用户侧独立聚合评审**（T7 报告明确 fresh reviewer 由用户另派）→ 保留 open）
 
 - [x] T7 真实墙钟寿命：空闲599.75秒/绝对1800.52秒回收，过期保存被拒、临时零写；60次RSS/目录/磁盘采样，详见 T7 报告。
 
