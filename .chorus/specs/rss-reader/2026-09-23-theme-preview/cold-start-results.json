@@ -1,0 +1,27 @@
+{
+  "database": "/home/d-robotics/.cache/rustrss-cold-kfoc2y5f.sqlite",
+  "binary": "target/debug/rustrss-desktop",
+  "runs": [
+    {
+      "mode": "cold_database",
+      "interactive_seconds": 1.0342905420111492,
+      "database_residency_after": {
+        "resident_pages": 355,
+        "pages": 25464
+      }
+    },
+    {
+      "mode": "warm_database",
+      "interactive_seconds": 0.7084446449298412,
+      "database_residency_after": {
+        "resident_pages": 355,
+        "pages": 25464
+      }
+    }
+  ],
+  "passed": true,
+  "cold_residency": {
+    "resident_pages": 0,
+    "pages": 25464
+  }
+}

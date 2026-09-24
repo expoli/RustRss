@@ -1,0 +1,29 @@
+{
+  "database_cache_before": {
+    "resident_pages": 0,
+    "pages": 25465
+  },
+  "feeds": 100,
+  "entries": 2000,
+  "measurement": {
+    "first_ms": 527.794087,
+    "folder": 991,
+    "open_ms": 1.974048,
+    "rows": 200,
+    "warm_mean_ms": 87.80220336
+  },
+  "stderr": "",
+  "after_v15": {
+    "cache_before": {
+      "resident_pages": 0,
+      "pages": 25465
+    },
+    "measurement": {
+      "first_ms": 25.592222,
+      "folder": 991,
+      "open_ms": 1.612972,
+      "rows": 200,
+      "warm_mean_ms": 2.6776079600000005
+    }
+  }
+}

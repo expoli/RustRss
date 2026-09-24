@@ -248,6 +248,7 @@ main {
   border-left: 3px solid transparent;
 }
 .views li:hover, .feeds li:hover { background: var(--bg-hover); }
+.views li:focus-visible, .feeds li:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .views li.active, .feeds li.active { background: var(--bg-active); border-left-color: var(--accent); }
 
 .views .icon { width: 1.1em; text-align: center; }
@@ -321,8 +322,8 @@ main {
    这里必须自己接一格，否则折叠后列表与空态提示都还挂在侧栏上。 */
 .tags.hidden, .tags-empty.hidden { display: none; }
 .tags li.dragging { opacity: .45; }
-.tags li.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
-.tags li.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.tags li.drop-before, #feeds li.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.tags li.drop-after, #feeds li.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
 .tags-empty { padding: 2px 12px 8px; font-size: 12px; line-height: 1.5; }
 
 .add-row { display: flex; gap: 6px; padding: 8px 12px; }
@@ -671,6 +672,7 @@ main {
 .setting-item .text small { color: var(--fg-dim); line-height: 1.5; }
 
 .setting-item input[type="text"],
+.setting-item input[type="url"],
 .setting-item input:not([type]),
 .setting-item input[type="password"],
 .setting-item input[type="number"],
@@ -1165,8 +1167,8 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 .theme-sample code { font-family: var(--font-mono); font-size: var(--font-mono-size); background: var(--code-bg); color: var(--code-fg); }
 .theme-editor-fields details { margin: 16px 0; }
 .theme-editor-fields summary { cursor: pointer; padding: 8px 0; }
-#aa-dialog { width: min(570px, 90vw); max-height: 88vh; overflow-y: auto; background: var(--bg-panel); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
-#aa-dialog::backdrop { background: rgba(0,0,0,.45); }
+#aa-dialog, #keyboard-help { width: min(570px, 90vw); max-height: 88vh; overflow-y: auto; background: var(--bg-panel); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+#aa-dialog::backdrop, #keyboard-help::backdrop { background: rgba(0,0,0,.45); }
 #aa-dialog .theme-editor-actions { bottom: -20px; }
 .list-head-right { flex-shrink: 0; }
 @media (max-width: 850px) {
@@ -1183,3 +1185,5 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 .list-head-right { margin-top: 4px; }
 #list-count { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 #btn-list-bulk { padding: 2px 7px; flex: none; }
+
+#set-proxy-status { min-height: 3em; overflow-wrap: anywhere; }

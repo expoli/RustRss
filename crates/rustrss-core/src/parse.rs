@@ -13,8 +13,27 @@ pub enum ParseError {
 
 /// 解析一个订阅源的原始字节。
 pub fn parse(bytes: &[u8]) -> Result<Feed, ParseError> {
-    let parsed = feed_rs::parser::parse(bytes)?;
+    let parsed = feed_rs::parser::parse(utf8_despite_legacy_declaration(bytes))?;
     Ok(convert_feed(parsed))
+}
+
+// Some publishers transcode the payload to UTF-8 but leave a GBK declaration.
+// Only override when the entire non-ASCII document is valid UTF-8; genuine
+// legacy byte streams keep their declared decoder. No lossy conversion occurs.
+fn utf8_despite_legacy_declaration(bytes: &[u8]) -> &[u8] {
+    let Ok(text) = std::str::from_utf8(bytes) else { return bytes };
+    if text.is_ascii() { return bytes; }
+    let text = text.trim_start_matches('\u{feff}');
+    if !text.starts_with("<?xml ") { return bytes; }
+    let mut reader = quick_xml::Reader::from_str(text);
+    if let Ok(quick_xml::events::Event::Decl(decl)) = reader.read_event() {
+        if let Some(Ok(encoding)) = decl.encoding() {
+            if encoding.eq_ignore_ascii_case("gbk") || encoding.eq_ignore_ascii_case("gb18030") {
+                if let Some((_, payload)) = text.split_once("?>") { return payload.as_bytes(); }
+            }
+        }
+    }
+    bytes
 }
 
 fn convert_feed(f: FsFeed) -> Feed {
@@ -50,6 +69,20 @@ fn convert_entry(e: FsEntry) -> Entry {
         content_text = summary_text.clone();
     }
 
+    let thumbnail_base = e.base.as_deref().or(primary_link.as_deref());
+    let thumbnail_url = e.media.iter()
+        .flat_map(|media| &media.thumbnails)
+        .find_map(|thumb| crate::thumbnail::resolve(&thumb.image.uri, thumbnail_base))
+        .or_else(|| e.media.iter().flat_map(|media| &media.content).find(|content| {
+            content.content_type.as_ref().is_some_and(|kind| kind.as_str().to_ascii_lowercase().starts_with("image/"))
+        }).and_then(|content| content.url.as_ref())
+            .and_then(|url| crate::thumbnail::resolve(url.as_str(), thumbnail_base)))
+        .or_else(|| e.links.iter().find(|link| {
+            link.rel.as_deref().is_some_and(|rel| rel.eq_ignore_ascii_case("enclosure"))
+                && link.media_type.as_deref().is_some_and(|kind| kind.to_ascii_lowercase().starts_with("image/"))
+        }).and_then(|link| crate::thumbnail::resolve(&link.href, thumbnail_base)))
+        .or_else(|| content_html.as_deref().and_then(|html| crate::thumbnail::first_image(html, thumbnail_base)));
+
     let (stable_id, id_origin) = identity(&e, primary_link.as_deref(), &title, summary_text.as_deref());
 
     Entry {
@@ -72,6 +105,7 @@ fn convert_entry(e: FsEntry) -> Entry {
         summary: summary_text,
         content_html,
         content_text,
+        thumbnail_url,
         categories: e.categories.iter().map(|c| c.term.clone()).collect(),
     }
 }

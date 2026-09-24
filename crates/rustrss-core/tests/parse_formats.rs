@@ -166,3 +166,68 @@ fn html_to_text_strips_tags_and_scripts() {
     assert!(!text.contains('<'), "不该残留标签，实际={text:?}");
     assert!(text.lines().count() >= 2, "块级标签应保留换行，实际={text:?}");
 }
+
+#[test]
+fn namespaced_content_and_multiple_enclosures_keep_article_identity() {
+    let xml = r#"<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+      <channel><title>Fixture</title><item><title>Article</title>
+      <link>https://example.test/article</link>
+      <enclosure url="https://example.test/audio.mp3" type="audio/mpeg" length="12"/>
+      <enclosure url="https://example.test/image.jpg" type="image/jpeg" length="20"/>
+      <content:encoded><![CDATA[<p>中文正文 &amp; 内容</p>]]></content:encoded>
+      </item></channel></rss>"#;
+    let a = parse(xml.as_bytes()).unwrap();
+    let b = parse(xml.as_bytes()).unwrap();
+    assert_eq!(a.entries.len(), 1);
+    assert_eq!(a.entries[0].url.as_deref(), Some("https://example.test/article"));
+    assert_eq!(a.entries[0].stable_id, b.entries[0].stable_id);
+    assert!(a.entries[0].content_text.as_deref().unwrap().contains("中文正文 & 内容"));
+    assert_eq!(a.entries[0].thumbnail_url.as_deref(), Some("https://example.test/image.jpg"));
+}
+
+#[test]
+fn thumbnail_prefers_media_rss_then_uses_first_safe_inline_image() {
+    let media = r#"<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+      <channel><title>Fixture</title><item><title>Media</title>
+      <link>https://example.test/path/article</link>
+      <media:thumbnail url="../media-thumb.jpg"/>
+      <description><![CDATA[<img src="/summary-thumb.png">]]></description>
+      </item></channel></rss>"#;
+    assert_eq!(parse(media.as_bytes()).unwrap().entries[0].thumbnail_url.as_deref(),
+        Some("https://example.test/media-thumb.jpg"));
+
+    let inline = r#"<rss version="2.0"><channel><title>Fixture</title><item>
+      <title>Inline</title><link>https://example.test/path/article</link>
+      <description><![CDATA[<p><img alt='cover' loading='lazy' src='../cover.jpg?x=1&amp;y=2'></p>]]></description>
+      </item></channel></rss>"#;
+    assert_eq!(parse(inline.as_bytes()).unwrap().entries[0].thumbnail_url.as_deref(),
+        Some("https://example.test/cover.jpg?x=1&y=2"));
+
+    let unsafe_image = r#"<rss version="2.0"><channel><title>Fixture</title><item>
+      <title>Unsafe</title><link>https://example.test/article</link>
+      <description><![CDATA[<img src="javascript:alert(1)">]]></description>
+      </item></channel></rss>"#;
+    assert_eq!(parse(unsafe_image.as_bytes()).unwrap().entries[0].thumbnail_url, None);
+}
+
+#[test]
+fn chinese_legacy_encodings_and_incorrect_declarations() {
+    for (bytes, body) in [
+        (include_bytes!("fixtures/encoding/gbk.xml").as_slice(), "中文正文"),
+        (include_bytes!("fixtures/encoding/gb18030.xml").as_slice(), "中文正文𠀀"),
+        (include_bytes!("fixtures/encoding/utf8-declared-gbk.xml").as_slice(), "中文正文"),
+    ] {
+        let feed = parse(bytes).unwrap();
+        assert_eq!(feed.title, "中文订阅");
+        assert_eq!(feed.entries[0].title, "中文标题");
+        assert_eq!(feed.entries[0].content_text.as_deref(), Some(body));
+    }
+}
+
+#[test]
+fn utf8_conflict_handles_bom_quotes_and_preserves_legitimate_declarations() {
+    let wrong = "\u{feff}<?xml version='1.0' encoding='gb18030'?><rss version='2.0'><channel><title>中文</title></channel></rss>";
+    assert_eq!(parse(wrong.as_bytes()).unwrap().title, "中文");
+    let latin = b"<?xml version='1.0' encoding='ISO-8859-1'?><rss version='2.0'><channel><title>Caf\xe9</title></channel></rss>";
+    assert_eq!(parse(latin).unwrap().title, "Café");
+}

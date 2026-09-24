@@ -223,7 +223,8 @@ fn client_with_key_loader(
         config.api_key = load(provider_to_str(config.provider))
             .map_err(|e| format!("读取凭据库失败：{e}"))?.0;
     }
-    AiClient::new(config).map_err(|e| e.to_string())
+    let proxy = state.with_store(|s| rustrss_core::network::ProxyConfig::load(s).map_err(|e| e.to_string()))?;
+    AiClient::with_proxy(config, &proxy).map_err(|e| e.to_string())
 }
 
 pub fn translate_target(store: &Store) -> String {

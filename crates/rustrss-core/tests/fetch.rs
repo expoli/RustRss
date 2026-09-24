@@ -609,6 +609,7 @@ async fn fetch_jobs_progress_counts_match_outcomes() {
         .iter()
         .enumerate()
         .map(|(i, name)| RefreshJob {
+            retry_after_at: None,
             feed_id: i as i64 + 1,
             url: format!("{}/{}.xml", server.uri(), name),
             cache: CacheHeaders::default(),
@@ -811,6 +812,11 @@ async fn rate_limit_code_preserves_cache_and_manual_retry_recovers() {
     assert_eq!(store.entry_count().unwrap(), 2);
     assert_eq!(store.cache_headers(id).unwrap(), cache);
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
+    let deferred = refresh(&store, &fetcher(), &[id], 1).await.unwrap();
+    assert_eq!(deferred.failures[0].code, "retry_deferred");
+    assert_eq!(store.cache_headers(id).unwrap(), cache);
+    assert_eq!(server.received_requests().await.unwrap().len(), 1);
+    store.set_feed_retry_after(id, Some(0)).unwrap();
     server.reset().await;
     Mock::given(method("GET"))
         .respond_with(ResponseTemplate::new(200).set_body_string(RSS_TWO_ITEMS))

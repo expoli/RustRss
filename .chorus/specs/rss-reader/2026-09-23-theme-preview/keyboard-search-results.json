@@ -1,0 +1,27 @@
+{
+  "checks": [
+    "native Tab reaches All view",
+    "native Space switches sidebar view",
+    "help opens with focus on close button",
+    "help prevents background navigation",
+    "native navigation opens cached article without a working feed",
+    "native search finds body token in 10k entries",
+    "native broad search renders the capped page from 10k matches",
+    "production search IPC returns the capped broad result page",
+    "production search IPC returns the capped broad result page",
+    "production search IPC returns the capped broad result page",
+    "production search IPC returns the capped broad result page",
+    "production search IPC returns the capped broad result page",
+    "Escape leaves search and restores unread list"
+  ],
+  "search_ms": [
+    28,
+    27,
+    27,
+    56.000000000000455,
+    29
+  ],
+  "passed": true,
+  "offline_namespace": false,
+  "ui_search_ms": 95
+}

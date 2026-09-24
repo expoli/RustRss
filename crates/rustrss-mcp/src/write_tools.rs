@@ -466,7 +466,7 @@ impl RustRssMcp {
         let fetched = if jobs.is_empty() {
             Vec::new()
         } else {
-            fetch_jobs(fetcher, jobs, REFRESH_CONCURRENCY).await
+            fetch_jobs(&fetcher, jobs, REFRESH_CONCURRENCY).await
         };
         let report = match self.with_store(|s| {
             let report = apply_results(s, fetched);
@@ -647,6 +647,7 @@ mod tests {
             summary: Some("摘要".to_string()),
             content_html: None,
             content_text: Some("正文".to_string()),
+            thumbnail_url: None,
             categories: Vec::new(),
         }
     }

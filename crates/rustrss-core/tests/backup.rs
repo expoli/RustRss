@@ -47,6 +47,7 @@ fn mk_entry(stable_id: &str, title: &str) -> Entry {
         summary: Some(format!("{title} 的摘要")),
         content_html: Some(format!("<p>{title}</p>")),
         content_text: Some(title.to_string()),
+        thumbnail_url: None,
         categories: Vec::new(),
     }
 }

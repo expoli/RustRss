@@ -697,6 +697,7 @@ mod tests {
                     summary: None,
                     content_html: None,
                     content_text: None,
+                    thumbnail_url: None,
                     categories: Vec::new(),
                 }],
             )
@@ -768,6 +769,7 @@ mod tests {
                     summary: None,
                     content_html: None,
                     content_text: None,
+                    thumbnail_url: None,
                     categories: Vec::new(),
                 })
                 .collect();
@@ -825,6 +827,7 @@ mod tests {
                     summary: None,
                     content_html: None,
                     content_text: None,
+                    thumbnail_url: None,
                     categories: Vec::new(),
                 })
                 .collect();

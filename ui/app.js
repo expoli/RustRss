@@ -531,6 +531,17 @@ function reconcileChildren(container, desired) {
   }
 }
 
+function bindSidebarKeyboard(row) {
+  row.tabIndex = 0;
+  row.setAttribute('role', 'button');
+  row.addEventListener('keydown', e => {
+    if (e.target !== row || !['Enter', ' '].includes(e.key)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    row.click();
+  });
+}
+
 function reconcileViews(existing) {
   const counts = {
     unread: state.db ? state.db.unread : 0,
@@ -545,6 +556,7 @@ function reconcileViews(existing) {
       li = document.createElement('li');
       li.dataset.key = key;
       li.dataset.kind = v.kind;
+      bindSidebarKeyboard(li);
       li.innerHTML = window.RustRssComponents.viewContent(v.icon);
       li.onclick = () => setView({ kind: v.kind });
     }
@@ -563,6 +575,8 @@ function feedRow(f, existing) {
     li = document.createElement('li');
     li.dataset.key = key;
     li.dataset.feedId = String(f.id);
+    bindSidebarKeyboard(li);
+    li.draggable = true;
     li.innerHTML = window.RustRssComponents.feedContent();
   }
   const failed = !!(f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified');
@@ -588,7 +602,7 @@ function feedRow(f, existing) {
 }
 
 function fetchFailureMessage(code, fallback = '') {
-  const keys = { timeout: 'timeout', connection_error: 'connection', network_error: 'network',
+  const keys = { retry_deferred: 'deferred', timeout: 'timeout', connection_error: 'connection', network_error: 'network',
     redirect_error: 'redirect', invalid_url: 'invalidUrl', too_large: 'tooLarge',
     body_error: 'body', parse_error: 'parse', no_feed_link: 'noFeed', unexpected_response: 'response' };
   if (code === 'http_429') return t('fetchError.rateLimited');
@@ -661,8 +675,56 @@ function renderSidebar() {
 }
 
 /** #feeds 容器级事件代理：行复用不重挂监听，数据在事件时刻现查 */
+function feedOrderTarget(sourceId, targetId) {
+  const source = state.feeds.find(f => f.id === sourceId);
+  const target = state.feeds.find(f => f.id === targetId);
+  return !!(source && target && source.id !== target.id && source.folder_id === target.folder_id);
+}
+
+async function moveFeed(sourceId, targetId, before) {
+  if (!feedOrderTarget(sourceId, targetId)) return;
+  try {
+    await invoke('move_feed', { feedId: sourceId, targetId, before });
+    await refreshCounts();
+    setStatus(t('status.feedOrderSaved'));
+  } catch (error) { setStatus(t('status.settingFailed', { error: error.message }), true); }
+}
+
 function initSidebarEvents() {
   const feeds = el('feeds');
+  let dragged = null;
+  const clearDrop = () => feeds.querySelectorAll('.drop-before,.drop-after').forEach(row => row.classList.remove('drop-before', 'drop-after'));
+  const dropTarget = ev => {
+    const row = ev.target.closest('li[data-feed-id]');
+    return row && feedOrderTarget(dragged, Number(row.dataset.feedId)) ? row : null;
+  };
+  feeds.addEventListener('dragstart', ev => {
+    const row = ev.target.closest('li[data-feed-id]');
+    if (!row) return;
+    dragged = Number(row.dataset.feedId);
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.dataTransfer.setData('text/plain', String(dragged));
+  });
+  feeds.addEventListener('dragover', ev => {
+    clearDrop();
+    const row = dropTarget(ev);
+    if (!row) return;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = 'move';
+    const rect = row.getBoundingClientRect();
+    row.classList.add(ev.clientY < rect.top + rect.height / 2 ? 'drop-before' : 'drop-after');
+  });
+  feeds.addEventListener('drop', ev => {
+    const row = dropTarget(ev);
+    clearDrop();
+    if (row) {
+      ev.preventDefault();
+      const rect = row.getBoundingClientRect();
+      moveFeed(dragged, Number(row.dataset.feedId), ev.clientY < rect.top + rect.height / 2);
+    }
+    dragged = null;
+  });
+  feeds.addEventListener('dragend', () => { dragged = null; clearDrop(); });
   feeds.addEventListener('click', (ev) => {
     const li = ev.target.closest('li');
     if (!li) return;
@@ -728,10 +790,12 @@ function buildEntryRow(e) {
   // 行内 chips ≤2 + `+N`；行 hover 才显标签按钮（CSS 控制透明度，不占 hover 前的眼睛）
   const tagChips = `<span class="tag-chips">${rowTagChipsHtml(e.tags || [])}</span>`;
   const tagBtn = `<button class="row-tag-btn" data-entry-id="${e.id}" title="${t('tags.addTitle')}">#</button>`;
+  const thumbnail = window.RustRssComponents.thumbnailImage(e.thumbnail_url, escapeHtml);
   li.innerHTML = window.RustRssComponents.entryContent({
     title: escapeHtml(e.title),
     meta: `<span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}${tagChips}${tagBtn}`,
     summary: e.summary ? escapeHtml(e.summary) : '',
+    thumbnail,
   });
   li.onclick = () => openEntry(e.id, { markRead: true });
   const mark = li.querySelector('.later-mark');
@@ -2721,6 +2785,10 @@ function followGlobalLabel() {
 
 function openFeedMenu(ev, feed) {
   const items = [];
+  const siblings = state.feeds.filter(f => f.folder_id === feed.folder_id);
+  const index = siblings.findIndex(f => f.id === feed.id);
+  if (index > 0) items.push({ label: t('menu.feedUp'), action: () => moveFeed(feed.id, siblings[index - 1].id, true) });
+  if (index >= 0 && index < siblings.length - 1) items.push({ label: t('menu.feedDown'), action: () => moveFeed(feed.id, siblings[index + 1].id, false) });
   // 立即刷新置顶：原先只能双击源标题触发（可发现性差，实测用户不知道）；
   // 与移动/刷新间隔组用分隔线隔开
   items.push({ label: t('menu.refreshNow'), action: () => refreshOne(feed.id) });
@@ -3133,6 +3201,7 @@ async function deleteFolder(folder) {
 
 function move(delta) {
   if (!state.entries.length) return;
+  el('entries').focus({ preventScroll: true });
   const idx = state.entries.findIndex((e) => e.id === state.selectedId);
   const next = Math.max(0, Math.min(state.entries.length - 1, (idx < 0 ? 0 : idx) + delta));
   // j/k 是否顺便标已读完全取决于设置（默认开）
@@ -3141,6 +3210,7 @@ function move(delta) {
 
 function jump(toEnd) {
   if (!state.entries.length) return;
+  el('entries').focus({ preventScroll: true });
   const target = toEnd ? state.entries[state.entries.length - 1] : state.entries[0];
   openEntry(target.id, { markRead: state.settings.mark_read_on_navigate });
 }
@@ -4008,6 +4078,11 @@ function openSettings() {
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
   refreshSettingDropdowns();
   prefetchFontFamilies();
+  const proxy = state.settings.proxy || { mode: 'environment', url: '', no_proxy: '' };
+  el('set-proxy-mode').value = proxy.mode;
+  el('set-proxy-url').value = proxy.url;
+  el('set-proxy-bypass').value = proxy.no_proxy;
+  el('set-proxy-url').disabled = el('set-proxy-bypass').disabled = proxy.mode !== 'custom';
   el('set-refresh-on-start').checked = !!state.settings.refresh_on_start;
   el('set-notify-new-articles').checked = !!state.settings.notify_new_articles;
   el('set-rsshub-mirror').value = state.settings.rsshub_mirror || '';
@@ -4178,6 +4253,8 @@ async function boot() {
 
   el('settings-close').onclick = closeSettings;
   el('aa-close').onclick = () => el('aa-dialog').close();
+  el('keyboard-help-close').onclick = () => el('keyboard-help').close();
+  el('keyboard-help').addEventListener('keydown', e => e.stopPropagation());
   el('aa-dialog').addEventListener('close', () => { aaEditor?.dispose(); aaEditor = null; });
   el('aa-dialog').addEventListener('keydown', e => e.stopPropagation());
 
@@ -4273,6 +4350,23 @@ async function boot() {
     } catch (err) {
       setStatus(t('status.settingFailed', { error: err.message }), true);
     }
+  });
+  el('set-proxy-mode').addEventListener('change', () => {
+    el('set-proxy-url').disabled = el('set-proxy-bypass').disabled = el('set-proxy-mode').value !== 'custom';
+  });
+  el('set-proxy-save').addEventListener('click', async () => {
+    const button = el('set-proxy-save');
+    button.disabled = true;
+    try {
+      const mode = el('set-proxy-mode').value;
+      const config = { mode, url: mode === 'custom' ? el('set-proxy-url').value.trim() : '',
+        no_proxy: mode === 'custom' ? el('set-proxy-bypass').value.trim() : '' };
+      acceptSettings(await invoke('set_proxy_config', { config }));
+      el('set-proxy-status').textContent = t('settings.proxy.saved');
+    } catch (error) {
+      el('set-proxy-status').textContent = t(error.message.includes('proxy_credentials_not_supported')
+        ? 'settings.proxy.credentials' : 'settings.proxy.invalid');
+    } finally { button.disabled = false; }
   });
   el('set-refresh-on-start').addEventListener('change', async (e) => {
     try {
@@ -4550,7 +4644,7 @@ async function boot() {
  */
 function onGlobalKeydown(e) {
   const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
-  if (el('aa-dialog').open) return;
+  if (el('aa-dialog').open || el('keyboard-help').open) return;
   if (!el('settings-overlay').classList.contains('hidden') && e.key !== 'Escape') return;
   // 确认框自己处理 Esc/Enter，其它全局快捷键先让位
   if (!el('ai-confirm-overlay').classList.contains('hidden')) return;
@@ -4585,6 +4679,7 @@ function onGlobalKeydown(e) {
   if (!el('feed-edit-overlay').classList.contains('hidden')) return;
 
   switch (e.key) {
+      case '?': e.preventDefault(); el('keyboard-help').showModal(); break;
       case 'j': case 'ArrowDown': e.preventDefault(); move(1); break;
       case 'k': case 'ArrowUp': e.preventDefault(); move(-1); break;
       case 'Enter': e.preventDefault(); if (state.selectedId) openEntry(state.selectedId, { markRead: true }); break;

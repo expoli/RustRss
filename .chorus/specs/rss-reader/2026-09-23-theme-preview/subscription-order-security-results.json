@@ -1,0 +1,742 @@
+{
+  "runs": {
+    "en_light": {
+      "locale": "en",
+      "theme": "light",
+      "checks": [
+        "bilingual keys and markup",
+        "requested theme applied",
+        "fresh profile empty layout",
+        "empty subscriptions offer an actionable next step",
+        "discovery failure preserves empty database and reports error",
+        "discovery failure retains URL for retry",
+        "first fetch failure retains subscription and shows badge",
+        "first fetch failure is not reported as successful addition",
+        "retry recovers article and clears error badge",
+        "empty search does not delete cached article",
+        "empty search explains there are no matching articles",
+        "changing search query restores matching result",
+        "fail preserves cached article and enables retry",
+        "malformed preserves cached article and enables retry",
+        "drop preserves cached article and enables retry",
+        "cached body readable while connection fails",
+        "final retry clears persisted failure without duplicating article",
+        "three real subscription rows loaded",
+        "native pointer drag persists sidebar order",
+        "subscription order survives desktop restart",
+        "cancel unsubscribe preserves database and sidebar",
+        "confirm unsubscribe deletes only selected feed"
+      ],
+      "issues": [],
+      "observations": [
+        {
+          "list": "No subscriptions yet. Use Add feed above, or import OPML in Settings.\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "no-subscriptions",
+          "database": {
+            "feeds": 0,
+            "entries": 0,
+            "status": []
+          }
+        },
+        {
+          "list": "No subscriptions yet. Use Add feed above, or import OPML in Settings.\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Could not find a feed: The server returned HTTP 503. Try later or check the feed address.",
+          "statusError": true,
+          "failed": false,
+          "tooltips": [],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "discovery-503",
+          "database": {
+            "feeds": 0,
+            "entries": 0,
+            "status": []
+          }
+        },
+        {
+          "list": "Nothing unread\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Subscription added, but fetching failed: The server returned HTTP 503. Try later or check the feed address.. Use Refresh to retry.",
+          "statusError": true,
+          "failed": true,
+          "tooltips": [
+            "Last fetch: http_503 | The server returned HTTP 503. Try later or check the feed address.\nDouble-click to retry"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "first-fetch-503",
+          "database": {
+            "feeds": 1,
+            "entries": 0,
+            "status": [
+              [
+                "http_503",
+                "HTTP 503"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 1 fetched | 0 not modified | 1 new | 0 failed",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:39441/feed\nDouble-click to refresh this feed"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "recovered",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "list": "No matching articles. Try different keywords.\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 1 fetched | 0 not modified | 1 new | 0 failed",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:39441/feed\nDouble-click to refresh this feed"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "empty-search",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "Last fetch: http_503 | The server returned HTTP 503. Try later or check the feed address.\nDouble-click to retry"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-fail",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "http_503",
+                "HTTP 503"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "Last fetch: parse_error | The response could not be parsed as a feed. Check the address.\nDouble-click to retry"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-malformed",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "parse_error",
+                "feed 解析失败: unable to parse feed: no root element"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\nEnd of list (1 items)\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 0 fetched | 0 not modified | 0 new | 1 failed",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "Last fetch: network_error | The network request failed. Check your connection and retry.\nDouble-click to retry"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-drop",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "network_error",
+                "请求失败: error sending request for url (http://127.0.0.1:39441/feed)"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Nothing unread\n",
+          "reader": "Pick an article from the list.\n\nShortcuts: j/k move · Enter open · u toggle unread · s star · l read later · t tag · r refresh · / search · Esc clear\n\nStar = favourite · Read later = to read · Tag = topic\n\n",
+          "status": "Refreshed: 1 fetched | 0 not modified | 0 new | 0 failed",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:39441/feed\nDouble-click to refresh this feed"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "final-recovery",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        }
+      ],
+      "captures": [
+        "no-subscriptions.png",
+        "first-fetch-503.png",
+        "empty-search.png",
+        "refresh-disconnected.png",
+        "subscription-order.png"
+      ],
+      "pointer_before_drop": "X=60\nY=235\nSCREEN=0\nWINDOW=0\n",
+      "element_before_drop": "<span class=\"name\">A fixture</span>",
+      "drag_observation": {
+        "positions": [
+          {
+            "x": 60,
+            "y": 242.6875,
+            "top": 226.6875
+          },
+          {
+            "x": 60,
+            "y": 274.6875,
+            "top": 258.6875
+          },
+          {
+            "x": 60,
+            "y": 306.6875,
+            "top": 290.6875
+          }
+        ],
+        "events": [
+          {
+            "type": "mousedown",
+            "x": 60,
+            "y": 307,
+            "target": "3",
+            "accepted": false
+          },
+          {
+            "type": "dragstart",
+            "x": 60,
+            "y": 307,
+            "target": "3",
+            "accepted": false,
+            "effect": "none"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 277,
+            "target": "2",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 272,
+            "target": "2",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 267,
+            "target": "2",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 247,
+            "target": "1",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 242,
+            "target": "1",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 237,
+            "target": "1",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 235,
+            "target": "1",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "drop",
+            "x": 60,
+            "y": 235,
+            "target": "1",
+            "accepted": true,
+            "effect": "none"
+          },
+          {
+            "type": "dragend",
+            "x": 120,
+            "y": 251,
+            "target": "3",
+            "accepted": false,
+            "effect": "move"
+          }
+        ],
+        "order_after": [
+          3,
+          1,
+          2
+        ]
+      },
+      "passed": true
+    },
+    "zh_dark_security": {
+      "locale": "zh-CN",
+      "theme": "dark",
+      "checks": [
+        "bilingual keys and markup",
+        "requested theme applied",
+        "fresh profile empty layout",
+        "empty subscriptions offer an actionable next step",
+        "discovery failure preserves empty database and reports error",
+        "discovery failure retains URL for retry",
+        "first fetch failure retains subscription and shows badge",
+        "first fetch failure is not reported as successful addition",
+        "retry recovers article and clears error badge",
+        "empty search does not delete cached article",
+        "empty search explains there are no matching articles",
+        "changing search query restores matching result",
+        "fail preserves cached article and enables retry",
+        "malformed preserves cached article and enables retry",
+        "drop preserves cached article and enables retry",
+        "cached body readable while connection fails",
+        "final retry clears persisted failure without duplicating article",
+        "three real subscription rows loaded",
+        "native pointer drag persists sidebar order",
+        "subscription order survives desktop restart",
+        "cancel unsubscribe preserves database and sidebar",
+        "confirm unsubscribe deletes only selected feed",
+        "hostile stored article cannot execute scripts, event handlers or javascript links"
+      ],
+      "issues": [],
+      "observations": [
+        {
+          "list": "还没有订阅。点击上方「添加订阅」，或在设置中导入 OPML。\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "no-subscriptions",
+          "database": {
+            "feeds": 0,
+            "entries": 0,
+            "status": []
+          }
+        },
+        {
+          "list": "还没有订阅。点击上方「添加订阅」，或在设置中导入 OPML。\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "自动发现失败：服务器返回 HTTP 503，请稍后重试或检查订阅地址。",
+          "statusError": true,
+          "failed": false,
+          "tooltips": [],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "discovery-503",
+          "database": {
+            "feeds": 0,
+            "entries": 0,
+            "status": []
+          }
+        },
+        {
+          "list": "没有未读文章\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "订阅已添加，但抓取失败：服务器返回 HTTP 503，请稍后重试或检查订阅地址。。可点击刷新重试。",
+          "statusError": true,
+          "failed": true,
+          "tooltips": [
+            "上次抓取：http_503｜服务器返回 HTTP 503，请稍后重试或检查订阅地址。\n双击可重试"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "first-fetch-503",
+          "database": {
+            "feeds": 1,
+            "entries": 0,
+            "status": [
+              [
+                "http_503",
+                "HTTP 503"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\n已到末尾（共 1 篇）\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 1｜未修改 0｜新增 1｜失败 0",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:38705/feed\n双击刷新此源"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "recovered",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "list": "没有找到匹配的文章，请更换关键词。\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 1｜未修改 0｜新增 1｜失败 0",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:38705/feed\n双击刷新此源"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "empty-search",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\n已到末尾（共 1 篇）\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 0｜未修改 0｜新增 0｜失败 1",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "上次抓取：http_503｜服务器返回 HTTP 503，请稍后重试或检查订阅地址。\n双击可重试"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-fail",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "http_503",
+                "HTTP 503"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\n已到末尾（共 1 篇）\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 0｜未修改 0｜新增 0｜失败 1",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "上次抓取：parse_error｜返回内容不是可解析的订阅源，请检查地址。\n双击可重试"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-malformed",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "parse_error",
+                "feed 解析失败: unable to parse feed: no root element"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "Recovery article\nLocal fixture\n⚑\n#\nCached body remains readable.\n已到末尾（共 1 篇）\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 0｜未修改 0｜新增 0｜失败 1",
+          "statusError": false,
+          "failed": true,
+          "tooltips": [
+            "上次抓取：network_error｜网络请求失败，请检查连接后重试。\n双击可重试"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 1,
+          "overflow": false,
+          "label": "refresh-drop",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "network_error",
+                "请求失败: error sending request for url (http://127.0.0.1:38705/feed)"
+              ]
+            ]
+          }
+        },
+        {
+          "list": "没有未读文章\n",
+          "reader": "从中间列表选一篇文章。\n\n快捷键：j/k 上下 · Enter 打开 · u 未读切换 · s 星标 · l 稍后读 · t 标签 · r 刷新 · / 搜索 · Esc 清除\n\n星标=收藏 · 稍后读=待读 · 标签=主题分类\n\n",
+          "status": "刷新完成：成功 1｜未修改 0｜新增 0｜失败 0",
+          "statusError": false,
+          "failed": false,
+          "tooltips": [
+            "http://127.0.0.1:38705/feed\n双击刷新此源"
+          ],
+          "addDisabled": false,
+          "refreshDisabled": false,
+          "rows": 0,
+          "overflow": false,
+          "label": "final-recovery",
+          "database": {
+            "feeds": 1,
+            "entries": 1,
+            "status": [
+              [
+                "ok",
+                null
+              ]
+            ]
+          }
+        }
+      ],
+      "captures": [
+        "no-subscriptions.png",
+        "first-fetch-503.png",
+        "empty-search.png",
+        "refresh-disconnected.png",
+        "subscription-order.png"
+      ],
+      "pointer_before_drop": "X=60\nY=235\nSCREEN=0\nWINDOW=0\n",
+      "element_before_drop": "<span class=\"name\">A fixture</span>",
+      "drag_observation": {
+        "positions": [
+          {
+            "x": 60,
+            "y": 242.6875,
+            "top": 226.6875
+          },
+          {
+            "x": 60,
+            "y": 274.6875,
+            "top": 258.6875
+          },
+          {
+            "x": 60,
+            "y": 306.6875,
+            "top": 290.6875
+          }
+        ],
+        "events": [
+          {
+            "type": "mousedown",
+            "x": 60,
+            "y": 307,
+            "target": "3",
+            "accepted": false
+          },
+          {
+            "type": "dragstart",
+            "x": 60,
+            "y": 307,
+            "target": "3",
+            "accepted": false,
+            "effect": "none"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 277,
+            "target": "2",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 272,
+            "target": "2",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 267,
+            "target": "2",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 247,
+            "target": "1",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 242,
+            "target": "1",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 237,
+            "target": "1",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "dragover",
+            "x": 60,
+            "y": 235,
+            "target": "1",
+            "accepted": true,
+            "effect": "move"
+          },
+          {
+            "type": "drop",
+            "x": 60,
+            "y": 235,
+            "target": "1",
+            "accepted": true,
+            "effect": "none"
+          },
+          {
+            "type": "dragend",
+            "x": 120,
+            "y": 251,
+            "target": "3",
+            "accepted": false,
+            "effect": "move"
+          }
+        ],
+        "order_after": [
+          3,
+          1,
+          2
+        ]
+      },
+      "reader_security": {
+        "executed": 0,
+        "control": 1,
+        "text": "Safe reader marker\n              \n              \n              \n              ",
+        "active": false
+      },
+      "passed": true
+    }
+  },
+  "failed_probe_note": "Earlier Xvfb runs got no drop. Final setup raises/focuses the window, moves in absolute screen coordinates and releases eight pixels inside the target row. Final runs both observed accepted dragover/drop, persisted order and restart."
+}

@@ -27,6 +27,7 @@ fn mk_entry(stable_id: &str, published: i64) -> Entry {
         summary: Some(format!("正文{stable_id}")),
         content_html: Some(format!("<p>正文{stable_id}</p>")),
         content_text: Some(format!("正文{stable_id}")),
+        thumbnail_url: None,
         categories: Vec::new(),
     }
 }
@@ -1167,11 +1168,10 @@ fn tag_tables_do_not_disturb_existing_aggregates_and_rsshub_paths() {
             .len(),
         2
     );
-    assert!(store
-        .explain_counts()
-        .unwrap()
-        .join(" | ")
-        .contains("idx_entries_sortkey"));
+    let plan = store.explain_counts().unwrap().join(" | ");
+    // v15's wider sort index may lose COUNT(*) to the smaller covering index.
+    assert!(plan.contains("SCAN entries USING COVERING INDEX idx_entries_sortkey")
+        || plan.contains("SCAN entries USING COVERING INDEX idx_entries_feed_read"), "{plan}");
     assert_eq!(
         rsshub::canonical_scheme_url("https://rsshub.app/github/trending"),
         "rsshub://github/trending"

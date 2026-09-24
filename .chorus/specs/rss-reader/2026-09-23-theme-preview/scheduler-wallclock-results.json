@@ -1,0 +1,397 @@
+{
+  "checks": [
+    "only enabled profile reaches due source",
+    "real 900-second interval elapsed before scheduled request",
+    "manual refresh rejected while scheduled request is in flight",
+    "single flight prevents a second HTTP request",
+    "scheduled refresh preserves article node and scroll position",
+    "scheduled result persisted one new article",
+    "off profile sends no requests across at least 900 wall-clock seconds",
+    "disable periodic refresh through real IPC",
+    "enable startup refresh through real IPC",
+    "startup refresh occurs after production ten-second delay"
+  ],
+  "samples": [
+    {
+      "elapsed": 0.0,
+      "memory": {
+        "enabled": {
+          "pss_kib": 169272,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 166350,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9135890432
+    },
+    {
+      "elapsed": 60.11,
+      "memory": {
+        "enabled": {
+          "pss_kib": 159290,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161307,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9134346240
+    },
+    {
+      "elapsed": 120.21,
+      "memory": {
+        "enabled": {
+          "pss_kib": 131237,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 134146,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9027686400
+    },
+    {
+      "elapsed": 180.31,
+      "memory": {
+        "enabled": {
+          "pss_kib": 131229,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 134422,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9027686400
+    },
+    {
+      "elapsed": 240.41,
+      "memory": {
+        "enabled": {
+          "pss_kib": 131449,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 134849,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9027678208
+    },
+    {
+      "elapsed": 300.54,
+      "memory": {
+        "enabled": {
+          "pss_kib": 131270,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 134797,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9024036864
+    },
+    {
+      "elapsed": 360.65,
+      "memory": {
+        "enabled": {
+          "pss_kib": 131459,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 135192,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9024036864
+    },
+    {
+      "elapsed": 420.75,
+      "memory": {
+        "enabled": {
+          "pss_kib": 131141,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 135255,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9023885312
+    },
+    {
+      "elapsed": 480.85,
+      "memory": {
+        "enabled": {
+          "pss_kib": 159514,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161839,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9022410752
+    },
+    {
+      "elapsed": 540.95,
+      "memory": {
+        "enabled": {
+          "pss_kib": 159528,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161905,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9024094208
+    },
+    {
+      "elapsed": 601.06,
+      "memory": {
+        "enabled": {
+          "pss_kib": 159495,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161948,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9023623168
+    },
+    {
+      "elapsed": 661.16,
+      "memory": {
+        "enabled": {
+          "pss_kib": 158811,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161301,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9023430656
+    },
+    {
+      "elapsed": 721.27,
+      "memory": {
+        "enabled": {
+          "pss_kib": 159372,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161788,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9022554112
+    },
+    {
+      "elapsed": 781.38,
+      "memory": {
+        "enabled": {
+          "pss_kib": 158960,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161387,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9022353408
+    },
+    {
+      "elapsed": 841.5,
+      "memory": {
+        "enabled": {
+          "pss_kib": 159247,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161749,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9023045632
+    },
+    {
+      "elapsed": 901.6,
+      "memory": {
+        "enabled": {
+          "pss_kib": 159223,
+          "pids": [
+            472548,
+            472570,
+            472582
+          ]
+        },
+        "disabled": {
+          "pss_kib": 161972,
+          "pids": [
+            472712,
+            472726,
+            472739
+          ]
+        }
+      },
+      "disk_free": 9022980096
+    }
+  ],
+  "hits": [
+    {
+      "path": "/enabled",
+      "wall": 1790231377.10834,
+      "mono": 614581.722117637
+    },
+    {
+      "path": "/enabled",
+      "wall": 1790231393.5446992,
+      "mono": 614598.158476913
+    }
+  ],
+  "profiles": {
+    "enabled": {
+      "seeded": 1790230466.915103,
+      "interval": "15"
+    },
+    "disabled": {
+      "seeded": 1790230468.0603137,
+      "interval": "off"
+    }
+  },
+  "passed": true,
+  "off_elapsed_seconds": 915.2380273342133,
+  "manual_rejection": {
+    "ok": false,
+    "error": "刷新已在进行中（手动或自动），本次已跳过"
+  },
+  "startup_delay_seconds": 10.194856924004853
+}

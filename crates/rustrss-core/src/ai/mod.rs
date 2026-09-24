@@ -145,7 +145,12 @@ pub struct AiClient {
 
 impl AiClient {
     pub fn new(config: AiConfig) -> Result<Self, AiError> {
-        let http = reqwest::Client::builder()
+        Self::with_proxy(config, &crate::network::ProxyConfig::default())
+    }
+
+    pub fn with_proxy(config: AiConfig, proxy: &crate::network::ProxyConfig) -> Result<Self, AiError> {
+        let http = proxy.apply(reqwest::Client::builder())
+            .map_err(AiError::Request)?
             .timeout(std::time::Duration::from_secs(120))
             .connect_timeout(std::time::Duration::from_secs(10))
             .build()

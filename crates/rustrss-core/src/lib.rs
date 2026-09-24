@@ -10,6 +10,7 @@ pub mod fulltext;
 pub mod html;
 pub mod logging;
 pub mod model;
+pub mod network;
 pub mod opml;
 pub mod parse;
 pub mod paths;
@@ -17,6 +18,7 @@ pub mod refresh_flight;
 pub mod rsshub;
 pub mod store;
 pub mod theme;
+mod thumbnail;
 pub mod theme_preview;
 pub mod theme_preview_files;
 

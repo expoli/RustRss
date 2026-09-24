@@ -26,6 +26,7 @@ fn mk_summary_entry(stable_id: &str, title: &str, summary: &str) -> Entry {
         summary: Some(summary.to_string()),
         content_html: None,
         content_text: None,
+        thumbnail_url: None,
         categories: Vec::new(),
     }
 }

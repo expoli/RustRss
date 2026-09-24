@@ -31,6 +31,7 @@ fn seeded_store(body: &str) -> (Store, i64) {
                 summary: Some("摘要文本".into()),
                 content_html: None,
                 content_text: Some(body.into()),
+                thumbnail_url: None,
                 categories: Vec::new(),
             }],
         )
@@ -439,4 +440,23 @@ async fn reasoning_effort_is_sent_only_when_set() {
     assert!(without.get("reasoning_effort").is_none(), "默认不该带这个参数");
     let empty = capture_body(Some("")).await;
     assert!(empty.get("reasoning_effort").is_none(), "空串等价于不发");
+}
+
+#[tokio::test]
+async fn ai_requests_use_custom_proxy() {
+    let proxy = MockServer::start().await;
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "choices": [{"message": {"content": "proxy response"}}]
+        }))).expect(1).mount(&proxy).await;
+    let proxy_config = rustrss_core::network::ProxyConfig {
+        mode: rustrss_core::network::ProxyMode::Custom,
+        url: proxy.uri(), no_proxy: String::new(),
+    };
+    let client = AiClient::with_proxy(
+        AiConfig::openai_compatible("http://ai-fixture.invalid/v1", "test-model", "fixture-key"),
+        &proxy_config).unwrap();
+    let response = client.complete(rustrss_core::ai::prompt::build(&summarize_short(),
+        &rustrss_core::ai::prompt::ArticleText { title: "fixture", body: "fixture" })).await.unwrap();
+    assert_eq!(response, "proxy response");
 }

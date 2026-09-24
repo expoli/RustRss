@@ -2,7 +2,7 @@
 //!
 //! 为什么需要：FTS5 的默认 `unicode61` 分词器按非字母数字切分，而中文没有空格，
 //! 一整句中文会被当成**一个** token，导致中文检索完全不可用。
-//! 因此入库前把文本转成「拉丁词 + 中文 bigram」的空格分隔串；查询侧做同样转换，
+//! 因此入库前把文本转成「拉丁词 + 中文 bigram + 单字」的空格分隔串；查询侧做同样转换，
 //! 中文短语用 FTS5 的短语查询保持顺序。
 
 /// 把文本转成检索用 token 串（空格分隔，可直接写进 `entries.search_tokens`）。
@@ -35,14 +35,31 @@ pub fn to_tokens(text: &str) -> String {
             i += 1;
         }
     }
+    with_cjk_unigrams(&out)
+}
+
+/// Existing bigrams contain every character. Append missing single-character
+/// tokens without rereading article bodies; also used by the v16 migration.
+pub(super) fn with_cjk_unigrams(tokens: &str) -> String {
+    let mut missing: std::collections::BTreeSet<char> = tokens.chars().filter(|c| is_cjk(*c)).collect();
+    for word in tokens.split_whitespace() {
+        let mut chars = word.chars();
+        if let Some(c) = chars.next() {
+            if chars.next().is_none() { missing.remove(&c); }
+        }
+    }
+    let mut out = tokens.to_owned();
+    for c in missing { push(&mut out, &c.to_string()); }
     out
 }
 
-/// 查询转换结果：FTS5 表达式 + 需要走 LIKE 兜底的单字中文词。
+/// 查询转换结果：FTS5候选表达式 + 单字的原字段精确校验。
 pub struct QueryPlan {
+    /// Single-character-only searches retain their historical time ordering.
+    pub rank_by_relevance: bool,
     /// FTS5 MATCH 表达式；为空表示该查询无法用 FTS 表达
     pub fts: String,
-    /// 单字中文词：中文 bigram 索引无法覆盖，改用 LIKE 过滤
+    /// 单字仍只匹配标题/正文，不能仅凭作者或摘要中的FTS词命中。
     pub like_terms: Vec<String>,
 }
 
@@ -82,7 +99,10 @@ pub fn plan_query(query: &str) -> QueryPlan {
         }
     }
 
+    let rank_by_relevance = !terms.is_empty();
+    terms.extend(like_terms.iter().map(|term| quote(term)));
     QueryPlan {
+        rank_by_relevance,
         // FTS5 里以空格分隔即 AND
         fts: terms.join(" "),
         like_terms,
@@ -139,10 +159,13 @@ mod tests {
     }
 
     #[test]
-    fn query_plan_falls_back_to_like_for_single_char() {
+    fn single_char_has_index_candidate_and_retains_exact_field_filter() {
         let p = plan_query("架");
-        assert!(p.fts.is_empty());
+        assert_eq!(p.fts, "\"架\"");
         assert_eq!(p.like_terms, vec!["架".to_string()]);
+        let tokens = to_tokens("架构设计");
+        assert!(tokens.split_whitespace().any(|word| word == "架"));
+        assert!(tokens.split_whitespace().any(|word| word == "计"));
     }
 
     #[test]

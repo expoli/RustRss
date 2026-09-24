@@ -28,6 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ),
             content_html: Some(body.clone()),
             content_text: Some("Local fixture".into()),
+            thumbnail_url: None,
             categories: vec![],
         })
         .collect::<Vec<_>>();

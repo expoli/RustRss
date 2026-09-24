@@ -54,6 +54,7 @@ pub enum FetchResult {
     Failed {
         /// Stable machine-readable failure code; independent of diagnostic language.
         code: String,
+        retry_after_at: Option<i64>,
         status: Option<u16>,
         error: String,
     },
@@ -94,6 +95,7 @@ pub enum FetchSetupError {
 #[derive(Clone)]
 pub struct Fetcher {
     client: reqwest::Client,
+    proxy_cache: Arc<std::sync::Mutex<Option<(crate::network::ProxyConfig, reqwest::Client)>>>,
 }
 
 impl Fetcher {
@@ -106,7 +108,23 @@ impl Fetcher {
             .gzip(true)
             .brotli(true)
             .build()?;
-        Ok(Self { client })
+        Ok(Self { client, proxy_cache: Arc::default() })
+    }
+
+    /// Reuse the pool until proxy settings change; caller reads settings under a
+    /// short store lock, then calls this outside it. In-flight clones stay valid.
+    pub fn configured(&self, config: &crate::network::ProxyConfig) -> Result<Self, String> {
+        config.validate()?;
+        if config.mode == crate::network::ProxyMode::Environment { return Ok(self.clone()); }
+        let mut cache = self.proxy_cache.lock().map_err(|_| "proxy_client_lock")?;
+        if cache.as_ref().is_none_or(|(previous, _)| previous != config) {
+            let builder = reqwest::Client::builder().user_agent(DEFAULT_USER_AGENT)
+                .timeout(Duration::from_secs(30)).connect_timeout(Duration::from_secs(10))
+                .redirect(reqwest::redirect::Policy::limited(5)).gzip(true).brotli(true);
+            let client = config.apply(builder)?.build().map_err(|_| "proxy_client_setup")?;
+            *cache = Some((config.clone(), client));
+        }
+        Ok(Self { client: cache.as_ref().unwrap().1.clone(), proxy_cache: self.proxy_cache.clone() })
     }
 
     /// 抓一个 URL。带上 ETag / Last-Modified 即为条件请求。
@@ -136,6 +154,7 @@ impl Fetcher {
             Err(e) => {
                 return FetchResult::Failed {
                     code: request_error_code(&e).to_owned(),
+                    retry_after_at: None,
                     status: None,
                     error: describe_error(&e),
                 }
@@ -156,6 +175,9 @@ impl Fetcher {
         if !status.is_success() {
             return FetchResult::Failed {
                 code: format!("http_{}", status.as_u16()),
+                retry_after_at: retry_after_deadline(status.as_u16(),
+                    resp.headers().get(reqwest::header::RETRY_AFTER).and_then(|v| v.to_str().ok()),
+                    chrono::Utc::now().timestamp()),
                 status: Some(status.as_u16()),
                 error: format!("HTTP {}", status.as_u16()),
             };
@@ -173,6 +195,7 @@ impl Fetcher {
             },
             Err(failure) => FetchResult::Failed {
                 code: failure.code.to_owned(),
+                retry_after_at: None,
                 status: Some(status.as_u16()),
                 error: failure.error,
             },
@@ -292,6 +315,7 @@ pub struct RefreshJob {
     pub feed_id: i64,
     pub url: String,
     pub cache: CacheHeaders,
+    pub retry_after_at: Option<i64>,
 }
 
 /// 抓取阶段的结果
@@ -309,6 +333,7 @@ pub fn collect_jobs(store: &Store, feed_ids: &[i64]) -> Result<Vec<RefreshJob>> 
         let (url, etag, last_modified) = store.feed_endpoint(*id)?;
         jobs.push(RefreshJob {
             feed_id: *id,
+            retry_after_at: store.feed_retry_after(*id)?,
             url,
             cache: CacheHeaders {
                 etag,
@@ -365,7 +390,14 @@ pub async fn fetch_jobs_with_progress(
         let counters = counters.clone();
         let on_progress = on_progress.clone();
         async move {
-            let outcome = fetcher.fetch(&job.url, job.cache.clone()).await;
+            let outcome = if let Some(deadline) = job.retry_after_at.filter(|at| *at > chrono::Utc::now().timestamp()) {
+                FetchResult::Failed {
+                    code: "retry_deferred".into(), retry_after_at: Some(deadline), status: None,
+                    error: format!("Retry deferred until {deadline}"),
+                }
+            } else {
+                fetcher.fetch(&job.url, job.cache.clone()).await
+            };
             let ok_hit = outcome_ok(&outcome);
             let done = counters.0.fetch_add(1, Ordering::Relaxed) + 1;
             let ok = if ok_hit {
@@ -398,6 +430,9 @@ pub fn apply_results(store: &Store, results: Vec<FetchedFeed>) -> Result<Refresh
         outcome,
     } in results
     {
+        if !matches!(&outcome, FetchResult::Failed { .. }) {
+            store.set_feed_retry_after(feed_id, None)?;
+        }
         match outcome {
             FetchResult::NotModified {
                 etag,
@@ -457,8 +492,13 @@ pub fn apply_results(store: &Store, results: Vec<FetchedFeed>) -> Result<Refresh
                     });
                 }
             },
-            FetchResult::Failed { code, error, .. } => {
-                store.record_fetch(feed_id, &code, Some(&error), None, None)?;
+            FetchResult::Failed { code, error, retry_after_at, .. } => {
+                // A deferred attempt must not postpone the deadline or overwrite
+                // the last actual server response (nor its cache validators).
+                if code != "retry_deferred" {
+                    store.record_fetch(feed_id, &code, Some(&error), None, None)?;
+                    store.set_feed_retry_after(feed_id, retry_after_at)?;
+                }
                 report.failures.push(FeedFailure {
                     code,
                     feed_id,
@@ -503,6 +543,21 @@ fn header_string(headers: &HeaderMap, name: reqwest::header::HeaderName) -> Opti
         .map(|s| s.to_string())
 }
 
+// Retry-After accepts delay-seconds or an HTTP date. A missing/invalid 429
+// header still gets a short cooldown; a 503 without one keeps normal scheduling.
+fn retry_after_deadline(status: u16, value: Option<&str>, now: i64) -> Option<i64> {
+    if status != 429 && status != 503 { return None; }
+    let parsed = value.and_then(|value| {
+        let value = value.trim();
+        if !value.is_empty() && value.bytes().all(|b| b.is_ascii_digit()) {
+            value.parse::<i64>().ok().map(|seconds| now.saturating_add(seconds))
+        } else {
+            chrono::DateTime::parse_from_rfc2822(value).ok().map(|date| date.timestamp().max(now))
+        }
+    });
+    parsed.or_else(|| (status == 429).then(|| now.saturating_add(60)))
+}
+
 fn request_error_code(e: &reqwest::Error) -> &'static str {
     if e.is_timeout() {
         "timeout"
@@ -534,6 +589,22 @@ fn describe_error(e: &reqwest::Error) -> String {
 mod network_failure_tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn retry_after_boundaries() {
+        let now = 1_000;
+        assert_eq!(retry_after_deadline(429, Some("120"), now), Some(1120));
+        assert_eq!(retry_after_deadline(503, Some("0"), now), Some(now));
+        assert_eq!(retry_after_deadline(429, None, now), Some(1060));
+        for invalid in ["-1", "bad", "999999999999999999999999"] {
+            assert_eq!(retry_after_deadline(429, Some(invalid), now), Some(1060));
+            assert_eq!(retry_after_deadline(503, Some(invalid), now), None);
+        }
+        assert_eq!(retry_after_deadline(500, Some("120"), now), None);
+        assert_eq!(retry_after_deadline(503, Some("Thu, 01 Jan 1970 00:20:00 GMT"), now), Some(1200));
+        assert_eq!(retry_after_deadline(503, Some("Thu, 01 Jan 1970 00:00:00 GMT"), now), Some(now));
+        assert_eq!(retry_after_deadline(429, Some("10"), i64::MAX - 1), Some(i64::MAX));
+    }
 
     struct RejectDns(Arc<AtomicUsize>);
     impl reqwest::dns::Resolve for RejectDns {
@@ -579,6 +650,7 @@ mod network_failure_tests {
     async fn resolver_failure_has_a_stable_connection_code() {
         let calls = Arc::new(AtomicUsize::new(0));
         let fetcher = Fetcher {
+            proxy_cache: Arc::default(),
             client: reqwest::Client::builder()
                 .no_proxy()
                 .dns_resolver(Arc::new(RejectDns(calls.clone())))
@@ -604,6 +676,7 @@ mod network_failure_tests {
             .mount(&server)
             .await;
         let fetcher = Fetcher {
+            proxy_cache: Arc::default(),
             client: reqwest::Client::builder()
                 .no_proxy()
                 .timeout(Duration::from_millis(100))
@@ -646,6 +719,7 @@ mod network_failure_tests {
             let _ = wait.recv_timeout(Duration::from_secs(2));
         });
         let fetcher = Fetcher {
+            proxy_cache: Arc::default(),
             client: reqwest::Client::builder()
                 .no_proxy()
                 .timeout(Duration::from_millis(200))

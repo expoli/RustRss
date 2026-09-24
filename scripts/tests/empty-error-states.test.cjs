@@ -41,6 +41,7 @@ test('successful initial fetch retains successful status and normal cleanup',asy
 test('fetch messages use stable codes rather than diagnostic language',()=>{
  const c=vm.createContext({t:(key,args)=>({key,args})});vm.runInContext(extract('fetchFailureMessage'),c);
  const message=(code,error)=>{c.code=code;c.detail=error;return vm.runInContext('fetchFailureMessage(code,detail)',c);};
+ assert.equal(message('retry_deferred','raw').key,'fetchError.deferred');
  assert.equal(message('timeout','超时: backend').key,'fetchError.timeout');
  assert.equal(message('timeout','timeout: backend').key,'fetchError.timeout');
  assert.equal(message('connection_error','raw').key,'fetchError.connection');
@@ -56,4 +57,34 @@ test('IPC preserves structured discovery code while retaining legacy string erro
  vm.runInContext(extract('invoke'),c);
  await assert.rejects(vm.runInContext("invoke('discover_feed')",c),e=>e.code==='timeout'&&e.message==='raw timeout');
  failure='legacy failure';await assert.rejects(vm.runInContext("invoke('other')",c),e=>e.message==='legacy failure');
+});
+
+async function saveProxy(mode, failure) {
+ const fields = Object.fromEntries(['set-proxy-save','set-proxy-mode','set-proxy-url','set-proxy-bypass','set-proxy-status'].map(id=>[id,{value:''}]));
+ fields['set-proxy-mode'].value=mode;
+ fields['set-proxy-url'].value=' http://127.0.0.1:8080 ';
+ fields['set-proxy-bypass'].value=' localhost ';
+ let sent, accepted=false;
+ const c=vm.createContext({el:id=>fields[id],t:key=>key,acceptSettings:()=>{accepted=true;},
+   invoke:async(command,args)=>{sent={command,args};if(failure)throw Error(failure);return {};}});
+ const marker="el('set-proxy-save').addEventListener('click', async () => {";
+ const start=source.indexOf(marker);assert.notEqual(start,-1);
+ const end=source.indexOf("\n  });",start);
+ await vm.runInContext('(async()=>{'+source.slice(start+marker.length,end)+'})()',c);
+ return {fields,sent,accepted};
+}
+test('proxy save trims custom values and clears inactive proxy fields',async()=>{
+ const custom=await saveProxy('custom');
+ assert.equal(custom.sent.command,'set_proxy_config');
+ assert.equal(custom.sent.args.config.url,'http://127.0.0.1:8080');
+ assert.equal(custom.sent.args.config.no_proxy,'localhost');
+ assert.equal(custom.accepted,true);assert.equal(custom.fields['set-proxy-save'].disabled,false);
+ for(const mode of ['direct','environment']){
+  const r=await saveProxy(mode);assert.equal(r.sent.args.config.url,'');assert.equal(r.sent.args.config.no_proxy,'');
+ }
+});
+test('proxy rejection leaves accepted settings alone and releases the save button',async()=>{
+ const r=await saveProxy('custom','proxy_credentials_not_supported');
+ assert.equal(r.accepted,false);assert.equal(r.fields['set-proxy-save'].disabled,false);
+ assert.equal(r.fields['set-proxy-status'].textContent,'settings.proxy.credentials');
 });

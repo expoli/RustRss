@@ -175,6 +175,7 @@ pub struct EntryRow {
     pub summary: Option<String>,
     pub content_html: Option<String>,
     pub content_text: Option<String>,
+    pub thumbnail_url: Option<String>,
     /// 是否值得显示「获取全文」：摘要型条目（正文缺失或明显偏短）且未抓过、有原文地址。
     ///
     /// 只由阅读页路径（`get_entry`）真判定；列表/搜索的行不带正文，恒为 false
@@ -457,6 +458,41 @@ impl Store {
             let tx = self.conn.unchecked_transaction()?;
             tx.execute_batch(MIGRATIONS[version as usize])?;
             version += 1;
+            if version == 13 {
+                let mut cursor = i64::MIN;
+                loop {
+                    let batch: Vec<(i64, String, Option<String>, Option<String>)> = {
+                        let mut statement = tx.prepare(
+                            "SELECT id, search_tokens, url, content_html FROM entries WHERE id > ? ORDER BY id LIMIT 5",
+                        )?;
+                        let rows = statement.query_map([cursor], |row| {
+                            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+                        })?
+                            .collect::<rusqlite::Result<_>>()?;
+                        rows
+                    };
+                    if batch.is_empty() { break; }
+                    for (id, old_tokens, base, content_html) in batch {
+                        let new_tokens = tokens::with_cjk_unigrams(&old_tokens);
+                        let thumbnail = content_html.as_deref()
+                            .and_then(|html| crate::thumbnail::first_image(html, base.as_deref()));
+                        match (new_tokens != old_tokens, thumbnail) {
+                            (true, Some(thumbnail)) => {
+                                tx.execute("UPDATE entries SET search_tokens=?, thumbnail_url=? WHERE id=?",
+                                    params![new_tokens, thumbnail, id])?;
+                            }
+                            (true, None) => {
+                                tx.execute("UPDATE entries SET search_tokens=? WHERE id=?", params![new_tokens, id])?;
+                            }
+                            (false, Some(thumbnail)) => {
+                                tx.execute("UPDATE entries SET thumbnail_url=? WHERE id=?", params![thumbnail, id])?;
+                            }
+                            (false, None) => {}
+                        }
+                        cursor = id;
+                    }
+                }
+            }
             tx.pragma_update(None, "user_version", version)?;
             tx.commit()?;
         }
@@ -717,11 +753,34 @@ impl Store {
     pub fn list_feeds(&self) -> Result<Vec<FeedRow>> {
         // 排序用显示名：自定义名改了要立刻重排，否则侧栏名字变了位置不动。
         let sql = format!(
-            "{FEED_ROW_SELECT} {FEED_ROW_GROUP_BY} ORDER BY {FEED_DISPLAY_TITLE} COLLATE NOCASE"
+            "{FEED_ROW_SELECT} {FEED_ROW_GROUP_BY} ORDER BY f.position IS NULL, f.position, {FEED_DISPLAY_TITLE} COLLATE NOCASE, f.id"
         );
         let mut stmt = self.conn.prepare(&sql)?;
         let rows = stmt.query_map([], feed_row_from)?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// Move relative to another feed in the same folder, atomically. Resolve
+    /// current order inside the transaction so concurrent additions are not lost.
+    pub fn move_feed(&self, feed_id: i64, target_id: i64, before: bool) -> Result<()> {
+        let tx = self.conn.unchecked_transaction()?;
+        let folder: Option<i64> = tx.query_row("SELECT folder_id FROM feeds WHERE id=?1", [feed_id], |r| r.get(0))?;
+        let target_folder: Option<i64> = tx.query_row("SELECT folder_id FROM feeds WHERE id=?1", [target_id], |r| r.get(0))?;
+        if folder != target_folder { return Err(StoreError::Invalid("feed_order_same_folder".into())); }
+        if feed_id == target_id { return Ok(()); }
+        let mut ids = {
+            let mut statement = tx.prepare("SELECT id FROM feeds WHERE folder_id IS ?1 ORDER BY position IS NULL, position, COALESCE(custom_title,title) COLLATE NOCASE, id")?;
+            let rows = statement.query_map([folder], |r| r.get::<_,i64>(0))?.collect::<rusqlite::Result<Vec<_>>>()?;
+            rows
+        };
+        ids.retain(|id| *id != feed_id);
+        let index = ids.iter().position(|id| *id == target_id).ok_or_else(|| StoreError::Invalid("feed_order_target_missing".into()))?;
+        ids.insert(index + usize::from(!before), feed_id);
+        for (position, id) in ids.iter().enumerate() {
+            tx.execute("UPDATE feeds SET position=?2 WHERE id=?1 AND position IS NOT ?2", params![id,position as i64])?;
+        }
+        tx.commit()?;
+        Ok(())
     }
 
     /// 单个订阅源行。设置命令成功后就回这一行给界面，不必重拉整个侧栏。
@@ -811,6 +870,18 @@ impl Store {
              WHERE id = ?1",
             params![feed_id, status, error, etag, last_modified, now()],
         )?;
+        Ok(())
+    }
+
+    /// Absolute server cooldown; NULL means requests may proceed.
+    pub fn feed_retry_after(&self, feed_id: i64) -> Result<Option<i64>> {
+        Ok(self.conn.query_row("SELECT retry_after_at FROM feeds WHERE id = ?1",
+            [feed_id], |row| row.get(0))?)
+    }
+
+    pub fn set_feed_retry_after(&self, feed_id: i64, deadline: Option<i64>) -> Result<()> {
+        self.conn.execute("UPDATE feeds SET retry_after_at = ?2 WHERE id = ?1",
+            params![feed_id, deadline])?;
         Ok(())
     }
 
@@ -919,7 +990,8 @@ impl Store {
                             content_html = CASE WHEN fulltext_fetched = 1 THEN content_html ELSE ?9 END,
                             content_text = CASE WHEN fulltext_fetched = 1 THEN content_text ELSE ?10 END,
                             search_tokens = CASE WHEN fulltext_fetched = 1 THEN search_tokens ELSE ?11 END,
-                            content_hash = ?12, fetched_at = ?13
+                            content_hash = ?12, fetched_at = ?13,
+                            thumbnail_url = COALESCE(?14, thumbnail_url)
                          WHERE id = ?1",
                         params![
                             id,
@@ -934,7 +1006,8 @@ impl Store {
                             e.content_text,
                             search_tokens_for(e),
                             fingerprint,
-                            fetched_at
+                            fetched_at,
+                            e.thumbnail_url
                         ],
                     )?;
                     stats.updated += 1;
@@ -944,8 +1017,8 @@ impl Store {
                         "INSERT INTO entries (
                             feed_id, stable_id, id_origin, title, url, author,
                             published_at, updated_at, summary, content_html, content_text,
-                            search_tokens, content_hash, read, starred, fetched_at
-                         ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,0,0,?14)",
+                            search_tokens, content_hash, read, starred, fetched_at, thumbnail_url
+                         ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,0,0,?14,?15)",
                         params![
                             feed_id,
                             e.stable_id,
@@ -960,7 +1033,8 @@ impl Store {
                             e.content_text,
                             search_tokens_for(e),
                             fingerprint,
-                            fetched_at
+                            fetched_at,
+                            e.thumbnail_url
                         ],
                     )?;
                     stats.inserted += 1;
@@ -978,27 +1052,25 @@ impl Store {
     /// 一处调用要做完三件事，否则后续拼接会不一致：正文两列 + **重算检索 token**
     /// （新正文要马上可搜）+ 置 `fulltext_fetched`（刷新不覆盖、重开零网络都靠它）。
     pub fn set_fulltext(&self, entry_id: i64, content_html: &str, content_text: &str) -> Result<()> {
-        let existing: Option<(String, Option<String>)> = self
+        let existing: Option<(String, Option<String>, Option<String>)> = self
             .conn
             .query_row(
-                "SELECT title, summary FROM entries WHERE id = ?1",
+                "SELECT title, summary, url FROM entries WHERE id = ?1",
                 params![entry_id],
-                |r| Ok((r.get(0)?, r.get(1)?)),
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
             )
             .ok();
-        let Some((title, summary)) = existing else {
+        let Some((title, summary, url)) = existing else {
             return Err(StoreError::Invalid(format!("条目 #{entry_id} 不存在")));
         };
-        let tokens = search_tokens_of(&[
-            Some(title.as_str()),
-            summary.as_deref(),
-            Some(content_text),
-        ]);
+        let tokens = search_tokens_of(&[Some(title.as_str()), summary.as_deref(), Some(content_text)]);
+        let thumbnail = crate::thumbnail::first_image(content_html, url.as_deref());
         self.conn.execute(
             "UPDATE entries SET content_html = ?2, content_text = ?3,
-                search_tokens = ?4, fulltext_fetched = 1
+                search_tokens = ?4, fulltext_fetched = 1,
+                thumbnail_url = COALESCE(thumbnail_url, ?5)
              WHERE id = ?1",
-            params![entry_id, content_html, content_text, tokens],
+            params![entry_id, content_html, content_text, tokens, thumbnail],
         )?;
         Ok(())
     }
@@ -1043,25 +1115,12 @@ impl Store {
         Ok(rows.pop())
     }
 
-    /// 全文搜索：拉丁词与中文 bigram 走 FTS5，单字中文走 LIKE 兜底。
+    /// 全文搜索：拉丁词、中文bigram/单字先走FTS5；单字再校验标题/正文。
     ///
     /// 搜索的排序仍是「相关度（bm25）优先 / 无词时按时间」——排序档是列表的展示
     /// 口径，不参与搜索排序；但「隐藏已读」是全局列表过滤，搜索同样生效（无视图豁免）。
     pub fn search(&self, query: &str, limit: u32) -> Result<Vec<EntryRow>> {
-        let plan = plan_query(query);
-        let mut values: Vec<Value> = Vec::new();
-        let mut sql = entry_list_sql(None);
-        let has_fts = !plan.fts.is_empty();
-
-        append_search_filter(&mut sql, &mut values, query, self.list_hide_read());
-        if has_fts {
-            sql.push_str(" ORDER BY bm25(entries_fts), COALESCE(e.published_at, e.fetched_at) DESC");
-        } else {
-            sql.push_str(" ORDER BY COALESCE(e.published_at, e.fetched_at) DESC, e.id DESC");
-        }
-        sql.push_str(" LIMIT ?");
-        values.push(Value::Integer(limit.min(500) as i64));
-
+        let (sql, values) = search_sql(query, limit, self.list_hide_read());
         self.query_entries(&sql, values, map_entry_row_list)
     }
 
@@ -2054,7 +2113,7 @@ pub struct UnreadGroup {
 const UNGROUPED_LABEL: &str = "未分组";
 
 /// 源显示名清单（未读聚合只借它取名字；`feeds` 是小表，不涉正文大列）。
-/// 排序口径与 `list_feeds` 一致（显示名不区分大小写）。
+/// 未读组名称维持名称序；侧栏订阅手动顺序由 `list_feeds` 管理。
 const FEED_NAMES_SQL: &str = "SELECT f.id, COALESCE(f.custom_title, f.title) AS name
       FROM feeds f ORDER BY name COLLATE NOCASE";
 
@@ -2085,7 +2144,7 @@ const ENTRY_SELECT: &str = "SELECT e.id, e.feed_id, COALESCE(f.custom_title, f.t
         e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, e.content_html, e.content_text,
         e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey,
-        e.fulltext_fetched
+        e.fulltext_fetched, e.thumbnail_url
     FROM entries e JOIN feeds f ON f.id = e.feed_id";
 
 /// 列表/搜索专用列（不含 FROM）：不带正文全文（content 列以 NULL 占位，列序与
@@ -2099,7 +2158,8 @@ const ENTRY_LIST_COLUMNS: &str =
     "SELECT e.id, e.feed_id, COALESCE(f.custom_title, f.title) AS feed_title,
         e.stable_id, e.id_origin, e.title,
         e.url, e.author, e.published_at, e.summary, NULL, NULL,
-        e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey";
+        e.read, e.starred, e.read_later, COALESCE(e.published_at, e.fetched_at) AS sortkey,
+        0 AS fulltext_fetched, e.thumbnail_url";
 
 /// 列表/搜索查询的公共主体（列 + 条目 JOIN 订阅源，列表要源标题）。
 ///
@@ -2134,10 +2194,63 @@ fn list_order_by(sort: ListSort) -> &'static str {
     }
 }
 
+fn search_sql(query: &str, limit: u32, hide_read: bool) -> (String, Vec<Value>) {
+    let plan = plan_query(query);
+    if plan.rank_by_relevance && plan.like_terms.is_empty() {
+        return ranked_search_sql(&plan.fts, limit, hide_read);
+    }
+    let mut values = Vec::new();
+    let mut sql = entry_list_sql(if !plan.rank_by_relevance && !plan.fts.is_empty() {
+        Some(ListSort::Newest)
+    } else { None });
+    append_search_filter(&mut sql, &mut values, query, hide_read);
+    if plan.rank_by_relevance {
+        sql.push_str(" ORDER BY bm25(entries_fts), COALESCE(e.published_at, e.fetched_at) DESC");
+    } else {
+        sql.push_str(" ORDER BY COALESCE(e.published_at, e.fetched_at) DESC, e.id DESC");
+    }
+    sql.push_str(" LIMIT ?");
+    values.push(Value::Integer(limit.min(500) as i64));
+    (sql, values)
+}
+
+fn ranked_search_sql(
+    fts_query: &str,
+    limit: u32,
+    hide_read: bool,
+) -> (String, Vec<Value>) {
+    let mut sql = String::from(
+        "WITH hits AS MATERIALIZED (
+            SELECT e.id, e.read, COALESCE(e.published_at, e.fetched_at) AS sortkey,
+                   bm25(entries_fts) AS relevance
+              FROM entries_fts
+              JOIN entries e INDEXED BY idx_entries_search_order ON e.id = entries_fts.rowid
+             WHERE entries_fts MATCH ?",
+    );
+    let mut values = vec![Value::Text(fts_query.to_owned())];
+    if hide_read {
+        sql.push_str(" AND e.read = 0");
+    }
+    sql.push_str(
+        " ORDER BY relevance, sortkey DESC, e.id DESC LIMIT ?
+        )
+        SELECT e.id, e.feed_id, COALESCE(f.custom_title, f.title) AS feed_title,
+               e.stable_id, e.id_origin, e.title,
+               e.url, e.author, e.published_at, e.summary, NULL, NULL,
+               e.read, e.starred, e.read_later, h.sortkey, 0 AS fulltext_fetched, e.thumbnail_url
+          FROM hits h
+          JOIN entries e ON e.id = h.id
+          JOIN feeds f ON f.id = e.feed_id
+         ORDER BY h.relevance, h.sortkey DESC, h.id DESC",
+    );
+    values.push(Value::Integer(limit.min(500) as i64));
+    (sql, values)
+}
+
 fn append_search_filter(sql: &mut String, values: &mut Vec<Value>, query: &str, hide_read: bool) {
     let plan = plan_query(query);
     let has_fts = !plan.fts.is_empty();
-    if has_fts {
+    if has_fts && plan.rank_by_relevance {
         sql.push_str(" JOIN entries_fts ON entries_fts.rowid = e.id");
     }
     sql.push_str(" WHERE 1=1");
@@ -2145,7 +2258,13 @@ fn append_search_filter(sql: &mut String, values: &mut Vec<Value>, query: &str, 
         sql.push_str(" AND e.read = 0");
     }
     if has_fts {
-        sql.push_str(" AND entries_fts MATCH ?");
+        if plan.rank_by_relevance {
+            sql.push_str(" AND entries_fts MATCH ?");
+        } else {
+            // Keep the time-ordered outer scan: common characters stop at LIMIT
+            // instead of loading and sorting every matching article record.
+            sql.push_str(" AND e.id IN (SELECT rowid FROM entries_fts WHERE entries_fts MATCH ?)");
+        }
         values.push(Value::Text(plan.fts.clone()));
     }
     for term in &plan.like_terms {
@@ -2353,6 +2472,7 @@ fn map_entry_columns(r: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
         starred: r.get::<_, i64>(13)? != 0,
         read_later: r.get::<_, i64>(14)? != 0,
         sortkey: r.get(15)?,
+        thumbnail_url: r.get(17)?,
         // 先置空，由 `Store::query_entries` 统一整页填充（映射函数拿不到库连接）
         tags: Vec::new(),
     })
@@ -2457,6 +2577,7 @@ fn fingerprint(e: &Entry) -> String {
     field(e.summary.as_deref());
     field(e.content_html.as_deref());
     field(e.content_text.as_deref());
+    field(e.thumbnail_url.as_deref());
     h.update(e.published.map(|t| t.timestamp()).unwrap_or_default().to_string().as_bytes());
     h.update(e.updated.map(|t| t.timestamp()).unwrap_or_default().to_string().as_bytes());
     hex(&h.finalize())
@@ -2497,4 +2618,80 @@ fn hex(bytes: &[u8]) -> String {
         s.push_str(&format!("{b:02x}"));
     }
     s
+}
+
+#[cfg(test)]
+mod scoped_list_plan_tests {
+    use super::*;
+
+    #[test]
+    fn single_character_search_plan_stops_in_time_order_and_detects_unpinned_sort() {
+        let store = Store::open_in_memory().unwrap();
+        let (sql, values) = search_sql("文", 200, false);
+        let explain = |sql: &str| {
+            let mut stmt = store.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}")).unwrap();
+            stmt.query_map(rusqlite::params_from_iter(values.clone()), |r| r.get::<_, String>(3))
+                .unwrap().collect::<rusqlite::Result<Vec<_>>>().unwrap().join(" | ")
+        };
+        let plan = explain(&sql);
+        assert!(plan.contains("idx_entries_sortkey") && plan.contains("entries_fts"), "{plan}");
+        assert!(!plan.contains("TEMP B-TREE"), "{plan}");
+        let mutant = explain(&sql.replace(" INDEXED BY idx_entries_sortkey", ""));
+        assert!(mutant.contains("TEMP B-TREE"), "negative control escaped: {mutant}");
+    }
+
+    #[test]
+    fn ranked_search_limits_before_loading_entry_metadata_and_requires_covering_index() {
+        let store = Store::open_in_memory().unwrap();
+        let (sql, values) = ranked_search_sql("\"common\"", 200, true);
+        let explain = || {
+            let mut stmt = store.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
+            let rows = stmt.query_map(params_from_iter(values.clone()), |r| {
+                r.get::<_, String>(3)
+            })?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()
+        };
+        let plan = explain().unwrap().join(" | ");
+        assert!(plan.contains("COVERING INDEX idx_entries_search_order"), "{plan}");
+        assert!(plan.contains("MATERIALIZE hits"), "{plan}");
+
+        // Negative control: removing the supporting index makes the production SQL
+        // fail to prepare instead of silently scanning body-bearing article rows.
+        store.conn.execute("DROP INDEX idx_entries_search_order", []).unwrap();
+        assert!(explain().is_err(), "query survived without its required index");
+    }
+
+    // QUERY PLAN alone is insufficient: both plans say USING INDEX, but the old
+    // index reads feed_id from every candidate's body-bearing table record.
+    fn feed_filter_uses_index(store: &Store, sort: ListSort) -> bool {
+        let query = EntryQuery { folder_id: Some(1), ..Default::default() };
+        let (sql, values) = list_entries_sql(&query, sort, false);
+        let root: i64 = store.conn.query_row(
+            "SELECT rootpage FROM sqlite_master WHERE name='entries'", [], |r| r.get(0),
+        ).unwrap();
+        let mut statement = store.conn.prepare(&format!("EXPLAIN {sql}")).unwrap();
+        let ops: Vec<(String, i64, i64)> = statement.query_map(
+            rusqlite::params_from_iter(values), |r| Ok((r.get(1)?, r.get(2)?, r.get(3)?)),
+        ).unwrap().collect::<rusqlite::Result<_>>().unwrap();
+        let table_cursor = ops.iter().find(|(op, _, page)| op == "OpenRead" && *page == root).unwrap().1;
+        // entries.feed_id is column 1. No Column from the entries cursor may
+        // read it; output and membership filtering must both use the index.
+        !ops.iter().any(|(op, cursor, column)| op == "Column" && *cursor == table_cursor && *column == 1)
+    }
+
+    #[test]
+    fn scoped_list_filters_feed_without_reading_table_and_detects_old_indexes() {
+        let store = Store::open_in_memory().unwrap();
+        for sort in [ListSort::Newest, ListSort::Oldest, ListSort::UnreadFirst] {
+            assert!(feed_filter_uses_index(&store, sort), "feed filter reads entries table: {sort:?}");
+        }
+        // Negative control: restore the exact old definitions, not a mock SQL.
+        store.conn.execute_batch("DROP INDEX idx_entries_sortkey;
+            DROP INDEX idx_entries_unread_sortkey;
+            CREATE INDEX idx_entries_sortkey ON entries(COALESCE(published_at,fetched_at) DESC,id DESC);
+            CREATE INDEX idx_entries_unread_sortkey ON entries(read,COALESCE(published_at,fetched_at) DESC,id);").unwrap();
+        for sort in [ListSort::Newest, ListSort::Oldest, ListSort::UnreadFirst] {
+            assert!(!feed_filter_uses_index(&store, sort), "old index escaped guard: {sort:?}");
+        }
+    }
 }

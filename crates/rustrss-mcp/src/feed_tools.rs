@@ -262,7 +262,7 @@ impl RustRssMcp {
                     Ok(f) => f,
                     Err(e) => return WriteOutcome::failed_with(ERROR_INTERNAL, e).to_json(),
                 };
-                match discover(fetcher, &url).await {
+                match discover(&fetcher, &url).await {
                     Ok(found) => {
                         self.register_subscription(
                             &found.feed_url,

@@ -299,8 +299,9 @@ impl RustRssMcp {
     }
 
     /// 写工具要用的 HTTP 客户端；构造失败时把原因交回调用方（工具层包成 `internal_error`）
-    pub(crate) fn fetcher(&self) -> std::result::Result<&Fetcher, String> {
-        self.fetcher.as_ref().map_err(Clone::clone)
+    pub(crate) fn fetcher(&self) -> std::result::Result<Fetcher, String> {
+        let config = self.with_store(rustrss_core::network::ProxyConfig::load).map_err(|e| e.to_string())?;
+        self.fetcher.as_ref().map_err(Clone::clone)?.configured(&config)
     }
 
 

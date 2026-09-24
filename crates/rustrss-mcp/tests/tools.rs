@@ -29,6 +29,7 @@ fn entry(stable_id: &str, title: &str, text: &str) -> Entry {
         summary: Some(text.to_string()),
         content_html: Some(format!("<p>{text}</p>")),
         content_text: Some(text.to_string()),
+        thumbnail_url: None,
         categories: Vec::new(),
     }
 }

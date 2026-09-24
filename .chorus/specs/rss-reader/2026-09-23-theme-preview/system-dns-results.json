@@ -1,0 +1,15 @@
+{
+  "exit_code": 0,
+  "elapsed_seconds": 0.05641195899806917,
+  "rows": [
+    [
+      "http://rustrss-fixture-does-not-exist.invalid/feed",
+      "connection_error",
+      "连接失败: error sending request for url (http://rustrss-fixture-does-not-exist.invalid/feed)"
+    ]
+  ],
+  "entries": 0,
+  "proxy_environment_removed": true,
+  "stdout": "订阅源 #1 http://rustrss-fixture-does-not-exist.invalid/feed\n\n=== 第 1 次刷新 ===\n  成功 0（新增 0 / 更新 0 / 未变 0）｜未修改 0｜失败 1\n  ✗ #1 http://rustrss-fixture-does-not-exist.invalid/feed → 连接失败: error sending request for url (http://rustrss-fixture-does-not-exist.invalid/feed)\n  · #1 http://rustrss-fixture-does-not-exist.invalid/feed｜状态=connection_error｜未读=0｜错误=连接失败: error sending request for url (http://rustrss-fixture-does-not-exist.invalid/feed)\n\n=== 第 2 次刷新（观察条件请求：304 或去重后的「未变」）===\n  成功 0（新增 0 / 更新 0 / 未变 0）｜未修改 0｜失败 1\n  ✗ #1 http://rustrss-fixture-does-not-exist.invalid/feed → 连接失败: error sending request for url (http://rustrss-fixture-does-not-exist.invalid/feed)\n\n=== 库内现状 ===\n条目总数 0，未读 0\n",
+  "stderr": ""
+}

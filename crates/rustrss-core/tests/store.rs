@@ -25,6 +25,7 @@ fn mk_entry(stable_id: &str, title: &str, text: &str) -> Entry {
         summary: Some(text.to_string()),
         content_html: Some(format!("<p>{text}</p>")),
         content_text: Some(text.to_string()),
+        thumbnail_url: None,
         categories: Vec::new(),
     }
 }
@@ -83,6 +84,44 @@ fn upsert_dedupes_by_stable_id() {
     assert_eq!(third.updated, 1);
     assert_eq!(third.unchanged, 1);
     assert_eq!(store.entry_count().unwrap(), 2);
+}
+
+#[test]
+fn thumbnail_is_stored_for_list_rows_and_survives_reopen() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("thumbnail.sqlite");
+    let store = Store::open(&path).unwrap();
+    let feed_id = store.add_feed("https://example.com/feed.xml", None).unwrap();
+    let mut entry = mk_entry("thumb", "With image", "summary");
+    entry.thumbnail_url = Some("https://images.example.com/cover.jpg".into());
+    store.upsert_entries(feed_id, &[entry]).unwrap();
+
+    assert_eq!(store.list_entries(&EntryQuery::default()).unwrap()[0].thumbnail_url.as_deref(),
+        Some("https://images.example.com/cover.jpg"));
+    drop(store);
+
+    let store = Store::open(path).unwrap();
+    assert_eq!(store.get_entry(1).unwrap().unwrap().thumbnail_url.as_deref(),
+        Some("https://images.example.com/cover.jpg"));
+}
+
+#[test]
+fn fulltext_backfills_only_missing_thumbnail() {
+    let (store, feed_id) = setup();
+    let fallback = mk_entry("fallback", "Fallback", "summary");
+    let mut preferred = mk_entry("preferred", "Preferred", "summary");
+    preferred.thumbnail_url = Some("https://example.com/media-rss.jpg".into());
+    store.upsert_entries(feed_id, &[fallback.clone(), preferred.clone()]).unwrap();
+    let rows = store.list_entries(&EntryQuery::default()).unwrap();
+    let fallback_id = rows.iter().find(|row| row.stable_id == "fallback").unwrap().id;
+    let preferred_id = rows.iter().find(|row| row.stable_id == "preferred").unwrap().id;
+
+    store.set_fulltext(fallback_id, "<p><img src='../cover.jpg'></p>", "image").unwrap();
+    store.set_fulltext(preferred_id, "<p><img src='../body.jpg'></p>", "image").unwrap();
+    assert_eq!(store.get_entry(fallback_id).unwrap().unwrap().thumbnail_url.as_deref(),
+        Some("https://example.com/cover.jpg"));
+    assert_eq!(store.get_entry(preferred_id).unwrap().unwrap().thumbnail_url.as_deref(),
+        Some("https://example.com/media-rss.jpg"));
 }
 
 #[test]
@@ -392,6 +431,28 @@ fn search_supports_latin_and_chinese() {
 
     // 无匹配
     assert!(store.search("不存在的词", 10).unwrap().is_empty());
+}
+
+#[test]
+fn ranked_search_limits_results_and_applies_hidden_read_before_limit() {
+    let (store, feed_id) = setup();
+    store.upsert_entries(feed_id, &[
+        mk_entry("rank-1", "Common item", "common body"),
+        mk_entry("rank-2", "Common item", "common body"),
+        mk_entry("rank-3", "Common item", "common body"),
+    ]).unwrap();
+
+    let all = store.search("common", 10).unwrap();
+    assert_eq!(all.len(), 3);
+    assert_eq!(store.search("common", 2).unwrap().len(), 2);
+    assert_eq!(all.iter().map(|row| row.stable_id.as_str()).collect::<Vec<_>>(),
+        ["rank-3", "rank-2", "rank-1"], "equal relevance keeps newest/id tie order");
+
+    store.set_read(&[all[0].id], true).unwrap();
+    store.set_setting(LIST_HIDE_READ_KEY, "true").unwrap();
+    let visible = store.search("common", 2).unwrap();
+    assert_eq!(visible.len(), 2, "hidden read rows must be filtered before applying LIMIT");
+    assert!(visible.iter().all(|row| !row.read));
 }
 
 #[test]
@@ -1799,8 +1860,12 @@ fn counts_rides_indexes_never_the_table_btree() {
         bare_scan.is_none(),
         "任何子查询都不得退化为裸表扫描（正文大列的溢出页链代价），实际计划: {plan}"
     );
+    // v15 expands the sorting indexes; COUNT(*) may prefer the smaller
+    // feed/read covering index. Both avoid article records entirely.
+    assert!(plan.contains("SCAN entries USING COVERING INDEX idx_entries_feed_read")
+        || plan.contains("SCAN entries USING COVERING INDEX idx_entries_sortkey"),
+        "total must scan a covering index: {plan}");
     for needle in [
-        "idx_entries_sortkey",
         "idx_entries_starred",
         "idx_entries_read_later",
     ] {

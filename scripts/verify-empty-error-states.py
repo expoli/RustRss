@@ -25,10 +25,10 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 FEED = b'''<?xml version="1.0"?><rss version="2.0"><channel><title>Local fixture</title><link>http://localhost/</link><description>Fixture</description><item><guid>local-1</guid><title>Recovery article</title><description>Cached body remains readable.</description></item></channel></rss>'''
-state = {'mode': 'fail', 'requests': 0, 'stop': threading.Event()}
+state = {'mode': 'fail', 'requests': 0, 'proxy_requests': 0, 'stop': threading.Event()}
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        state['requests'] += 1
+        state['proxy_requests' if getattr(self.server, 'is_proxy', False) else 'requests'] += 1
         mode = state['mode']
         if mode == 'slow':
             self.send_response(200);self.send_header('Content-Length','1000');self.end_headers()
@@ -74,7 +74,7 @@ async def main(options):
              WEBKIT_INSPECTOR_HTTP_SERVER=f'127.0.0.1:{inspector}',GDK_GL='disable',GDK_SCALE='1')
     for key in ['GDK_BACKEND','WAYLAND_DISPLAY','EGL_PLATFORM']: env.pop(key,None)
     report={'locale':options.locale,'theme':options.theme,'checks':[],'issues':[],'observations':[],'captures':[]}
-    app=xvfb=tls_server=None
+    app=xvfb=tls_server=proxy_server=None
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     probe=module.Probe({'root':str(root),'inspector_port':inspector})
@@ -154,6 +154,10 @@ async def main(options):
             state['mode']='rate';before=state['requests'];await refresh();o=await observe('rate-429')
             check(o['database']['status'][0][0]=='http_429' and state['requests']==before+1,'429 retains status and does not immediately retry')
             check(any(('limiting requests' in t if options.locale=='en' else '频率' in t) for t in o['tooltips']),'rate limit hint is localized')
+            before=state['requests'];await refresh(expect_http=False)
+            check(state['requests']==before,'retry deadline prevents manual network request')
+            # Advance only this isolated fixture's deadline; do not sleep two minutes.
+            with sqlite3.connect(dbpath) as db:db.execute('UPDATE feeds SET retry_after_at=0')
             state['mode']='slow';started=time.monotonic();await refresh();elapsed=time.monotonic()-started
             o=await observe('body-timeout');o['elapsed_seconds']=round(elapsed,2)
             check(28<=elapsed<45 and o['database']['status'][0][0]=='timeout','real production 30s body deadline is timeout, not HTTP 200')
@@ -186,6 +190,117 @@ async def main(options):
             with sqlite3.connect(dbpath) as db:db.execute('UPDATE feeds SET url=?',(url,))
         state['mode']='ok';await refresh();o=await observe('final-recovery')
         check(not o['failed'] and o['database']['entries']==1,'final retry clears persisted failure without duplicating article')
+        if options.proxy:
+            proxy_server=ThreadingHTTPServer(('127.0.0.1',0),Handler);proxy_server.is_proxy=True
+            threading.Thread(target=proxy_server.serve_forever,daemon=True).start()
+            proxy_url=f'http://127.0.0.1:{proxy_server.server_port}'
+            async def proxy_save(mode,address='',bypass=''):
+                await probe.js("document.getElementById('set-proxy-mode').value="+json.dumps(mode)+";document.getElementById('set-proxy-mode').dispatchEvent(new Event('change'));document.getElementById('set-proxy-url').value="+json.dumps(address)+";document.getElementById('set-proxy-bypass').value="+json.dumps(bypass)+";true")
+                await click('set-proxy-save');await probe.until("!document.getElementById('set-proxy-save').disabled")
+            def proxy_stored():
+                with sqlite3.connect(dbpath) as db:
+                    row=db.execute("SELECT value FROM settings WHERE key='network.proxy'").fetchone()
+                    return json.loads(row[0]) if row else None
+            await click('btn-settings');await click('tab-subscriptions')
+            await proxy_save('custom',proxy_url)
+            check(proxy_stored()=={'mode':'custom','url':proxy_url,'no_proxy':''},'proxy UI save persists exact config')
+            capture('proxy-settings')
+            saved=proxy_stored();await proxy_save('custom','http://user:secret@127.0.0.1:8080')
+            check(proxy_stored()==saved,'credential URL rejected without overwriting config')
+            await proxy_save('custom',proxy_url)
+            await click('settings-close')
+            before=state['proxy_requests'];direct=state['requests'];await refresh(expect_http=False)
+            check(state['proxy_requests']==before+1 and state['requests']==direct,'saved custom proxy routes desktop refresh')
+            await click('btn-settings');await click('tab-subscriptions');await proxy_save('custom',proxy_url,'127.0.0.1');await click('settings-close')
+            before=state['proxy_requests'];await refresh()
+            check(state['proxy_requests']==before,'custom bypass reaches origin directly')
+            await click('btn-settings');await click('tab-subscriptions');await proxy_save('direct');await click('settings-close')
+            before=state['proxy_requests'];await refresh()
+            check(state['proxy_requests']==before and proxy_stored()['mode']=='direct','direct mode applies immediately')
+            app.terminate();app.wait(timeout=10)
+            with (root/'desktop.log').open('w') as output:app=subprocess.Popen(['target/debug/rustrss-desktop'],env=env,stdout=output,stderr=output)
+            for _ in range(150):
+                if 'loaded feeds=' in (root/'desktop.log').read_text():break
+                assert app.poll() is None
+                await asyncio.sleep(.1)
+            await click('btn-settings');await click('tab-subscriptions')
+            await probe.until("document.getElementById('set-proxy-mode').value==='direct'")
+            check(proxy_stored()['mode']=='direct','proxy mode survives desktop restart')
+            await proxy_save('environment');await click('settings-close');await refresh()
+            check(proxy_stored()['mode']=='environment','environment mode can be restored')
+        if options.organize:
+            # Seed only this isolated database, then restart to load real sidebar rows.
+            with sqlite3.connect(dbpath) as db:
+                db.execute("UPDATE feeds SET custom_title='A fixture'")
+                for suffix,title in [('b','B fixture'),('c','C fixture')]:
+                    db.execute("INSERT INTO feeds(url,title,created_at) VALUES(?,?,1)",(url+'/'+suffix,title))
+            async def restart():
+                nonlocal app
+                app.terminate();app.wait(timeout=10)
+                with (root/'desktop.log').open('w') as output:app=subprocess.Popen(['target/debug/rustrss-desktop'],env=env,stdout=output,stderr=output)
+                for _ in range(150):
+                    if 'loaded feeds=' in (root/'desktop.log').read_text():break
+                    assert app.poll() is None
+                    await asyncio.sleep(.1)
+                await probe.until("document.querySelectorAll('#feeds li[data-feed-id]').length>0")
+            await restart()
+            async def order():return json.loads(await probe.js("JSON.stringify([...document.querySelectorAll('#feeds li[data-feed-id]')].map(n=>Number(n.dataset.feedId)))"))
+            original=await order();check(len(original)==3,'three real subscription rows loaded')
+            # Real X11 pointer drag, not direct command invocation or synthetic drop.
+            positions=json.loads(await probe.js("JSON.stringify([...document.querySelectorAll('#feeds li[data-feed-id]')].map(n=>{const r=n.getBoundingClientRect();return {x:r.left+60,y:r.top+r.height/2,top:r.top};}))"))
+            window=subprocess.check_output(['xdotool','search','--onlyvisible','--name','^RustRss$'],env=env,text=True,timeout=10).splitlines()[0]
+            await probe.js("window.__feedDrag=[];for(const type of ['mousedown','dragstart','dragover','drop','dragend','mouseup'])document.addEventListener(type,e=>{if(window.__feedDrag.length<40)window.__feedDrag.push({type:e.type,x:e.clientX,y:e.clientY,target:e.target.closest('li')?.dataset.feedId||e.target.tagName,accepted:e.defaultPrevented,effect:e.dataTransfer?.dropEffect});},false);true")
+            source,target=positions[-1],positions[0]
+            geometry=subprocess.check_output(['xdotool','getwindowgeometry','--shell',window],env=env,text=True,timeout=10)
+            xy=dict(line.split('=',1) for line in geometry.splitlines() if '=' in line)
+            x=int(xy['X'])+round(source['x']);start_y=int(xy['Y'])+round(source['y']);end_y=int(xy['Y'])+round(target['top']+8)
+            subprocess.run(['xdotool','windowraise',window,'windowfocus',window,'mousemove',str(x),str(start_y),'mousedown','1'],env=env,check=True,timeout=10)
+            await asyncio.sleep(.2)
+            for y in range(start_y-5,end_y-1,-5):
+                subprocess.run(['xdotool','mousemove',str(x),str(y)],env=env,check=True,timeout=10)
+                await asyncio.sleep(.06)
+            subprocess.run(['xdotool','mousemove',str(x),str(end_y)],env=env,check=True,timeout=10)
+            await asyncio.sleep(.8)
+            report['pointer_before_drop']=subprocess.check_output(['xdotool','getmouselocation','--shell'],env=env,text=True,timeout=10)
+            report['element_before_drop']=await probe.js("document.elementFromPoint("+str(round(target['x']))+","+str(round(target['top']+8))+").outerHTML")
+            subprocess.run(['xdotool','mouseup','1'],env=env,check=True,timeout=10)
+            await asyncio.sleep(.3)
+            report['drag_observation']={'positions':positions,'events':json.loads(await probe.js('JSON.stringify(window.__feedDrag)')),'order_after':await order()}
+            expected=[original[-1],*original[:-1]]
+            await probe.until("JSON.stringify([...document.querySelectorAll('#feeds li[data-feed-id]')].map(n=>Number(n.dataset.feedId)))==="+json.dumps(json.dumps(expected,separators=(',',':'))))
+            check(await order()==expected,'native pointer drag persists sidebar order')
+            await restart();check(await order()==expected,'subscription order survives desktop restart')
+            capture('subscription-order')
+            async def unsubscribe_menu():
+                await probe.js("document.querySelector('#feeds li[data-feed-id]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:100,clientY:220}));true")
+                await probe.js("[...document.querySelectorAll('#ctx-menu button')].find(n=>n.textContent.includes(I18N.t('menu.unsubscribe'))).click();true")
+                await probe.until("!document.getElementById('generic-confirm-overlay').classList.contains('hidden')")
+            await unsubscribe_menu();await click('generic-confirm-cancel')
+            check(stored()['feeds']==3 and await order()==expected,'cancel unsubscribe preserves database and sidebar')
+            await unsubscribe_menu();await click('generic-confirm-ok')
+            await probe.until("document.querySelectorAll('#feeds li[data-feed-id]').length===2")
+            check(stored()['feeds']==2 and await order()==expected[1:],'confirm unsubscribe deletes only selected feed')
+            # Stored hostile content exercises the actual article rendering path.
+            hostile = """<p>Safe reader marker</p><script>window.__rssInjected=1</script>
+              <img src="data:image/png;base64,broken" onerror="window.__rssInjected=2">
+              <a href="javascript:window.__rssInjected=3">Hostile link</a>
+              <svg onload="window.__rssInjected=4"></svg>
+              <iframe srcdoc="<script>parent.__rssInjected=5</script>"></iframe>"""
+            with sqlite3.connect(dbpath) as db:
+                db.execute('UPDATE entries SET content_html=?,content_text=?,read=0',(hostile,'Safe reader marker'))
+            await restart()
+            await probe.until("!!document.querySelector('#entries li[data-id]')")
+            await probe.js("window.__rssInjected=0;window.__positiveControl=0;const testImage=document.createElement('img');testImage.onerror=()=>{window.__positiveControl++;testImage.remove();};testImage.src='data:image/png;base64,broken';document.body.appendChild(testImage);true")
+            await probe.until('window.__positiveControl===1')
+            await probe.js("document.querySelector('#entries li[data-id]').click();true")
+            await probe.until("!!document.querySelector('#reader .article')")
+            await asyncio.sleep(.4)
+            await probe.js("[...document.querySelectorAll('#reader a')].find(n=>n.textContent==='Hostile link')?.click();true")
+            await asyncio.sleep(.2)
+            security=json.loads(await probe.js("JSON.stringify({executed:window.__rssInjected,control:window.__positiveControl,text:document.querySelector('#reader .article').textContent,active:[...document.querySelectorAll('#reader .article *')].some(n=>['SCRIPT','IFRAME','SVG'].includes(n.tagName)||[...n.attributes].some(a=>/^on/i.test(a.name)||/^javascript:/i.test(a.value)))})"))
+            report['reader_security']=security
+            check(security['control']==1 and security['executed']==0 and not security['active'] and 'Safe reader marker' in security['text'],'hostile stored article cannot execute scripts, event handlers or javascript links')
+
         report['passed']=not report['issues']
         print(json.dumps(report,ensure_ascii=False),flush=True)
         assert report['passed'],report['issues']
@@ -193,6 +308,7 @@ async def main(options):
         (root/'results.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         state['stop'].set()
         if tls_server: tls_server.shutdown();tls_server.server_close()
+        if proxy_server: proxy_server.shutdown();proxy_server.server_close()
         server.shutdown();server.server_close()
         for child in [app,xvfb]:
             if child and child.poll() is None:
@@ -203,6 +319,8 @@ async def main(options):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--organize',action='store_true',help='verify native subscription drag, restart and delete confirmation')
+    parser.add_argument('--proxy',action='store_true',help='also verify proxy settings, routing and restart')
     parser.add_argument('--extended',action='store_true',help='also test real 30s timeout, 429 and untrusted TLS')
     parser.add_argument('--locale',choices=['en','zh-CN'],default='en')
     parser.add_argument('--theme',choices=['light','dark'],default='light')

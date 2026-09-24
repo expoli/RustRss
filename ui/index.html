@@ -92,7 +92,7 @@
           <button id="btn-unread-only" data-i18n="list.unreadOnly" data-i18n-title="list.unreadOnlyTitle" aria-label="unread only" aria-pressed="false"></button>
         </span>
       </div>
-      <ul id="entries" class="entries"></ul>
+      <ul id="entries" class="entries" tabindex="-1"></ul>
     </section>
 
     <section class="right-col">
@@ -111,6 +111,12 @@
   </main>
 
   <dialog id="aa-dialog" aria-labelledby="aa-title"><div class="aa-heading"><h3 id="aa-title" data-i18n="theme.reading"></h3><button id="aa-close" data-i18n="settings.close"></button></div><div id="aa-editor"></div></dialog>
+  <dialog id="keyboard-help" aria-labelledby="keyboard-help-title">
+    <div class="aa-heading"><h3 id="keyboard-help-title" data-i18n="keyboard.title"></h3><button id="keyboard-help-close" data-i18n="settings.close" autofocus></button></div>
+    <p data-i18n="reader.shortcuts"></p>
+    <p data-i18n="keyboard.extra"></p>
+    <p data-i18n="keyboard.navigation"></p>
+  </dialog>
   <div id="settings-overlay" class="overlay hidden" role="dialog" aria-modal="true">
     <div class="settings-dialog">
       <nav class="settings-nav">
@@ -133,6 +139,14 @@
             </div>
           </div></div>
 <div class="pane hidden" id="pane-subscriptions" role="tabpanel" aria-labelledby="tab-subscriptions" data-pane="subscriptions"><h3 data-i18n="settings.nav.subscriptions"></h3><div class="setting-block">
+            <h4 data-i18n="settings.proxy.title"></h4>
+            <p data-i18n="settings.proxy.hint"></p>
+            <div class="setting-item"><label for="set-proxy-mode" data-i18n="settings.proxy.mode"></label>
+              <select id="set-proxy-mode"><option value="environment" data-i18n="settings.proxy.environment"></option><option value="direct" data-i18n="settings.proxy.direct"></option><option value="custom" data-i18n="settings.proxy.custom"></option></select></div>
+            <div class="setting-item"><label for="set-proxy-url" data-i18n="settings.proxy.url"></label><input id="set-proxy-url" type="url" placeholder="http://127.0.0.1:8080" autocomplete="off" /></div>
+            <div class="setting-item"><label for="set-proxy-bypass" data-i18n="settings.proxy.bypass"></label><input id="set-proxy-bypass" type="text" placeholder="localhost,127.0.0.1" autocomplete="off" /></div>
+            <button type="button" id="set-proxy-save" data-i18n="settings.proxy.save"></button>
+            <p id="set-proxy-status" role="status" aria-live="polite"></p>
             <h4 data-i18n="settings.section.refresh"></h4>
             <div class="setting-item">
               <div class="text">

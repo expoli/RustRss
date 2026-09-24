@@ -172,7 +172,7 @@ pub(crate) async fn fetch_fulltext_core(state: &AppState, entry_id: i64) -> R<En
     // 不再把超限页面整个缓冲（follow-up：原先闸门在整包后才判，白流量白内存）。
     let started = std::time::Instant::now();
     let body = state
-        .fetcher
+        .configured_fetcher()?
         .fetch_bytes_limited(&url, fulltext::MAX_BYTES)
         .await
         .map_err(|e| format!("获取原文失败: {e}"))?;
@@ -316,6 +316,7 @@ const FONT_LIST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3)
 
 #[derive(Serialize)]
 pub struct UiSettings {
+    pub proxy: rustrss_core::network::ProxyConfig,
     pub mark_read_on_navigate: bool,
     pub locale: String,
     pub theme: String,
@@ -404,6 +405,7 @@ fn ui_settings(state: &AppState) -> R<UiSettings> {
             &snapshot.light
         };
         Ok(UiSettings {
+            proxy: rustrss_core::network::ProxyConfig::load(s).map_err(err)?,
             mark_read_on_navigate: s
                 .bool_setting(KEY_MARK_READ_ON_NAVIGATE, DEFAULT_MARK_READ_ON_NAVIGATE)
                 .map_err(err)?,
@@ -468,6 +470,15 @@ pub async fn sidebar_data(state: State<'_, AppState>) -> R<SidebarData> {
     });
     log_slow("sidebar_data", t);
     r
+}
+
+#[tauri::command]
+pub fn set_proxy_config(state: State<'_, AppState>, config: rustrss_core::network::ProxyConfig) -> R<UiSettings> {
+    // Validate and construct before persistence. No network request or store lock
+    // is held while creating the client.
+    state.fetcher.configured(&config)?;
+    state.with_store(|s| config.save(s).map_err(err))?;
+    ui_settings(&state)
 }
 
 #[tauri::command]
@@ -960,7 +971,7 @@ pub async fn test_rsshub_mirror(
 ) -> R<String> {
     use rustrss_core::rsshub::clean_base;
     let base = clean_base(&mirror.unwrap_or_default());
-    let fetcher = state.fetcher.clone();
+    let fetcher = state.configured_fetcher()?;
     for path in ["/version", "/", "/rsshub/rss", "/feed/rsshub/rss"] {
         let url = format!("{base}{path}");
         let started = std::time::Instant::now();
@@ -1402,6 +1413,7 @@ mod tests {
             summary: Some("正文".into()),
             content_html: Some("<p>正文</p>".into()),
             content_text: Some("正文".into()),
+            thumbnail_url: None,
             categories: Vec::new(),
         };
         state
@@ -1773,6 +1785,7 @@ mod tests {
             summary: Some("正文".into()),
             content_html: Some("<p>正文</p>".into()),
             content_text: Some("正文".into()),
+            thumbnail_url: None,
             categories: Vec::new(),
         };
 
@@ -2386,6 +2399,7 @@ mod tests {
             content_html: content.map(|c| format!("<p>{c}</p>")),
             // 解析层在源没给正文时会用摘要兜底，这里照那个形状造数据
             content_text: Some(content.unwrap_or("源给的一句摘要").to_string()),
+            thumbnail_url: None,
             categories: Vec::new(),
         }
     }
@@ -2728,8 +2742,15 @@ pub async fn discover_feed(
     state: State<'_, AppState>,
     url: String,
 ) -> Result<Discovery, rustrss_core::discover::DiscoveryFailure> {
-    let fetcher = state.fetcher.clone();
+    let fetcher = state.configured_fetcher().map_err(|message| rustrss_core::discover::DiscoveryFailure {
+        code: "network_error".into(), message,
+    })?;
     discover(&fetcher, url.trim()).await.map_err(Into::into)
+}
+
+#[tauri::command]
+pub fn move_feed(state: State<'_, AppState>, feed_id: i64, target_id: i64, before: bool) -> R<()> {
+    state.with_store(|s| s.move_feed(feed_id, target_id, before).map_err(err))
 }
 
 #[tauri::command]
@@ -2769,7 +2790,7 @@ pub(crate) async fn refresh_core<P: Fn(rustrss_core::RefreshProgress) + Send + S
         return Ok(RefreshReport::default());
     }
     // 阶段二：无锁并发抓取（带进度回调时逐源发事件，前端状态栏实时显示 N/M）
-    let fetcher = state.fetcher.clone();
+    let fetcher = state.configured_fetcher()?;
     let started = std::time::Instant::now();
     log::debug!(
         "[rustrss] 刷新批次开始: 源={} 并发={concurrency}",

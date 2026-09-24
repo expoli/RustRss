@@ -55,6 +55,11 @@ impl AppState {
         })
     }
 
+    pub fn configured_fetcher(&self) -> Result<Fetcher, String> {
+        let config = self.with_store(|s| rustrss_core::network::ProxyConfig::load(s).map_err(|e| e.to_string()))?;
+        self.fetcher.configured(&config)
+    }
+
     /// 尝试开始一次刷新（CAS）：已经有一次在跑时返回 Err。
     ///
     /// 手动刷新（按钮/`r`）与定时/启动刷新共用这一个标记——两条路径都在跑的话，

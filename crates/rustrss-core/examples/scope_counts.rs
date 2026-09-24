@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 stable_id: format!("{f}-{n}"), source_id: format!("{f}-{n}"), id_origin: IdOrigin::SourceData,
                 title: format!("Fixture {f} article {n}"), url: None, author: None,
                 published: None, updated: None, summary: Some("fixture".into()),
-                content_html: Some(body.clone()), content_text: Some(body.clone()), categories: vec![],
+                content_html: Some(body.clone()), content_text: Some(body.clone()), thumbnail_url: None, categories: vec![],
             }).collect();
             store.upsert_entries(feed, &rows)?;
         }

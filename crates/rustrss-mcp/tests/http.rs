@@ -32,6 +32,7 @@ fn seeded(tag: &str) -> (RustRssMcp, std::path::PathBuf) {
                 summary: Some("摘要".into()),
                 content_html: None,
                 content_text: Some("正文".into()),
+                thumbnail_url: None,
                 categories: Vec::new(),
             }],
         )

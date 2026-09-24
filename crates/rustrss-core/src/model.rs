@@ -51,5 +51,7 @@ pub struct Entry {
     pub content_html: Option<String>,
     /// 纯文本正文（用于搜索与 MCP 输出，避免把 HTML 塞进上下文）
     pub content_text: Option<String>,
+    /// 可选文章缩略图（HTTP(S)）；只从结构化媒体或文章图片提取。
+    pub thumbnail_url: Option<String>,
     pub categories: Vec<String>,
 }

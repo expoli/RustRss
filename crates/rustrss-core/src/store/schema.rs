@@ -194,4 +194,26 @@ pub const MIGRATIONS: &[&str] = &[
     CREATE INDEX idx_entry_tags_tag ON entry_tags(tag_id, entry_id);
     CREATE INDEX idx_entries_unread_id ON entries(id) WHERE read = 0;
     "#,
+    // v13 is the first unreleased development schema. Keep all pre-release
+    // additions together; once shipped, future migrations become append-only.
+    r#"
+    ALTER TABLE feeds ADD COLUMN retry_after_at INTEGER;
+    ALTER TABLE feeds ADD COLUMN position INTEGER;
+    ALTER TABLE entries ADD COLUMN thumbnail_url TEXT;
+    DROP INDEX idx_entries_sortkey;
+    DROP INDEX idx_entries_unread_sortkey;
+    CREATE INDEX idx_entries_sortkey
+        ON entries(COALESCE(published_at, fetched_at) DESC, id DESC, feed_id);
+    CREATE INDEX idx_entries_unread_sortkey
+        ON entries(read, COALESCE(published_at, fetched_at) DESC, id, feed_id);
+    CREATE INDEX idx_entries_search_order
+        ON entries(id, read, COALESCE(published_at, fetched_at) DESC);
+    DROP TRIGGER IF EXISTS entries_fts_au;
+    CREATE TRIGGER entries_fts_au AFTER UPDATE OF title, search_tokens ON entries BEGIN
+        INSERT INTO entries_fts(entries_fts, rowid, title, search_tokens)
+        VALUES ('delete', old.id, old.title, old.search_tokens);
+        INSERT INTO entries_fts(rowid, title, search_tokens)
+        VALUES (new.id, new.title, new.search_tokens);
+    END;
+    "#,
 ];

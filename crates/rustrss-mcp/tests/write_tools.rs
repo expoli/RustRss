@@ -154,6 +154,7 @@ fn entry(stable_id: &str, url: Option<String>, text: &str) -> Entry {
         summary: Some(text.to_string()),
         content_html: None,
         content_text: Some(text.to_string()),
+        thumbnail_url: None,
         categories: Vec::new(),
     }
 }
@@ -1085,4 +1086,27 @@ async fn every_write_tool_call_leaves_a_scrubbed_audit_line() {
 
     handle.shutdown();
     let _ = std::fs::remove_file(db);
+}
+
+#[tokio::test]
+async fn refresh_reloads_proxy_config_from_shared_database() {
+    use rustrss_core::network::{ProxyConfig, ProxyMode};
+    use rustrss_mcp::write_tools::RefreshParams;
+    let path = temp_db("proxy-config");
+    let store = Store::open(&path).unwrap();
+    let url = "http://mcp-proxy-fixture.invalid/feed";
+    let id = store.add_feed(url, None).unwrap();
+    let proxy = TestServer::start(vec![(url.into(), b"<rss version=\"2.0\"><channel><title>Proxy</title></channel></rss>".to_vec(), "application/rss+xml".into())]).await;
+    let server = RustRssMcp::open(&path).unwrap();
+    // Save after constructing the MCP server: a startup-only snapshot would fail.
+    ProxyConfig { mode: ProxyMode::Custom, url: proxy.base.clone(), no_proxy: String::new() }.save(&store).unwrap();
+    let params: RefreshParams = serde_json::from_value(json!({"scope":"feed_ids","feed_ids":[id]})).unwrap();
+    let response = server.refresh_json(&params).await;
+    assert_eq!(store.feed_row(id).unwrap().unwrap().last_status.as_deref(), Some("ok"), "{response}");
+    assert_eq!(proxy.hits.lock().unwrap().as_slice(), &[url.to_string()]);
+    drop(server);
+    drop(store);
+    for suffix in ["", "-wal", "-shm"] {
+        let _ = std::fs::remove_file(format!("{}{suffix}", path.display()));
+    }
 }

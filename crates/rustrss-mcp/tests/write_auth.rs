@@ -53,6 +53,7 @@ fn entry(stable_id: &str, title: &str) -> Entry {
         summary: Some("摘要".to_string()),
         content_html: None,
         content_text: Some("正文".to_string()),
+        thumbnail_url: None,
         categories: Vec::new(),
     }
 }
