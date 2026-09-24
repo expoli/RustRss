@@ -126,8 +126,8 @@ pub async fn probe_url(
     use crate::fetch::{CacheHeaders, FetchResult};
     match fetcher.fetch(url, CacheHeaders::default()).await {
         FetchResult::Fetched { .. } | FetchResult::NotModified { .. } => Ok(true),
-        FetchResult::Failed { status: Some(_), error: _ } => Ok(false),
-        FetchResult::Failed { status: None, error } => Err(error),
+        FetchResult::Failed { status: Some(_), .. } => Ok(false),
+        FetchResult::Failed { status: None, error, .. } => Err(error),
     }
 }
 

@@ -180,3 +180,5 @@ created: 2026-09-20
 - [x] KDE原生Wayland补验：外屏125%/150%主界面与设置弹窗、用户清晰度确认和真实点击通过；真实系统浅/深切换跟随system，显式light/dark不受影响，SQLite无写与正文锚点保持，结束恢复原桌面。范围见 [原生验收](2026-09-23-theme-preview/native-settings.md)。
 
 - [x] 区分无订阅与空搜索提示；初次抓取失败不误报成功，保留订阅并提示刷新重试。回环HTTP的503/无效RSS/断连接与恢复均保留缓存，双语UI补验见 [空态与失败报告](2026-09-23-theme-preview/empty-error-states.md)。
+
+- [x] 订阅抓取稳定错误码及双语提示：响应体超时不再记为http_200，数据库/刷新报告共用code，自动发现保留结构化错误；DNS注入、TLS自签名拒绝、生产30秒超时、429与缓存/恢复补验通过。范围见 [网络补验](2026-09-23-theme-preview/network-error-followup.md)。

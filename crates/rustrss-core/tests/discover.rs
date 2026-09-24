@@ -311,3 +311,24 @@ async fn rsshub_scheme_add_flow_then_first_fetch_hits_mirror() {
     // 抓取后库内仍是 scheme（update_feed_meta 不写 url）
     assert_eq!(store.list_feeds().unwrap()[0].url, "rsshub://test/1");
 }
+
+#[test]
+fn structured_discovery_failure_preserves_code_and_raw_diagnostic() {
+    use rustrss_core::discover::{DiscoverError, DiscoveryFailure};
+    let dto = DiscoveryFailure::from(DiscoverError::Fetch {
+        code: "timeout".into(),
+        url: "https://fixture.invalid".into(),
+        error: "fixture timeout".into(),
+    });
+    let value = serde_json::to_value(dto).unwrap();
+    assert_eq!(value["code"], "timeout");
+    assert!(value["message"]
+        .as_str()
+        .unwrap()
+        .contains("fixture timeout"));
+    let dto = DiscoveryFailure::from(DiscoverError::NoFeedLink {
+        url: "https://fixture.invalid".into(),
+        detail: "fixture missing link".into(),
+    });
+    assert_eq!(dto.code, "no_feed_link");
+}

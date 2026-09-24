@@ -9,12 +9,14 @@ import json
 import os
 from pathlib import Path
 import socket
+import ssl
 import sqlite3
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.dont_write_bytecode = True
@@ -23,11 +25,19 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 FEED = b'''<?xml version="1.0"?><rss version="2.0"><channel><title>Local fixture</title><link>http://localhost/</link><description>Fixture</description><item><guid>local-1</guid><title>Recovery article</title><description>Cached body remains readable.</description></item></channel></rss>'''
-state = {'mode': 'fail', 'requests': 0}
+state = {'mode': 'fail', 'requests': 0, 'stop': threading.Event()}
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         state['requests'] += 1
         mode = state['mode']
+        if mode == 'slow':
+            self.send_response(200);self.send_header('Content-Length','1000');self.end_headers()
+            self.wfile.write(b'x');self.wfile.flush()
+            state['stop'].wait(32)
+            return
+        if mode == 'rate':
+            self.send_response(429);self.send_header('Retry-After','120');self.send_header('Content-Length','0');self.end_headers()
+            return
         if mode == 'drop':
             self.connection.shutdown(socket.SHUT_RDWR)
             self.connection.close()
@@ -64,7 +74,7 @@ async def main(options):
              WEBKIT_INSPECTOR_HTTP_SERVER=f'127.0.0.1:{inspector}',GDK_GL='disable',GDK_SCALE='1')
     for key in ['GDK_BACKEND','WAYLAND_DISPLAY','EGL_PLATFORM']: env.pop(key,None)
     report={'locale':options.locale,'theme':options.theme,'checks':[],'issues':[],'observations':[],'captures':[]}
-    app=xvfb=None
+    app=xvfb=tls_server=None
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     probe=module.Probe({'root':str(root),'inspector_port':inspector})
@@ -88,10 +98,13 @@ async def main(options):
     async def search(query):
         await probe.js("(()=>{const e=document.getElementById('search');e.value="+json.dumps(query)+";e.dispatchEvent(new Event('input',{bubbles:true}));return true;})()")
         await asyncio.sleep(.6)
-    async def refresh():
+    async def refresh(expect_http=True):
         count=state['requests'];await click('btn-refresh')
-        await probe.until("!document.getElementById('btn-refresh').disabled")
-        assert state['requests']>count
+        deadline=time.monotonic()+45
+        while await probe.js("document.getElementById('btn-refresh').disabled"):
+            assert time.monotonic()<deadline,'refresh exceeded production deadline'
+            await asyncio.sleep(.2)
+        if expect_http: assert state['requests']>count
     def capture(label):
         window=subprocess.check_output(['xdotool','search','--onlyvisible','--name','^RustRss$'],env=env,text=True,timeout=10).splitlines()[0]
         subprocess.run(['xdotool','windowsize',window,'1239','820','windowsize',window,'1240','820'],env=env,check=True,timeout=10)
@@ -137,6 +150,40 @@ async def main(options):
         await probe.until("!!document.querySelector('#reader .article')")
         check('Cached body' in await probe.js("document.querySelector('#reader .article').textContent"),'cached body readable while connection fails')
         capture('refresh-disconnected')
+        if options.extended:
+            state['mode']='rate';before=state['requests'];await refresh();o=await observe('rate-429')
+            check(o['database']['status'][0][0]=='http_429' and state['requests']==before+1,'429 retains status and does not immediately retry')
+            check(any(('limiting requests' in t if options.locale=='en' else '频率' in t) for t in o['tooltips']),'rate limit hint is localized')
+            state['mode']='slow';started=time.monotonic();await refresh();elapsed=time.monotonic()-started
+            o=await observe('body-timeout');o['elapsed_seconds']=round(elapsed,2)
+            check(28<=elapsed<45 and o['database']['status'][0][0]=='timeout','real production 30s body deadline is timeout, not HTTP 200')
+            check(o['database']['entries']==1 and not o['refreshDisabled'],'timeout preserves cache and releases refresh button')
+            cert,key=root/'cert.pem',root/'key.pem'
+            subprocess.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(key),'-out',str(cert),
+                '-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1','-days','1'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=True,timeout=15)
+            key.chmod(0o600)
+            context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);context.load_cert_chain(cert,key)
+            tls_server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+            tls_server.socket=context.wrap_socket(tls_server.socket,server_side=True)
+            threading.Thread(target=tls_server.serve_forever,daemon=True).start()
+            tls_url=f'https://127.0.0.1:{tls_server.server_port}/feed'
+            # Positive control: the same TLS fixture serves valid RSS when a
+            # separate test client explicitly trusts only its temporary certificate.
+            # The RustRss client never receives that trust override.
+            state['mode']='ok'
+            with urllib.request.urlopen(tls_url,context=ssl.create_default_context(cafile=str(cert)),timeout=5) as response:
+                check(response.read()==FEED,'TLS fixture works with explicit test-only certificate trust')
+            with sqlite3.connect(dbpath) as db:db.execute('UPDATE feeds SET url=?',(tls_url,))
+            before=state['requests'];await refresh(expect_http=False);o=await observe('untrusted-tls')
+            check(o['database']['status'][0][0]=='connection_error' and state['requests']==before,'untrusted certificate rejected before HTTP, no verification bypass')
+            check(o['database']['entries']==1,'TLS failure preserves cached article')
+            await probe.js('document.getElementById("add-url").value='+json.dumps(tls_url)+';true')
+            await click('add-ok');await probe.until("!document.getElementById('add-ok').disabled")
+            o=await observe('discovery-untrusted-tls')
+            check(o['statusError'] and ('certificate' in o['status'] if options.locale=='en' else '证书' in o['status']),'structured discovery error is localized')
+            if options.locale=='en':
+                check(not any('\u4e00'<=c<='\u9fff' for o in report['observations'] for t in [o['status'],*o['tooltips']] for c in t),'known English error surfaces contain no Chinese diagnostics')
+            with sqlite3.connect(dbpath) as db:db.execute('UPDATE feeds SET url=?',(url,))
         state['mode']='ok';await refresh();o=await observe('final-recovery')
         check(not o['failed'] and o['database']['entries']==1,'final retry clears persisted failure without duplicating article')
         report['passed']=not report['issues']
@@ -144,6 +191,8 @@ async def main(options):
         assert report['passed'],report['issues']
     finally:
         (root/'results.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+        state['stop'].set()
+        if tls_server: tls_server.shutdown();tls_server.server_close()
         server.shutdown();server.server_close()
         for child in [app,xvfb]:
             if child and child.poll() is None:
@@ -154,6 +203,7 @@ async def main(options):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--extended',action='store_true',help='also test real 30s timeout, 429 and untrusted TLS')
     parser.add_argument('--locale',choices=['en','zh-CN'],default='en')
     parser.add_argument('--theme',choices=['light','dark'],default='light')
     asyncio.run(main(parser.parse_args()))

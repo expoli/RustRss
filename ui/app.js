@@ -281,7 +281,9 @@ async function invoke(cmd, args = {}) {
   try {
     return await window.__TAURI__.core.invoke(cmd, args);
   } catch (e) {
-    throw new Error(typeof e === 'string' ? e : (e && e.message ? e.message : String(e)));
+    const error = new Error(typeof e === 'string' ? e : (e && e.message ? e.message : String(e)));
+    if (e && typeof e.code === 'string') error.code = e.code;
+    throw error;
   }
 }
 
@@ -568,7 +570,7 @@ function feedRow(f, existing) {
   const tooltip = failed
     ? t('sidebar.feedTooltipFailed', {
         status: f.last_status,
-        error: f.last_error || '',
+        error: fetchFailureMessage(f.last_status, f.last_error || ''),
       })
     : t('sidebar.feedTooltipOk', { url: f.url });
   // 独立档位是「看不见的设置」：跟随全局的源不写这一行，有覆盖的源在常驻
@@ -583,6 +585,18 @@ function feedRow(f, existing) {
   li.querySelector('.dot').hidden = !failed;
   setText(li.querySelector('.count'), String(f.unread));
   return li;
+}
+
+function fetchFailureMessage(code, fallback = '') {
+  const keys = { timeout: 'timeout', connection_error: 'connection', network_error: 'network',
+    redirect_error: 'redirect', invalid_url: 'invalidUrl', too_large: 'tooLarge',
+    body_error: 'body', parse_error: 'parse', no_feed_link: 'noFeed', unexpected_response: 'response' };
+  if (code === 'http_429') return t('fetchError.rateLimited');
+  if (/^http_[45]\d\d$/.test(code || '')) return t('fetchError.http', { status: code.slice(5) });
+  // Older versions stored response-body failures as http_2xx. Do not describe
+  // these as server rejections or inspect translated diagnostic strings.
+  if (/^http_2\d\d$/.test(code || '')) return t('fetchError.body');
+  return Object.hasOwn(keys, code) ? t('fetchError.' + keys[code]) : fallback || t('fetchError.unknown');
 }
 
 function folderHead(folder, unreadSum, collapsed, existing) {
@@ -3386,7 +3400,7 @@ async function doAddFeed() {
       `discover_feed ${url} -> ${found.feed_url} via=${found.via} alternatives=${found.alternatives.length}`
     );
   } catch (e) {
-    setStatus(t('status.discoverFailed', { error: e.message }), true);
+    setStatus(t('status.discoverFailed', { error: fetchFailureMessage(e.code, e.message) }), true);
     log(`discover_feed failed: ${e.message}`);
     btn.disabled = false;
     return;
@@ -3399,7 +3413,7 @@ async function doAddFeed() {
     log(`add_feed id=${id} url=${found.feed_url}`);
     const r = await invoke('refresh_feed', { feedId: id, concurrency: 1 });
     if (r.failures.length) {
-      setStatus(t('status.addedFetchFailed', { error: r.failures[0].error }), true);
+      setStatus(t('status.addedFetchFailed', { error: fetchFailureMessage(r.failures[0].code, r.failures[0].error) }), true);
       log(`add_feed initial fetch failed: ${r.failures[0].error}`);
     } else {
       setStatus(t('status.added', { inserted: r.inserted }));

@@ -12,7 +12,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use reqwest::header::{HeaderMap, HeaderValue, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LAST_MODIFIED};
+use reqwest::header::{
+    HeaderMap, HeaderValue, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LAST_MODIFIED,
+};
 use reqwest::StatusCode;
 use serde::Serialize;
 use tokio::sync::Semaphore;
@@ -50,6 +52,8 @@ pub enum FetchResult {
     },
     /// 失败：网络错误或非 2xx（不 panic、不阻断其他源）
     Failed {
+        /// Stable machine-readable failure code; independent of diagnostic language.
+        code: String,
         status: Option<u16>,
         error: String,
     },
@@ -75,6 +79,7 @@ pub struct RefreshReport {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct FeedFailure {
+    pub code: String,
     pub feed_id: i64,
     pub url: String,
     pub error: String,
@@ -130,6 +135,7 @@ impl Fetcher {
             Ok(r) => r,
             Err(e) => {
                 return FetchResult::Failed {
+                    code: request_error_code(&e).to_owned(),
                     status: None,
                     error: describe_error(&e),
                 }
@@ -142,10 +148,14 @@ impl Fetcher {
         let last_modified = header_string(resp.headers(), LAST_MODIFIED);
 
         if status == StatusCode::NOT_MODIFIED {
-            return FetchResult::NotModified { etag, last_modified };
+            return FetchResult::NotModified {
+                etag,
+                last_modified,
+            };
         }
         if !status.is_success() {
             return FetchResult::Failed {
+                code: format!("http_{}", status.as_u16()),
                 status: Some(status.as_u16()),
                 error: format!("HTTP {}", status.as_u16()),
             };
@@ -161,9 +171,10 @@ impl Fetcher {
                 etag,
                 last_modified,
             },
-            Err(error) => FetchResult::Failed {
+            Err(failure) => FetchResult::Failed {
+                code: failure.code.to_owned(),
                 status: Some(status.as_u16()),
-                error,
+                error: failure.error,
             },
         }
     }
@@ -171,7 +182,11 @@ impl Fetcher {
     /// 带体积上限的抓取（全文获取用）：与 feed 主路径共用 [`read_body_limited`]。
     /// 超限在下载完成前就放弃——不再把 2MB+ 的页面整个缓冲进内存（网关 follow-up：
     /// 原先闸门在整包缓冲后才判，白流量白内存）。
-    pub async fn fetch_bytes_limited(&self, url: &str, max_bytes: usize) -> Result<Vec<u8>, String> {
+    pub async fn fetch_bytes_limited(
+        &self,
+        url: &str,
+        max_bytes: usize,
+    ) -> Result<Vec<u8>, String> {
         let resp = self
             .client
             .get(url)
@@ -181,8 +196,15 @@ impl Fetcher {
         if !resp.status().is_success() {
             return Err(format!("HTTP {}", resp.status().as_u16()));
         }
-        read_body_limited(resp, max_bytes).await
+        read_body_limited(resp, max_bytes)
+            .await
+            .map_err(|failure| failure.error)
     }
+}
+
+struct BodyFailure {
+    code: &'static str,
+    error: String,
 }
 
 /// 读响应体并施加体积上限：Content-Length 预检 + 流式累计双重限制。
@@ -193,18 +215,31 @@ impl Fetcher {
 async fn read_body_limited(
     mut resp: reqwest::Response,
     max_bytes: usize,
-) -> std::result::Result<Vec<u8>, String> {
+) -> std::result::Result<Vec<u8>, BodyFailure> {
     if let Some(len) = resp.content_length() {
         if len as usize > max_bytes {
-            return Err(over_limit_error(len as usize, max_bytes));
+            return Err(BodyFailure {
+                code: "too_large",
+                error: over_limit_error(len as usize, max_bytes),
+            });
         }
     }
     let mut body: Vec<u8> = Vec::new();
-    while let Some(chunk) = resp.chunk().await.map_err(|e| format!("读取响应体失败: {e}"))? {
+    while let Some(chunk) = resp.chunk().await.map_err(|e| BodyFailure {
+        code: if e.is_timeout() {
+            "timeout"
+        } else {
+            "body_error"
+        },
+        error: format!("读取响应体失败: {e}"),
+    })? {
         // 已收到的字节数（超限时它是下限：超出的那一块不再计入）
         let received = body.len() + chunk.len();
         if received > max_bytes {
-            return Err(over_limit_error(received, max_bytes));
+            return Err(BodyFailure {
+                code: "too_large",
+                error: over_limit_error(received, max_bytes),
+            });
         }
         body.extend_from_slice(&chunk);
     }
@@ -275,7 +310,10 @@ pub fn collect_jobs(store: &Store, feed_ids: &[i64]) -> Result<Vec<RefreshJob>> 
         jobs.push(RefreshJob {
             feed_id: *id,
             url,
-            cache: CacheHeaders { etag, last_modified },
+            cache: CacheHeaders {
+                etag,
+                last_modified,
+            },
         });
     }
     Ok(jobs)
@@ -301,7 +339,11 @@ fn outcome_ok(outcome: &FetchResult) -> bool {
 }
 
 /// 阶段二：并发抓取（此阶段不需要数据库，因此可以安全地跨任务）
-pub async fn fetch_jobs(fetcher: &Fetcher, jobs: Vec<RefreshJob>, concurrency: usize) -> Vec<FetchedFeed> {
+pub async fn fetch_jobs(
+    fetcher: &Fetcher,
+    jobs: Vec<RefreshJob>,
+    concurrency: usize,
+) -> Vec<FetchedFeed> {
     fetch_jobs_with_progress(fetcher, jobs, concurrency, |_| {}).await
 }
 
@@ -357,7 +399,10 @@ pub fn apply_results(store: &Store, results: Vec<FetchedFeed>) -> Result<Refresh
     } in results
     {
         match outcome {
-            FetchResult::NotModified { etag, last_modified } => {
+            FetchResult::NotModified {
+                etag,
+                last_modified,
+            } => {
                 store.record_fetch(
                     feed_id,
                     "not_modified",
@@ -405,19 +450,17 @@ pub fn apply_results(store: &Store, results: Vec<FetchedFeed>) -> Result<Refresh
                         last_modified.as_deref(),
                     )?;
                     report.failures.push(FeedFailure {
+                        code: "parse_error".to_owned(),
                         feed_id,
                         url,
                         error,
                     });
                 }
             },
-            FetchResult::Failed { status, error } => {
-                let code = match status {
-                    Some(s) => format!("http_{s}"),
-                    None => "network_error".to_string(),
-                };
+            FetchResult::Failed { code, error, .. } => {
                 store.record_fetch(feed_id, &code, Some(&error), None, None)?;
                 report.failures.push(FeedFailure {
+                    code,
                     feed_id,
                     url,
                     error,
@@ -444,7 +487,11 @@ pub async fn refresh(
 }
 
 /// 刷新全部订阅源
-pub async fn refresh_all(store: &Store, fetcher: &Fetcher, concurrency: usize) -> Result<RefreshReport> {
+pub async fn refresh_all(
+    store: &Store,
+    fetcher: &Fetcher,
+    concurrency: usize,
+) -> Result<RefreshReport> {
     let ids = store.all_feed_ids()?;
     refresh(store, fetcher, &ids, concurrency).await
 }
@@ -454,6 +501,20 @@ fn header_string(headers: &HeaderMap, name: reqwest::header::HeaderName) -> Opti
         .get(name)
         .and_then(|v: &HeaderValue| v.to_str().ok())
         .map(|s| s.to_string())
+}
+
+fn request_error_code(e: &reqwest::Error) -> &'static str {
+    if e.is_timeout() {
+        "timeout"
+    } else if e.is_connect() {
+        "connection_error"
+    } else if e.is_redirect() {
+        "redirect_error"
+    } else if e.is_builder() {
+        "invalid_url"
+    } else {
+        "network_error"
+    }
 }
 
 /// 把 reqwest 的错误翻成「能直接显示给人看」的一句话
@@ -466,5 +527,136 @@ fn describe_error(e: &reqwest::Error) -> String {
         format!("重定向次数过多: {e}")
     } else {
         format!("请求失败: {e}")
+    }
+}
+
+#[cfg(test)]
+mod network_failure_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct RejectDns(Arc<AtomicUsize>);
+    impl reqwest::dns::Resolve for RejectDns {
+        fn resolve(&self, _: reqwest::dns::Name) -> reqwest::dns::Resolving {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            Box::pin(async {
+                Err(std::io::Error::new(std::io::ErrorKind::NotFound, "fixture DNS failure").into())
+            })
+        }
+    }
+
+    fn assert_failure(outcome: FetchResult, expected: &str) {
+        let store = Store::open_in_memory().unwrap();
+        let id = store
+            .add_feed("https://fixture.invalid/feed", None)
+            .unwrap();
+        let seed = parse(br#"<rss version="2.0"><channel><title>fixture</title><item><guid>cached</guid><title>Cached article</title></item></channel></rss>"#).unwrap();
+        store.upsert_entries(id, &seed.entries).unwrap();
+        store.record_fetch(id, "ok", None, Some("cached-etag"), Some("cached-date")).unwrap();
+        let headers = store.cache_headers(id).unwrap();
+        let report = apply_results(
+            &store,
+            vec![FetchedFeed {
+                feed_id: id,
+                url: "https://fixture.invalid/feed".into(),
+                outcome,
+            }],
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_value(&report).unwrap()["failures"][0]["code"],
+            expected
+        );
+        assert_eq!(
+            store.feed_row(id).unwrap().unwrap().last_status.as_deref(),
+            Some(expected)
+        );
+        assert_eq!(store.entry_count().unwrap(), 1);
+        assert_eq!(store.cache_headers(id).unwrap(), headers);
+    }
+
+    #[tokio::test]
+    async fn resolver_failure_has_a_stable_connection_code() {
+        let calls = Arc::new(AtomicUsize::new(0));
+        let fetcher = Fetcher {
+            client: reqwest::Client::builder()
+                .no_proxy()
+                .dns_resolver(Arc::new(RejectDns(calls.clone())))
+                .timeout(Duration::from_secs(2))
+                .build()
+                .unwrap(),
+        };
+        let outcome = fetcher
+            .fetch("https://fixture.invalid/feed", CacheHeaders::default())
+            .await;
+        assert!(
+            calls.load(Ordering::SeqCst) > 0,
+            "must exercise the injected resolver"
+        );
+        assert_failure(outcome, "connection_error");
+    }
+
+    #[tokio::test]
+    async fn request_deadline_has_a_stable_timeout_code() {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_delay(Duration::from_secs(1)))
+            .mount(&server)
+            .await;
+        let fetcher = Fetcher {
+            client: reqwest::Client::builder()
+                .no_proxy()
+                .timeout(Duration::from_millis(100))
+                .build()
+                .unwrap(),
+        };
+        assert_failure(
+            fetcher.fetch(&server.uri(), CacheHeaders::default()).await,
+            "timeout",
+        );
+    }
+
+    #[tokio::test]
+    async fn body_deadline_is_timeout_not_http_200() {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let (done, wait) = std::sync::mpsc::channel();
+        let server = std::thread::spawn(move || {
+            let deadline = std::time::Instant::now() + Duration::from_secs(2);
+            let (mut stream, _) = loop {
+                match listener.accept() {
+                    Ok(value) => break value,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock
+                        && std::time::Instant::now() < deadline => {
+                        std::thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(error) => panic!("fixture accept failed: {error}"),
+                }
+            };
+            stream
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .unwrap();
+            let mut request = [0; 4096];
+            let _ = stream.read(&mut request);
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 1000\r\nConnection: close\r\n\r\nx")
+                .unwrap();
+            let _ = wait.recv_timeout(Duration::from_secs(2));
+        });
+        let fetcher = Fetcher {
+            client: reqwest::Client::builder()
+                .no_proxy()
+                .timeout(Duration::from_millis(200))
+                .build()
+                .unwrap(),
+        };
+        let outcome = fetcher
+            .fetch(&format!("http://{address}"), CacheHeaders::default())
+            .await;
+        let _ = done.send(());
+        server.join().unwrap();
+        assert_failure(outcome, "timeout");
     }
 }

@@ -270,7 +270,7 @@ impl RustRssMcp {
                             Some(via_label(found.via)),
                         )
                     }
-                    Err(DiscoverError::Fetch { url, error }) => WriteOutcome::failed_with(
+                    Err(DiscoverError::Fetch { url, error, .. }) => WriteOutcome::failed_with(
                         ERROR_FETCH_FAILED,
                         format!("抓取/发现 {url} 失败：{error}（网络问题可重试，不是参数错）"),
                     )

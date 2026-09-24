@@ -2724,9 +2724,12 @@ pub fn add_feed(state: State<'_, AppState>, url: String, title_hint: Option<Stri
 /// 本身，否则扫页面 head 里的 `<link rel="alternate">`），这里只是胶水，不另起一套
 /// 抓取参数。输入本身就是 feed 时原样返回，因此「直接粘贴 feed 地址」没有行为变化。
 #[tauri::command]
-pub async fn discover_feed(state: State<'_, AppState>, url: String) -> R<Discovery> {
+pub async fn discover_feed(
+    state: State<'_, AppState>,
+    url: String,
+) -> Result<Discovery, rustrss_core::discover::DiscoveryFailure> {
     let fetcher = state.fetcher.clone();
-    discover(&fetcher, url.trim()).await.map_err(err)
+    discover(&fetcher, url.trim()).await.map_err(Into::into)
 }
 
 #[tauri::command]

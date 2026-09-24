@@ -25,7 +25,7 @@ async function addResult(failures){
    command==='add_feed'?1:{inserted:failures.length?0:1,failures},
   t:(key,args)=>({key,args}),setStatus:(text,error=false)=>statuses.push({text,error}),
   log(){},loadAll:async()=>{reloads++;}});
- vm.runInContext(extract('doAddFeed'),c);await vm.runInContext('doAddFeed()',c);
+ vm.runInContext(extract('fetchFailureMessage')+extract('doAddFeed'),c);await vm.runInContext('doAddFeed()',c);
  return {input,button,statuses,reloads};
 }
 test('a subscribed feed whose initial fetch fails is not reported as success',async()=>{
@@ -37,4 +37,23 @@ test('a subscribed feed whose initial fetch fails is not reported as success',as
 test('successful initial fetch retains successful status and normal cleanup',async()=>{
  const r=await addResult([]);assert.equal(r.statuses.at(-1).text.key,'status.added');
  assert.equal(r.statuses.at(-1).error,false);assert.equal(r.reloads,1);assert.equal(r.button.disabled,false);
+});
+test('fetch messages use stable codes rather than diagnostic language',()=>{
+ const c=vm.createContext({t:(key,args)=>({key,args})});vm.runInContext(extract('fetchFailureMessage'),c);
+ const message=(code,error)=>{c.code=code;c.detail=error;return vm.runInContext('fetchFailureMessage(code,detail)',c);};
+ assert.equal(message('timeout','超时: backend').key,'fetchError.timeout');
+ assert.equal(message('timeout','timeout: backend').key,'fetchError.timeout');
+ assert.equal(message('connection_error','raw').key,'fetchError.connection');
+ assert.equal(message('http_429','HTTP 429').key,'fetchError.rateLimited');
+ assert.equal(message('http_503','HTTP 503').args.status,'503');
+ assert.equal(message('parse_error','解析失败').key,'fetchError.parse');
+ assert.equal(message('http_200','legacy body error').key,'fetchError.body');
+ assert.equal(message('future_code','diagnostic retained'),'diagnostic retained');
+});
+test('IPC preserves structured discovery code while retaining legacy string errors',async()=>{
+ let failure={code:'timeout',message:'raw timeout'};
+ const c=vm.createContext({window:{__TAURI__:{core:{invoke:async()=>{throw failure;}}}}});
+ vm.runInContext(extract('invoke'),c);
+ await assert.rejects(vm.runInContext("invoke('discover_feed')",c),e=>e.code==='timeout'&&e.message==='raw timeout');
+ failure='legacy failure';await assert.rejects(vm.runInContext("invoke('other')",c),e=>e.message==='legacy failure');
 });

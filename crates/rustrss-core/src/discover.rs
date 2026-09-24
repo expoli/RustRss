@@ -50,9 +50,32 @@ pub struct Discovery {
 #[derive(Debug, thiserror::Error)]
 pub enum DiscoverError {
     #[error("抓取 {url} 失败：{error}")]
-    Fetch { url: String, error: String },
+    Fetch {
+        code: String,
+        url: String,
+        error: String,
+    },
     #[error("在 {url} 未发现 feed（no feed link found）：{detail}")]
     NoFeedLink { url: String, detail: String },
+}
+
+/// Structured desktop error; raw diagnostic remains available to callers and logs.
+#[derive(Debug, Serialize)]
+pub struct DiscoveryFailure {
+    pub code: String,
+    pub message: String,
+}
+impl From<DiscoverError> for DiscoveryFailure {
+    fn from(error: DiscoverError) -> Self {
+        let code = match &error {
+            DiscoverError::Fetch { code, .. } => code.clone(),
+            DiscoverError::NoFeedLink { .. } => "no_feed_link".into(),
+        };
+        Self {
+            code,
+            message: error.to_string(),
+        }
+    }
 }
 
 /// 发现 feed。输入既可以是站点首页，也可以是 feed 地址本身。
@@ -77,12 +100,14 @@ pub async fn discover(fetcher: &Fetcher, url: &str) -> Result<Discovery, Discove
         } => (body, final_url),
         FetchResult::NotModified { .. } => {
             return Err(DiscoverError::Fetch {
+                code: "unexpected_response".into(),
                 url: url.to_string(),
                 error: "服务端返回 304（发现请求不带条件头）".to_string(),
             })
         }
-        FetchResult::Failed { error, .. } => {
+        FetchResult::Failed { code, error, .. } => {
             return Err(DiscoverError::Fetch {
+                code,
                 url: url.to_string(),
                 error,
             })
@@ -99,6 +124,7 @@ pub async fn discover(fetcher: &Fetcher, url: &str) -> Result<Discovery, Discove
     }
 
     let base = Url::parse(&page_url).map_err(|e| DiscoverError::Fetch {
+        code: "invalid_url".into(),
         url: page_url.clone(),
         error: format!("页面地址无法解析: {e}"),
     })?;

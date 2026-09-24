@@ -106,7 +106,7 @@ async fn http_error_is_reported_not_panicking() {
 
     let url = format!("{}/missing.xml", server.uri());
     match fetcher().fetch(&url, CacheHeaders::default()).await {
-        FetchResult::Failed { status, error } => {
+        FetchResult::Failed { status, error, .. } => {
             assert_eq!(status, Some(404));
             assert!(error.contains("404"), "{error}");
         }
@@ -391,7 +391,7 @@ async fn fetch_rejects_oversized_content_length_before_body_arrives() {
     let elapsed = started.elapsed();
 
     match outcome {
-        FetchResult::Failed { status, error } => {
+        FetchResult::Failed { status, error, .. } => {
             assert_eq!(
                 status,
                 Some(200),
@@ -432,7 +432,7 @@ async fn fetch_aborts_chunked_body_mid_stream() {
     let elapsed = started.elapsed();
 
     match outcome {
-        FetchResult::Failed { status, error } => {
+        FetchResult::Failed { status, error, .. } => {
             assert_eq!(status, Some(200));
             assert!(error.contains("超过上限"), "实际错误: {error}");
         }
@@ -779,4 +779,48 @@ async fn hit_count(server: &MockServer, want_path: &str) -> usize {
         .iter()
         .filter(|r| r.url.path() == want_path)
         .count()
+}
+
+#[tokio::test]
+async fn rate_limit_code_preserves_cache_and_manual_retry_recovers() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("ETag", "v1")
+                .set_body_string(RSS_TWO_ITEMS),
+        )
+        .mount(&server)
+        .await;
+    let store = Store::open_in_memory().unwrap();
+    let id = store.add_feed(&server.uri(), None).unwrap();
+    refresh(&store, &fetcher(), &[id], 1).await.unwrap();
+    let cache = store.cache_headers(id).unwrap();
+    server.reset().await;
+    Mock::given(method("GET"))
+        .respond_with(ResponseTemplate::new(429).insert_header("Retry-After", "120"))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let result = refresh(&store, &fetcher(), &[id], 1).await.unwrap();
+    assert_eq!(result.failures[0].code, "http_429");
+    assert_eq!(
+        store.feed_row(id).unwrap().unwrap().last_status.as_deref(),
+        Some("http_429")
+    );
+    assert_eq!(store.entry_count().unwrap(), 2);
+    assert_eq!(store.cache_headers(id).unwrap(), cache);
+    assert_eq!(server.received_requests().await.unwrap().len(), 1);
+    server.reset().await;
+    Mock::given(method("GET"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(RSS_TWO_ITEMS))
+        .mount(&server)
+        .await;
+    let result = refresh(&store, &fetcher(), &[id], 1).await.unwrap();
+    assert!(result.failures.is_empty());
+    assert_eq!(store.entry_count().unwrap(), 2);
+    assert_eq!(
+        store.feed_row(id).unwrap().unwrap().last_status.as_deref(),
+        Some("ok")
+    );
 }
