@@ -1182,3 +1182,10 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 分数缩放：KDE Wayland 125%/150% 与 Xvfb 100%/200%（`native-settings.md`）；原生 Wayland 真实点击取消 + 正文位置（`t7-wayland-input-results.json`，用户在场补验）。
 - [x] MCP 预览文件契约：绝对路径 + 到期时间、尺寸/体积/配额/TTL 回收（`mcp-preview-files.md`）。
 - [ ] **未验（保留 open，全部环境/他人依赖）**：① Windows/macOS 原生截图与真实客户端闭环；② 第三方 GUI 客户端（本轮仅 Codex CLI 收图）；③ GNOME / 无 XWayland / 读屏器；④ **用户侧独立聚合评审**（T7 报告明确 fresh reviewer 由用户另派，未派）；⑤ 企业证书/认证代理（与 §26 同源）。
+
+## 28. 搜索端到端（release 口径）（2026-09-24-local-acceptance-closeout / 任务 94422722）
+
+- [x] WebView 键入 → 列表渲染端到端可用：`scripts/verify-search-e2e.py`（隔离实例 + xdotool 真实键事件 + MutationObserver 计时），release 构建、10k 生产形状库。
+- [x] 时延实测量与口径标注：宽泛查询冷页 **268ms**、热 **267ms**（200 行封顶页）；单字 CJK 热 **254ms**。库文件每轮新拷贝 → 首查为零驻留页（冷）。
+- [ ] **未达「可感知为即时」** → 全文搜索条目保持 open（core 口径 16–18ms/65–77ms 不能代替 UI 成本）。
+- [ ] **未验（保留 open）**：① 原生 Wayland 会话下的搜索输入（需用户在场）；② fcitx5 / ibus 候选窗与合成输入（外部依赖）；③ release 口径下的 500 源/其它平台整窗表现。
