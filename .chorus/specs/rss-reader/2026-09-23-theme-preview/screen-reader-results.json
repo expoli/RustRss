@@ -1,0 +1,3578 @@
+{
+  "probe": "verify-screen-reader",
+  "binary": "target/debug/rustrss-desktop",
+  "binary_sha256": "89d001275d9206ef8c2b549017ec9fd4eec8de9cc01a54cdb0dee9eafbc813f6",
+  "binary_mtime": "2026-09-24T22:43:28",
+  "captured_at": "2026-09-24T16:22:05+00:00",
+  "isolation": {
+    "home": "/tmp/rustrss-a11y-ju7w9hfl/home",
+    "xdg_runtime": "/tmp/rustrss-a11y-ju7w9hfl/runtime"
+  },
+  "database": {
+    "source": "fixture",
+    "generator": "target/debug/examples/theme_fixture",
+    "exit": 0,
+    "bytes": 512000
+  },
+  "display": ":1",
+  "inner_python": "/usr/bin/python3",
+  "inner_timeout": true,
+  "progress": "enabling a11y on the bus (IsEnabled/ScreenReaderEnabled)\napp boot ok\nquery attempt 0 -> exit 0 state read\nrunning orca -l\nrunning orca with a debug log for 25s\norca debug: mentions_app=True mentions_fixture_title=False\norca -l exit=0\n",
+  "session": {
+    "exit": 1,
+    "stdout": "SpiRegistry daemon is running with well-known name - org.a11y.atspi.Registry\n",
+    "stderr": "i: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nqt.accessibility.atspi: Subscription string not handled: \"Window:Destroy:\"\nA connection to the bus can't be made\n\nTIMEOUT"
+  },
+  "session_log": "/tmp/rustrss-a11y-ju7w9hfl/session.log",
+  "inner": {
+    "steps": [
+      {
+        "step": "enabling a11y on the bus (IsEnabled/ScreenReaderEnabled)",
+        "at": "2026-09-24T16:22:05+00:00"
+      },
+      {
+        "step": "app boot ok",
+        "at": "2026-09-24T16:22:07+00:00"
+      },
+      {
+        "step": "query attempt 0 -> exit 0 state read",
+        "at": "2026-09-24T16:22:07+00:00"
+      },
+      {
+        "step": "running orca -l",
+        "at": "2026-09-24T16:22:07+00:00"
+      },
+      {
+        "step": "running orca with a debug log for 25s",
+        "at": "2026-09-24T16:22:07+00:00"
+      },
+      {
+        "step": "orca debug: mentions_app=True mentions_fixture_title=False",
+        "at": "2026-09-24T16:22:35+00:00"
+      },
+      {
+        "step": "orca -l exit=0",
+        "at": "2026-09-24T16:22:35+00:00"
+      }
+    ],
+    "errors": [],
+    "tree": [
+      {
+        "depth": 0,
+        "role": "APPLICATION",
+        "name": "rustrss-desktop",
+        "children": 1,
+        "states": []
+      },
+      {
+        "depth": 1,
+        "role": "FRAME",
+        "name": "RustRss",
+        "children": 1,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 2,
+        "role": "FILLER",
+        "name": "",
+        "children": 1,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 3,
+        "role": "FILLER",
+        "name": "",
+        "children": 1,
+        "states": []
+      },
+      {
+        "depth": 4,
+        "role": "?",
+        "name": "",
+        "children": 1,
+        "states": []
+      },
+      {
+        "depth": 5,
+        "role": "SCROLL_PANE",
+        "name": "",
+        "children": 1,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 6,
+        "role": "DOCUMENT_WEB",
+        "name": "RustRss",
+        "children": 9,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "HEADING",
+        "name": "Incompatible database - not loaded",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "PARAGRAPH",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "PARAGRAPH",
+        "name": "",
+        "children": 1,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "PARAGRAPH",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "STATUS_BAR",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "BUTTON",
+        "name": "Export OPML",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "BUTTON",
+        "name": "Quit",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "LANDMARK",
+        "name": "",
+        "children": 7,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "ENTRY",
+        "name": "Search titles and text (press / to focus)",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "BUTTON",
+        "name": "Refresh all",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "BUTTON",
+        "name": "Add feed",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "BUTTON",
+        "name": "Settings",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "BUTTON",
+        "name": "minimize",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "BUTTON",
+        "name": "maximize",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "BUTTON",
+        "name": "close",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 7,
+        "role": "LANDMARK",
+        "name": "",
+        "children": 7,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "LANDMARK",
+        "name": "",
+        "children": 7,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LANDMARK",
+        "name": "",
+        "children": 4,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "● All unread 30",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "★ Starred 0",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "⏱ Read later 0",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "≡ All 30",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "BUTTON",
+        "name": "new folder",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "PANEL",
+        "name": "",
+        "children": 1,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "Theme fixture · 主题示例 30",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "BUTTON",
+        "name": "▾ TAGS",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "PANEL",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "BUTTON",
+        "name": "✓",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "BUTTON",
+        "name": "sort",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "TOGGLE_BUTTON",
+        "name": "unread only",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "PANEL",
+        "name": "",
+        "children": 31,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 29 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 28 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 27 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 26 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 25 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 24 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 23 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 22 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 21 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 20 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 19 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 18 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 17 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 16 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 15 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 14 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 13 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 12 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 11 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 10 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 9 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 8 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 7 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 6 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 5 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 4 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 3 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 2 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 1 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 0 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+        "children": 3,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "BUTTON",
+        "name": "#",
+        "children": 0,
+        "states": [
+          "enabled",
+          "focusable"
+        ]
+      },
+      {
+        "depth": 10,
+        "role": "SECTION",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "End of list (30 items)",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "ARTICLE",
+        "name": "",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "PARAGRAPH",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "PARAGRAPH",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "PARAGRAPH",
+        "name": "",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 8,
+        "role": "FOOTER",
+        "name": "",
+        "children": 1,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "STATUS_BAR",
+        "name": "",
+        "children": 0,
+        "states": [
+          "enabled"
+        ]
+      }
+    ],
+    "orca_output": {
+      "exit": 0,
+      "stdout": "Desktop has 4 app(s):\n00:22:07     pid: 3230007    xdg-desktop-portal-gtk    /usr/libexec/xdg-desktop-portal-gtk \n00:22:07     pid: 3230034    xdg-desktop-portal-kde    /usr/lib/x86_64-linux-gnu/libexec/xdg-desktop-portal-kde \n00:22:07     pid: 3229975    rustrss-desktop           /home/d-robotics/Github/RustRss/target/debug/rustrss-desktop \n00:22:07     pid: 3230081    ksecretd                  /usr/bin/ksecretd \n",
+      "stderr": ""
+    },
+    "matched": [
+      {
+        "kind": "feed",
+        "title": "Theme fixture · 主题示例"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 29"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 28"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 27"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 26"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 25"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 24"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 23"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 22"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 21"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 20"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 19"
+      },
+      {
+        "kind": "entry",
+        "title": "Reading thoughtfully · 阅读与排版 18"
+      }
+    ],
+    "atspi": "gi.repository.Atspi",
+    "a11y_enable": [
+      {
+        "property": "IsEnabled",
+        "exit": 0,
+        "stdout": "()",
+        "stderr": ""
+      },
+      {
+        "property": "ScreenReaderEnabled",
+        "exit": 0,
+        "stdout": "()",
+        "stderr": ""
+      },
+      {
+        "readback": "({'IsEnabled': <true>, 'ScreenReaderEnabled': <true>},)"
+      }
+    ],
+    "app_pid": 3229975,
+    "query": {
+      "steps": [],
+      "errors": [],
+      "tree": [
+        {
+          "depth": 0,
+          "role": "APPLICATION",
+          "name": "rustrss-desktop",
+          "children": 1,
+          "states": []
+        },
+        {
+          "depth": 1,
+          "role": "FRAME",
+          "name": "RustRss",
+          "children": 1,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 2,
+          "role": "FILLER",
+          "name": "",
+          "children": 1,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 3,
+          "role": "FILLER",
+          "name": "",
+          "children": 1,
+          "states": []
+        },
+        {
+          "depth": 4,
+          "role": "?",
+          "name": "",
+          "children": 1,
+          "states": []
+        },
+        {
+          "depth": 5,
+          "role": "SCROLL_PANE",
+          "name": "",
+          "children": 1,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 6,
+          "role": "DOCUMENT_WEB",
+          "name": "RustRss",
+          "children": 9,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "HEADING",
+          "name": "Incompatible database - not loaded",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "PARAGRAPH",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "PARAGRAPH",
+          "name": "",
+          "children": 1,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "PARAGRAPH",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "STATUS_BAR",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "BUTTON",
+          "name": "Export OPML",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "BUTTON",
+          "name": "Quit",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "LANDMARK",
+          "name": "",
+          "children": 7,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "ENTRY",
+          "name": "Search titles and text (press / to focus)",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "BUTTON",
+          "name": "Refresh all",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "BUTTON",
+          "name": "Add feed",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "BUTTON",
+          "name": "Settings",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "BUTTON",
+          "name": "minimize",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "BUTTON",
+          "name": "maximize",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "BUTTON",
+          "name": "close",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 7,
+          "role": "LANDMARK",
+          "name": "",
+          "children": 7,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "LANDMARK",
+          "name": "",
+          "children": 7,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LANDMARK",
+          "name": "",
+          "children": 4,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "● All unread 30",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "★ Starred 0",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "⏱ Read later 0",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "≡ All 30",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "BUTTON",
+          "name": "new folder",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "PANEL",
+          "name": "",
+          "children": 1,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "Theme fixture · 主题示例 30",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "BUTTON",
+          "name": "▾ TAGS",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "PANEL",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "BUTTON",
+          "name": "✓",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "BUTTON",
+          "name": "sort",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "TOGGLE_BUTTON",
+          "name": "unread only",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "PANEL",
+          "name": "",
+          "children": 31,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 29 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 28 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 27 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 26 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 25 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 24 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 23 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 22 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 21 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 20 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 19 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 18 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 17 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 16 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 15 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 14 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 13 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 12 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 11 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 10 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 9 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 8 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 7 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 6 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 5 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 4 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 3 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 2 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 1 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "Reading thoughtfully · 阅读与排版 0 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与密",
+          "children": 3,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "BUTTON",
+          "name": "#",
+          "children": 0,
+          "states": [
+            "enabled",
+            "focusable"
+          ]
+        },
+        {
+          "depth": 10,
+          "role": "SECTION",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "LIST_ITEM",
+          "name": "End of list (30 items)",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "ARTICLE",
+          "name": "",
+          "children": 3,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "PARAGRAPH",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "PARAGRAPH",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "PARAGRAPH",
+          "name": "",
+          "children": 0,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 8,
+          "role": "FOOTER",
+          "name": "",
+          "children": 1,
+          "states": [
+            "showing",
+            "enabled"
+          ]
+        },
+        {
+          "depth": 9,
+          "role": "STATUS_BAR",
+          "name": "",
+          "children": 0,
+          "states": [
+            "enabled"
+          ]
+        }
+      ],
+      "matched": [
+        {
+          "kind": "feed",
+          "title": "Theme fixture · 主题示例"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 29"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 28"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 27"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 26"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 25"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 24"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 23"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 22"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 21"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 20"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 19"
+        },
+        {
+          "kind": "entry",
+          "title": "Reading thoughtfully · 阅读与排版 18"
+        }
+      ],
+      "desktop_children": [
+        {
+          "name": null,
+          "role": "application",
+          "pid": 3230007,
+          "children": 0
+        },
+        {
+          "name": null,
+          "role": "application",
+          "pid": 3230034,
+          "children": 0
+        },
+        {
+          "name": null,
+          "role": "application",
+          "pid": 3229975,
+          "children": 1,
+          "selected": "pid"
+        },
+        {
+          "name": null,
+          "role": "application",
+          "pid": 3230081,
+          "children": 0
+        }
+      ],
+      "app_node": {
+        "name": "rustrss-desktop",
+        "role": "application",
+        "children": 1,
+        "pid": 3229975
+      },
+      "state": "read"
+    },
+    "query_attempts": [
+      {
+        "attempt": 0,
+        "exit": 0,
+        "state": "read"
+      }
+    ],
+    "orca_debug": {
+      "log": ".chorus/specs/rss-reader/2026-09-23-theme-preview/screen-reader-orca-debug.log",
+      "bytes": 95498,
+      "mentions_app": true,
+      "mentions_fixture_title": false,
+      "excerpt": "22:35.767341 -   No grab changes\n^^^^^ COMMAND MANAGER: Diff completed in 0.0009s. Removed 0, added 0, transferred 0 ^^^^^\n\n00:22:35.767368 - COMMAND MANAGER: Keyboard layout set to desktop.\n00:22:35.767403 - GSETTINGS SCHEMA HANDLE: keybindings/keyboard-layout not set [profile:default]\n00:22:35.767411 - GSETTINGS REGISTRY: keybindings/keyboard-layout using default value = 'desktop'\n00:22:35.767427 - GSETTINGS SCHEMA HANDLE: keybindings/desktop-modifier-keys not set [profile:default]\n00:22:35.767434 - GSETTINGS REGISTRY: keybindings/desktop-modifier-keys using default value = ['Insert', 'KP_Insert']\n00:22:35.767443 - SCRIPT MANAGER: Deactivated\n00:22:35.767449 - EVENT MANAGER: Deactivating <unknown>.<module>:373 > orca._glib_shutdown_handler:182 > orca.shutdown:130 > event_manager.deactivate:98\n00:22:35.767760 - INPUT EVENT MANAGER: Stopping key watcher.\n00:22:35.767807 - EVENT MANAGER: Deactivated\n00:22:35.767817 - CLIPBOARD PRESENTER: Deactivating\n00:22:35.767937 - CLIPBOARD PRESENTER: Deactivated\n00:22:35.767954 - PRESENTATION MANAGER: Shutting down presenters\n00:22:35.768346 - SPEECH MANAGER: shutdown_speech. Script: None Event: None notify_user: False\n00:22:35.768627 - SPEECH MANAGER: Speech server is <orca.speechdispatcherfactory.SpeechServer object at 0x7c52900517f0>\n00:22:35.780125 - BRAILLE: Attempting braille shutdown.\n00:22:35.780218 - BRAILLE: Braille was not running.\n00:22:35.780239 - ORCA: Quitting Atspi main event loop\n00:22:35.780276 - ORCA: Shutdown complete\n",
+      "log_note": "last 200 lines kept (original 96120 bytes)"
+    },
+    "verdict": "read"
+  },
+  "verdict": "read",
+  "reason": null,
+  "log_paths": {
+    "session": ".chorus/specs/rss-reader/2026-09-23-theme-preview/screen-reader-session.log",
+    "app": ".chorus/specs/rss-reader/2026-09-23-theme-preview/screen-reader-app.log",
+    "orca_debug": ".chorus/specs/rss-reader/2026-09-23-theme-preview/screen-reader-orca-debug.log"
+  },
+  "evidence_sample": {
+    "roles": [
+      "?",
+      "APPLICATION",
+      "ARTICLE",
+      "BUTTON",
+      "DOCUMENT_WEB",
+      "ENTRY",
+      "FILLER",
+      "FOOTER",
+      "FRAME",
+      "HEADING",
+      "LANDMARK",
+      "LIST_ITEM",
+      "PANEL",
+      "PARAGRAPH",
+      "SCROLL_PANE",
+      "SECTION",
+      "STATUS_BAR",
+      "TOGGLE_BUTTON"
+    ],
+    "nodes": 168,
+    "named": 84,
+    "node_errors": 0,
+    "sample": [
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 29 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 28 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      },
+      {
+        "depth": 9,
+        "role": "LIST_ITEM",
+        "name": "Reading thoughtfully · 阅读与排版 27 Theme fixture · 主题示例 09/23/2026 ⚑\nA local sample for checking theme rendering. 中文摘要检查换行与",
+        "children": 3,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      }
+    ],
+    "hidden_refusal_heading_exposed": [
+      {
+        "depth": 7,
+        "role": "HEADING",
+        "name": "Incompatible database - not loaded",
+        "children": 0,
+        "states": [
+          "showing",
+          "enabled"
+        ]
+      }
+    ]
+  }
+}

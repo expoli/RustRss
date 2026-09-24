@@ -1,0 +1,124 @@
+SpiRegistry daemon is running with well-known name - org.a11y.atspi.Registry
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='org.a11y.Bus' requested by ':1.0' (uid=1000 pid=3229935 comm="gdbus call --session --dest org.a11y.Bus --object-" label="unconfined")
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'org.a11y.Bus'
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='ca.desrt.dconf' requested by ':1.1' (uid=1000 pid=3229956 comm="/usr/libexec/at-spi-bus-launcher" label="unconfined")
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'ca.desrt.dconf'
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='org.freedesktop.portal.Desktop' requested by ':1.6' (uid=1000 pid=3229975 comm="/home/d-robotics/Github/RustRss/target/debug/rustr" label="unconfined")
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='org.freedesktop.impl.portal.PermissionStore' requested by ':1.7' (uid=1000 pid=3229984 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.PermissionStore'
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='org.freedesktop.portal.Documents' requested by ':1.7' (uid=1000 pid=3229984 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'org.freedesktop.portal.Documents'
+
+(/usr/libexec/xdg-desktop-portal:3229984): xdg-desktop-portal-WARNING **: 00:22:05.807: Choosing gtk.portal for org.freedesktop.impl.portal.Lockdown as a last-resort fallback
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.gtk' requested by ':1.7' (uid=1000 pid=3229984 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[3229979]: Activating service name='org.a11y.atspi.Registry' requested by ':1.1' (uid=1000 pid=3230007 comm="/usr/libexec/xdg-desktop-portal-gtk" label="unconfined")
+dbus-daemon[3229979]: Successfully activated service 'org.a11y.atspi.Registry'
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='org.gtk.vfs.Daemon' requested by ':1.10' (uid=1000 pid=3230007 comm="/usr/libexec/xdg-desktop-portal-gtk" label="unconfined")
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'org.gtk.vfs.Daemon'
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.gtk'
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.kde' requested by ':1.7' (uid=1000 pid=3229984 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+Failed to create wl_display (No such file or directory)
+qt.qpa.plugin: Could not load the Qt platform plugin "wayland" in "" even though it was found.
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.kde'
+
+(/usr/libexec/xdg-desktop-portal:3229984): xdg-desktop-portal-WARNING **: 00:22:06.009: Failed to connect to PipeWire: Couldn't connect to PipeWire
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.kwallet' requested by ':1.7' (uid=1000 pid=3229984 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'org.freedesktop.portal.Desktop'
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Connection already associated with an application ID")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Connection already associated with an application ID")
+kf.wallet.ksecretd: Lacking a socket, pipe: 0 env: 0
+Failed to create wl_display (No such file or directory)
+qt.qpa.plugin: Could not load the Qt platform plugin "wayland" in "" even though it was found.
+dbus-daemon[3229933]: [session uid=1000 pid=3229933 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.kwallet'
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Connection already associated with an application ID")
+qt.accessibility.atspi: AtSpiAdaptor::applicationInterface does not implement "GetApplicationBusAddress" "/org/a11y/atspi/accessible/root"
+qt.accessibility.atspi: AtSpiAdaptor::applicationInterface does not implement "GetApplicationBusAddress" "/org/a11y/atspi/accessible/root"
+qt.accessibility.atspi: AtSpiAdaptor::applicationInterface does not implement "GetApplicationBusAddress" "/org/a11y/atspi/accessible/root"
+qt.accessibility.atspi: AtSpiAdaptor::applicationInterface does not implement "GetApplicationBusAddress" "/org/a11y/atspi/accessible/root"
+qt.accessibility.atspi: AtSpiAdaptor::applicationInterface does not implement "GetApplicationBusAddress" "/org/a11y/atspi/accessible/root"
+qt.accessibility.atspi: AtSpiAdaptor::applicationInterface does not implement "GetApplicationBusAddress" "/org/a11y/atspi/accessible/root"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+qt.accessibility.atspi: Subscription string not handled: "Window:Destroy:"
+A connection to the bus can't be made
+
+TIMEOUT

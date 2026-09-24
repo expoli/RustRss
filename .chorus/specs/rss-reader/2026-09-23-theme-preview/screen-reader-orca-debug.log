@@ -1,0 +1,200 @@
+00:22:14.429962 - BRAILLE: BrlAPI Connection is unavailable (ConnectionError): couldn't connect to b':0' with key b'keyfile:/etc/brlapi.key+polkit': connect: ���������������������������
+                  (brlerrno 11, libcerrno 2, gaierrno 0)
+                  Is BRLTTY really running?
+00:22:14.430143 - WARNING: Braille initialization failed: BrlAPI connection unavailable.
+00:22:14.430181 - BRAILLE: Scheduling BrlAPI retry in 8000 ms.
+00:22:15.932520 - GENERATOR: Clearing cache.
+00:22:17.932763 - GENERATOR: Clearing cache.
+00:22:19.933044 - GENERATOR: Clearing cache.
+00:22:21.933257 - GENERATOR: Clearing cache.
+00:22:22.430387 - BRAILLE: Attempting connection with BrlAPI.
+00:22:22.430819 - BRAILLE: BrlAPI Connection is unavailable (ConnectionError): couldn't connect to b':0' with key b'keyfile:/etc/brlapi.key+polkit': connect: ���������������������������
+                  (brlerrno 11, libcerrno 2, gaierrno 0)
+                  Is BRLTTY really running?
+00:22:22.430905 - WARNING: Braille initialization failed: BrlAPI connection unavailable.
+00:22:22.430932 - BRAILLE: Scheduling BrlAPI retry in 16000 ms.
+00:22:23.933473 - GENERATOR: Clearing cache.
+00:22:25.933626 - GENERATOR: Clearing cache.
+00:22:27.933778 - GENERATOR: Clearing cache.
+00:22:29.933930 - GENERATOR: Clearing cache.
+00:22:31.934245 - GENERATOR: Clearing cache.
+00:22:33.934411 - GENERATOR: Clearing cache.
+00:22:35.749220 - ORCA: GLib handler received shutdown signal
+00:22:35.749304 - ORCA: Shutting down
+00:22:35.749344 - PRESENTATION MANAGER: Interrupting presentation
+00:22:35.749424 - SPEECH MANAGER: interrupt_speech. Script: None Event: None notify_user: False
+00:22:35.749844 - SPEECH MANAGER: Speech server is <orca.speechdispatcherfactory.SpeechServer object at 0x7c52900517f0>
+00:22:35.750221 - BRAILLE: Kill flash message orca.shutdown:118 > presentation_manager.interrupt_presentation:88 > braille_presenter.kill_flash:1829 > braille.kill_flash:2182
+00:22:35.750683 - GSETTINGS SCHEMA HANDLE: speech/enable not set [app:rustrss-desktop, profile:default]
+00:22:35.750697 - GSETTINGS REGISTRY: speech/enable using default value = True
+00:22:35.750726 - GSETTINGS SCHEMA HANDLE: speech/messages-are-detailed not set [app:rustrss-desktop, profile:default]
+00:22:35.750733 - GSETTINGS REGISTRY: speech/messages-are-detailed using default value = True
+00:22:35.750752 - GSETTINGS SCHEMA HANDLE: speech/only-speak-displayed-text not set [app:rustrss-desktop, profile:default]
+00:22:35.750758 - GSETTINGS REGISTRY: speech/only-speak-displayed-text using default value = False
+00:22:35.750832 - GSETTINGS SCHEMA HANDLE: voice/established not set [app:rustrss-desktop, profile:default]
+00:22:35.750855 - GSETTINGS SCHEMA HANDLE: voice/rate not set [app:rustrss-desktop, profile:default]
+00:22:35.750874 - GSETTINGS SCHEMA HANDLE: voice/pitch not set [app:rustrss-desktop, profile:default]
+00:22:35.750891 - GSETTINGS SCHEMA HANDLE: voice/volume not set [app:rustrss-desktop, profile:default]
+00:22:35.750909 - GSETTINGS SCHEMA HANDLE: voice/family-name not set [app:rustrss-desktop, profile:default]
+00:22:35.750925 - GSETTINGS SCHEMA HANDLE: voice/family-lang not set [app:rustrss-desktop, profile:default]
+00:22:35.750941 - GSETTINGS SCHEMA HANDLE: voice/family-dialect not set [app:rustrss-desktop, profile:default]
+00:22:35.750956 - GSETTINGS SCHEMA HANDLE: voice/family-gender not set [app:rustrss-desktop, profile:default]
+00:22:35.750972 - GSETTINGS SCHEMA HANDLE: voice/family-variant not set [app:rustrss-desktop, profile:default]
+00:22:35.751169 - GSETTINGS SCHEMA HANDLE: speech/punctuation-level not set [app:rustrss-desktop, profile:default]
+00:22:35.751179 - GSETTINGS REGISTRY: speech/punctuation-level using default value = 'most'
+00:22:35.751390 - SPEECH PRESENTER: Adjusting '屏幕阅读器关闭。' from None start_offset: None
+00:22:35.751415 - GSETTINGS SCHEMA HANDLE: speech/repeated-character-limit not set [app:rustrss-desktop, profile:default]
+00:22:35.751422 - GSETTINGS REGISTRY: speech/repeated-character-limit using default value = 4
+00:22:35.751462 - GSETTINGS SCHEMA HANDLE: speech/use-pronunciation-dictionary not set [app:rustrss-desktop, profile:default]
+00:22:35.751469 - GSETTINGS REGISTRY: speech/use-pronunciation-dictionary using default value = True
+00:22:35.751484 - SPEECH PRESENTER: Adjusted text: '屏幕阅读器关闭。'
+00:22:35.751494 - SPEECH: Speak '屏幕阅读器关闭。' acss: {'established': False}
+00:22:35.751502 - SPEECH OUTPUT: '屏幕阅读器关闭。' {'established': False}
+00:22:35.751507 - SPEECH DISPATCHER: Speaking '屏幕阅读器关闭。' as string
+00:22:35.752142 - SPEECH DISPATCHER: Speaking '<speak><mark name="0:8"/>屏幕阅读器关闭。</speak>' 
+                  ORCA rate 50.0, pitch 5.0, volume 10.0, language zh, punctuation: SOME
+                  SD rate 2, pitch 10, volume 100, language zh-cn
+00:22:35.752530 - SPEECH MANAGER: Speech server is <orca.speechdispatcherfactory.SpeechServer object at 0x7c52900517f0>
+00:22:35.752570 - GSETTINGS SCHEMA HANDLE: speech/capitalization-style not set [app:rustrss-desktop, profile:default]
+00:22:35.752577 - GSETTINGS REGISTRY: speech/capitalization-style using default value = 'none'
+00:22:35.752841 - SPEECH MANAGER: Speech server is <orca.speechdispatcherfactory.SpeechServer object at 0x7c52900517f0>
+00:22:35.752870 - GSETTINGS SCHEMA HANDLE: speech/punctuation-level not set [app:rustrss-desktop, profile:default]
+00:22:35.752876 - GSETTINGS REGISTRY: speech/punctuation-level using default value = 'most'
+00:22:35.752936 - GSETTINGS SCHEMA HANDLE: braille/enabled not set [app:rustrss-desktop, profile:default]
+00:22:35.752943 - GSETTINGS REGISTRY: braille/enabled using default value = True
+00:22:35.752959 - GSETTINGS SCHEMA HANDLE: braille/flash-messages not set [app:rustrss-desktop, profile:default]
+00:22:35.752965 - GSETTINGS REGISTRY: braille/flash-messages using default value = True
+00:22:35.752980 - GSETTINGS SCHEMA HANDLE: braille/flash-messages-detailed not set [app:rustrss-desktop, profile:default]
+00:22:35.752985 - GSETTINGS REGISTRY: braille/flash-messages-detailed using default value = True
+00:22:35.753001 - GSETTINGS SCHEMA HANDLE: braille/enabled not set [app:rustrss-desktop, profile:default]
+00:22:35.753006 - GSETTINGS REGISTRY: braille/enabled using default value = True
+00:22:35.753022 - GSETTINGS SCHEMA HANDLE: braille/flash-messages-persistent not set [app:rustrss-desktop, profile:default]
+00:22:35.753027 - GSETTINGS REGISTRY: braille/flash-messages-persistent using default value = False
+00:22:35.753041 - GSETTINGS SCHEMA HANDLE: braille/flash-message-duration not set [app:rustrss-desktop, profile:default]
+00:22:35.753046 - GSETTINGS REGISTRY: braille/flash-message-duration using default value = 5000
+00:22:35.753053 - BRAILLE: Display message: '屏幕阅读器关闭。' (flash_time: 5000)
+00:22:35.753060 - BRAILLE: Initializing flash: Source ID: 0
+00:22:35.753090 - BRAILLE: Not contracting '屏幕阅读器关闭。' because contracted braille is not enabled.
+00:22:35.753126 - BRAILLE: Refresh. Pan: True target: 0
+00:22:35.753152 - GSETTINGS SCHEMA HANDLE: braille/enabled not set [app:rustrss-desktop, profile:default]
+00:22:35.753157 - GSETTINGS REGISTRY: braille/enabled using default value = True
+00:22:35.753181 - BRAILLE: Last text object: None (Caret: 0, Line: 0, Cell: 0)
+00:22:35.753212 - BRAILLE: Current text object: None (Caret: 0, Line: 0). On same line: False
+00:22:35.753220 - BRAILLE: Line 0: '屏幕阅读器关闭。' focusOffset: 0 [[0, 8]]
+00:22:35.753231 - BRAILLE: Current range: (0, 32). Target cell: 0
+00:22:35.753238 - BRAILLE LINE:  '屏幕阅读器关闭。'
+00:22:35.753244 -      VISIBLE:  '屏幕阅读器关闭。', cursor=0
+00:22:35.753262 - BRAILLE: Enabling braille. BrlAPI running: False
+00:22:35.753267 - BRAILLE: Need to initialize first.
+00:22:35.753287 - BRAILLE: Initializing. Callback: input_event_manager.InputEventManager.process_braille_event
+00:22:35.753312 - BRAILLE: WINDOWPATH= None
+00:22:35.753329 - BRAILLE: XDG_VTNR= 2
+00:22:35.753349 - BRAILLE: Attempting connection with BrlAPI.
+00:22:35.753442 - REMOTE CONTROLLER: Attempting to shut down D-Bus service.
+00:22:35.753452 - DBUS SERVICE: Releasing D-Bus resources for service.
+00:22:35.753459 - DBUS SERVICE: Shutting down and unpublishing module ActionPresenter from main service.
+00:22:35.753515 - DBUS SERVICE: Shutting down and unpublishing module CaretNavigator from main service.
+00:22:35.753534 - DBUS SERVICE: Shutting down and unpublishing module ProfileManager from main service.
+00:22:35.753548 - DBUS SERVICE: Shutting down and unpublishing module ChatPresenter from main service.
+00:22:35.753561 - DBUS SERVICE: Shutting down and unpublishing module ClipboardPresenter from main service.
+00:22:35.753572 - DBUS SERVICE: Shutting down and unpublishing module MouseReviewer from main service.
+00:22:35.753584 - DBUS SERVICE: Shutting down and unpublishing module WhereAmIPresenter from main service.
+00:22:35.753635 - BRAILLE: BrlAPI Connection is unavailable (ConnectionError): couldn't connect to b':0' with key b'keyfile:/etc/brlapi.key+polkit': connect: ���������������������������
+                  (brlerrno 11, libcerrno 2, gaierrno 0)
+                  Is BRLTTY really running?
+00:22:35.753668 - DBUS SERVICE: Shutting down and unpublishing module SystemInformationPresenter from main service.
+00:22:35.753698 - DBUS SERVICE: Shutting down and unpublishing module CommandManager from main service.
+00:22:35.753713 - DBUS SERVICE: Shutting down and unpublishing module SpeechManager from main service.
+00:22:35.753727 - DBUS SERVICE: Shutting down and unpublishing module NotificationPresenter from main service.
+00:22:35.753738 - DBUS SERVICE: Shutting down and unpublishing module StructuralNavigator from main service.
+00:22:35.753751 - DBUS SERVICE: Shutting down and unpublishing module TextAttributeManager from main service.
+00:22:35.753763 - DBUS SERVICE: Shutting down and unpublishing module SpellCheckPresenter from main service.
+00:22:35.753774 - DBUS SERVICE: Shutting down and unpublishing module FlatReviewPresenter from main service.
+00:22:35.753785 - DBUS SERVICE: Shutting down and unpublishing module TypingEchoPresenter from main service.
+00:22:35.753795 - DBUS SERVICE: Shutting down and unpublishing module DocumentPresenter from main service.
+00:22:35.753807 - DBUS SERVICE: Shutting down and unpublishing module TableNavigator from main service.
+00:22:35.753820 - DBUS SERVICE: Shutting down and unpublishing module SleepModeManager from main service.
+00:22:35.753831 - DBUS SERVICE: Shutting down and unpublishing module SoundPresenter from main service.
+00:22:35.753843 - DBUS SERVICE: Shutting down and unpublishing module BraillePresenter from main service.
+00:22:35.753854 - DBUS SERVICE: Shutting down and unpublishing module ObjectNavigator from main service.
+00:22:35.753865 - DBUS SERVICE: Shutting down and unpublishing module SpeechPresenter from main service.
+00:22:35.753875 - DBUS SERVICE: Shutting down and unpublishing module SayAllPresenter from main service.
+00:22:35.754445 - REMOTE CONTROLLER: D-Bus service shut down.
+00:22:35.754513 - ORCA MODIFIER MANAGER: Unsetting Orca modifiers: Shutting down.
+00:22:35.759246 - ORCA MODIFIER MANAGER: Original xmodmap restored
+00:22:35.759443 - EVENT MANAGER: Pause queueing: True. Clear queue: True. Shutting down.
+00:22:35.759489 - INPUT EVENT MANAGER: Pause queueing: True. Shutting down.
+00:22:35.759507 - SCRIPT MANAGER: Deactivating <unknown>.<module>:373 > orca._glib_shutdown_handler:182 > orca.shutdown:129 > script_manager.deactivate:70
+00:22:35.760145 - EVENT MANAGER: De-registering listeners for: default (module=orca.scripts.default)
+00:22:35.760173 - EVENT MANAGER: deregistering listener for: document:attributes-changed
+00:22:35.760391 - EVENT MANAGER: deregistering listener for: document:load-complete
+00:22:35.760516 - EVENT MANAGER: deregistering listener for: document:load-stopped
+00:22:35.760636 - EVENT MANAGER: deregistering listener for: document:page-changed
+00:22:35.760722 - EVENT MANAGER: deregistering listener for: document:reload
+00:22:35.761000 - EVENT MANAGER: deregistering listener for: mouse:button
+00:22:35.761257 - EVENT MANAGER: deregistering listener for: object:active-descendant-changed
+00:22:35.761453 - EVENT MANAGER: deregistering listener for: object:announcement
+00:22:35.761623 - EVENT MANAGER: deregistering listener for: object:attributes-changed
+00:22:35.761810 - EVENT MANAGER: deregistering listener for: object:children-changed:add
+00:22:35.761942 - EVENT MANAGER: deregistering listener for: object:children-changed:remove
+00:22:35.762101 - EVENT MANAGER: deregistering listener for: object:column-reordered
+00:22:35.762261 - EVENT MANAGER: deregistering listener for: object:property-change:accessible-description
+00:22:35.762420 - EVENT MANAGER: deregistering listener for: object:property-change:accessible-name
+00:22:35.762609 - EVENT MANAGER: deregistering listener for: object:property-change:accessible-value
+00:22:35.762773 - EVENT MANAGER: deregistering listener for: object:row-reordered
+00:22:35.762946 - EVENT MANAGER: deregistering listener for: object:selection-changed
+00:22:35.763115 - EVENT MANAGER: deregistering listener for: object:state-changed:active
+00:22:35.763286 - EVENT MANAGER: deregistering listener for: object:state-changed:busy
+00:22:35.763397 - EVENT MANAGER: deregistering listener for: object:state-changed:checked
+00:22:35.763603 - EVENT MANAGER: deregistering listener for: object:state-changed:expanded
+00:22:35.763784 - EVENT MANAGER: deregistering listener for: object:state-changed:focused
+00:22:35.763919 - EVENT MANAGER: deregistering listener for: object:state-changed:indeterminate
+00:22:35.764073 - EVENT MANAGER: deregistering listener for: object:state-changed:invalid-entry
+00:22:35.764227 - EVENT MANAGER: deregistering listener for: object:state-changed:pressed
+00:22:35.764373 - EVENT MANAGER: deregistering listener for: object:state-changed:selected
+00:22:35.764478 - EVENT MANAGER: deregistering listener for: object:state-changed:sensitive
+00:22:35.764603 - EVENT MANAGER: deregistering listener for: object:state-changed:showing
+00:22:35.764774 - EVENT MANAGER: deregistering listener for: object:text-attributes-changed
+00:22:35.764894 - EVENT MANAGER: deregistering listener for: object:text-caret-moved
+00:22:35.764970 - EVENT MANAGER: deregistering listener for: object:text-changed:delete
+00:22:35.765080 - EVENT MANAGER: deregistering listener for: object:text-changed:insert
+00:22:35.765181 - EVENT MANAGER: deregistering listener for: object:text-selection-changed
+00:22:35.765257 - EVENT MANAGER: deregistering listener for: object:value-changed
+00:22:35.765480 - EVENT MANAGER: deregistering listener for: window:activate
+00:22:35.765710 - EVENT MANAGER: deregistering listener for: window:create
+00:22:35.765883 - EVENT MANAGER: deregistering listener for: window:deactivate
+00:22:35.765988 - EVENT MANAGER: deregistering listener for: window:destroy
+00:22:35.766183 - SCRIPT MANAGER: Deactivating rustrss-desktop (module=orca.scripts.toolkits.gtk.script) reason: deactivate
+00:22:35.766252 - GSETTINGS SCHEMA HANDLE: keybindings/keyboard-layout not set [profile:default]
+00:22:35.766263 - GSETTINGS REGISTRY: keybindings/keyboard-layout using default value = 'desktop'
+00:22:35.766271 - COMMAND MANAGER: Setting keyboard layout is_desktop to True.
+00:22:35.766368 - GSETTINGS SCHEMA HANDLE: keybindings/entries no dict values set
+00:22:35.766376 - GSETTINGS REGISTRY: keybindings/entries using default value = {}
+00:22:35.766382 - COMMAND MANAGER: No user overrides to apply
+00:22:35.766439 - GSETTINGS SCHEMA HANDLE: keybindings/keyboard-layout not set [profile:default]
+00:22:35.766446 - GSETTINGS REGISTRY: keybindings/keyboard-layout using default value = 'desktop'
+00:22:35.766458 - GSETTINGS SCHEMA HANDLE: keybindings/desktop-modifier-keys not set [profile:default]
+00:22:35.766465 - GSETTINGS REGISTRY: keybindings/desktop-modifier-keys using default value = ['Insert', 'KP_Insert']
+
+vvvvv COMMAND MANAGER: Grab diff: keyboard layout change (old: 77, new: 77) vvvvv
+00:22:35.767341 -   No grab changes
+^^^^^ COMMAND MANAGER: Diff completed in 0.0009s. Removed 0, added 0, transferred 0 ^^^^^
+
+00:22:35.767368 - COMMAND MANAGER: Keyboard layout set to desktop.
+00:22:35.767403 - GSETTINGS SCHEMA HANDLE: keybindings/keyboard-layout not set [profile:default]
+00:22:35.767411 - GSETTINGS REGISTRY: keybindings/keyboard-layout using default value = 'desktop'
+00:22:35.767427 - GSETTINGS SCHEMA HANDLE: keybindings/desktop-modifier-keys not set [profile:default]
+00:22:35.767434 - GSETTINGS REGISTRY: keybindings/desktop-modifier-keys using default value = ['Insert', 'KP_Insert']
+00:22:35.767443 - SCRIPT MANAGER: Deactivated
+00:22:35.767449 - EVENT MANAGER: Deactivating <unknown>.<module>:373 > orca._glib_shutdown_handler:182 > orca.shutdown:130 > event_manager.deactivate:98
+00:22:35.767760 - INPUT EVENT MANAGER: Stopping key watcher.
+00:22:35.767807 - EVENT MANAGER: Deactivated
+00:22:35.767817 - CLIPBOARD PRESENTER: Deactivating
+00:22:35.767937 - CLIPBOARD PRESENTER: Deactivated
+00:22:35.767954 - PRESENTATION MANAGER: Shutting down presenters
+00:22:35.768346 - SPEECH MANAGER: shutdown_speech. Script: None Event: None notify_user: False
+00:22:35.768627 - SPEECH MANAGER: Speech server is <orca.speechdispatcherfactory.SpeechServer object at 0x7c52900517f0>
+00:22:35.780125 - BRAILLE: Attempting braille shutdown.
+00:22:35.780218 - BRAILLE: Braille was not running.
+00:22:35.780239 - ORCA: Quitting Atspi main event loop
+00:22:35.780276 - ORCA: Shutdown complete

@@ -1182,7 +1182,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 空/错误状态：无订阅 / 无搜索匹配 / 首次抓取失败不误报，失败保留缓存（`empty-error-states.md`）。
 - [x] 分数缩放：KDE Wayland 125%/150% 与 Xvfb 100%/200%（`native-settings.md`）；原生 Wayland 真实点击取消 + 正文位置（`t7-wayland-input-results.json`，用户在场补验）。
 - [x] MCP 预览文件契约：绝对路径 + 到期时间、尺寸/体积/配额/TTL 回收（`mcp-preview-files.md`）。
-- [ ] **未验（保留 open）——**注：此前写成「全部环境/他人依赖」是错的**：空状态夹具矩阵本机可跑（已在 2026-09-24 补跑：`empty-state-matrix.md` / `empty-state-matrix-results.json`，36 格 + 变异校验），读屏器（本机有 `/usr/bin/orca`）与原生弹窗键盘路径同样本机可验而未验；真正外部的只有 Windows / macOS / GNOME-Wayland（未装 GNOME 会话）与第三方 GUI MCP 客户端**：① Windows/macOS 原生截图与真实客户端闭环；② 第三方 GUI 客户端（本轮仅 Codex CLI 收图）；③ GNOME / 无 XWayland / 读屏器；④ **用户侧独立聚合评审**（T7 报告明确 fresh reviewer 由用户另派，未派）；⑤ 企业证书/认证代理（与 §26 同源）。
+- [ ] **未验（保留 open）**。**更正 1（原写「全部环境/他人依赖」是错的）**：空状态夹具矩阵本机可跑（2026-09-24 补跑：`empty-state-matrix.md` / `empty-state-matrix-results.json`，36 格 + 变异校验）；**读屏器已于 2026-09-25 本机验通（三态之 ①「读到内容」）**，见 §32 与 `screen-reader-results.json`；原生弹窗的深色/键盘路径仍属本机可验而未验。**更正 2（同日）**：**用户侧独立聚合评审已发生**——fresh `chorus-code-reviewer` round 1 判 FAIL（1 BLOCKER，评论 `4d2c4ff1`）、round 2 **PASS WITH NOTES**（0 BLOCKER，评论 `4310c308`），不再是「未派」。**真正外部的是**：① Windows/macOS 原生截图与真实客户端闭环；② 第三方 GUI 客户端（本轮仅 Codex CLI 收图）；③ GNOME / 无 XWayland 会话（未装 GNOME）；④ 企业证书/认证代理（与 §26 同源）。
 
 ## 28. 搜索端到端（release 口径）（2026-09-24-local-acceptance-closeout / 任务 94422722）
 
@@ -1213,3 +1213,9 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 处置：矩阵探针**记录** `scene_frames_per_cell`（全 1）不再按场景断像素；逐场景主张改由 DOM 断言承担（设置场景新增「列表右缘最上层元素不得属于侧栏/列表」的语义断言）；§30 的口径补充此模式。
 - [x] 结论影响：既有「每后端 39 图 / 24 像素断言」中，**逐场景**像素不成立，逐主题/模式/语言成立；要逐场景像素证据需在**真有合成器的桌面会话**重跑。
 - [x] 空状态矩阵（`empty-state-matrix-results.json`，36 格）：逐格 DOM 断言 + 逐主题像素背景；同样受本限制。
+
+## 32. 读屏器（orca / AT-SPI2）本机验通（2026-09-25，headless Xvfb）
+
+- [x] **结论落在三态之 ①「读到了内容」**：探针 `scripts/verify-screen-reader.py` **exit=0** —— a11y 总线起来（`org.a11y.Bus` + `org.a11y.atspi.Registry`）、应用注册、AT-SPI 客户端遍历到 **168 个节点**（84 个有可访问名），其中 **13 条与夹具库标题逐字匹配**（源名 `Theme fixture · 主题示例` + 12 条条目标题 `Reading thoughtfully · 阅读与排版 N`）。证据 `2026-09-23-theme-preview/screen-reader-results.json`（含 `binary` / `binary_sha256` / `binary_mtime` 22:43:28 / `captured_at`）+ 原始日志 `screen-reader-session.log`、`screen-reader-app.log`、`screen-reader-orca-debug.log`。
+- [x] **卡住的两步（有原始证据，均非「环境依赖」）**：① 新会话里 `org.a11y.Status.IsEnabled` / `ScreenReaderEnabled` 默认 **false**，GTK/WebKit 的 a11y 树惰性不建 → 探针显式置 true（等同读屏器启动的行为）后才出现应用节点（证据里含 `gdbus` 回读 `IsEnabled: <true>`）；② 应用节点的 **accessible name 为 null**（orca 列表里的名字来自注册信息，不是同一字段）→ 只按名字会漏，改为**按 pid 匹配**并记录全部 children（证据 `desktop_children` 四个应用 name 均为 null）。
+- [ ] **如实边界**：① headless Xvfb + 无 WM 环境；② `orca -l` 确认读屏器看到该应用、`orca --debug-file`（95KB）日志也提到该应用，但 **orca 自身没有把条目标题读出来**（`mentions_fixture_title=false`）——「内容可读」由**同总线同协议的 AT-SPI 客户端**读取并与数据库逐字核对证明，**不等于** orca 的语音/盲文层已验证；③ 观察（非结论）：HTML 里带 `hidden` 的降级模板 `#startup-refusal` 在 WebKit 无障碍树里仍暴露为 `showing`，其标题 `Incompatible database - not loaded` 出现在树中——真实桌面是否会被朗读未验；④ 未验：真实桌面 + 语音/盲文输出、动态刷新（新条目到达）的播报。
