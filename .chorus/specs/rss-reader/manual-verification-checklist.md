@@ -1152,7 +1152,8 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 - Media RSS 缩略图优先，其次图片 enclosure，最后摘要/正文首图；相对 URL 按条目源地址解析，只接受 HTTP(S)。
 - 缩略图随条目落库，旧开发库迁移时从正文首图回填；全文后取的图片仅在没有既有缩略图时补入。
-- WebView 列表延迟加载图片，不发送 Referer；图片请求不经过应用订阅代理。外观设置沿用“显示已有缩略图”开关。该行为是 spec「外呼白名单」的**已知例外**（口径与验收见 [缩略图外呼口径 PRD](2026-09-24-thumbnail-egress-policy/prd.md)）；图片请求由 WebKitNetworkProcess 发起，**应用日志看不到**，验收须以代理/抓包侧记录为准。
+- WebView 列表延迟加载图片，不发送 Referer；图片请求不经过应用订阅代理。外观设置沿用“显示已有缩略图”开关。该行为是 spec「外呼白名单」的**已知例外**（口径与验收见 [缩略图外呼口径 PRD](2026-09-24-thumbnail-egress-policy/prd.md)）；图片请求由 WebKitNetworkProcess 发起，**应用日志看不到**，验收须以代理/抓包或**系统调用层（本次用的就是 `strace -f -e trace=connect`）**记录为准。
 - core 解析、存储/重开、全文回填测试与主题开关单测已补；运行时验收命令：`python3 scripts/verify-thumbnail-ui.py`，断言真实 WebView 图片加载、lazy/referrer 属性及主题开关。
 - 本机 Xvfb 隔离运行通过 2 项：WebView 从临时 loopback HTTP 服务取到 1×1 PNG，服务端收到的请求没有 `Referer`；更新主题配置后同一图片节点隐藏、无列表行重建。
-- 尚未验证公网图片站兼容性、外站拒绝嵌入及离线行为；本次使用本机图片服务，不产生公网图片请求。此外还有两项未实测：**开关关闭态的零请求**（现有断言只覆盖节点隐藏与无行重建）与**重定向目标的归类**。上述全部未验项（公网 / 拒绝嵌入 / 离线 / 关闭态 / 重定向）由 [2026-09-24-thumbnail-egress-policy](2026-09-24-thumbnail-egress-policy/prd.md) 的 T2/T3 承接。
+- **已验证（2026-09-24，证据均在 [缩略图外呼口径](2026-09-24-thumbnail-egress-policy/prd.md) 变更目录下）**：① 公网真 feed 全链路——`github.blog/feed/` @10:16:43Z 解析 10 条、4 条回填 `thumbnail_url`（SQLite 回读）并在真实 WebView 渲染（`thumbnail-public-feed-results.json` + `thumbnail-public-feed.png`）；② 404 / 不可达主机 / **403 热链拒绝（本地夹具）** 三腿静默失败，无阻塞式 dialog、无行重建、无布局跳动（行几何前后逐项一致、缩略图槽位恒为 48×48）、仍可滚动（`thumbnail-remote-results.json` + `-failures.png` + `-desktop.log`）；③ 离线（私有 netns 仅 lo，`unshare -rn` 单命令复跑）列表可读可滚、缩略图静默失败、缓存正文可读（`thumbnail-offline-results.json`）；④ **关闭缩略图开关后零图片请求**（`egress-strace-toggle-off.log`，该相位零连接）。
+- **仍未验证（保留 open）**：① 公网图片站的**热链策略**未实测——用本地 403 夹具替代（站点策略不可控、测了不可复现）；② 未用**公网 RSSHub 实例**跑一次（本轮用本地实例验证 `rsshub://` 解析到实例主机这一步）；③ 本环境 **IPv6 不可达**，AAAA 目标只记录了连接尝试，IPv6 实际可用时的行为未验；④ `spec.md` 的**重定向逐跳归类**规则未被执行（本次 capture 未出现重定向）。
