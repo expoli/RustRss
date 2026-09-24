@@ -1,0 +1,26 @@
+{
+  "unreachable_thumbnail": "https://raw.githubusercontent.com/github/explore/main/topics/rust/rust.png",
+  "checked_at": "2026-09-24T10:24:07Z",
+  "network": "private netns, lo only",
+  "checks": [
+    "list renders offline (entries visible)",
+    "offline thumbnails fail silently without dialogs",
+    "cached article body is readable offline",
+    "offline list scrolls and does not rebuild rows"
+  ],
+  "entry_ids": [
+    30,
+    29,
+    28
+  ],
+  "app_log_tail": "持.\n\n(rustrss-desktop:2784711): libayatana-appindicator-WARNING **: 18:24:07.517: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.\n\n** (process:2784735): WARNING **: 18:24:07.551: Can't connect to a11y bus: 用尽了所有可用的认证机制（已尝试：EXTERNAL）（可用的：EXTERNAL）\n",
+  "thumbnail_state": {
+    "present": true,
+    "width": 0,
+    "complete": true,
+    "dialog": false
+  },
+  "article_text_length": 7344,
+  "row_ids_unchanged": true,
+  "scrolled": true
+}

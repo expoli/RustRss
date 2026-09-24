@@ -1,0 +1,42 @@
+{
+  "public_image": "https://raw.githubusercontent.com/github/explore/main/topics/rust/rust.png",
+  "missing_image": "https://raw.githubusercontent.com/github/explore/main/topics/rust/definitely-missing.png",
+  "unreachable_image": "http://10.255.255.1/never.png",
+  "checked_at": "2026-09-24T10:25:41Z",
+  "checks": [
+    "public image loaded in the real WebView (lazy, no-referrer)",
+    "404 / unreachable / 403-hotlink-rejected images all fail silently",
+    "failed images neither rebuilt rows nor blocked scrolling"
+  ],
+  "forbidden_image": "http://127.0.0.1:39813/forbidden.png",
+  "entry_ids": [
+    30,
+    29,
+    28,
+    27
+  ],
+  "public_image_attrs": {
+    "src": "https://raw.githubusercontent.com/github/explore/main/topics/rust/rust.png",
+    "lazy": "lazy",
+    "referrer": "no-referrer",
+    "width": 288
+  },
+  "failure_cases": {
+    "missing": {
+      "w": 0,
+      "broken": true
+    },
+    "unreachable": {
+      "w": 0,
+      "broken": true
+    },
+    "forbidden": {
+      "w": 0,
+      "broken": true
+    },
+    "dialog": false
+  },
+  "row_ids_before": "30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1",
+  "row_ids_after": "30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1",
+  "scrolled": true
+}

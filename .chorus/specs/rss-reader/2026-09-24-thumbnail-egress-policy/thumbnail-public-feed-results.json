@@ -1,0 +1,27 @@
+{
+  "public_feed": "https://github.blog/feed/",
+  "checked_at": "2026-09-24T10:16:43Z",
+  "checks": [
+    "real public feed produced stored thumbnail URLs (DB read-back)",
+    "real feed thumbnail rendered in the production WebView"
+  ],
+  "seeded_at": "2026-09-24T10:16:44Z",
+  "entries_total": 10,
+  "entries_with_thumbnail": 4,
+  "thumbnail_samples": [
+    "https://github.blog/wp-content/uploads/2026/09/Screenshot-2026-09-22-at-6.34.24-PM.png?resize=1024%2C623",
+    "https://github.blog/wp-content/uploads/2026/09/architecture-before-after.svg?resize=1024,512",
+    "https://github.blog/wp-content/uploads/2026/09/Actions-Run-Start_delay.png?resize=1024%2C509",
+    "https://github.blog/wp-content/uploads/2026/09/HydraFusion_architecture_02.png?resize=1024%2C334"
+  ],
+  "thumbnail_hosts": [
+    "https://github.blog"
+  ],
+  "rendered_attrs": {
+    "src": "https://github.blog/wp-content/uploads/2026/09/Screenshot-2026-09-22-at-6.34.24-PM.png?resize=1024%2C623",
+    "width": 1024,
+    "lazy": "lazy",
+    "referrer": "no-referrer"
+  },
+  "screenshot": ".chorus/specs/rss-reader/2026-09-24-thumbnail-egress-policy/thumbnail-public-feed.png"
+}

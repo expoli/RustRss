@@ -1,0 +1,108 @@
+{
+  "public_feed": "https://github.blog/feed/",
+  "public_image": "https://raw.githubusercontent.com/github/explore/main/topics/rust/rust.png",
+  "checked_at": "2026-09-24T10:30:38Z",
+  "checks": [
+    "rsshub:// resolved to the configured instance and its request path was observed",
+    "complete refresh cycle: only feed host, image host, DNS and loopback",
+    "WebKit-side image traffic visible through strace connect()"
+  ],
+  "feed_ips": [
+    "192.0.66.2"
+  ],
+  "image_ips": [
+    "185.199.108.133",
+    "185.199.109.133",
+    "185.199.110.133",
+    "185.199.111.133",
+    "2606:50c0:8000::154",
+    "2606:50c0:8001::154",
+    "2606:50c0:8002::154",
+    "2606:50c0:8003::154"
+  ],
+  "rsshub_mirror": "http://127.0.0.1:41217",
+  "feed_entries": 1,
+  "synthetic_entry": 900001,
+  "unfinished_connect_lines": 6,
+  "dns_sendto_53": 0,
+  "destinations": [
+    {
+      "ip": "127.0.0.53",
+      "family": "AF_INET",
+      "count": 6,
+      "ports": [
+        53
+      ],
+      "port_unresolved": false,
+      "owner": "dns"
+    },
+    {
+      "ip": "185.199.110.133",
+      "family": "AF_INET",
+      "count": 2,
+      "ports": [
+        0,
+        443
+      ],
+      "port_unresolved": false,
+      "owner": "image_host"
+    },
+    {
+      "ip": "192.0.66.2",
+      "family": "AF_INET",
+      "count": 2,
+      "ports": [
+        443
+      ],
+      "port_unresolved": false,
+      "owner": "feed_host"
+    },
+    {
+      "ip": "185.199.109.133",
+      "family": "AF_INET",
+      "count": 1,
+      "ports": [
+        0
+      ],
+      "port_unresolved": true,
+      "owner": "image_host"
+    },
+    {
+      "ip": "185.199.111.133",
+      "family": "AF_INET",
+      "count": 1,
+      "ports": [
+        0
+      ],
+      "port_unresolved": true,
+      "owner": "image_host"
+    },
+    {
+      "ip": "185.199.108.133",
+      "family": "AF_INET",
+      "count": 1,
+      "ports": [
+        0
+      ],
+      "port_unresolved": true,
+      "owner": "image_host"
+    },
+    {
+      "ip": "127.0.0.1",
+      "family": "AF_INET",
+      "count": 1,
+      "ports": [
+        41217
+      ],
+      "port_unresolved": false,
+      "owner": "rsshub_instance"
+    }
+  ],
+  "raw_log": ".chorus/specs/rss-reader/2026-09-24-thumbnail-egress-policy/egress-strace.log",
+  "unclassified": [],
+  "rsshub_instance_paths": [
+    "/x7/egress-fixture",
+    "/x7/egress-fixture"
+  ],
+  "rsshub_observed": true
+}
