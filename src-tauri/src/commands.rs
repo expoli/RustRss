@@ -107,12 +107,6 @@ pub async fn export_legacy_opml(
     Ok(Some(target.display().to_string()))
 }
 
-/// 退出应用（拒绝面板上的「退出」按钮）。
-#[tauri::command]
-pub fn exit_app(app: tauri::AppHandle) {
-    app.exit(0);
-}
-
 #[tauri::command]
 pub async fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
     let t = std::time::Instant::now();

@@ -11,7 +11,7 @@ mod legacy_chain;
 
 use legacy_chain::LEGACY_CHAIN;
 use rusqlite::Connection;
-use rustrss_core::store::schema::{BASELINE_APPLICATION_ID, BASELINE_VERSION, MIGRATIONS};
+use rustrss_core::store::schema::{self, SchemaState, BASELINE_APPLICATION_ID, BASELINE_VERSION, MIGRATIONS};
 use rustrss_core::store::StoreError;
 use rustrss_core::{EntryQuery, Store};
 use std::time::{Duration, Instant};
@@ -391,6 +391,33 @@ fn baseline_rows_and_flags_survive_reopen() {
     drop(store);
     let conn = Connection::open(&path).unwrap();
     assert_eq!(app_id(&conn), BASELINE_APPLICATION_ID as i64);
+}
+
+#[test]
+fn legacy_v1_frozen_db_is_refused_at_detect_level() {
+    // 关键反例：旧链只跑到 v1 的冻结库——有用户表、application_id=0，而 user_version
+    // **恰好等于基线（1）**。若 detect 改回「按版本区间判断」（Round-1 B1 的复发形态），
+    // 这个库会被当成新库接受、随后运行时查询报错；断言落在 `detect()` 本身而不是备份校验里。
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("legacy-v1.sqlite");
+    {
+        let conn = Connection::open(&path).unwrap();
+        conn.execute_batch(LEGACY_CHAIN[0]).unwrap();
+        conn.pragma_update(None, "user_version", 1).unwrap();
+    }
+    let conn = Connection::open(&path).unwrap();
+    assert_eq!(
+        schema::detect(&conn).unwrap(),
+        SchemaState::Foreign { user_version: 1 },
+        "v1 冻结库必须按缺少应用标识被识别为 Foreign，而不是按 user_version=1 当成 Current"
+    );
+    assert_eq!(app_id(&conn), 0);
+    drop(conn);
+    let err = match Store::open(&path) {
+        Ok(_) => panic!("v1 冻结库必须被拒绝"),
+        Err(e) => e,
+    };
+    assert!(matches!(err, StoreError::SchemaRefused { .. }), "{err:?}");
 }
 
 #[test]

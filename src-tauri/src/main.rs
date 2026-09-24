@@ -248,7 +248,6 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::startup_status,
             commands::export_legacy_opml,
-            commands::exit_app,
             commands::db_info,
             commands::sidebar_data,
             commands::list_feeds,
