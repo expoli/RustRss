@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-24T12:50:37Z",
+  "checked_at": "2026-09-24T13:05:55Z",
   "steps": [
     {
       "step": "move j/j/k",
@@ -24,10 +24,11 @@
     },
     {
       "step": "search filters list",
-      "rows": 30
+      "rows_before": 28,
+      "rows_after": 0
     },
     {
-      "step": "Escape clears search"
+      "step": "Escape clears search and restores list"
     },
     {
       "step": "u toggles read",
@@ -52,7 +53,8 @@
     "full keyboard chain (move/open/back/view/search/read/refresh/mark-all-read)",
     "help dialog and the in-app shortcut selftest agree with the handler"
   ],
-  "screenshot": ".chorus/specs/rss-reader/2026-09-24-local-acceptance-closeout/keyboard-mainflow-help.png",
+  "screenshot": null,
+  "screenshot_note": "无 WM 的 Xvfb 中 import 取帧不可靠（会拿到陈旧帧），故不作像素断言；本任务的证据为 DOM + SQLite 回读",
   "fixture": {
     "entries_before": 30,
     "entries_after": 31

@@ -158,7 +158,7 @@ async def main():
             report['steps'].append({'step': 'move k back'})
 
             # 2) 打开（Enter 标已读）→ 3) 返回（Esc）
-            key('Enter')
+            key('Return')
             await probe.until("document.getElementById('reader').innerText.trim().length>40")
             opened = await probe.js("document.getElementById('reader').innerText.trim().length")
             assert opened > 0, 'Enter 应打开正文'
@@ -181,19 +181,22 @@ async def main():
             await asyncio.sleep(.6)
 
             # 5) 搜索 → 6) Esc 清除
+            total_rows = await probe.js("document.querySelectorAll('#entries li[data-id]').length")
             key('slash')
             await probe.until("document.activeElement && document.activeElement.id==='search'")
-            subprocess.run(['xdotool', 'type', '--clearmodifiers', '--delay', '20', 'fixture'],
+            subprocess.run(['xdotool', 'type', '--clearmodifiers', '--delay', '20', 'zzz-no-such-token-zzz'],
                            env=env, check=True, timeout=20)
             await asyncio.sleep(1.2)
             hits = await probe.js("document.querySelectorAll('#entries li[data-id]').length")
-            report['steps'].append({'step': 'search filters list', 'rows': hits})
-            assert hits >= 0, 'search 应正常返回'
+            report['steps'].append({'step': 'search filters list', 'rows_before': total_rows, 'rows_after': hits})
+            assert hits == 0 and total_rows > 1, f'搜索无匹配词应过滤到 0 行（而非恒真断言）: {hits}/{total_rows}'
             key('Escape')
-            await asyncio.sleep(.6)
+            await asyncio.sleep(.8)
             cleared = await probe.js("document.getElementById('search').value")
+            restored = await probe.js("document.querySelectorAll('#entries li[data-id]').length")
             assert not cleared, f'Esc 应清空搜索框: {cleared!r}'
-            report['steps'].append({'step': 'Escape clears search'})
+            assert restored == total_rows, f'Esc 后应恢复全量列表: {restored} != {total_rows}'
+            report['steps'].append({'step': 'Escape clears search and restores list'})
 
             # 7) 标记已读（u 切换当前篇）
             await probe.js("document.querySelector('#entries li[data-id]').click()")
@@ -241,12 +244,12 @@ async def main():
             report['steps'].append({'step': '? help lists A', 'help_chars': len(help_text)})
             report['checks'] = ['full keyboard chain (move/open/back/view/search/read/refresh/mark-all-read)',
                                'help dialog and the in-app shortcut selftest agree with the handler']
-            if OUT_DIR:
-                OUT_DIR.mkdir(parents=True, exist_ok=True)
-                png = OUT_DIR / 'keyboard-mainflow-help.png'
-                subprocess.run(['import', '-display', env['DISPLAY'], '-window', 'root', str(png)],
-                               check=True, timeout=60)
-                report['screenshot'] = str(png)
+            # 不落像素证据：无 WM 的 Xvfb 里 `import -window root` 会抓到陈旧/错误的帧
+            # （实测抓到了另一个探针的拒绝界面），而本探针的断言全是 DOM/DB 级，察觉不到。
+            # 环境限制如实记录；要像素证据需真实桌面会话（见 README 的无头验证手册）。
+            report['screenshot'] = None
+            report['screenshot_note'] = ('无 WM 的 Xvfb 中 import 取帧不可靠（会拿到陈旧帧），'
+                                         '故不作像素断言；本任务的证据为 DOM + SQLite 回读')
             report['fixture'] = {'entries_before': before_total, 'entries_after': total_count(db_path)}
             report['evidence_file'] = write_evidence('keyboard-mainflow-results.json', report)
             print(json.dumps(report, ensure_ascii=False))
