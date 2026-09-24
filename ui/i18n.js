@@ -15,6 +15,13 @@
 
 const DICTS = {
   'zh-CN': {
+    'startup.refused.title': '数据库不兼容，已停止加载',
+    'startup.refused.body': '这个数据库来自旧版本（缺少当前版本的应用标识）。为避免误读旧数据，应用不会打开它。可以先把订阅导出为 OPML，再重建数据目录。',
+    'startup.refused.dbPath': '数据库位置',
+    'startup.refused.export': '导出 OPML',
+    'startup.refused.quit': '退出',
+    'startup.refused.exported': '已导出到：',
+    'startup.refused.exportHint': '导出只读：过程中不会写这个数据库。',
     'themePreview.readOnly': '固定示例，仅展示候选主题；在发起预览的客户端调整或保存。',
     'theme.localeDraft': '请先保存或放弃主题草稿，再切换语言。',
     "settings.nav.appearance": "外观与主题",
@@ -550,6 +557,13 @@ const DICTS = {
   },
 
   en: {
+    'startup.refused.title': 'Incompatible database - not loaded',
+    'startup.refused.body': 'This database comes from an older version (it lacks the current application marker). The app will not open it, to avoid misreading old data. Export your subscriptions to OPML first, then rebuild the data directory.',
+    'startup.refused.dbPath': 'Database',
+    'startup.refused.export': 'Export OPML',
+    'startup.refused.quit': 'Quit',
+    'startup.refused.exported': 'Exported to: ',
+    'startup.refused.exportHint': 'The export is read-only: this database is not written to.',
     'themePreview.readOnly': 'Fixed sample of the candidate theme. Adjust or save in the client that started this preview.',
     'theme.localeDraft': 'Save or discard theme drafts before changing language.',
     "settings.nav.appearance": "Appearance & themes",

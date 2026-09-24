@@ -232,11 +232,18 @@ fn validate_accepts_own_backup_and_rejects_garbage() {
         "错误要指明不是库文件，实际: {err}"
     );
 
-    // 情形二：版本超前（备份来自更新版本的程序）
+    // 情形二：版本超前（备份来自更新版本的程序）——必须先有**本应用的魔数**，
+    // 否则会先撞在「不是我们的备份」上（版本检查只在魔数通过后才有意义）。
     let future = dir.join("future.sqlite");
     fs::copy(&backup, &future).unwrap();
     {
         let conn = rusqlite::Connection::open(&future).unwrap();
+        conn.pragma_update(
+            None,
+            "application_id",
+            rustrss_core::store::schema::BASELINE_APPLICATION_ID,
+        )
+        .unwrap();
         conn.pragma_update(None, "user_version", current + 1).unwrap();
     }
     let err = validate_backup(&future, current).unwrap_err().to_string();
@@ -245,12 +252,29 @@ fn validate_accepts_own_backup_and_rejects_garbage() {
         "错误要说明版本超前，实际: {err}"
     );
 
-    // 情形三：0 字节文件会被 SQLite 当成「合法空库」（user_version = 0），必须显式拦下
+    // 情形三：旧链陈结库（有订阅可救、但不能再被当备份恢复）——按魔数识别，不按版本区间；
+    // 这是关键反例：它的 user_version 可能恰好是 1，与基线同号。
+    let legacy = dir.join("legacy.sqlite");
+    fs::copy(&backup, &legacy).unwrap();
+    {
+        let conn = rusqlite::Connection::open(&legacy).unwrap();
+        conn.pragma_update(None, "application_id", 0).unwrap();
+        conn.pragma_update(None, "user_version", 1).unwrap();
+    }
+    let before = fs::read(&legacy).unwrap();
+    let err = validate_backup(&legacy, current).unwrap_err().to_string();
+    assert!(
+        err.contains("缺少应用标识") && err.contains("导出 OPML"),
+        "旧库要按缺少应用标识被拒、并给出导出 OPML 的下一步，实际: {err}"
+    );
+    assert_eq!(fs::read(&legacy).unwrap(), before, "校验不得写备份文件");
+
+    // 情形四：0 字节文件会被 SQLite 当成「合法空库」（user_version = 0），同样落在魔数分支
     let empty = dir.join("empty.sqlite");
     fs::write(&empty, b"").unwrap();
     let err = validate_backup(&empty, current).unwrap_err().to_string();
     assert!(
-        err.contains("不是 RustRss 的备份"),
+        err.contains("不是当前版本的 RustRss 备份") && err.contains("缺少应用标识"),
         "空库也要拒绝，实际: {err}"
     );
 

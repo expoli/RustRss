@@ -23,8 +23,63 @@ pub struct ImportReport {
 /// 导出全部订阅为 OPML 2.0
 pub fn export(store: &Store) -> Result<String, crate::store::StoreError> {
     let folders = store.list_folders()?;
-    let feeds = store.list_feeds()?;
+    let feeds: Vec<ExportFeed> = store
+        .list_feeds()?
+        .into_iter()
+        .map(|f| ExportFeed {
+            url: f.url,
+            title: f.title,
+            site_url: f.site_url,
+            folder_id: f.folder_id,
+        })
+        .collect();
+    Ok(render(&folders, &feeds))
+}
 
+/// **只读**导出：给「库不兼容、被拒绝打开」的场景用（老开发库不能被打开成 `Store`，
+/// 但订阅列表仍要能救出来）。
+///
+/// 只读打开、只查 v1 就有的最小列（`feeds` 的 url/title/site_url/folder_id 与 `folders` 的
+/// id/name），因此对旧链任意版本的库都能工作；导出过程**不写一个字节**（不给候选库
+/// 建 WAL 边车、不写 PRAGMA）。
+pub fn export_read_only(path: &std::path::Path) -> Result<String, crate::store::StoreError> {
+    let conn = rusqlite::Connection::open_with_flags(
+        path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )
+    .map_err(|e| {
+        crate::store::StoreError::Invalid(format!("无法只读打开 {}: {e}", path.display()))
+    })?;
+    let folders: Vec<(i64, String)> = {
+        let mut st = conn.prepare("SELECT id, name FROM folders ORDER BY position, name")?;
+        let rows = st.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        rows.collect::<rusqlite::Result<_>>()?
+    };
+    let feeds: Vec<ExportFeed> = {
+        let mut st =
+            conn.prepare("SELECT url, title, site_url, folder_id FROM feeds ORDER BY title")?;
+        let rows = st.query_map([], |r| {
+            Ok(ExportFeed {
+                url: r.get(0)?,
+                title: r.get(1)?,
+                site_url: r.get(2)?,
+                folder_id: r.get(3)?,
+            })
+        })?;
+        rows.collect::<rusqlite::Result<_>>()?
+    };
+    Ok(render(&folders, &feeds))
+}
+
+/// 导出所需的最小字段集（`Store` 与只读路径共用）
+struct ExportFeed {
+    url: String,
+    title: String,
+    site_url: Option<String>,
+    folder_id: Option<i64>,
+}
+
+fn render(folders: &[(i64, String)], feeds: &[ExportFeed]) -> String {
     let mut out = String::new();
     out.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     out.push_str("<opml version=\"2.0\">\n");
@@ -32,8 +87,11 @@ pub fn export(store: &Store) -> Result<String, crate::store::StoreError> {
     out.push_str("  <body>\n");
 
     // 先按文件夹输出，再输出未归类的
-    for (folder_id, folder_name) in &folders {
-        let members: Vec<_> = feeds.iter().filter(|f| f.folder_id == Some(*folder_id)).collect();
+    for (folder_id, folder_name) in folders {
+        let members: Vec<_> = feeds
+            .iter()
+            .filter(|f| f.folder_id == Some(*folder_id))
+            .collect();
         if members.is_empty() {
             continue;
         }
@@ -52,10 +110,10 @@ pub fn export(store: &Store) -> Result<String, crate::store::StoreError> {
     }
 
     out.push_str("  </body>\n</opml>\n");
-    Ok(out)
+    out
 }
 
-fn outline_for_feed(feed: &crate::store::FeedRow, indent: usize) -> String {
+fn outline_for_feed(feed: &ExportFeed, indent: usize) -> String {
     let pad = " ".repeat(indent);
     let title = escape_attr(&feed.title);
     let xml_url = escape_attr(&feed.url);

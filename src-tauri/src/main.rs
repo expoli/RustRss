@@ -141,8 +141,15 @@ fn main() {
             let app_state = match AppState::open() {
                 Ok(s) => s,
                 Err(e) => {
-                    log::error!("[rustrss] 启动失败: {e}");
-                    return Err(e.into());
+                    // 库不兼容（旧开发库/外来 sqlite 文件）：不保开发库，但也不能只留一行日志——
+                    // 用内存库把界面撑起来，让用户看到双语说明与「导出 OPML」安全出口。
+                    if crate::state::is_schema_refusal(&e) {
+                        log::warn!("[rustrss] 库不兼容，进入降级启动（只提供导出 OPML）: {e}");
+                        AppState::open_blocked(rustrss_core::resolve_db_path(), e)?
+                    } else {
+                        log::error!("[rustrss] 启动失败: {e}");
+                        return Err(e.into());
+                    }
                 }
             };
             log::info!("[rustrss] 数据库: {}", app_state.db_path.display());
@@ -162,14 +169,16 @@ fn main() {
             use tauri::Manager;
             app.manage(app_state);
 
-            // 启用了 MCP HTTP 服务就在启动时拉起（只绑回环）
+            // 启用了 MCP HTTP 服务就在启动时拉起（只绑回环）。库不兼容时不拉起：
+            // 那时库是内存的，让 agent 看到一个空库比让它看不到更糟。
             let app_state = app.state::<AppState>();
-            if app_state
-                .with_store(|s| {
-                    Ok(s.bool_setting(mcp_server::K_ENABLED, false)
-                        .unwrap_or(false))
-                })
-                .unwrap_or(false)
+            if app_state.refusal().is_none()
+                && app_state
+                    .with_store(|s| {
+                        Ok(s.bool_setting(mcp_server::K_ENABLED, false)
+                            .unwrap_or(false))
+                    })
+                    .unwrap_or(false)
             {
                 let db_path = app_state.db_path.clone();
                 let runtime = app_state.mcp.clone();
@@ -195,6 +204,10 @@ fn main() {
 
             // 托盘不可用是预期内情况（Wayland 无 StatusNotifierItem / 缺
             // libappindicator 等）：显式降级，日志说明，主流程照常。
+            // 库不兼容时不建托盘：那时界面只有拒绝面板，托盘菜单上的操作没有意义。
+            if app.state::<AppState>().refusal().is_some() {
+                log::info!("[rustrss] 库不兼容：跳过托盘与定时刷新");
+            } else {
             // 托盘是否可用决定「关闭到托盘」策略是否允许（见 commands::window_close）。
             match crate::tray::setup_tray(app) {
                 Ok(()) => {
@@ -207,7 +220,11 @@ fn main() {
             }
             // 自动刷新调度器：定时（间隔可配）+ 启动后延迟 10s 一次。
             // 与手动刷新共用同一条管线（commands::refresh_core），各自受单 flight 保护。
-            crate::scheduler::spawn(app.handle().clone());
+            // 库不兼容时同样跳过：内存库里没有任何订阅，定时刷新/通知/托盘角标都无意义。
+            if app.state::<AppState>().refusal().is_none() {
+                crate::scheduler::spawn(app.handle().clone());
+            }
+            }
             // 兜底：窗口以隐藏方式创建，正常由前端在主题/数据就绪后调
             // show_main_window 显示；若前端 5s 仍未就绪（脚本异常等），
             // 强制显示，避免用户面对一个永不出现的窗口。
@@ -229,6 +246,9 @@ fn main() {
         // 系统通知（后台刷新抓到新文章时用；文案与开关见 notify.rs / commands.rs）
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
+            commands::startup_status,
+            commands::export_legacy_opml,
+            commands::exit_app,
             commands::db_info,
             commands::sidebar_data,
             commands::list_feeds,

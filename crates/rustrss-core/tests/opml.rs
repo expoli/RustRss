@@ -194,3 +194,56 @@ fn rsshub_scheme_urls_export_as_scheme_and_reimport_as_duplicates() {
     assert_eq!(report.added_feed_ids.len(), 1);
     assert_eq!(fresh.list_feeds().unwrap()[0].url, "rsshub://test/1");
 }
+
+// ------------------------------------------------- 只读导出（老库拒绝后的安全出口）
+
+#[path = "fixtures/legacy_chain.rs"]
+mod legacy_chain;
+
+/// 旧链陈结库不能被打开成 `Store`（T1 起的行为），但**订阅必须救得出来**：
+/// 导出走只读通路，且整个过程不给那个库写一个字节。
+#[test]
+fn export_read_only_rescues_feeds_from_a_legacy_database() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("legacy.sqlite");
+    {
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        for migration in legacy_chain::LEGACY_CHAIN {
+            conn.execute_batch(migration).unwrap();
+        }
+        conn.pragma_update(None, "user_version", 13).unwrap();
+        conn.execute_batch(
+            "INSERT INTO folders(id,name,position) VALUES(1,'旧分组',0);
+             INSERT INTO feeds(id,url,title,site_url,folder_id,created_at)
+               VALUES(1,'https://old.example/feed.xml','旧源 A','https://old.example',1,1),
+                     (2,'rsshub://old/route','旧源 B',NULL,NULL,1);",
+        )
+        .unwrap();
+    }
+
+    // 老库必须先被拒绝（否则这条导出通路就没有存在意义）
+    assert!(
+        Store::open(&path).is_err(),
+        "旧链库应被 Store::open 拒绝；本测试验证的是拒绝之后的救援通路"
+    );
+
+    let before = std::fs::read(&path).unwrap();
+    let xml = opml::export_read_only(&path).expect("只读导出应成功");
+    assert!(xml.contains("旧源 A") && xml.contains("https://old.example/feed.xml"), "{xml}");
+    assert!(xml.contains("旧源 B") && xml.contains("rsshub://old/route"), "rsshub 身份应原样导出: {xml}");
+    assert!(xml.contains("旧分组"), "分组应保留: {xml}");
+    // 导出不得写这个库：字节不变、也不留 WAL 边车
+    assert_eq!(std::fs::read(&path).unwrap(), before, "只读导出不得写库");
+    assert!(!dir.path().join("legacy.sqlite-wal").exists(), "不得建 WAL 边车");
+    assert!(!dir.path().join("legacy.sqlite-shm").exists(), "不得建 shm 边车");
+
+    // 与正常通路导出的结构一致（同一份 render）
+    let fresh_dir = tempfile::tempdir().unwrap();
+    let fresh = Store::open(fresh_dir.path().join("fresh.sqlite")).unwrap();
+    let f1 = fresh.add_feed("https://old.example/feed.xml", Some("旧源 A")).unwrap();
+    fresh.update_feed_meta(f1, None, Some("https://old.example"), None, None).unwrap();
+    fresh.add_feed("rsshub://old/route", Some("旧源 B")).unwrap();
+    let folder = fresh.add_folder("旧分组").unwrap();
+    fresh.assign_folder(f1, Some(folder)).unwrap();
+    assert_eq!(opml::export_read_only(&path).unwrap(), opml::export(&fresh).unwrap());
+}

@@ -4124,6 +4124,33 @@ async function boot() {
     }
   });
   applyStaticI18n();
+  // 库不兼容（旧开发库 / 外来 sqlite 文件）：只渲染拒绝面板与「导出 OPML」安全出口，
+  // 不加载其余界面。文案由 applyStaticI18n() 按 data-i18n 填好（zh-CN / en 双语齐备）。
+  try {
+    const startup = await window.__TAURI__.core.invoke('startup_status');
+    if (startup && startup.blocked) {
+      const overlay = el('startup-refusal');
+      overlay.hidden = false;
+      el('startup-refusal-path').textContent = startup.db_path || '';
+      el('startup-refusal-export').addEventListener('click', async () => {
+        try {
+          const saved = await window.__TAURI__.core.invoke('export_legacy_opml');
+          if (saved) {
+            el('startup-refusal-status').textContent = t('startup.refused.exported') + saved;
+          }
+        } catch (error) {
+          el('startup-refusal-status').textContent = String(error);
+        }
+      });
+      el('startup-refusal-quit').addEventListener('click', () => {
+        window.__TAURI__.core.invoke('exit_app');
+      });
+      log('startup refusal overlay shown');
+      return;
+    }
+  } catch (error) {
+    log('startup_status unavailable: ' + error);
+  }
   const i18n = i18nSelfTest();
   log(
     i18n.ok

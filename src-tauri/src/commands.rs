@@ -58,6 +58,61 @@ fn log_slow(name: &str, started: std::time::Instant) {
     }
 }
 
+/// 启动状态：库不兼容时前端只渲染拒绝面板（双语文案走 `ui/i18n.js` 的 key）。
+#[derive(serde::Serialize)]
+pub struct StartupStatus {
+    pub blocked: bool,
+    pub reason: Option<String>,
+    pub db_path: String,
+}
+
+#[tauri::command]
+pub fn startup_status(state: State<'_, AppState>) -> R<StartupStatus> {
+    Ok(StartupStatus {
+        blocked: state.refusal().is_some(),
+        reason: state.refusal().map(str::to_string),
+        db_path: state.db_path.display().to_string(),
+    })
+}
+
+/// 库不兼容时的**安全出口**：把旧库里的订阅只读导出为 OPML。
+///
+/// 走 `opml::export_read_only`（只读连接、不写旧库一个字节），写文件走用户选的路径。
+/// 用户取消选路径时返回 `Ok(None)`，不算错误。
+#[tauri::command]
+pub async fn export_legacy_opml(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> R<Option<String>> {
+    let db_path = state.db_path.clone();
+    let picked = app
+        .dialog()
+        .file()
+        .set_file_name("RustRss-subscriptions.opml")
+        .blocking_save_file();
+    let Some(target) = picked else {
+        return Ok(None);
+    };
+    let target = target
+        .into_path()
+        .map_err(|e| err(format!("保存路径不可用: {e}")))?;
+    let xml = rustrss_core::opml::export_read_only(&db_path).map_err(err)?;
+    std::fs::write(&target, xml)
+        .map_err(|e| err(format!("写入 {} 失败: {e}", target.display())))?;
+    log::info!(
+        "[rustrss] 已从旧库只读导出 OPML: {} -> {}",
+        db_path.display(),
+        target.display()
+    );
+    Ok(Some(target.display().to_string()))
+}
+
+/// 退出应用（拒绝面板上的「退出」按钮）。
+#[tauri::command]
+pub fn exit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 #[tauri::command]
 pub async fn db_info(state: State<'_, AppState>) -> R<DbInfo> {
     let t = std::time::Instant::now();

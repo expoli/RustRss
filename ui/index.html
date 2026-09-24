@@ -37,6 +37,24 @@
 </head>
 
 <body>
+  <!-- 库不兼容（旧开发库/外来文件）时的降级界面：只读导出 OPML + 退出。
+       文案走 ui/i18n.js 的双语 key（data-i18n），与其余界面同一套 i18n 机制。 -->
+  <div id="startup-refusal" class="startup-refusal" hidden>
+    <div class="startup-refusal__card">
+      <h2 data-i18n="startup.refused.title"></h2>
+      <p data-i18n="startup.refused.body"></p>
+      <p class="startup-refusal__meta">
+        <span data-i18n="startup.refused.dbPath"></span>
+        <code id="startup-refusal-path"></code>
+      </p>
+      <p class="startup-refusal__hint" data-i18n="startup.refused.exportHint"></p>
+      <p id="startup-refusal-status" class="startup-refusal__status" role="status"></p>
+      <div class="startup-refusal__actions">
+        <button id="startup-refusal-export" class="primary" data-i18n="startup.refused.export"></button>
+        <button id="startup-refusal-quit" data-i18n="startup.refused.quit"></button>
+      </div>
+    </div>
+  </div>
   <header class="toolbar" data-tauri-drag-region>
     <span class="brand" data-tauri-drag-region data-i18n="app.name">RustRss</span>
     <input id="search" type="search" data-i18n-placeholder="search.placeholder" autocomplete="off" />

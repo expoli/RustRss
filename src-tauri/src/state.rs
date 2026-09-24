@@ -17,10 +17,24 @@ use rustrss_core::{RefreshGate, Store};
 /// `RefreshFlight`，搬家后它们引用的仍是同一个类型。
 pub use rustrss_core::RefreshFlight;
 
+/// 库不兼容错误的前缀（`StoreError::SchemaRefused` 的 Display）。
+///
+/// 启动路径据此把「库不兼容」与其它启动失败分开：前者走降级界面（双语说明 + 导出 OPML），
+/// 后者仍然直接失败退出。
+pub const SCHEMA_REFUSED_PREFIX: &str = "数据库不兼容";
+
+/// 这条启动失败是否属于「库不兼容」
+pub fn is_schema_refusal(message: &str) -> bool {
+    message.starts_with(SCHEMA_REFUSED_PREFIX)
+}
+
 pub struct AppState {
     store: Mutex<Store>,
     pub fetcher: Fetcher,
     pub db_path: PathBuf,
+    /// 拒绝启动的原因（旧开发库 / 外来 sqlite 文件）：非空时界面只显示拒绝面板与
+    /// 「导出 OPML」安全出口，托盘与 MCP 不启动。**不保开发库**（见 `store::schema`）。
+    pub refusal: Option<String>,
     /// 应用内托管的 MCP HTTP 服务（用 Arc 以便跨任务共享）
     pub mcp: std::sync::Arc<crate::mcp_server::McpRuntime>,
     /// 托盘是否构建成功（决定「关闭到托盘」策略是否可用：
@@ -49,10 +63,36 @@ impl AppState {
             store: Mutex::new(store),
             fetcher,
             db_path,
+            refusal: None,
             mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
             tray_available: AtomicBool::new(false),
             refresh_gate: Arc::new(RefreshGate::new()),
         })
+    }
+
+    /// 库不兼容时的降级启动：**不碰用户的库**，用一个内存库把界面撑起来，
+    /// 只为让用户看到双语拒绝说明与「导出 OPML」安全出口。
+    ///
+    /// `db_path` 仍是**真实**库路径（导出 OPML 要用它）；界面侧看到 `refusal` 非空时
+    /// 必须只渲染拒绝面板，不得把内存库当成用户数据。
+    pub fn open_blocked(db_path: PathBuf, reason: String) -> Result<Self, String> {
+        let store = Store::open_in_memory().map_err(|e| format!("初始化临时库失败: {e}"))?;
+        let fetcher =
+            Fetcher::new(DEFAULT_USER_AGENT).map_err(|e| format!("初始化 HTTP 客户端失败: {e}"))?;
+        Ok(Self {
+            store: Mutex::new(store),
+            fetcher,
+            db_path,
+            refusal: Some(reason),
+            mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
+            tray_available: AtomicBool::new(false),
+            refresh_gate: Arc::new(RefreshGate::new()),
+        })
+    }
+
+    /// 拒绝启动的原因（`None` = 正常启动）
+    pub fn refusal(&self) -> Option<&str> {
+        self.refusal.as_deref()
     }
 
     pub fn configured_fetcher(&self) -> Result<Fetcher, String> {
@@ -82,6 +122,7 @@ impl AppState {
             store: Mutex::new(Store::open_in_memory().unwrap()),
             fetcher: Fetcher::new(DEFAULT_USER_AGENT).unwrap(),
             db_path: PathBuf::from(":memory:"),
+            refusal: None,
             mcp: std::sync::Arc::new(crate::mcp_server::McpRuntime::default()),
             tray_available: AtomicBool::new(false),
             refresh_gate: Arc::new(RefreshGate::new()),

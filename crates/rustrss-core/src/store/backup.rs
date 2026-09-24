@@ -178,7 +178,11 @@ pub fn export_backup(store: &Store, dest_dir: &Path) -> Result<PathBuf> {
     Ok(dest)
 }
 
-/// 校验用户选定的备份文件：能只读打开、`user_version` 落在 `(0, current_version]` 内。
+/// 校验用户选定的备份文件：能只读打开、且**是当前基线的库**。
+///
+/// 判据与 `Store::open` 同源：[`crate::store::schema::BASELINE_APPLICATION_ID`] 魔数 +
+/// `user_version == BASELINE_VERSION`。**不用版本号区间**——基线号是 1，旧链也有 v=1 的冻结库，
+/// 按区间判断会把老开发库当成可用备份，恢复后应用反而拒绝打开（自相矛盾）。
 ///
 /// 只读打开是刻意的：校验阶段绝不能动用户的库，也不该给候选备份文件写一个字节。
 pub fn validate_backup(path: &Path, current_version: i64) -> Result<()> {
@@ -190,24 +194,41 @@ pub fn validate_backup(path: &Path, current_version: i64) -> Result<()> {
     }
     let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
         .map_err(|e| StoreError::Invalid(format!("无法只读打开 {}: {e}", path.display())))?;
-    // open 是惰性的：文件不是 SQLite 库要到真读页时才报错，所以这里显式读一次
-    // user_version —— 它在库头（第 1 页）里，读它同时验了文件头与可读性。
+    // open 是惰性的：文件不是 SQLite 库要到真读页时才报错，所以这里显式读一次库头
+    // （user_version 与 application_id 都在第 1 页，读它同时验了文件头与可读性）。
     let version: i64 = conn
         .query_row("PRAGMA user_version", [], |r| r.get(0))
         .map_err(|e| {
             StoreError::Invalid(format!("{} 不是可读的 SQLite 数据库: {e}", path.display()))
         })?;
-    if version <= 0 {
-        // 0 字节文件会被 SQLite 当成「合法的空库」（user_version = 0），不拦的话
-        // 用户选错文件就会用一个空库覆盖现库。本应用的库跑过迁移，版本必 ≥ 1。
+    let application_id: i64 = conn
+        .query_row("PRAGMA application_id", [], |r| r.get(0))
+        .map_err(|e| StoreError::Invalid(format!("无法读取 {} 的应用标识: {e}", path.display())))?;
+
+    if application_id != crate::store::schema::BASELINE_APPLICATION_ID as i64 {
+        // 旧开发库（旧链任意版本，包括 v=1 的冻结库）与外来 sqlite 文件都落这里。
+        // 提示里要给出可执行的下一步：导出 OPML 后重建，而不是恢复。
         return Err(StoreError::Invalid(format!(
-            "{} 不是 RustRss 的备份：schema 版本为 {version}，像空库或别的应用的库",
+            "{} 不是当前版本的 RustRss 备份（缺少应用标识，user_version={version}）：\
+             这是旧版本开发库或其它程序的文件；请用「导出 OPML」搬走订阅后重建数据目录",
+            path.display()
+        )));
+    }
+    if version <= 0 {
+        // 0 字节文件会被 SQLite 当成「合法的空库」（user_version = 0）。
+        return Err(StoreError::Invalid(format!(
+            "{} 不是 RustRss 的备份：schema 版本为 {version}，像空库",
             path.display()
         )));
     }
     if version > current_version {
         return Err(StoreError::Invalid(format!(
             "备份的 schema 版本 {version} 高于当前程序支持的 {current_version}：请先升级 RustRss 再恢复",
+        )));
+    }
+    if version != current_version {
+        return Err(StoreError::Invalid(format!(
+            "备份的 schema 版本 {version} 与当前程序支持的 {current_version} 不一致：请用与备份同版本的程序恢复",
         )));
     }
     Ok(())
