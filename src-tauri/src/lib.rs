@@ -469,6 +469,9 @@ mod tests {
     /// 给 `mod tray;` 加回 `#[cfg(desktop)]`，`commands.rs` / `scheduler.rs` 的共享
     /// 调用点会在 Android 上变成未解析路径（评审 B1）——桌面服务倒是挡住了，移动端
     /// 却编译不过。同样是文本守卫：本机没有 Android 工具链，编译不到那条路径。
+    ///
+    /// 找「上一行代码」时跳过注释：属性写在注释块**之上**同样是门（评审第二轮实测
+    /// 过这个绕过形式），只盯紧邻一行会把这种写法漏掉。
     #[test]
     fn tray_module_is_available_on_every_target() {
         const LIB_RS: &str = include_str!("lib.rs");
@@ -478,12 +481,12 @@ mod tests {
         let prev = LIB_RS[..at]
             .lines()
             .rev()
-            .find(|line| !line.trim().is_empty())
-            .unwrap_or("")
-            .trim();
+            .map(str::trim)
+            .find(|line| !line.is_empty() && !line.starts_with("//"))
+            .unwrap_or("");
         assert!(
             !prev.starts_with("#["),
-            "`mod tray;` 上一行是属性 {prev:?}：移动端会拿不到 crate::tray（E0433）"
+            "`mod tray;` 的上一行代码是属性 {prev:?}：移动端会拿不到 crate::tray（E0433）"
         );
     }
 
