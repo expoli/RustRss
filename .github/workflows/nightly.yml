@@ -1,5 +1,5 @@
-# 开发通道构建：master 上的产品变更 / 手动触发 → 安装包挂到滚动
-# pre-release 标签 `nightly` 下（旧资源先删后传，始终对应当前 master）。
+# 开发通道构建：仅手动触发 → 安装包挂到滚动 pre-release `nightly`。
+# 只允许从 master 触发，避免其它分支覆盖当前开发版。
 #
 # 平台范围：Linux(deb) + Windows(NSIS)。macOS 仅在 v* 正式发布时构建 dmg，
 # 避免每次开发构建都增加一个完整平台矩阵。
@@ -9,12 +9,6 @@
 name: nightly
 
 on:
-  push:
-    branches: [master]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '.chorus/**'
   workflow_dispatch:
 
 concurrency:
@@ -27,7 +21,7 @@ permissions:
 jobs:
   build:
     # workflow_dispatch 可选择任意 ref；只有 master 可以更新滚动 nightly。
-    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     strategy:
       fail-fast: false
       matrix:

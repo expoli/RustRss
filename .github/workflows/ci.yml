@@ -1,5 +1,4 @@
-# 基础 CI：每次 push(master) / PR 跑测试、编译与 clippy。
-# 只做廉价的正确性检查；重构建产物在 nightly.yml / release.yml。
+# 基础 CI：每次 push(master) / PR 跑测试与 clippy；不生成安装包。
 # 当前不检查 fmt；Clippy 对所有目标启用 warnings-as-errors。
 name: ci
 
@@ -34,9 +33,6 @@ jobs:
         env:
           CARGO_PROFILE_TEST_DEBUG: 0
         run: cargo test --workspace --locked
-
-      - name: Build (debug)
-        run: cargo build --workspace --locked
 
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings

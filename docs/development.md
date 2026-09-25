@@ -32,7 +32,7 @@ cargo run -p rustrss-desktop
 
 ## 发布
 
-版本号需要同时更新根 `Cargo.toml` 和 `src-tauri/tauri.conf.json`，并让它们与 `vX.Y.Z` 标签一致；发布工作流会在构建前检查三者。推送匹配版本的 `v*` 标签会打包 Linux `.deb`、Windows NSIS 和 macOS `.dmg`。手动触发 release 工作流只构建检查产物，不创建 Release。nightly 只允许 `master` 更新滚动版，纯文档改动会跳过安装包构建。工作流定义和平台依赖见 [`.github/workflows/release.yml`](../.github/workflows/release.yml)；macOS 包目前未签名。
+push 到 master 或提交 PR 会运行测试与 Clippy，不生成安装包。nightly 安装包需从 `master` 手动触发；正式版则由匹配版本的 `v*` tag 触发。版本号需要同时更新根 `Cargo.toml` 和 `src-tauri/tauri.conf.json`，并与 tag 一致；发布工作流会在构建前检查三者。正式版包含 Linux `.deb`、Windows NSIS 和 macOS `.dmg`。手动触发 release 工作流只构建检查产物，不创建 Release。工作流定义和平台依赖见 [`.github/workflows/release.yml`](../.github/workflows/release.yml)；macOS 包目前未签名。
 
 ## 项目资料
 
