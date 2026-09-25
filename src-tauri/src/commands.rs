@@ -361,7 +361,15 @@ const FONT_READ_LINE_RANGE: (f64, f64) = (1.3, 2.2);
 #[cfg(test)]
 const MAX_FONT_FAMILY_LEN: usize = 100;
 /// 字体枚举超时：fc-list 正常在几十毫秒返回，装了上千字体的机器也就几百毫秒。
+#[cfg(desktop)]
 const FONT_LIST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+
+/// 移动端「需要桌面系统能力」的入口统一返回这句话。
+///
+/// 平台能力缺口要**显式**：Android 上没有 `xdg-open`/文件管理器/`fc-list`，
+/// 静默失败（或 spawn 一个不存在的程序）比一句看得懂的拒绝更糟。
+#[cfg(mobile)]
+const MOBILE_UNSUPPORTED: &str = "该功能需要桌面系统能力，移动端暂不支持";
 
 #[derive(Serialize)]
 pub struct UiSettings {
@@ -1354,17 +1362,29 @@ pub(crate) fn set_font_config_core(
 ///
 /// 性能红线 #12：子进程是重活，整段交给 tokio 的进程 API + 超时，命令的 async 主线上
 /// 没有任何阻塞等待，也不碰数据库锁；拿不到就是空表，不让「打开设置页」失败。
+///
+/// Android 没有 `fc-list`（沙箱里也没有意义）：不启动子进程，直接返回明确的
+/// 不支持错误（界面侧本来就允许失败——只显示「跟随主题」，见 ui/app.js）。
 #[tauri::command]
 pub async fn list_font_families() -> R<Vec<String>> {
-    Ok(probe_font_families().await)
+    #[cfg(desktop)]
+    {
+        Ok(probe_font_families().await)
+    }
+    #[cfg(mobile)]
+    {
+        Err(MOBILE_UNSUPPORTED.into())
+    }
 }
 
 /// `list_font_families` 的本体（不依赖 Tauri，单测直接跑真机路径）。
 ///
-/// Linux 走 `fc-list --format=%{family[0]}`；其余平台空表（见上）。
-/// 平台分支用运行时 `cfg!` 而不是 `#[cfg]` 属性：两个分支在**所有**平台都参与编译，
+/// Linux 走 `fc-list --format=%{family[0]}`；其余桌面平台空表（见上）。
+/// 平台分支用运行时 `cfg!` 而不是 `#[cfg]` 属性：两个分支在**所有桌面平台**都参与编译，
 /// Windows / macOS 的 nightly 构建因此也能类型检查到 fc-list 这条路——`#[cfg]` 掉的
 /// 分支在本机（只跑 Linux）永远不编译，写坏了要到打包时才发现。
+/// （Android 侧整个函数都不编译：见 `list_font_families` 的移动端分支。）
+#[cfg(desktop)]
 pub(crate) async fn probe_font_families() -> Vec<String> {
     if cfg!(target_os = "linux") {
         // `--format` 的长写法比 `-f` 在旧版 fontconfig 上更稳；`%{family[0]}` = 首个族名
@@ -1377,6 +1397,7 @@ pub(crate) async fn probe_font_families() -> Vec<String> {
 /// 解析 fc-list 输出（每行一个族名）→ 排序去重的族名表。
 ///
 /// 纯函数：真机装了哪些字体不可控，解析/去重/排序用固定输入单测。
+#[cfg(desktop)]
 fn parse_font_families(raw: &str) -> Vec<String> {
     let mut families: Vec<String> = raw
         .lines()
@@ -1395,6 +1416,7 @@ fn parse_font_families(raw: &str) -> Vec<String> {
 ///
 /// `kill_on_drop`：超时后子进程真被杀掉，不留一个还在跑 fc-list 的孤儿。
 /// （`std::process` 没有带超时的 `wait`，自己轮询 `try_wait` 在子进程写满管道时会死锁。）
+#[cfg(desktop)]
 async fn run_font_command(bin: &str, args: &[&str], timeout: std::time::Duration) -> Vec<String> {
     let run = tokio::process::Command::new(bin)
         .args(args)
@@ -3083,6 +3105,7 @@ fn validate_external_url(url: &str) -> Result<String, String> {
 /// `rundll32 url.dll,FileProtocolHandler`：URL 若经 cmd.exe 解释，其中的 `&` 会被
 /// 当命令分隔符、`%VAR%` 会被展开 —— 恶意 feed 的链接 + 用户单击即命令执行
 /// （审计 P0-1），因此这条路径上不允许再出现任何 shell 启动器。
+#[cfg(desktop)]
 fn external_open_command(url: &str) -> std::process::Command {
     #[cfg(target_os = "windows")]
     let (program, prefix): (&str, &[&str]) = ("rundll32", &["url.dll,FileProtocolHandler"]);
@@ -3100,10 +3123,27 @@ fn external_open_command(url: &str) -> std::process::Command {
 ///
 /// 只允许 http/https —— 文章里的链接是不可信输入，绝不能把 file:// 之类
 /// 交给系统打开器；也因此这里只用 `Command::new(程序).arg(地址)`，不经过 shell。
+///
+/// Android 不启动子进程：Tauri 的移动端外链得走平台 intent（后续 UI 任务再接），
+/// 这里先明确报「暂不支持」。
 #[tauri::command]
 pub fn open_external(url: String) -> R<()> {
     let url = validate_external_url(&url)?;
-    let mut command = external_open_command(&url);
+    #[cfg(desktop)]
+    {
+        spawn_external_opener(&url)
+    }
+    #[cfg(mobile)]
+    {
+        let _ = url;
+        Err(MOBILE_UNSUPPORTED.into())
+    }
+}
+
+/// 桌面端：交给系统默认打开器（平台分支见 [`external_open_command`]）。
+#[cfg(desktop)]
+fn spawn_external_opener(url: &str) -> R<()> {
+    let mut command = external_open_command(url);
     let program = command.get_program().to_string_lossy().into_owned();
     command
         .spawn()
@@ -3112,6 +3152,7 @@ pub fn open_external(url: String) -> R<()> {
 }
 
 /// 平台文件管理器启动器：Linux `xdg-open` / macOS `open` / Windows `explorer`。
+#[cfg(desktop)]
 fn dir_opener_program() -> &'static str {
     #[cfg(target_os = "windows")]
     {
@@ -3132,6 +3173,7 @@ fn dir_opener_program() -> &'static str {
 /// 与 [`external_open_command`] 同一份硬化口径：程序名固定，目录路径作为**独立进程
 /// 参数**传入，任何平台都不经 shell 解析（Windows 上若走 `cmd /C start`，路径里的
 /// `&` 之类会被当命令分隔符）。
+#[cfg(desktop)]
 fn open_dir_command(dir: &std::path::Path) -> std::process::Command {
     let mut command = std::process::Command::new(dir_opener_program());
     command.arg(dir);
@@ -3145,6 +3187,7 @@ fn open_dir_command(dir: &std::path::Path) -> std::process::Command {
 /// 看不见——那属于系统启动器的错误输出，不由本函数负责（见 README 日志一节）。
 ///
 /// 文案把**原因排在目录路径前面**：状态栏按 72ch 截断，原因是被截掉后最影响判断的那半。
+#[cfg(desktop)]
 fn spawn_dir_opener(mut command: std::process::Command, dir: &std::path::Path) -> R<()> {
     let program = command.get_program().to_string_lossy().into_owned();
     command
@@ -3158,8 +3201,24 @@ fn spawn_dir_opener(mut command: std::process::Command, dir: &std::path::Path) -
 /// 目录不存在时先建：一次日志都没落地时（例如首次启动后立刻点按钮）给文件管理器一个
 /// 不存在的路径，用户只会看到系统那句含糊的报错。失败返回可读错误字符串，由界面放进
 /// 状态栏——不弹窗、不 panic、不影响其它功能。
+///
+/// Android 不启动外部程序：直接返回明确的不支持错误（日志文件仍然照常写，只是没有
+/// 「在文件管理器里打开」这个动作）。
 #[tauri::command]
 pub fn open_logs_dir() -> R<()> {
+    #[cfg(desktop)]
+    {
+        open_logs_dir_on_desktop()
+    }
+    #[cfg(mobile)]
+    {
+        Err(MOBILE_UNSUPPORTED.into())
+    }
+}
+
+/// 桌面端：建目录 + 交给系统文件管理器。
+#[cfg(desktop)]
+fn open_logs_dir_on_desktop() -> R<()> {
     let dir = rustrss_core::paths::logs_dir();
     std::fs::create_dir_all(&dir)
         .map_err(|e| format!("创建日志目录 {} 失败: {e}", dir.display()))?;

@@ -1,23 +1,37 @@
 //! 系统托盘：图标 / 菜单 / 未读角标。
 //!
-//! **构建失败**的降级在调用方（`main.rs` 的 setup）统一处理——这里不吞错；
+//! **桌面端专属**：`tauri::tray` 只在 `all(desktop, feature = "tray-icon")` 下存在，
+//! 所以构建入口 [`setup_tray`] 与配套辅助函数只在桌面编译；移动端保留
+//! [`update_badge`] 的空实现，让调用方（commands / scheduler）不必各自加 cfg。
+//!
+//! **构建失败**的降级在调用方（`lib.rs` 的 setup）统一处理——这里不吞错；
 //! **运行时**的角标更新则是静默 no-op：托盘不可用是预期内场景（Wayland 无
 //! StatusNotifierItem、缺 libappindicator、headless 冒烟），不该往 stderr 刷错误。
 
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Runtime};
+#[cfg(desktop)]
+use tauri::Manager;
 
+#[cfg(desktop)]
 use crate::commands;
+#[cfg(desktop)]
 use crate::state::AppState;
 
 /// 托盘 id：与 `setup_tray` 里的 `TrayIconBuilder::with_id` 必须一致，
 /// `update_badge` 靠它取回托盘（取不到即托盘不可用）。
+#[cfg(desktop)]
 const TRAY_ID: &str = "main-tray";
 
 /// 角标圆点颜色（RGBA）。
+#[cfg(desktop)]
 const BADGE_COLOR: [u8; 4] = [229, 72, 77, 255];
 
 /// 构建系统托盘：图标 + 「显示/隐藏窗口」「退出」菜单。任一步失败都原样返回
 /// 错误，由调用方统一降级，不在托盘内部自行吞错。
+///
+/// 只在桌面端编译（`tauri::tray` 在移动端不存在）：Android 调用方在
+/// `lib.rs` 的 setup 里被 cfg 挡住，不会走到这里。
+#[cfg(desktop)]
 pub fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     use tauri::menu::{MenuBuilder, MenuItemBuilder};
     use tauri::tray::TrayIconBuilder;
@@ -60,6 +74,7 @@ pub fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
 }
 
 /// 启动时读一次未读总数；读不到按 0（角标只是装饰，不阻塞托盘构建）。
+#[cfg(desktop)]
 fn initial_unread(app: &tauri::App) -> i64 {
     app.try_state::<AppState>()
         .map(|s| commands::unread_total(&s).unwrap_or(0))
@@ -70,7 +85,17 @@ fn initial_unread(app: &tauri::App) -> i64 {
 ///
 /// 托盘不可用（取不到托盘 / 取不到图标）时静默 no-op——降级路径不产生错误日志。
 /// 对 runtime 泛型：测试用 mock app（无托盘）也能走这条路径验「不 panic」。
+/// Android 没有系统托盘：分派到空实现（调用方无需感知平台）。
 pub fn update_badge<R: Runtime>(app: &AppHandle<R>, unread: i64) {
+    #[cfg(desktop)]
+    update_badge_desktop(app, unread);
+    #[cfg(mobile)]
+    let _ = (app, unread);
+}
+
+/// 桌面端的角标实现（`app.tray_by_id` 需要 `tauri::tray`，移动端不存在）。
+#[cfg(desktop)]
+fn update_badge_desktop<R: Runtime>(app: &AppHandle<R>, unread: i64) {
     // 同值短路：每次文章导航都会 sync_badge，COUNT 后的重绘+tooltip 才是可感开销；
     // 未读数没变就完全不碰托盘（swap 保证并发下不重不漏：并发同值时必有一方执行）。
     // -1 初值强制首绘；托盘从无到有的运行期重建不存在（启动时 setup_tray 内首绘）。
@@ -99,6 +124,7 @@ pub fn update_badge<R: Runtime>(app: &AppHandle<R>, unread: i64) {
 }
 
 /// 托盘 tooltip：**保留 RustRss 品牌名**，后面缀未读数（0 时只有品牌名）。
+#[cfg(desktop)]
 fn badge_tooltip(locale: &str, unread: i64) -> String {
     if unread <= 0 {
         return "RustRss".to_string();
@@ -111,6 +137,7 @@ fn badge_tooltip(locale: &str, unread: i64) -> String {
 }
 
 /// 界面语言设置（原样 `auto` / `zh-CN` / `en`）；读不到按空串（= 中文文案）。
+#[cfg(desktop)]
 fn locale<R: Runtime>(app: &AppHandle<R>) -> String {
     app.try_state::<AppState>()
         .map(|s| commands::ui_locale_setting(&s).unwrap_or_default())
@@ -121,6 +148,7 @@ fn locale<R: Runtime>(app: &AppHandle<R>) -> String {
 /// 数字走 tooltip）。
 ///
 /// 尺寸不合法（宽高为 0 / 字节数与宽高不符）时返回 `None`，调用方保持原图标。
+#[cfg(desktop)]
 fn paint_badge(rgba: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
     let expected = width as usize * height as usize * 4;
     if width == 0 || height == 0 || rgba.len() != expected {

@@ -4,6 +4,14 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+# 共享应用入口在 `src/lib.rs`（`run()`）：桌面启动器 `src/main.rs` 只是调用它，
+# Android 侧由 `#[tauri::mobile_entry_point]` 加载同一份代码。
+# `_lib` 后缀是为了让 lib 名与 bin 名不同（同名会在 Windows 上冲突，
+# 见 https://github.com/rust-lang/cargo/issues/8519）。
+[lib]
+name = "rustrss_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -12,15 +20,12 @@ rustrss-core = { path = "../crates/rustrss-core" }
 rustrss-mcp = { path = "../crates/rustrss-mcp" }
 # 日志门面：src-tauri 直接用宏（落点与 writer 在 rustrss-core::logging）。
 log = { version = "0.4", features = ["std"] }
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2" }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
 # 系统通知（桌面端底层是 notify-rust：Linux 走 org.freedesktop.Notifications，
 # 不额外依赖系统库）。锁 2.x：3.x 还在 alpha，且与 Tauri 2 不兼容。
 tauri-plugin-notification = "2.4"
-# 单实例锁（只在默认库下注册）。平台实现：Linux 是 D-Bus 名（`{identifier}.SingleInstance`）、
-# macOS 是 unix socket、Windows 是命名 mutex + WM_COPYDATA。
-tauri-plugin-single-instance = "2"
 # API key 存操作系统凭据库：Linux 走 Secret Service（KWallet/GNOME Keyring），
 # macOS 走 Keychain，Windows 走凭据管理器。
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
@@ -33,6 +38,16 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "proce
 [features]
 default = []
 snapshot-probe = []
+
+# 桌面端专属依赖（Android/iOS 不注册这两项服务）：
+# - `tray-icon`：`tauri::tray` 只在 `all(desktop, feature = "tray-icon")` 下存在，
+#   移动端没有托盘后端，所以特性也只挂在桌面目标上；
+# - 单实例锁：`tauri-plugin-single-instance` 在移动端本身就是空 crate
+#   （源码首行 `#![cfg(not(any(target_os = "android", target_os = "ios")))]`），
+#   这里连依赖都不再编译。
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 webkit2gtk = { version = "=2.0.2" }
