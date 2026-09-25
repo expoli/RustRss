@@ -4,8 +4,8 @@
 # 平台范围：Linux(deb) + Windows(NSIS)。macOS 仅在 v* 正式发布时构建 dmg，
 # 避免每次开发构建都增加一个完整平台矩阵。
 #
-# 版本号说明：tauri.conf.json / workspace 版本当前为 0.0.0，deb/exe 资源名
-# 稳定，nightly 每次整删整传不会残留陈旧资产；发正式版前记得先 bump 版本再打 tag。
+# 发布说明：nightly 每次整删整传，避免版本变化后残留旧资产；正式发布时
+# workspace / tauri.conf.json 版本必须与 vX.Y.Z tag 一致，release 工作流会校验。
 name: nightly
 
 on:

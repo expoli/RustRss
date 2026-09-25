@@ -4063,7 +4063,7 @@ dependencies = [
 
 [[package]]
 name = "rustrss-core"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "dom_smoothie",
@@ -4084,7 +4084,7 @@ dependencies = [
 
 [[package]]
 name = "rustrss-desktop"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "cairo-rs",
  "gtk",
@@ -4107,7 +4107,7 @@ dependencies = [
 
 [[package]]
 name = "rustrss-mcp"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
