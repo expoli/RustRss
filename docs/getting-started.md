@@ -4,7 +4,7 @@ RustRss 是 Rust + Tauri 2 桌面应用。你可以下载 [GitHub Releases](http
 
 ## 从源码运行
 
-先安装 Rust stable。Linux 还需要 GTK、WebKitGTK 和托盘依赖；Debian / Ubuntu 可运行：
+先安装 Rust stable。Linux 最低支持 Ubuntu 24.04；Linux 还需要 GTK、WebKitGTK 和托盘依赖。Ubuntu 24.04 可运行：
 
 ```bash
 sudo apt install -y libdbus-1-dev libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev

@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04   # 22.04 基线：deb 在 22.04/24.04 均可安装（glibc 兼容）
+          - os: ubuntu-24.04  # Linux 最低支持版本
             bundles: deb
             artifact: linux-deb
             glob: target/release/bundle/deb/*.deb
@@ -36,7 +36,7 @@ jobs:
             glob: target/release/bundle/nsis/*.exe
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -52,7 +52,7 @@ jobs:
       - name: Build bundles
         run: npx --yes @tauri-apps/cli@2.11.5 build --bundles ${{ matrix.bundles }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.glob }}
@@ -60,13 +60,13 @@ jobs:
 
   release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: '*'
           merge-multiple: true
@@ -85,7 +85,7 @@ jobs:
             --title "Nightly (dev build)" \
             --notes "自动构建 · commit \`${{ github.sha }}\` · $(date -u '+%Y-%m-%d %H:%M UTC')
 
-          包内容：Linux deb（ubuntu-22.04 基线）+ Windows NSIS 安装器。
+          包内容：Linux deb（Ubuntu 24.04 基线）+ Windows NSIS 安装器。
           首次安装：Linux 需要 libwebkit2gtk-4.1 / libgtk-3 / libayatana-appindicator3（deb 的 depends 已声明，apt 会自动带）。
 
           本产物按 AGPL-3.0-or-later 授权；需要闭源分发的商业授权见仓库 LICENSE-COMMERCIAL.md。

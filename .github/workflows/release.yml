@@ -20,9 +20,9 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -56,7 +56,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             bundles: deb
             artifact: linux-deb
             glob: target/release/bundle/deb/*.deb
@@ -70,7 +70,7 @@ jobs:
             glob: target/release/bundle/dmg/*.dmg
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -101,7 +101,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.glob }}
@@ -109,14 +109,14 @@ jobs:
 
   release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: '*'
           merge-multiple: true
@@ -131,7 +131,7 @@ jobs:
           gh release create "$TAG" dist/* \
             --title "RustRss $TAG" \
             --generate-notes \
-            --notes "三平台安装包：Linux deb（ubuntu-22.04 基线）、Windows NSIS、macOS dmg（arm64，未签名，首次打开右键→打开）。产物体积见同一次 run 的 build job summary，并回填 spec 的安装包体积条目。
+            --notes "三平台安装包：Linux deb（Ubuntu 24.04 基线）、Windows NSIS、macOS dmg（arm64，未签名，首次打开右键→打开）。产物体积见同一次 run 的 build job summary，并回填 spec 的安装包体积条目。
 
           本产物按 AGPL-3.0-or-later 授权；需要闭源分发的商业授权见仓库 LICENSE-COMMERCIAL.md。
           对应源码：https://github.com/expoli/RustRss/tree/$TAG" \
