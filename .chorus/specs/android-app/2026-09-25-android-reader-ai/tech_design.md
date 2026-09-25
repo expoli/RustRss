@@ -1,7 +1,7 @@
 ---
 title: Tech Design: RustRss Android Reader and AI
 proposalUuid: 5bd2ee27-6a49-492d-9923-aae49eadabe6
-documentUuid:
+documentUuid: 32b6ed0f-6cad-4a3f-9822-8d4a6ecbcd61
 ---
 
 # Tech Design: RustRss Android Reader and AI

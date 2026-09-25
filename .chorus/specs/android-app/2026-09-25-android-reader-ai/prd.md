@@ -1,7 +1,7 @@
 ---
 title: PRD: RustRss Android Reader and AI
 proposalUuid: 5bd2ee27-6a49-492d-9923-aae49eadabe6
-documentUuid:
+documentUuid: ade5e0ed-4829-439e-8458-477617b7e6d3
 ---
 
 # PRD: RustRss Android Reader and AI
