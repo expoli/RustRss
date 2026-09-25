@@ -310,6 +310,9 @@ const DICTS = {
     'settings.about.license': '许可证',
     'settings.about.privacy': '隐私',
     'settings.about.privacyHint': '除订阅源与你配置的 AI 端点外，不产生其他外呼；无账号、无遥测',
+    'settings.about.source': '源码',
+    'settings.about.sourceHint': '完整源码、问题反馈与发布说明',
+    'settings.about.openSource': '打开仓库',
     'settings.logLevel': '日志级别',
     'settings.logLevelHint':
       'debug 记录更详细的过程（如刷新批次、逐源失败、抓取耗时），排查问题时打开；重启后保持，日志文件最多保留 20 个',
@@ -859,6 +862,9 @@ const DICTS = {
     'settings.about.license': 'License',
     'settings.about.privacy': 'Privacy',
     'settings.about.privacyHint': 'No traffic beyond your feeds and the AI endpoint you configure; no account, no telemetry',
+    'settings.about.source': 'Source',
+    'settings.about.sourceHint': 'Full source, issue tracker and release notes',
+    'settings.about.openSource': 'Open repository',
     'settings.logLevel': 'Log level',
     'settings.logLevelHint':
       'debug records more detail (refresh batches, per-feed failures, fetch timings) — turn it on when troubleshooting; it survives restart, and at most 20 log files are kept',

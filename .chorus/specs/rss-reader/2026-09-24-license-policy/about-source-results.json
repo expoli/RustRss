@@ -1,0 +1,38 @@
+{
+  "checks": [
+    "启动自检报告 i18n 两份字典 key 一致",
+    "关于面板出现源码行与按钮，en 文案与可见性符合预期",
+    "切到 zh-CN 后同一行的文案随之更新（双语齐备）",
+    "点击按钮：打开器被以该 URL 调用（点击前无调用，因果明确）"
+  ],
+  "expected_url": "https://github.com/expoli/RustRss",
+  "opener_stub": "xdg-open (PATH 前置)",
+  "limits": [
+    "面板截图走 `import -window root`，按 manual-verification-checklist §30 不作数，仅人工查看",
+    "机械结论 = DOM 断言 + 打开器桩收到的参数",
+    "未验：真实桌面会话下浏览器真的打开、macOS / Windows 的打开器"
+  ],
+  "i18n_selftest": "i18n selftest ok (keys=519)",
+  "startup_locale": "en",
+  "en": {
+    "label": "Source",
+    "hint": "Full source, issue tracker and release notes",
+    "button": "Open repository",
+    "visible": true,
+    "inPane": true
+  },
+  "zh-CN": {
+    "label": "源码",
+    "hint": "完整源码、问题反馈与发布说明",
+    "button": "打开仓库",
+    "visible": true,
+    "inPane": true
+  },
+  "screenshot": "about-source-panel.png",
+  "handler_type": "function",
+  "invoke_writable": false,
+  "opener_arguments": [
+    "https://github.com/expoli/RustRss"
+  ],
+  "passed": true
+}

@@ -88,4 +88,7 @@ jobs:
             --notes "自动构建 · commit \`${{ github.sha }}\` · $(date -u '+%Y-%m-%d %H:%M UTC')
 
           包内容：Linux deb（ubuntu-22.04 基线）+ Windows NSIS 安装器。
-          首次安装：Linux 需要 libwebkit2gtk-4.1 / libgtk-3 / libayatana-appindicator3（deb 的 depends 已声明，apt 会自动带）。"
+          首次安装：Linux 需要 libwebkit2gtk-4.1 / libgtk-3 / libayatana-appindicator3（deb 的 depends 已声明，apt 会自动带）。
+
+          本产物按 AGPL-3.0-or-later 授权；需要闭源分发的商业授权见仓库 LICENSE-COMMERCIAL.md。
+          对应源码：https://github.com/expoli/RustRss/tree/${{ github.sha }}"

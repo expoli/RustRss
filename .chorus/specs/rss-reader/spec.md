@@ -20,6 +20,7 @@ created: 2026-09-20
 ### 项目文档
 
 - [x] README 作为面向访客的项目首页，介绍定位、主要能力、安装/试用入口与文档导航；详细使用说明按主题组织在 `docs/`，实现和验收证据留在 `.chorus/specs/`
+- [x] 许可与合规：默认 AGPL-3.0-or-later，闭源商用需另行取得商业授权（`LICENSE-COMMERCIAL.md`），配套商标政策与贡献授权条款；设置 → 关于 提供「源码」入口，构建产物说明写明对应源码位置（验收 `scripts/verify-about-source.py` exit=0）
 
 ### 平台与交付
 

@@ -95,5 +95,8 @@ jobs:
           gh release create "$TAG" dist/* \
             --title "RustRss $TAG" \
             --generate-notes \
-            --notes "三平台安装包：Linux deb（ubuntu-22.04 基线）、Windows NSIS、macOS dmg（arm64，未签名，首次打开右键→打开）。产物体积见同一次 run 的 build job summary，并回填 spec 的安装包体积条目。" \
+            --notes "三平台安装包：Linux deb（ubuntu-22.04 基线）、Windows NSIS、macOS dmg（arm64，未签名，首次打开右键→打开）。产物体积见同一次 run 的 build job summary，并回填 spec 的安装包体积条目。
+
+          本产物按 AGPL-3.0-or-later 授权；需要闭源分发的商业授权见仓库 LICENSE-COMMERCIAL.md。
+          对应源码：https://github.com/expoli/RustRss/tree/$TAG" \
           || gh release upload "$TAG" dist/* --clobber

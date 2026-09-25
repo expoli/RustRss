@@ -6,6 +6,10 @@
 
 const el = (id) => document.getElementById(id);
 
+/// 关于面板的「源码」入口指向的仓库。AGPL 的对应源码口径要求界面能让使用者
+/// 拿到源码（含网上对外提供服务的修改版），把它做成面板里的一键入口。
+const SOURCE_URL = 'https://github.com/expoli/RustRss';
+
 // 最早的诊断：先确认脚本真的被执行了。
 // 这样「脚本没跑」与「跑了一半报错」能被日志区分开——否则只能靠猜。
 try {
@@ -4158,6 +4162,10 @@ async function boot() {
   } catch (error) {
     log('startup_status unavailable: ' + error);
   }
+  // 关于面板的源码入口：复用既有 open_external（含 http/https 白名单、不经 shell）。
+  el('about-open-source').onclick = () =>
+    invoke('open_external', { url: SOURCE_URL }).catch((e) => setStatus(e.message, true));
+
   const i18n = i18nSelfTest();
   log(
     i18n.ok
