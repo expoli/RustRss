@@ -127,7 +127,7 @@ pub fn is_summary_entry(
         .map(str::trim)
         .filter(|t| !t.is_empty())
         .map(str::to_owned)
-        .or_else(|| content_html.map(|h| html_to_text(h)));
+        .or_else(|| content_html.map(html_to_text));
     let Some(text) = text else {
         // 连正文都没有：当作值得抓
         return true;

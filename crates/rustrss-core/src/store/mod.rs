@@ -519,12 +519,11 @@ impl Store {
         if name.is_empty() {
             return Err(StoreError::Invalid("文件夹名不能为空".into()));
         }
-        if let Some(id) = self
+        if let Ok(id) = self
             .conn
             .query_row("SELECT id FROM folders WHERE name = ?1", params![name], |r| {
                 r.get::<_, i64>(0)
             })
-            .ok()
         {
             return Ok(id);
         }
@@ -738,12 +737,11 @@ impl Store {
         // 于是换镜像零迁移；去重键即「同一条路由的两种写法」的共同形态。
         let url = crate::rsshub::canonical_scheme_url(url);
         let url = url.trim();
-        if let Some(id) = self
+        if let Ok(id) = self
             .conn
             .query_row("SELECT id FROM feeds WHERE url = ?1", params![url], |r| {
                 r.get::<_, i64>(0)
             })
-            .ok()
         {
             return Ok(id);
         }

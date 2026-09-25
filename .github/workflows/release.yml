@@ -2,7 +2,7 @@
 #
 # 用法：先在根 Cargo.toml 的 [workspace.package] 与 src-tauri/tauri.conf.json
 # bump 版本 → 提交 → `git tag vX.Y.Z && git push origin vX.Y.Z`。
-# macOS 只在这里构建（私有仓库 macOS 计费 10 倍，不放 nightly）；
+# macOS 只在这里构建，避免每次开发构建都增加一个完整平台矩阵；
 # dmg 未签名，首次打开需右键→打开 绕过 Gatekeeper。
 name: release
 
@@ -14,8 +14,44 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Validate release tag version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Manual dispatch builds artifacts only; no release tag is required."
+            exit 0
+          fi
+
+          tag_version="${RELEASE_TAG#v}"
+          cargo_version="$(cargo metadata --locked --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "rustrss-desktop") | .version')"
+          tauri_version="$(jq -r '.version' src-tauri/tauri.conf.json)"
+
+          if [ "$tag_version" = "0.0.0" ]; then
+            echo "Refusing to publish the placeholder version 0.0.0." >&2
+            exit 1
+          fi
+
+          if [ "$tag_version" != "$cargo_version" ] || [ "$tag_version" != "$tauri_version" ]; then
+            echo "Tag $RELEASE_TAG must match workspace version $cargo_version and Tauri version $tauri_version." >&2
+            exit 1
+          fi
+
   build:
+    needs: validate
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +83,7 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
 
       - name: Build bundles
-        run: npx --yes @tauri-apps/cli@^2 build --bundles ${{ matrix.bundles }}
+        run: npx --yes @tauri-apps/cli@2.11.5 build --bundles ${{ matrix.bundles }}
 
       # 产物体积记录：写进 job summary（发布后把三平台数字回填 spec 的「安装包体积实测值」条目）。
       # 用 `wc -c` 而不是 `ls -l`/`du -b`：三个 runner 上都可用，且不吃 ls 的输出格式差异。
@@ -74,7 +110,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
