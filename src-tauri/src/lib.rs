@@ -16,7 +16,10 @@ mod preview_capture;
 mod scheduler;
 mod state;
 mod theme_preview;
-#[cfg(desktop)]
+// 托盘模块**整体不加 cfg**：移动端保留 `update_badge` 的 no-op 实现，让
+// `commands.rs` / `scheduler.rs` 的共享调用点一处 cfg 都不用加。若在这里加
+// `#[cfg(desktop)]`，那些调用点会在 Android 目标上变成未解析路径（E0433）——
+// 表面上「桌面服务被挡住」，实际是移动端直接编译不过。
 mod tray;
 
 use std::io::IsTerminal;
@@ -430,11 +433,13 @@ mod tests {
     }
 
     /// AC3 的机械守卫：Android 启动路径上不得注册桌面专属服务，所以每个注册点
-    /// 都必须包在 `#[cfg(desktop)]` 里。
+    /// 都必须**紧跟在** `#[cfg(desktop)]` 门后。
     ///
-    /// 它只钉住「cfg 门」本身（真正跑一次 Android 启动需要 Android SDK/NDK，本机没有）：
-    /// 去掉任何一个 `#[cfg(desktop)]`，托盘那份会因 `tauri::tray` 在移动端不存在而编译红，
-    /// 单实例与 MCP 则可能静默漏进 Android —— 这个断言就是后两者的报警器。
+    /// 「紧」是必须的：门与注册点之间若出现别的 `#[cfg(..)]` 或闭合花括号，说明最近
+    /// 那扇门其实属于**上一个**注册点——删掉本处的门，断言会拿上一扇门满足，测试照样
+    /// 绿（评审 B2 实测出过这个漏洞）。本测试**变异可验**：删掉任一扇门立刻变红。
+    /// 真正跑一次 Android 启动需要 Android SDK/NDK（本机没有），能机械钉住的只有这些
+    /// cfg 门本身——门对了不等于服务在 Android 上一定没起来，那需要真机/模拟器验证。
     #[test]
     fn desktop_only_services_are_gated_by_desktop_cfg() {
         const LIB_RS: &str = include_str!("lib.rs");
@@ -445,24 +450,58 @@ mod tests {
             ("set_tray_available(true)", "托盘可用标志"),
             ("tauri::WindowEvent::CloseRequested", "关闭到托盘策略"),
         ] {
-            let gate = nearest_cfg_gate(LIB_RS, needle)
+            let (gate, between) = enclosing_gate(LIB_RS, needle)
                 .unwrap_or_else(|| panic!("{what}（{needle}）前找不到 #[cfg(..)] 门"));
             assert_eq!(
                 gate, "#[cfg(desktop)]",
                 "{what}（{needle}）必须在 #[cfg(desktop)] 里，实际最近的门是 {gate}"
             );
+            assert!(
+                !between.contains("#[cfg(") && !between.contains('}'),
+                "{what}（{needle}）与门 {gate} 之间还有别的 cfg/闭合花括号（{:?}）：\
+                 那扇门可能已经管不到它，删掉也不会被发现",
+                between.trim()
+            );
         }
     }
 
-    /// 找 `needle` 前最近一行 `#[cfg(..)]`（就是包住它的那扇平台门）。
-    /// 纯文本判定：只防「把门删了」，不试图理解 Rust 语法。
-    fn nearest_cfg_gate(src: &str, needle: &str) -> Option<String> {
-        let at = src.find(needle)?;
-        src[..at]
+    /// 托盘模块必须对**所有**目标可见（`update_badge` 在移动端是 no-op）：
+    /// 给 `mod tray;` 加回 `#[cfg(desktop)]`，`commands.rs` / `scheduler.rs` 的共享
+    /// 调用点会在 Android 上变成未解析路径（评审 B1）——桌面服务倒是挡住了，移动端
+    /// 却编译不过。同样是文本守卫：本机没有 Android 工具链，编译不到那条路径。
+    #[test]
+    fn tray_module_is_available_on_every_target() {
+        const LIB_RS: &str = include_str!("lib.rs");
+        let at = LIB_RS
+            .find("\nmod tray;")
+            .expect("lib.rs 里找不到 `mod tray;` 声明（改名/挪位置后本守卫要同步）");
+        let prev = LIB_RS[..at]
             .lines()
             .rev()
-            .find(|line| line.trim_start().starts_with("#[cfg("))
-            .map(|line| line.trim().to_string())
+            .find(|line| !line.trim().is_empty())
+            .unwrap_or("")
+            .trim();
+        assert!(
+            !prev.starts_with("#["),
+            "`mod tray;` 上一行是属性 {prev:?}：移动端会拿不到 crate::tray（E0433）"
+        );
+    }
+
+    /// 找 `needle` 前最近一行 `#[cfg(..)]`，并返回「那扇门之后、`needle` 之前」的文本
+    /// ——调用方据此判断这扇门是否真的还管得到 `needle`。
+    /// 纯文本判定：只防「把门删了/加了」，不试图理解 Rust 语法。
+    fn enclosing_gate<'a>(src: &'a str, needle: &str) -> Option<(&'a str, &'a str)> {
+        let at = src.find(needle)?;
+        let mut offset = 0usize;
+        let mut gate: Option<(&str, usize)> = None;
+        for line in src[..at].split_inclusive('\n') {
+            if line.trim_start().starts_with("#[cfg(") {
+                gate = Some((line.trim(), offset + line.len()));
+            }
+            offset += line.len();
+        }
+        let (text, end) = gate?;
+        Some((text, &src[end..at]))
     }
 
     /// 迁移收口的机械断言：这 6 个文件里不得再有 `println!/eprintln!`。
