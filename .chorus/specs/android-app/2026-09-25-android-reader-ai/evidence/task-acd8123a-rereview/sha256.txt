@@ -1,0 +1,2 @@
+d11c1399bde48ffa2b91785b167c860d0fdf93b34db9149a6aa7ad06f57c1855  .chorus/specs/android-app/2026-09-25-android-reader-ai/evidence/task-acd8123a-rereview/android-launch.png
+705357524dc7f9ff0ae6ad9a64f9308769704be9d64644606d65521d782ad659  src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk

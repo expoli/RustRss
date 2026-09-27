@@ -1,0 +1,22 @@
+2026-09-27T12:42:25.856+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /data/user/0/tech.expoli.rustrss/rustrss/logs/rustrss-20260927-124225.log
+2026-09-27T12:42:25.880+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /data/user/0/tech.expoli.rustrss/rustrss/rustrss.sqlite
+2026-09-27T12:42:25.882+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: INFO（设置 log.level=""）
+2026-09-27T12:42:26.311+08:00 INFO  ui: [ui] inline script ran
+2026-09-27T12:42:26.462+08:00 INFO  ui: [ui] app.js start
+2026-09-27T12:42:26.511+08:00 INFO  ui: [ui] i18n selftest ok (keys=519)
+2026-09-27T12:42:26.518+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-09-27T12:42:26.520+08:00 INFO  ui: [ui] menu render selftest ok (items=5)
+2026-09-27T12:42:26.521+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-09-27T12:42:26.524+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-09-27T12:42:27.064+08:00 INFO  ui: [ui] renderSidebar feeds=0 3.7ms
+2026-09-27T12:42:27.088+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=0 loaded=0 total=0 totalKind=unread header= exhausted=true head=
+2026-09-27T12:42:27.091+08:00 INFO  ui: [ui] loaded feeds=0 entries=0 unread=0 starred=0 markReadOnNavigate=true refreshInterval=30 refreshOnStart=true notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-09-27T12:42:27.111+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=light bgPanel=#ffffff minContrast=3.07 ratios=3.91/3.58/3.16/3.07/5.21/5.18/4.12/4.83)
+2026-09-27T12:42:27.111+08:00 INFO  ui: [ui] tags:rows=0 collapsed=0 rects=-
+2026-09-27T12:42:35.900+08:00 INFO  rustrss_desktop_lib::scheduler: [rustrss] 自动刷新完成: fetched=0 not_modified=0 inserted=0 updated=0 failures=0
+2026-09-27T12:42:35.909+08:00 INFO  ui: [ui] refresh:start
+2026-09-27T12:42:35.912+08:00 INFO  ui: [ui] refresh:done
+2026-09-27T12:42:35.928+08:00 INFO  ui: [ui] renderSidebar feeds=0 0.2ms
+2026-09-27T12:42:35.930+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=0 loaded=0 total=0 totalKind=unread header= exhausted=true head=
+2026-09-27T12:42:35.931+08:00 INFO  ui: [ui] loaded feeds=0 entries=0 unread=0 starred=0 markReadOnNavigate=true refreshInterval=30 refreshOnStart=true notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none silent（正文未重渲染）
+2026-09-27T12:42:35.935+08:00 INFO  ui: [ui] refresh:done 静默完成 selected=null→null 正文=327→327字 scrollTop=0→0

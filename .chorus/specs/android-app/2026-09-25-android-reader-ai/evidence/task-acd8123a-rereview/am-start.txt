@@ -1,0 +1,7 @@
+Starting: Intent { cmp=tech.expoli.rustrss/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: tech.expoli.rustrss/.MainActivity
+TotalTime: 1799
+WaitTime: 1821
+Complete
