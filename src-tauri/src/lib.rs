@@ -42,6 +42,8 @@ fn clip_read(app: tauri::AppHandle) -> Result<String, String> {
 ///
 /// 迁移前这里打的是 token 前 8 位前缀；日志文件是要用户贴出来排障的，凭据片段同样
 /// 算凭据，所以 token 只用来回答「是否已设鉴权」这一个布尔问题。
+/// 移动端不启动 MCP（桌面专属服务），唯一调用点被 cfg(desktop) 挡住，故允许 dead_code。
+#[cfg_attr(mobile, allow(dead_code))]
 fn mcp_startup_line(addr: &str, token: &str) -> String {
     format!(
         "[rustrss] MCP HTTP 服务: http://{addr}/mcp（仅回环，{}）",
@@ -51,6 +53,20 @@ fn mcp_startup_line(addr: &str, token: &str) -> String {
             "需 token 鉴权"
         }
     )
+}
+
+/// 移动端数据根接管：把 `rustrss_core::paths` 的数据根指向应用沙盒。
+///
+/// 必须在 setup 最先执行——先于 `init_logging()`（建日志目录）与 `AppState::open()`
+/// （开库）。日志起步于 `info`，这里拿不到 logger，解析失败直接 panic 现场可见。
+#[cfg(mobile)]
+fn init_mobile_data_root(app: &tauri::App) {
+    use tauri::Manager;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .expect("无法解析 Android 应用沙盒数据目录");
+    rustrss_core::paths::set_data_root(dir).expect("数据根只能设置一次");
 }
 
 /// 启动最早期接入日志：先建本次日志文件（默认 `info`）、装 panic hook，再开库。
@@ -173,6 +189,13 @@ pub fn run() {
     // Tauri 2 里 setup 先于配置窗口创建，状态 manage 先于前端首个 invoke。
     builder
         .setup(|app| {
+            // 移动端最先接管数据根（先于 init_logging / AppState::open）：Android 应用
+            // 进程没有 HOME/XDG_DATA_HOME，默认推导会落在不可写的 CWD（`/`）上，
+            // 开库/建日志目录必然失败。用 Tauri 运行时解析出的沙盒目录做数据根，
+            // core 的目录拼装规则（rustrss/、logs/、库文件名）原样复用。
+            #[cfg(mobile)]
+            init_mobile_data_root(app);
+
             // 日志最早接入：早于开库（开库失败正是最需要现场的时刻）。降级不阻断启动。
             let _log_file = init_logging();
 
@@ -253,17 +276,22 @@ pub fn run() {
             // 兜底：窗口以隐藏方式创建，正常由前端在主题/数据就绪后调
             // show_main_window 显示；若前端 5s 仍未就绪（脚本异常等），
             // 强制显示，避免用户面对一个永不出现的窗口。
-            let handle = app.handle().clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(5));
-                use tauri::Manager;
-                if let Some(win) = handle.get_webview_window("main") {
-                    if !win.is_visible().unwrap_or(true) {
-                        log::warn!("[rustrss] 前端 5s 未就绪，强制显示主窗口");
-                        let _ = win.show();
+            // 桌面专属：移动端窗口随 Activity 创建即可见，且 `is_visible` 在
+            // Android 上被忽略（恒报不可见），留着只会每启必打一次误导性 warn。
+            #[cfg(desktop)]
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    use tauri::Manager;
+                    if let Some(win) = handle.get_webview_window("main") {
+                        if !win.is_visible().unwrap_or(true) {
+                            log::warn!("[rustrss] 前端 5s 未就绪，强制显示主窗口");
+                            let _ = win.show();
+                        }
                     }
-                }
-            });
+                });
+            }
             Ok(())
         })
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -438,7 +466,7 @@ mod tests {
     /// 「紧」是必须的：门与注册点之间若出现别的 `#[cfg(..)]` 或闭合花括号，说明最近
     /// 那扇门其实属于**上一个**注册点——删掉本处的门，断言会拿上一扇门满足，测试照样
     /// 绿（评审 B2 实测出过这个漏洞）。本测试**变异可验**：删掉任一扇门立刻变红。
-    /// 真正跑一次 Android 启动需要 Android SDK/NDK（本机没有），能机械钉住的只有这些
+    /// 真正跑一次 Android 启动需要 Android SDK/NDK 与模拟器（普通 `cargo test` 环境不保证有），能机械钉住的只有这些
     /// cfg 门本身——门对了不等于服务在 Android 上一定没起来，那需要真机/模拟器验证。
     #[test]
     fn desktop_only_services_are_gated_by_desktop_cfg() {
@@ -468,7 +496,8 @@ mod tests {
     /// 托盘模块必须对**所有**目标可见（`update_badge` 在移动端是 no-op）：
     /// 给 `mod tray;` 加回 `#[cfg(desktop)]`，`commands.rs` / `scheduler.rs` 的共享
     /// 调用点会在 Android 上变成未解析路径（评审 B1）——桌面服务倒是挡住了，移动端
-    /// 却编译不过。同样是文本守卫：本机没有 Android 工具链，编译不到那条路径。
+    /// 却编译不过。同样是文本守卫：桌面宿主的 `cargo test` 编译不到那条路径
+    /// （Android 目标编译检查需另跑，见 Android 构建任务）。
     ///
     /// 找「上一行代码」时跳过注释：属性写在注释块**之上**同样是门（评审第二轮实测
     /// 过这个绕过形式），只盯紧邻一行会把这种写法漏掉。

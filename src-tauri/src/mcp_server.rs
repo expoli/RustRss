@@ -27,9 +27,13 @@ pub const K_ENABLED: &str = "mcp.enabled";
 // 供 commands 层使用，实现只有一份
 pub use rustrss_mcp::config::{
     client_snippet, dangerous_enabled_from_store, is_loopback_url, port_from_store,
-    token_from_store, write_enabled_from_store, write_token_from_store, DEFAULT_PORT,
-    K_DANGEROUS_ENABLED, K_PORT, K_WRITE_ENABLED,
+    token_from_store, write_enabled_from_store, write_token_from_store, K_DANGEROUS_ENABLED,
+    K_PORT, K_WRITE_ENABLED,
 };
+// 默认端口只有桌面 MCP 启动路径消费；移动端不注册 MCP，单独门住免得 Android
+// 目标上报 unused import。
+#[cfg(desktop)]
+pub use rustrss_mcp::config::DEFAULT_PORT;
 
 pub struct McpRuntime {
     handle: Mutex<Option<HttpHandle>>,

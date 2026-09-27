@@ -948,26 +948,45 @@ pub fn exit_app(app: tauri::AppHandle) {
 }
 
 /// 最小化 / 最大化切换 / 关闭（自绘标题栏三键）。
+///
+/// 窗口三键是桌面窗口管理的动作：移动端没有 minimize/maximize（Android 的
+/// 前后台归系统生命周期管），显式报不支持，桌面路径原样保留。
 #[tauri::command]
 pub fn window_minimize(app: tauri::AppHandle) -> R<()> {
-    use tauri::Manager;
-    if let Some(win) = app.get_webview_window("main") {
-        win.minimize().map_err(err)?;
+    #[cfg(desktop)]
+    {
+        use tauri::Manager;
+        if let Some(win) = app.get_webview_window("main") {
+            win.minimize().map_err(err)?;
+        }
+        Ok(())
     }
-    Ok(())
+    #[cfg(mobile)]
+    {
+        let _ = app;
+        Err(MOBILE_UNSUPPORTED.into())
+    }
 }
 
 #[tauri::command]
 pub fn window_toggle_maximize(app: tauri::AppHandle) -> R<()> {
-    use tauri::Manager;
-    if let Some(win) = app.get_webview_window("main") {
-        if win.is_maximized().map_err(err)? {
-            win.unmaximize().map_err(err)?;
-        } else {
-            win.maximize().map_err(err)?;
+    #[cfg(desktop)]
+    {
+        use tauri::Manager;
+        if let Some(win) = app.get_webview_window("main") {
+            if win.is_maximized().map_err(err)? {
+                win.unmaximize().map_err(err)?;
+            } else {
+                win.maximize().map_err(err)?;
+            }
         }
+        Ok(())
     }
-    Ok(())
+    #[cfg(mobile)]
+    {
+        let _ = app;
+        Err(MOBILE_UNSUPPORTED.into())
+    }
 }
 
 /// 关闭按钮：按设置走退出或隐藏到托盘。**每次都实时读库**，设置改完立即生效。
@@ -2995,8 +3014,29 @@ pub async fn import_opml(
 /// 备份数据库：选目录 → 在线快照导出（rusqlite backup API，导出期间库可继续读写）。
 ///
 /// 返回产物路径；用户取消返回 None。产物是独立干净的库文件，可直接拷到另一台机器使用。
+///
+/// 目录选择对话框是桌面专属：`tauri-plugin-dialog` 的 `pick_folder` 只有 desktop
+/// 实现（Android 上该 API 不存在，编译期就会暴露）。移动端显式报不支持；走系统
+/// 分享/SAF 导出是后续移动端任务的口子。
 #[tauri::command]
 pub async fn backup_db(app: tauri::AppHandle, state: State<'_, AppState>) -> R<Option<String>> {
+    #[cfg(desktop)]
+    {
+        backup_db_on_desktop(app, state).await
+    }
+    #[cfg(mobile)]
+    {
+        let _ = (app, state);
+        Err(MOBILE_UNSUPPORTED.into())
+    }
+}
+
+/// 桌面端：选目录 + 在线快照导出。
+#[cfg(desktop)]
+async fn backup_db_on_desktop(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> R<Option<String>> {
     let picked = app.dialog().file().blocking_pick_folder();
     let Some(folder) = picked else {
         return Ok(None);
@@ -3774,5 +3814,44 @@ mod credential_lock_tests {
         }).unwrap();
         assert!(!view.has_key);
         assert!(matches!(view.key_source, Some(crate::ai::KeySource::Unavailable { .. })));
+    }
+}
+
+/// 机械守卫：桌面专属动作的移动端回退必须是**显式拒绝**（`MOBILE_UNSUPPORTED`），
+/// 不得被改成静默 `Ok(())`（用户点了没反应，比一句看得懂的拒绝更糟——与
+/// `open_external`/`open_logs_dir` 同一口径）。
+///
+/// 与 lib.rs 的 cfg 门守卫同理：mobile 分支的运行行为在桌面宿主编译不到，
+/// 能机械钉住的是源码形态本身。变异可验：把任一移动端臂改成 `Ok(())`，本测试变红。
+#[cfg(test)]
+mod mobile_fallback_guard_tests {
+    fn command_slice(signature: &str, what: &str) -> String {
+        const COMMANDS_RS: &str = include_str!("commands.rs");
+        let start = COMMANDS_RS
+            .find(signature)
+            .unwrap_or_else(|| panic!("{what}（{signature}）找不到，改结构后本守卫要同步"));
+        let end = COMMANDS_RS[start..]
+            .find("\n#[tauri::command]")
+            .unwrap_or_else(|| panic!("{what} 后面找不到下一个 #[tauri::command] 边界"));
+        COMMANDS_RS[start..start + end].to_string()
+    }
+
+    #[test]
+    fn desktop_only_actions_refuse_explicitly_on_mobile() {
+        for (signature, what) in [
+            ("pub fn window_minimize", "最小化（标题栏三键）"),
+            ("pub fn window_toggle_maximize", "最大化切换（标题栏三键）"),
+            ("pub async fn backup_db", "备份数据库（目录选择）"),
+        ] {
+            let slice = command_slice(signature, what);
+            assert!(
+                slice.contains("#[cfg(mobile)]"),
+                "{what}（{signature}）丢了 #[cfg(mobile)] 移动端分支"
+            );
+            assert!(
+                slice.contains("MOBILE_UNSUPPORTED"),
+                "{what}（{signature}）的移动端分支必须是显式 MOBILE_UNSUPPORTED 拒绝"
+            );
+        }
     }
 }

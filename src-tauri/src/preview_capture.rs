@@ -11,9 +11,14 @@ pub const MAX_PNG_BYTES: usize = 2 * 1024 * 1024;
 pub enum CaptureError {
     #[cfg_attr(target_os = "linux", allow(dead_code))]
     Unavailable,
+    // 以下变体只在桌面路径构造；移动端保留同一份错误分类（与桌面共用 render 流程）。
+    #[cfg_attr(mobile, allow(dead_code))]
     WindowUnavailable,
+    #[cfg_attr(mobile, allow(dead_code))]
     WindowHidden,
+    #[cfg_attr(mobile, allow(dead_code))]
     ImageTooLarge,
+    #[cfg_attr(mobile, allow(dead_code))]
     CaptureFailed,
     RenderTimeout,
 }

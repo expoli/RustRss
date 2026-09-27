@@ -133,7 +133,8 @@ impl AppState {
         }
     }
 
-    /// 托盘构建成功后置位（setup 阶段调用一次）。
+    /// 托盘构建成功后置位（setup 阶段调用一次）。只有桌面建托盘，移动端无调用点。
+    #[cfg_attr(mobile, allow(dead_code))]
     pub fn set_tray_available(&self, ok: bool) {
         self.tray_available.store(ok, Ordering::Relaxed);
     }

@@ -4,10 +4,24 @@
 //! 可能不是同一个文件，表现为「agent 说没订阅但我明明订阅了」这类怪事。
 
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 pub const APP_DIR: &str = "rustrss";
 pub const DB_FILE: &str = "rustrss.sqlite";
 pub const LOG_DIR: &str = "logs";
+
+/// 数据根覆盖：移动端在启动最早期由入口注入应用沙盒目录。
+///
+/// Android 应用进程没有 `HOME`/`XDG_DATA_HOME`，[`platform_data_root()`] 会退化成
+/// CWD（`/`，不可写）相对路径，开库必然失败。入口用运行时能力解析出沙盒目录后
+/// 在**任何开库/建日志目录之前**调用 [`set_data_root()`]；core 的目录拼装规则
+/// （`APP_DIR`/`DB_FILE`/`LOG_DIR`）原样复用，仅根不同。桌面端永不设置，行为不变。
+static DATA_ROOT_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
+
+/// 设置数据根覆盖（只在首次调用时生效；重复设置返回 `Err(传入值)`）。
+pub fn set_data_root(dir: PathBuf) -> Result<(), PathBuf> {
+    DATA_ROOT_OVERRIDE.set(dir)
+}
 
 #[cfg(target_os = "windows")]
 fn platform_data_root() -> PathBuf {
@@ -23,6 +37,9 @@ fn platform_data_root() -> PathBuf {
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn platform_data_root() -> PathBuf {
+    if let Some(dir) = DATA_ROOT_OVERRIDE.get() {
+        return dir.clone();
+    }
     // 遵循 XDG：$XDG_DATA_HOME 优先，否则 ~/.local/share
     if let Ok(xdg) = std::env::var("XDG_DATA_HOME") {
         if !xdg.trim().is_empty() {
@@ -156,6 +173,23 @@ mod tests {
         // 空值/空白一律忽略
         assert_eq!(pick_db_path(Some("   ".into()), None), default_db_path());
         assert_eq!(pick_db_path(None, Some("  ".into())), default_db_path());
+    }
+
+    #[test]
+    fn data_root_override_takes_precedence() {
+        // 移动端入口启动最早期注入沙盒根；本测试同进程内它一经设置即全局生效，
+        // 其余测试都是「相对拼装」断言，跟随同一根仍然自洽。
+        let dir = std::env::temp_dir().join("rustrss-data-root-override");
+        set_data_root(dir.clone()).expect("override 在每个进程内只能设置一次");
+        assert_eq!(default_data_dir(), dir.join(APP_DIR));
+        assert_eq!(default_db_path(), dir.join(APP_DIR).join(DB_FILE));
+        assert_eq!(logs_dir(), dir.join(APP_DIR).join(LOG_DIR));
+        // 重复设置不生效（返回 Err），也不改掉已设的根
+        assert_eq!(
+            set_data_root(std::env::temp_dir().join("elsewhere")),
+            Err(std::env::temp_dir().join("elsewhere"))
+        );
+        assert_eq!(default_data_dir(), dir.join(APP_DIR));
     }
 
     #[test]

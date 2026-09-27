@@ -189,18 +189,22 @@ impl Backend for Desktop {
                         return Ok(w);
                     }
                     let url = "theme-fixture://localhost/index.html".parse().unwrap();
-                    let w = tauri::WebviewWindowBuilder::new(
+                    let builder = tauri::WebviewWindowBuilder::new(
                         &target,
                         LABEL,
                         tauri::WebviewUrl::External(url),
                     )
                     .title("RustRss — Theme preview")
                     .inner_size(1280., 900.)
-                    .resizable(false)
-                    .decorations(false)
-                    .on_navigation(|url| url.scheme() == "theme-fixture")
-                    .build()
-                    .map_err(|_| "window_unavailable")?;
+                    .resizable(false);
+                    // 去系统装饰（无边框）是桌面截图比对的前提，且 `decorations` 是
+                    // desktop-only API；移动端窗口本就无装饰可设，跳过即可。
+                    #[cfg(desktop)]
+                    let builder = builder.decorations(false);
+                    let w = builder
+                        .on_navigation(|url| url.scheme() == "theme-fixture")
+                        .build()
+                        .map_err(|_| "window_unavailable")?;
                     w.on_window_event(move |event| {
                         if matches!(event, tauri::WindowEvent::Destroyed) {
                             close_state.dismissed.store(true, Ordering::SeqCst);
