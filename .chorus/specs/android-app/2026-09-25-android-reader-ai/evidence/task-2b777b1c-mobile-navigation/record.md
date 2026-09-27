@@ -63,3 +63,36 @@ Screenshots 05 and 07 show the identical scroll offset (第二篇 at the same y;
 - Insets: the generated `MainActivity` calls `enableEdgeToEdge()`; system-bar +
   display-cutout insets are applied as padding on `android.R.id.content`
   (MainActivity.kt), keeping app content outside the status bar and gesture area.
+
+## Round 2 — native Share action (review B1 fix)
+
+Reviewer round 1 rejected "Copy link / Open in browser" as a substitute for the
+AC-5 Share action. Added a real **Share** button in the reader that opens the
+Android system share sheet:
+
+- `ui/app.js` — `shareEntry()`: on touch devices (same media query as the page
+  model) invokes the new `share_url` command; on desktop falls back to
+  writing the link to the clipboard.
+- `src-tauri/src/share.rs` — mobile plugin registration
+  (`register_android_plugin("tech.expoli.rustrss", "SharePlugin")`) plus the
+  `share_url` command that forwards `{title, url}` over JNI
+  (`PluginHandle::run_mobile_plugin("shareUrl", …)`).
+- `gen/android/.../SharePlugin.kt` — Kotlin plugin: `ACTION_SEND` chooser with
+  `EXTRA_TITLE`/`EXTRA_TEXT`.
+
+Evidence:
+
+| File | Shows |
+|---|---|
+| `16-reader-share-button.png` | Reader action row now contains **Share** (after Copy link) |
+| `17-share-sheet.png` | Tapping Share opens the system "Sharing link" sheet with the article title + URL (`http://example.invalid/3`) and share targets (Quick Share / Chrome / Drive / Messages) |
+| `app-log-round2.txt` | `share:native entry=3` — the native path ran (the round-1 fallback logged `share:clipboard-fallback`) |
+
+Repro:
+
+```bash
+adb shell input tap 300 650     # open an article → reader
+adb exec-out screencap -p       # 16: reader with Share button
+adb shell input tap 698 764     # tap Share
+adb exec-out screencap -p       # 17: system share sheet
+```

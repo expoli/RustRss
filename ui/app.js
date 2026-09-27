@@ -1182,7 +1182,7 @@ function renderReader(entry) {
       <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
       <button id="act-star">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</button>
       <button id="act-later" class="${entry.read_later ? 'later-active' : ''}">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</button>
-      ${entry.url ? `<button id="act-open">${t('reader.openInBrowser')}</button><button id="act-copy">${t('reader.copyLink')}</button>` : ''}
+      ${entry.url ? `<button id="act-open">${t('reader.openInBrowser')}</button><button id="act-copy">${t('reader.copyLink')}</button><button id="act-share">${t('reader.share')}</button>` : ''}
       ${entry.needs_fulltext ? `<button id="act-fulltext" title="${t('reader.fetchFulltextTitle')}">${t('reader.fetchFulltext')}</button>` : ''}
       <button id="act-summarize" title="${t('reader.summarizeTitle')}">${t('reader.summarize')}</button>
       <button id="act-translate" title="${t('reader.translateTitle')}">${t('reader.translate')}</button>
@@ -1233,6 +1233,7 @@ function renderReader(entry) {
       invoke('clip_write', { text: entry.url })
         .then(() => setStatus(t('reader.linkCopied')))
         .catch((e) => setStatus(t('reader.copyFailed', { error: e.message }), true));
+    el('act-share').onclick = () => shareEntry(entry);
   }
   // 只有摘要型条目的行会带这个按钮（needs_fulltext 由 Rust 侧判定，列表行恒为 false）
   if (entry.needs_fulltext) el('act-fulltext').onclick = () => fetchFulltext(entry.id);
@@ -1245,6 +1246,22 @@ function renderReader(entry) {
     };
   });
   reader.scrollTop = 0;
+}
+
+/// 分享文章：触屏设备经 Rust 命令（share.rs）→ Kotlin SharePlugin 拉起
+/// Android 系统分享面板；桌面（无 coarse 指针）回退为写剪贴板并在状态栏
+/// 明示结果。分享面板被用户取消不算错误，静默收场。
+function shareEntry(entry) {
+  var mobileTouch = window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches;
+  if (mobileTouch) {
+    log(`share:native entry=${entry.id}`);
+    return invoke('share_url', { title: entry.title || '', url: entry.url })
+      .catch((e) => setStatus(e.message, true));
+  }
+  log(`share:clipboard-fallback entry=${entry.id}`);
+  invoke('clip_write', { text: entry.url })
+    .then(() => setStatus(t('reader.linkCopied')))
+    .catch((e) => setStatus(t('reader.copyFailed', { error: e.message }), true));
 }
 
 /// 「获取全文」在飞标记：同一时刻只允许一个请求（按钮 disabled 只活到下一次重渲染，

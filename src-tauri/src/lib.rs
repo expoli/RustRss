@@ -14,6 +14,7 @@ mod mcp_server;
 mod notify;
 mod preview_capture;
 mod scheduler;
+mod share;
 mod state;
 mod theme_preview;
 // 托盘模块**整体不加 cfg**：移动端保留 `update_badge` 的 no-op 实现，让
@@ -178,6 +179,12 @@ pub fn run() {
                 }
             }));
         }
+    }
+
+    // 移动端分享：注册 Kotlin SharePlugin（Android 系统分享面板，见 share.rs）。
+    #[cfg(mobile)]
+    {
+        builder = builder.plugin(share::plugin());
     }
 
     builder = theme_preview::register(builder);
@@ -397,6 +404,7 @@ pub fn run() {
             commands::refresh_feed,
             commands::open_external,
             commands::open_logs_dir,
+            share::share_url,
             commands::ui_log,
             clip_write,
             clip_read,
@@ -622,9 +630,11 @@ mod tests {
         let missing: Vec<String> = invoked_commands(APP_JS)
             .into_iter()
             .filter(|name| {
-                // 命令可能在 `commands` 模块，也可能就写在 lib.rs 的入口模块（如 `clip_write`）
+                // 命令可能在 `commands` 模块、入口模块自身（如 `clip_write`），
+                // 或入口的 `share` 子模块（share_url，移动端分享）
                 !LIB_RS.contains(&format!("commands::{name},"))
                     && !LIB_RS.contains(&format!("            {name},"))
+                    && !LIB_RS.contains(&format!("share::{name},"))
             })
             .collect();
         assert!(
