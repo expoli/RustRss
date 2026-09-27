@@ -79,12 +79,31 @@ service or an Android MCP daemon.
 ### Mobile UI
 
 - Preserve the current desktop three-pane UI at desktop widths.
-- On phone widths, expose feed/navigation, article list, and article reader as
-  sequential screens or panels with a clear back path and touch targets.
-- Support Android system back and safe-area/status-bar insets. Keep article
-  actions available without keyboard shortcuts or right-click menus.
+- On phone widths, use four bottom-level destinations based on existing
+  RustRss capabilities: **Articles**, **Subscriptions**, **Saved**, and
+  **Settings**. Do not add a discovery destination without a corresponding
+  product capability.
+- Articles is the launch destination and defaults to unread entries. Keep
+  unread/all selection, search, refresh, and sorting within Articles rather
+  than promoting them to bottom navigation destinations.
+- Subscriptions owns the desktop sidebar's folders, feeds, and tags plus their
+  management actions. Selecting a folder, feed, or tag switches to Articles
+  with the selected filter applied.
+- Saved combines the existing starred and read-later views behind an in-page
+  segmented switch. Settings exposes the mobile-supported appearance, reading,
+  subscription/refresh, AI, data/OPML, and general controls; desktop-only MCP,
+  tray, and window-close controls are not shown.
+- Opening a list row pushes a full-screen article reader above the primary
+  destinations. The reader may hide the bottom navigation; Android Back returns
+  to the exact originating list state, including destination, filter, selection,
+  and scroll position. At a primary destination, Back does not cycle between
+  bottom navigation items.
+- Support safe-area/status-bar insets. Keep read/unread, star, read-later,
+  share, summary, and translation actions touch-accessible without keyboard
+  shortcuts or right-click menus.
 - Keep phone portrait as the primary acceptance layout; ensure tablet widths
-  do not clip controls but do not require a separate tablet navigation model.
+  do not clip controls but use the same page model rather than restoring the
+  desktop three-pane layout in the first release.
 
 ### AI
 

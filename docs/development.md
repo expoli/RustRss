@@ -24,6 +24,17 @@ cargo run -p rustrss-desktop
 
 修改 `ui/` 后要重新构建桌面应用，因为 Tauri 会把静态资源嵌入程序。UI 行为需要无头复现时，项目的流程和限制见 [`rustrss-headless-ui-verification`](../.agents/skills/rustrss-headless-ui-verification/SKILL.md)。
 
+### Android
+
+桌面与 Android 共用 `src-tauri/src/lib.rs` 的入口（`run()`）：单实例锁、系统托盘、应用内 MCP HTTP 服务是桌面专属（`cfg(desktop)`），Android 启动不注册它们；桌面专属命令（文件夹选择、窗口三键等）在移动端显式报「暂不支持」。移动端数据根由入口注入应用沙盒（`rustrss_core::paths::set_data_root`），库与日志仍走同一套目录规则。
+
+构建需要 Android SDK/NDK、JDK 17 与 `cargo tauri`：
+
+```bash
+cargo tauri android build --target x86_64 --debug
+# 产物：src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+```
+
 ## 数据库与诊断
 
 开发库和外来 SQLite 文件不会自动迁移为当前格式。应用标识或 schema 版本不匹配时会拒绝打开；不要用真实用户库做开发截图或试验。可通过 `RUSTSS_DB` 指定隔离数据库。

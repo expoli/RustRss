@@ -38,9 +38,18 @@ account or synchronize data with desktop installations.
   translate an article.
 - **FR-7 — Credential protection:** keep provider API keys in Android secure
   storage; never persist them as plaintext in SQLite, app preferences, or logs.
-- **FR-8 — Phone-first UI:** provide a single-column, touch-friendly reader for
-  portrait phones. Tablets should remain usable, but are not a first-release
-  acceptance target.
+- **FR-8 — Phone-first UI and navigation:** provide a page-based,
+  touch-friendly reader for portrait phones rather than compressing or
+  horizontally scrolling the desktop three-pane layout. Use four primary
+  destinations derived from existing RustRss capabilities: Articles,
+  Subscriptions, Saved, and Settings. Articles is the default home and defaults
+  to the current unread view, with unread/all filtering, search, refresh, and
+  sorting kept within that page. Subscriptions contains folders, feeds, and
+  tags; choosing one returns to Articles with that filter applied. Saved groups
+  starred and read-later entries behind an in-page switch. Opening an article
+  pushes a full-screen reader; Back returns to the originating list with its
+  filter and scroll position preserved. Tablets should remain usable, but are
+  not a first-release acceptance target.
 - **FR-9 — Local data:** store the SQLite database inside the Android
   application sandbox. OPML transfers subscriptions only; it does not transfer
   articles, reading state, or AI configuration.
@@ -90,6 +99,9 @@ account or synchronize data with desktop installations.
   the database or logs.
 - Verify refresh runs on startup/resume and user request, without asserting
   work while the app is suspended.
+- Verify the phone starts on the Articles list, the four primary destinations
+  are touch-accessible, subscription and saved filters lead to the expected
+  list, and article Back navigation restores the originating list state.
 - Verify desktop CI/build remains functional.
 
 ## References

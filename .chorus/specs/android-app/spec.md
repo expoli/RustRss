@@ -24,6 +24,10 @@ cross-device synchronization is part of this capability.
 - [ ] Keep the database in Android app storage and API keys in secure storage.
 - [ ] Prioritize portrait phone usability; tablets remain usable but are not a
   first-release acceptance target.
+- [ ] Use page-based phone navigation instead of a compressed three-pane
+  layout: Articles is the default home, Subscriptions and Saved are peer
+  destinations, Settings is a peer destination, and opening an article pushes
+  a full-screen reader that returns to the preserved list state.
 
 ## Non-goals
 - iOS support.
