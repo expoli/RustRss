@@ -62,7 +62,7 @@
     <button id="btn-refresh" data-i18n="toolbar.refresh" data-i18n-title="toolbar.refreshTitle"></button>
     <button id="btn-add" data-i18n="toolbar.addFeed" data-i18n-title="toolbar.addFeedTitle"></button>
     <button id="btn-settings" data-i18n="toolbar.settings" data-i18n-title="toolbar.settingsTitle"></button>
-    <div class="win-controls">
+    <div class="win-controls" data-desktop-only>
       <button id="btn-win-min" data-i18n-title="win.minimize" aria-label="minimize">─</button>
       <button id="btn-win-max" data-i18n-title="win.maximize" aria-label="maximize">□</button>
       <button id="btn-win-close" data-i18n-title="win.close" aria-label="close">✕</button>
@@ -99,6 +99,16 @@
 
     <section class="list">
       <div class="list-head">
+        <!-- 窄屏（手机/平板）页面式导航的分段切换：与侧栏 #views 行同一套 setView，
+             只是入口搬到列表页头。桌面宽度由 CSS 隐藏。 -->
+        <div id="m-seg-articles" class="m-seg" role="tablist" aria-label="Articles view">
+          <button type="button" data-mview="unread" data-i18n="list.unread"></button>
+          <button type="button" data-mview="all" data-i18n="list.all"></button>
+        </div>
+        <div id="m-seg-saved" class="m-seg" role="tablist" aria-label="Saved view">
+          <button type="button" data-mview="starred" data-i18n="list.starred"></button>
+          <button type="button" data-mview="later" data-i18n="list.later"></button>
+        </div>
         <span id="list-title"></span>
         <span class="list-head-right">
           <span id="list-count" class="dim"></span>
@@ -114,6 +124,9 @@
     </section>
 
     <section class="right-col">
+      <!-- 窄屏全屏阅读器的返回键：只在手机宽度且阅读页激活时显示；
+           点击走 history.back()（与 Android 系统返回同一机制），由 mobile.js 恢复原页面。 -->
+      <button id="m-reader-back" type="button" data-i18n="m.back" data-i18n-title="m.back"></button>
       <article id="reader" class="reader">
         <div class="reader-empty">
           <p data-i18n="reader.empty"></p>
@@ -128,6 +141,27 @@
     </section>
   </main>
 
+  <!-- 窄屏（手机/平板）页面式导航的底部主导航：四个一级目的地（文章/订阅/收藏/设置）。
+       桌面宽度整条隐藏；阅读页为沉浸式全屏，也隐藏（返回走 m-reader-back / 系统返回）。 -->
+  <nav id="m-nav" aria-label="Primary">
+    <button type="button" class="m-nav-btn" data-mpage-btn="articles">
+      <span class="m-ico" aria-hidden="true">▤</span><span class="m-label" data-i18n="m.nav.articles"></span>
+    </button>
+    <button type="button" class="m-nav-btn" data-mpage-btn="subscriptions">
+      <span class="m-ico" aria-hidden="true">☰</span><span class="m-label" data-i18n="m.nav.subscriptions"></span>
+    </button>
+    <button type="button" class="m-nav-btn" data-mpage-btn="saved">
+      <span class="m-ico" aria-hidden="true">★</span><span class="m-label" data-i18n="m.nav.saved"></span>
+    </button>
+    <button type="button" class="m-nav-btn" data-mpage-btn="settings">
+      <span class="m-ico" aria-hidden="true">⚙</span><span class="m-label" data-i18n="m.nav.settings"></span>
+    </button>
+  </nav>
+
+  <!-- 窄屏状态镜像：状态栏在桌面位于右栏底部，窄屏下列表页看不到它，
+       这里用一条固定镜像把 #status 文本带到可见处（mobile.js 同步）。 -->
+  <div id="m-status" class="m-status" role="status"><span id="m-status-text"></span></div>
+
   <dialog id="aa-dialog" aria-labelledby="aa-title"><div class="aa-heading"><h3 id="aa-title" data-i18n="theme.reading"></h3><button id="aa-close" data-i18n="settings.close"></button></div><div id="aa-editor"></div></dialog>
   <dialog id="keyboard-help" aria-labelledby="keyboard-help-title">
     <div class="aa-heading"><h3 id="keyboard-help-title" data-i18n="keyboard.title"></h3><button id="keyboard-help-close" data-i18n="settings.close" autofocus></button></div>
@@ -139,7 +173,7 @@
     <div class="settings-dialog">
       <nav class="settings-nav">
         <div class="settings-nav-title" data-i18n="settings.title"></div>
-        <ul id="settings-nav-list" role="tablist" aria-orientation="vertical"><li role="presentation"><button type="button" role="tab" id="tab-appearance" data-pane="appearance" aria-controls="pane-appearance" aria-selected="false" tabindex="-1" data-i18n="settings.nav.appearance"></button></li><li role="presentation"><button type="button" role="tab" id="tab-reading" data-pane="reading" aria-controls="pane-reading" aria-selected="false" tabindex="-1" data-i18n="settings.nav.reading"></button></li><li role="presentation"><button type="button" role="tab" id="tab-subscriptions" data-pane="subscriptions" aria-controls="pane-subscriptions" aria-selected="false" tabindex="-1" data-i18n="settings.nav.subscriptions"></button></li><li role="presentation"><button type="button" role="tab" id="tab-ai" data-pane="ai" aria-controls="pane-ai" aria-selected="false" tabindex="-1" data-i18n="settings.nav.ai"></button></li><li role="presentation"><button type="button" role="tab" id="tab-mcp" data-pane="mcp" aria-controls="pane-mcp" aria-selected="false" tabindex="-1" data-i18n="settings.nav.mcp"></button></li><li role="presentation"><button type="button" role="tab" id="tab-data" data-pane="data" aria-controls="pane-data" aria-selected="false" tabindex="-1" data-i18n="settings.nav.data"></button></li><li role="presentation"><button type="button" role="tab" id="tab-general" data-pane="general" aria-controls="pane-general" aria-selected="false" tabindex="-1" data-i18n="settings.nav.general"></button></li></ul>
+        <ul id="settings-nav-list" role="tablist" aria-orientation="vertical"><li role="presentation"><button type="button" role="tab" id="tab-appearance" data-pane="appearance" aria-controls="pane-appearance" aria-selected="false" tabindex="-1" data-i18n="settings.nav.appearance"></button></li><li role="presentation"><button type="button" role="tab" id="tab-reading" data-pane="reading" aria-controls="pane-reading" aria-selected="false" tabindex="-1" data-i18n="settings.nav.reading"></button></li><li role="presentation"><button type="button" role="tab" id="tab-subscriptions" data-pane="subscriptions" aria-controls="pane-subscriptions" aria-selected="false" tabindex="-1" data-i18n="settings.nav.subscriptions"></button></li><li role="presentation"><button type="button" role="tab" id="tab-ai" data-pane="ai" aria-controls="pane-ai" aria-selected="false" tabindex="-1" data-i18n="settings.nav.ai"></button></li><li role="presentation" data-desktop-only><button type="button" role="tab" id="tab-mcp" data-pane="mcp" aria-controls="pane-mcp" aria-selected="false" tabindex="-1" data-i18n="settings.nav.mcp"></button></li><li role="presentation"><button type="button" role="tab" id="tab-data" data-pane="data" aria-controls="pane-data" aria-selected="false" tabindex="-1" data-i18n="settings.nav.data"></button></li><li role="presentation"><button type="button" role="tab" id="tab-general" data-pane="general" aria-controls="pane-general" aria-selected="false" tabindex="-1" data-i18n="settings.nav.general"></button></li></ul>
         <div class="settings-nav-foot">
           <span id="settings-db-path" class="dim" title=""></span>
         </div>
@@ -408,7 +442,7 @@
                 <small data-i18n="settings.languageHint"></small>
               </div>
               <button type="button" id="set-language" class="setting-dropdown" aria-haspopup="menu"></button>
-            </div><div class="setting-item">
+            </div><div class="setting-item" data-desktop-only>
               <div class="text">
                 <b data-i18n="settings.closeAction"></b>
                 <small data-i18n="settings.closeActionHint"></small>
@@ -451,13 +485,13 @@
               </div>
               <button type="button" id="set-log-level" class="setting-dropdown" aria-haspopup="menu"></button>
             </div>
-            <div class="setting-item">
+            <div class="setting-item" data-desktop-only>
               <div class="text">
                 <b data-i18n="settings.logsDir"></b>
                 <small data-i18n="settings.openLogsDirHint"></small>
               </div>
             </div>
-            <div class="setting-actions">
+            <div class="setting-actions" data-desktop-only>
               <button id="act-open-logs" data-i18n="settings.openLogsDir"></button>
             </div>
           </div></div></section>
@@ -580,6 +614,7 @@
   <script src="theme-sync.js"></script>
   <script src="theme-settings.js"></script>
   <script src="app.js"></script>
+  <script src="mobile.js"></script>
 </body>
 
 </html>

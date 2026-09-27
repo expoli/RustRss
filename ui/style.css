@@ -1242,3 +1242,170 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   gap: 8px;
   margin-top: 4px;
 }
+
+/* ================= 窄屏触屏设备（手机/平板）页面式导航 =================
+   触屏且 ≤900px（CSS px）时用四个一级目的地（文章/订阅/收藏/设置）+ 全屏阅读器
+   替代三栏；**桌面任何宽度都不进本区块**（pointer: coarse 把桌面指针排除在外，
+   含 fractional 缩放导致 CSS 宽度缩水的情形），三栏 DOM 与几何保持原样。
+   页面可见性由 body[data-mpage] 驱动（mobile.js），阅读页是**覆盖层**：
+   列表页保持渲染不被 display:none，返回时过滤器/选中/滚动位置原样保留。 */
+
+#m-nav, #m-reader-back, .m-seg, #m-status { display: none; }
+
+@media (max-width: 900px) and (pointer: coarse) {
+  /* 桌面专属控件（窗口三键/MCP/托盘关闭行为/日志目录）不在移动端出现 */
+  [data-desktop-only] { display: none !important; }
+
+  /* ---- 主区：一次一个页面；底部为主导航与状态镜像保留空间 ---- */
+  :root { --m-nav-h: calc(54px + env(safe-area-inset-bottom, 0px)); }
+  main {
+    display: block;
+    position: relative;
+    min-height: 0;
+    margin-bottom: calc(var(--m-nav-h) + 26px);
+  }
+  .sidebar, .list, .right-col { height: 100%; border-right: none; }
+
+  /* 阅读页 = 覆盖整座 main 的全屏阅读器（列表保持在下面渲染着） */
+  body[data-mpage="reader"] .right-col {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: var(--bg);
+  }
+
+  /* ---- 页面可见性矩阵 ---- */
+  body:not([data-mpage="subscriptions"]) .sidebar { display: none; }
+  body[data-mpage="subscriptions"] .list,
+  body[data-mpage="subscriptions"] .right-col { display: none; }
+  body:not([data-mpage="articles"]):not([data-mpage="saved"]):not([data-mpage="reader"]) .list { display: none; }
+  body:not([data-mpage="articles"]):not([data-mpage="saved"]):not([data-mpage="reader"]) .right-col { display: none; }
+
+  /* ---- 工具栏按页面裁剪：搜索/刷新归文章页，添加归订阅页；
+          设置入口归底部导航，窗口三键桌面专属 ---- */
+  #btn-settings, #btn-refresh, #btn-add { display: none; }
+  #search { display: none; }
+  body[data-mpage="articles"] #search,
+  body[data-mpage="saved"] #search { display: block; flex: 1; width: auto; }
+  body[data-mpage="articles"] #btn-refresh,
+  body[data-mpage="saved"] #btn-refresh { display: inline-block; }
+  body[data-mpage="subscriptions"] #btn-add { display: inline-block; }
+  #btn-unread-only { display: none; } /* 未读/全部已由页内分段切换承担 */
+  body[data-mpage="subscriptions"] #views { display: none; } /* 订阅页只放 文件夹/订阅源/标签（AC） */
+
+  /* ---- 列表页头：页内分段切换（未读|全部 / 星标|稍后读） ---- */
+  .m-seg { gap: 0; margin: 0 0 8px; }
+  body[data-mpage="articles"] #m-seg-articles { display: inline-flex; }
+  body[data-mpage="saved"] #m-seg-saved { display: inline-flex; }
+  .m-seg button {
+    border-radius: 0;
+    border-color: var(--line);
+    padding: 7px 14px;
+    background: var(--bg);
+  }
+  .m-seg button:first-child { border-radius: 8px 0 0 8px; }
+  .m-seg button:last-child { border-radius: 0 8px 8px 0; margin-left: -1px; }
+  .m-seg button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* ---- 全屏阅读器 ---- */
+  body[data-mpage="reader"] #m-reader-back {
+    display: inline-block;
+    align-self: flex-start;
+    margin: 10px 18px 0;
+    padding: 8px 14px;
+  }
+  .reader { padding: 14px 18px 40px; }
+  .reader-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .reader-actions button { padding: 9px 12px; min-height: 40px; }
+
+  /* ---- 触控目标 ---- */
+  .toolbar button { padding: 8px 12px; white-space: nowrap; }
+  .entries li { padding-block: 10px; }
+  .entries li .row-tag-btn { width: 30px; height: 30px; }
+  .views li, .feeds li, .tags li { min-height: 40px; }
+
+  /* ---- 底部主导航 ---- */
+  #m-nav {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 40;
+    gap: 2px;
+    padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg-panel);
+    border-top: 1px solid var(--line);
+  }
+  body[data-mpage="reader"] #m-nav { display: none; } /* 沉浸式阅读 */
+  .m-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 4px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+  }
+  .m-nav-btn .m-ico { font-size: 20px; line-height: 1; }
+  .m-nav-btn .m-label { font-size: 11px; }
+  .m-nav-btn.active { color: var(--accent); }
+  .m-nav-btn.active .m-label { font-weight: 600; }
+
+  /* ---- 状态镜像（桌面状态栏在右栏内，窄屏列表页看不到） ---- */
+  #m-status {
+    display: block;
+    position: fixed;
+    left: 0; right: 0;
+    bottom: var(--m-nav-h);
+    z-index: 39;
+    min-height: 26px;
+    padding: 4px 12px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--line);
+    color: var(--fg-dim);
+    font-size: 12px;
+  }
+  body[data-mpage="reader"] #m-status { display: none; }
+  #m-status-text.error { color: var(--danger); }
+
+  /* ---- 设置 = 全屏页（overlay 压过主导航），导航条横排置顶 ---- */
+  .overlay { z-index: 60; }
+  .settings-dialog {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+  }
+  .settings-nav {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .settings-nav-title { padding: 0; white-space: nowrap; }
+  .settings-nav ul {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    flex: 1;
+  }
+  .settings-nav li { flex: none; }
+  .settings-nav li > button { padding: 10px 12px; white-space: nowrap; }
+  .settings-nav-foot { display: none; }
+  .settings-body { flex: 1; min-height: 0; padding: 16px 14px 34px; }
+  .settings-close { position: fixed; top: 10px; right: 10px; z-index: 2; }
+}

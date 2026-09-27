@@ -4189,6 +4189,13 @@ async function boot() {
     // 窗口以 hidden 创建（防主题闪变）：主题/首屏就绪后显示；
     // 真正的显示动作在 Rust 侧，失败时由 5s 兑底定时器接管。
     invoke('show_main_window').catch(() => {});
+    // 视口诊断：窄屏页面式导航按「CSS 宽度 ≤900px 且触屏」切换，日志里直接给出
+    // 视口与设备像素比——放在 show 之后（此前 innerWidth 还是 0），无头验证时
+    // 能核对「当前是哪套布局」而不靠截图猜。缩放会引起 resize，resize 后再记一条。
+    log(`viewport ${window.innerWidth}x${window.innerHeight} dpr=${window.devicePixelRatio}`);
+    window.addEventListener('resize', () => {
+      log(`viewport ${window.innerWidth}x${window.innerHeight} dpr=${window.devicePixelRatio}`);
+    });
   }
 
   el('btn-refresh').onclick = doRefresh;

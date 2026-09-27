@@ -1,0 +1,288 @@
+// 窄屏（手机/平板）页面式导航适配层：Articles / Subscriptions / Saved / Settings
+// 四个一级目的地 + 全屏阅读器。桌面三栏宽度（>900px）下本模块整体休眠，DOM 与
+// 行为完全不变；所有表现差异都由 body[data-mpage] + CSS 媒体查询驱动。
+//
+// 设计约束：app.js 是 IIFE，内部状态（state/setView）不可从外部触及——本模块因此
+// 做成**纯 DOM 适配层**：目的地/分段切换通过程序化点击侧栏既有行（同一套 setView），
+// 阅读器与弹层的状态用 MutationObserver 观察，Android 系统返回键走 History API
+// （wry 的 WryActivity 在 canGoBack() 时调用 webView.goBack()，pushState 产生的
+// 条目会以 popstate 形式回到 JS）。列表页在阅读页打开期间保持渲染（页面用覆盖层
+// 盖住而非 display:none），因此过滤器、选中项与滚动位置天然原样保留。
+(function () {
+  'use strict';
+
+  var MQ = window.matchMedia('(max-width: 900px) and (pointer: coarse)');
+  var active = function () { return MQ.matches; };
+
+  // 阅读器打开前的目的地：popstate 恢复时回到哪里。
+  var returnPage = 'articles';
+  // History 栈的镜像：[{ t: 'reader', returnPage } | { t: 'ovl', id, closeSel }]。
+  // 不依赖 event.state（各实现交付时机不一致），自己记 LIFO。
+  var historyStack = [];
+  // 我们自己调用 history.back() 消费已关闭弹层的条目时置位，避免 popstate 把它
+  // 当成一次用户返回再处理。
+  var consuming = false;
+  // 长按已触发时抑制随后的 click（长按菜单打开后松手不应再走到导航/打开文章）。
+  var longPressFired = false;
+
+  function el(id) { return document.getElementById(id); }
+  function bodyPage() { return document.body.dataset.mpage || null; }
+
+  function setPage(name) {
+    document.body.dataset.mpage = name;
+    syncNav();
+    syncSegments();
+  }
+
+  function syncNav() {
+    var page = bodyPage();
+    var settingsOpen = !el('settings-overlay').classList.contains('hidden');
+    document.querySelectorAll('#m-nav .m-nav-btn').forEach(function (btn) {
+      var name = btn.dataset.mpageBtn;
+      var on = name === 'settings' ? settingsOpen : name === page;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-current', on ? 'page' : 'false');
+    });
+  }
+
+  // 分段切换的高亮跟 #views 行的 active 同步（那一行是权威：setView 由它触发）。
+  function syncSegments() {
+    var current = (document.querySelector('#views li.active') || {}).dataset || {};
+    document.querySelectorAll('.m-seg [data-mview]').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.mview === current.kind);
+      btn.setAttribute('aria-pressed', String(btn.dataset.mview === current.kind));
+    });
+  }
+
+  // 分段切换 = 点击侧栏视图行（app.js 的 setView 全走那一条路，别处不再有第二份过滤逻辑）。
+  function pickView(kind) {
+    var row = document.querySelector('#views li[data-kind="' + kind + '"]');
+    if (row) row.click();
+  }
+
+  // ---- 一级目的地 -------------------------------------------------------
+
+  function pickDestination(name) {
+    if (!active()) return;
+    if (name === 'settings') {
+      // 设置是覆盖层而非 body 页面：直接复用应用的 openSettings（按钮隐藏也可程序化点击），
+      // 它的压栈/返回由 watchOverlays 的观察器接管。
+      el('btn-settings').click();
+      return;
+    }
+    var kind = (document.querySelector('#views li.active') || {}).dataset?.kind;
+    if (name === 'articles' && (kind === 'starred' || kind === 'later')) {
+      pickView('unread'); // 收藏视图不属于文章目的地：切回默认未读
+    } else if (name === 'saved' && kind !== 'starred' && kind !== 'later') {
+      pickView(savedMode);
+    }
+    setPage(name);
+  }
+
+  var savedMode = 'starred'; // 收藏页内部的 星标/稍后读 记忆（会话内）
+
+  // ---- History / Android 返回键 ----------------------------------------
+
+  function pushEntry(entry) {
+    historyStack.push(entry);
+    history.pushState({ rr: historyStack.length }, '');
+  }
+
+  window.addEventListener('popstate', function () {
+    if (consuming) { consuming = false; return; }
+    if (!active()) { historyStack = []; return; }
+    var entry = historyStack.pop();
+    if (!entry) return; // 外来导航（理论不会有）：忽略
+    if (entry.t === 'reader') {
+      setPage(entry.returnPage);
+    } else if (entry.t === 'ovl') {
+      var closer = el(entry.id) && el(entry.id).querySelector(entry.closeSel);
+      if (closer) closer.click();
+    }
+  });
+
+  // 阅读器：renderReader 会整体替换 #reader 内容，观察「正文头部出现」这一刻。
+  // 已在阅读页时的重渲染（抓全文等）不重复压栈。
+  function watchReader() {
+    var reader = el('reader');
+    new MutationObserver(function () {
+      if (!active() || !reader.querySelector('.reader-head')) return;
+      if (bodyPage() === 'reader') return;
+      returnPage = bodyPage() || 'articles';
+      pushEntry({ t: 'reader', returnPage: returnPage });
+      setPage('reader');
+    }).observe(reader, { childList: true });
+  }
+
+  // 弹层/对话框：出现时压一条历史（系统返回 = 关闭它而不是退出应用），
+  // 通过点击各自的关闭按钮关闭（复用应用自己的收尾逻辑，不另写第二份）。
+  var OBSERVED_OVERLAYS = [
+    { id: 'settings-overlay', closeSel: '#settings-close', attr: 'class', shown: function (n) { return !n.classList.contains('hidden'); }, onToggle: syncNav },
+    { id: 'ai-confirm-overlay', closeSel: '#ai-confirm-cancel', attr: 'class', shown: function (n) { return !n.classList.contains('hidden'); } },
+    { id: 'generic-confirm-overlay', closeSel: '#generic-confirm-cancel', attr: 'class', shown: function (n) { return !n.classList.contains('hidden'); } },
+    { id: 'feed-edit-overlay', closeSel: '#feed-edit-cancel', attr: 'class', shown: function (n) { return !n.classList.contains('hidden'); } },
+    { id: 'tag-picker-overlay', closeSel: '#tag-picker-close', attr: 'class', shown: function (n) { return !n.classList.contains('hidden'); } },
+    { id: 'aa-dialog', closeSel: '#aa-close', attr: 'open', shown: function (n) { return n.hasAttribute('open'); } },
+    { id: 'keyboard-help', closeSel: '#keyboard-help-close', attr: 'open', shown: function (n) { return n.hasAttribute('open'); } },
+  ];
+
+  function watchOverlays() {
+    OBSERVED_OVERLAYS.forEach(function (ov) {
+      var node = el(ov.id);
+      if (!node) return;
+      new MutationObserver(function () {
+        var shown = ov.shown(node);
+        if (!active()) return;
+        var top = historyStack[historyStack.length - 1];
+        var mine = function (e) { return e.t === 'ovl' && e.id === ov.id; };
+        if (shown) {
+          syncNav();
+          if (!top || !mine(top)) pushEntry({ t: 'ovl', id: ov.id, closeSel: ov.closeSel });
+        } else {
+          syncNav();
+          if (top && mine(top)) {
+            // 弹层经自己的按钮关闭：消费掉那条历史，让下一次返回不被它占住。
+            historyStack.pop();
+            consuming = true;
+            history.back();
+          }
+        }
+        if (ov.onToggle) ov.onToggle();
+      }).observe(node, { attributes: true, attributeFilter: [ov.attr] });
+    });
+  }
+
+  // ---- 状态镜像 ---------------------------------------------------------
+
+  // 桌面状态栏在右栏底部，窄屏下列表/订阅页看不到它。把 #status 的文本与错误态
+  // 同步到一条固定镜像（只搬文本，不复制行为）。
+  function watchStatus() {
+    var status = el('status');
+    var mirror = el('m-status-text');
+    var sync = function () {
+      mirror.textContent = status.textContent;
+      mirror.classList.toggle('error', status.classList.contains('error'));
+    };
+    new MutationObserver(sync).observe(status, { childList: true, characterData: true, subtree: true });
+    new MutationObserver(sync).observe(status, { attributes: true, attributeFilter: ['class'] });
+    sync();
+  }
+
+  // ---- 分段切换与侧栏联动 ----------------------------------------------
+
+  function watchViewsActive() {
+    new MutationObserver(syncSegments).observe(el('views'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
+
+  // 订阅页里点 订阅源/文件夹/标签 行 → 切到文章页显示过滤后的列表。
+  // app.js 的容器级 click 委托负责真正的 setView，这里只搬页面（顺序无关）。
+  function watchSidebarSelection() {
+    document.addEventListener('click', function (ev) {
+      if (!active() || bodyPage() !== 'subscriptions') return;
+      var feed = ev.target.closest('#feeds li[data-feed-id]');
+      var head = ev.target.closest('#feeds li.folder-head');
+      var tag = ev.target.closest('#tags li[data-tag-id]');
+      var view = ev.target.closest('#views li[data-kind]');
+      var arrow = ev.target.closest('.folder-arrow');
+      if ((feed || tag || view) && !arrow) setPage('articles');
+      else if (head && !arrow) setPage('articles'); // 文件夹头（非折叠箭头）= 过滤到该文件夹
+    }, true);
+  }
+
+  // ---- 长按 → 右键菜单（触屏上的管理动作入口） -------------------------
+
+  function initLongPress() {
+    var timer = null;
+    var start = null;
+    var target = null;
+    var MENU_HOLD_MS = 550;
+    var MOVE_TOLERANCE = 12;
+
+    function cancel() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      start = null; target = null;
+    }
+
+    document.addEventListener('pointerdown', function (ev) {
+      if (!active() || ev.pointerType !== 'touch') return;
+      var row = ev.target.closest('#feeds li, #tags li');
+      if (!row) return;
+      target = row;
+      start = { x: ev.clientX, y: ev.clientY };
+      timer = setTimeout(function () {
+        timer = null;
+        if (!start || !target) return;
+        longPressFired = true;
+        target.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true,
+          clientX: start.x, clientY: start.y,
+        }));
+      }, MENU_HOLD_MS);
+    }, { passive: true });
+
+    document.addEventListener('pointermove', function (ev) {
+      if (!start) return;
+      if (Math.abs(ev.clientX - start.x) > MOVE_TOLERANCE || Math.abs(ev.clientY - start.y) > MOVE_TOLERANCE) cancel();
+    }, { passive: true });
+
+    document.addEventListener('pointerup', cancel, { passive: true });
+    document.addEventListener('pointercancel', cancel, { passive: true });
+    document.addEventListener('scroll', cancel, { passive: true, capture: true });
+
+    // 长按后的那次 click 不再派发（否则菜单开了又被行的默认动作打断）。
+    document.addEventListener('click', function (ev) {
+      if (!longPressFired) return;
+      longPressFired = false;
+      ev.stopPropagation();
+      ev.preventDefault();
+    }, true);
+  }
+
+  // ---- 宽度档位切换 -----------------------------------------------------
+
+  function applyMode() {
+    if (active()) {
+      if (!bodyPage()) setPage('articles');
+    } else {
+      historyStack = [];
+      delete document.body.dataset.mpage;
+    }
+  }
+
+  // ---- 初始化 -----------------------------------------------------------
+
+  function init() {
+    if (el('m-nav')) {
+      document.querySelectorAll('#m-nav .m-nav-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { pickDestination(btn.dataset.mpageBtn); });
+      });
+    }
+    document.querySelectorAll('.m-seg [data-mview]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (btn.closest('#m-seg-saved')) savedMode = btn.dataset.mview;
+        pickView(btn.dataset.mview);
+      });
+    });
+    var readerBack = el('m-reader-back');
+    if (readerBack) {
+      readerBack.addEventListener('click', function () {
+        var top = historyStack[historyStack.length - 1];
+        if (top && top.t === 'reader') history.back();
+        else setPage(returnPage); // 没有栈底条目时的兜底（理论不达）
+      });
+    }
+    if (el('status')) watchStatus();
+    if (el('views')) watchViewsActive();
+    watchReader();
+    watchOverlays();
+    watchSidebarSelection();
+    initLongPress();
+    if (MQ.addEventListener) MQ.addEventListener('change', applyMode);
+    else MQ.addListener(applyMode);
+    applyMode();
+    syncSegments();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();

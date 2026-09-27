@@ -105,6 +105,13 @@ const DICTS = {
     'search.placeholder': '搜索标题与正文（按 / 聚焦）',
 
     'sidebar.feeds': '订阅源',
+
+    // 窄屏（手机/平板）页面式导航
+    'm.nav.articles': '文章',
+    'm.nav.subscriptions': '订阅',
+    'm.nav.saved': '收藏',
+    'm.nav.settings': '设置',
+    'm.back': '返回列表',
     'sidebar.feedCount': '{n} 个',
     'sidebar.addPlaceholder': 'https://example.com/ 或 feed 地址（支持 rsshub://）',
     'sidebar.add': '添加',
@@ -655,6 +662,13 @@ const DICTS = {
     'search.placeholder': 'Search titles and text (press / to focus)',
 
     'sidebar.feeds': 'Feeds',
+
+    // Narrow-viewport (phone/tablet) page navigation
+    'm.nav.articles': 'Articles',
+    'm.nav.subscriptions': 'Subscriptions',
+    'm.nav.saved': 'Saved',
+    'm.nav.settings': 'Settings',
+    'm.back': 'Back to list',
     'sidebar.feedCount': '{n}',
     'sidebar.addPlaceholder': 'https://example.com/ or a feed URL (rsshub:// works too)',
     'sidebar.add': 'Add',
