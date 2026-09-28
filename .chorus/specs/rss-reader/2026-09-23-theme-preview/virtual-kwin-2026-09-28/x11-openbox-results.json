@@ -1,0 +1,1226 @@
+{
+  "captured_at_utc": "2026-09-28T14:21:34.083518+00:00",
+  "product_source_head": "835d55148efada832f1e57a470ef1b09d2fb4bb9",
+  "harness_checkout_head_at_run": "0a75fcf1a699c18ff8bc7253f50f4e4c7b241f4a",
+  "session": {
+    "display": ":1",
+    "server": "Xvfb 21.1.22-1ubuntu1.2 (extracted package)",
+    "window_manager": "Openbox 3.6.1-12ubuntu3 (extracted package)",
+    "wm_property": "_NET_SUPPORTING_WM_CHECK(WINDOW): window id # 0x20011f",
+    "virtual_screen": [
+      1600,
+      1000
+    ],
+    "native_backend": "GdkX11Display",
+    "scale": 1.0,
+    "private_dbus": true,
+    "private_xdg_directories": true,
+    "system_packages_installed": false
+  },
+  "package_fingerprints": {
+    "openbox": {
+      "path": "/tmp/rustrss-x11-openbox/openbox_3.6.1-12ubuntu3_amd64.deb",
+      "sha256": "15322f47192df435326f9acfc62db903e25d3b234e55dc3fd66eb11a4b3ab262",
+      "mtime_utc": "2026-02-11T23:48:43+00:00"
+    },
+    "xvfb": {
+      "path": "/tmp/rustrss-x11-openbox/xvfb_2%3a21.1.22-1ubuntu1.2_amd64.deb",
+      "sha256": "fac5e03c7a40668d475178efb85dc63b4b391b020e0e9f499a729d2b62466fe8",
+      "mtime_utc": "2026-07-01T20:33:12+00:00"
+    },
+    "libobrender": {
+      "path": "/tmp/rustrss-x11-openbox/libobrender32_3.6.1-12ubuntu3_amd64.deb",
+      "sha256": "6c0d6c31ea61fe40fdc831a1bc7baa1cfb4d59066995427b7207b99e23cecc82",
+      "mtime_utc": "2026-02-11T23:48:43+00:00"
+    },
+    "libobt": {
+      "path": "/tmp/rustrss-x11-openbox/libobt2_3.6.1-12ubuntu3_amd64.deb",
+      "sha256": "cae9ab34111be751cd0a95def9225f39098c5a4d936057b1108d6871ea6ccd5f",
+      "mtime_utc": "2026-02-11T23:48:43+00:00"
+    },
+    "libimlib2": {
+      "path": "/tmp/rustrss-x11-openbox/libimlib2t64_1.12.6-1_amd64.deb",
+      "sha256": "4abd3d2b59870f8529bfa3e54ce6859b6b2a075e29d507b096017740be2d95f9",
+      "mtime_utc": "2026-02-05T12:50:44+00:00"
+    }
+  },
+  "binary": {
+    "fixture": {
+      "path": "/home/tcy/Github/RustRss/target/debug/examples/theme_ui",
+      "sha256": "877ae92c5c26303c24c638f9cd8c0dc1a6230599d9d68be033d4d3617769e4df",
+      "mtime_utc": "2026-09-28T13:46:00.803710+00:00"
+    },
+    "desktop": {
+      "path": "/home/tcy/Github/RustRss/target/debug/rustrss-desktop",
+      "sha256": "b433537f5cb180064eac491e0aae71e0ab5e414a2af7fc580e2987a79f6614a0",
+      "mtime_utc": "2026-09-28T13:45:55.100515+00:00"
+    },
+    "mcp": {
+      "path": "/home/tcy/Github/RustRss/target/debug/rustrss-mcp",
+      "sha256": "24a1ac278fe408fa545c8642be50f592eef3da2766122437ea18676c54c6c2fa",
+      "mtime_utc": "2026-09-28T05:52:46.939257+00:00"
+    }
+  },
+  "fixture": {
+    "capture_count": 39,
+    "check_count": 47,
+    "scene_frames_per_cell": {
+      "clear-dark-en": 3,
+      "clear-dark-zh": 3,
+      "clear-light-en": 3,
+      "clear-light-zh": 3,
+      "paper-dark-en": 3,
+      "paper-dark-zh": 3,
+      "paper-light-en": 3,
+      "paper-light-zh": 3,
+      "slate-dark-en": 3,
+      "slate-dark-zh": 3,
+      "slate-light-en": 3,
+      "slate-light-zh": 3
+    },
+    "capture_manifest": [
+      {
+        "background": "#f7f8fa",
+        "bytes": 139826,
+        "file": "clear-light-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-light-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "e45d14b1fae32f80802fd91f1254af3107842ad97a7454218dbb29eb9006e05c"
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 234991,
+        "file": "clear-light-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-light-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "bd7f85e4dfb43024b88133cf9f8f2348c71dcdf8b21f0e26da672cbabe70794d"
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 146481,
+        "file": "clear-light-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-light-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#ffffff",
+        "sha256": "d78836ed82f9fa87e5517733e80c929a3dc8c2df8451216d9ec39636098525bb"
+      },
+      {
+        "background": "#14161a",
+        "bytes": 138934,
+        "file": "clear-dark-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-dark-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "3c8346080366a0f40b37d763d45e15fdeb6b00f716e06e221f286d8fe788694f"
+      },
+      {
+        "background": "#14161a",
+        "bytes": 233208,
+        "file": "clear-dark-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-dark-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "92af43f79cc9efa453a3679608e1d454b31fc36b069ba4697a06d82756f7cf62"
+      },
+      {
+        "background": "#14161a",
+        "bytes": 141018,
+        "file": "clear-dark-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-dark-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#1a1d23",
+        "sha256": "91617f78cdc91797787258346daf9a64bd19f7c2d3008af86e81ee703643ae2c"
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 139283,
+        "file": "paper-light-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-light-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "739300eab3be56c27ade56b246cb365cefec7ba3353522e54031d89021dd6c79"
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 222504,
+        "file": "paper-light-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-light-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "ebea516533dd8f833b46ceb0bebefba5e77ce07301f2a09454a0fee0a2f305ad"
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 136923,
+        "file": "paper-light-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-light-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#faf7f0",
+        "sha256": "107ee211d7ed175bb1fa1c2ea525f6c42189d8246a594a312dd7f70f1e428927"
+      },
+      {
+        "background": "#302b22",
+        "bytes": 138170,
+        "file": "paper-dark-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-dark-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "3242d2196bb0a729c7df1543b4bd268fd5cadb86fb124eeb58ac70f700204ff9"
+      },
+      {
+        "background": "#302b22",
+        "bytes": 220383,
+        "file": "paper-dark-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-dark-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "edb43105ba4e0e11bdf3fdc3d9d16f4c527bf620718450c5a412556c992a6e51"
+      },
+      {
+        "background": "#302b22",
+        "bytes": 130694,
+        "file": "paper-dark-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-dark-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#2b271f",
+        "sha256": "67ecd3cd5bbdff2bbab3dba90c3639bf6838361b43a0b98eae8aef5a892a911b"
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 145854,
+        "file": "slate-light-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-light-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "ca111e6e8328a7352506e3a8d0bf49ccd5ae611fd7c6cf22f93c47e061545c0b"
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 242091,
+        "file": "slate-light-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-light-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "af63573c7e59703127e798b5b2ad7256c04fe206262ed408fb81215daa82a19e"
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 139063,
+        "file": "slate-light-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-light-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#f5f7f8",
+        "sha256": "d336efa2b6b30de5b0c340145f75b3e6d3a5247acfca02ab52b91b42d3e0413c"
+      },
+      {
+        "background": "#242d31",
+        "bytes": 144920,
+        "file": "slate-dark-zh-CN-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-dark-zh-CN-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "cfe6d8acba720b4e20c95768234831dda8b95f2d00311a850aed3348f6674ead"
+      },
+      {
+        "background": "#242d31",
+        "bytes": 241142,
+        "file": "slate-dark-zh-CN-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-dark-zh-CN-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "718c1664afd698e160c197af5f35061caa32642b341b7a13be050a22eae5c869"
+      },
+      {
+        "background": "#242d31",
+        "bytes": 134215,
+        "file": "slate-dark-zh-CN-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-dark-zh-CN-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#20272b",
+        "sha256": "d02596696cb173417cbdbae7469cf2bd58275ac9dbb5751d031b1a75c3fb20c5"
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 138329,
+        "file": "clear-light-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-light-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "5d9e9b24a5609963f57d5b6c121272b834fbbef9e5f7ab85097ad4881b5f175a"
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 233561,
+        "file": "clear-light-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-light-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "af8bf06b8f2f00ff1c95b74646320a4b93d47b8717d2945bb92875f637f84535"
+      },
+      {
+        "background": "#f7f8fa",
+        "bytes": 129405,
+        "file": "clear-light-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-light-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#ffffff",
+        "sha256": "83c4e666a3448cbc8c64f0b56d11565bba58d0154f937822768672866ecf2410"
+      },
+      {
+        "background": "#14161a",
+        "bytes": 137533,
+        "file": "clear-dark-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-dark-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "017c0af10019c719f46bc424c13ca7ab22d7385e72f4c7058277c4ae2581b958"
+      },
+      {
+        "background": "#14161a",
+        "bytes": 231770,
+        "file": "clear-dark-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-dark-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "4e6060bf0f11994eba45b6442d8e927daf0ae899ce217b5fbcbbf22d4edde549"
+      },
+      {
+        "background": "#14161a",
+        "bytes": 124395,
+        "file": "clear-dark-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "clear-dark-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#1a1d23",
+        "sha256": "cc8c75247f5b99c624da902e077338a2aaafd7d27e939063a1a8010561089199"
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 137957,
+        "file": "paper-light-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-light-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "530d0ed0fd01a907a7d5375cc4e29105e99bf3c33e340b3580302c6421bc1b42"
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 221152,
+        "file": "paper-light-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-light-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "e554b78582e79378ec758626f031dd5420fb0e14f67415450edb3eed70a22988"
+      },
+      {
+        "background": "#fffdf7",
+        "bytes": 120800,
+        "file": "paper-light-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-light-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#faf7f0",
+        "sha256": "dfdd9096a4695a56b151f0b7319042d391ba6c61ff919c447b780cb70af617c1"
+      },
+      {
+        "background": "#302b22",
+        "bytes": 136883,
+        "file": "paper-dark-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-dark-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "dc4b3312709a0bdce4b087aebf16aba4ed1ac551a44ce6ca2d0540753afd795a"
+      },
+      {
+        "background": "#302b22",
+        "bytes": 219094,
+        "file": "paper-dark-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-dark-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "680ac870e57fa51fe0b8717930c976394686416b1773a072b2497220826746e0"
+      },
+      {
+        "background": "#302b22",
+        "bytes": 114836,
+        "file": "paper-dark-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "paper-dark-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#2b271f",
+        "sha256": "dde9b06358bafeb2e8089b3dfd0f6007c25c00289017fdd2e66b00cbea1600fc"
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 144256,
+        "file": "slate-light-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-light-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "6cb5d801de54d6b280541b963ff9400e8ae57f3ebeef30444f3fc46b3b29cf86"
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 240509,
+        "file": "slate-light-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-light-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "4fb3d1860601efe6c73762c96753c0ca8c9fabcd14654810b071b76ba25e61a0"
+      },
+      {
+        "background": "#fcfcfd",
+        "bytes": 121870,
+        "file": "slate-light-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-light-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#f5f7f8",
+        "sha256": "f5d9826d18cef7904f5052ee5ed565086f597ee767dfe35626dc3970acbbd49a"
+      },
+      {
+        "background": "#242d31",
+        "bytes": 143506,
+        "file": "slate-dark-en-overview.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-dark-en-overview",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "9cd0dfd49bad45d278f9213d62af30e2e28721cd85f745483d2e188a51494caa"
+      },
+      {
+        "background": "#242d31",
+        "bytes": 239777,
+        "file": "slate-dark-en-article.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-dark-en-article",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "a5ed759c4e901e7710abb3370d5f425bebd2f490cb82bb00d5ba9d9d8d39bc66"
+      },
+      {
+        "background": "#242d31",
+        "bytes": 117573,
+        "file": "slate-dark-en-settings.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "slate-dark-en-settings",
+        "occlusion_point": [
+          554,
+          150
+        ],
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "settings_background": "#20272b",
+        "sha256": "5d3679b7289fed031627172ebdbcd0f9a66732c576394c82bfa8d7a6946853b2"
+      },
+      {
+        "bytes": 248195,
+        "file": "layout-focus.png",
+        "logical_size": [
+          1240,
+          820
+        ],
+        "name": "layout-focus",
+        "pixels": [
+          1240,
+          820
+        ],
+        "scale": 1,
+        "sha256": "c61d1c4aa2eaaa0e6f52e67dc5504af9de9bf69fafcfc21ada5e2a74bed3c796"
+      },
+      {
+        "bytes": 176172,
+        "file": "narrow-article.png",
+        "logical_size": [
+          900,
+          600
+        ],
+        "name": "narrow-article",
+        "pixels": [
+          900,
+          600
+        ],
+        "scale": 1,
+        "sha256": "b3ae233c72b799ca2adb6aa6ce205ad33165b49294eebc0e6a581130f4576895"
+      },
+      {
+        "bytes": 75709,
+        "file": "narrow-settings.png",
+        "logical_size": [
+          900,
+          600
+        ],
+        "name": "narrow-settings",
+        "pixels": [
+          900,
+          600
+        ],
+        "scale": 1,
+        "sha256": "8c57c902921cc07e16eb054b80746af3ec9d0ad3338375de3457b862b8f881eb"
+      }
+    ]
+  },
+  "product": {
+    "capture_count": 24,
+    "scene_frames_per_cell": 3,
+    "freshness_marker_asserted_by_probe": true,
+    "temporary_no_write": true,
+    "stdio_bridge_file": true,
+    "saved_revision": 1,
+    "idempotent_save": true,
+    "revocation_reaped": true,
+    "capture_manifest": [
+      {
+        "label": "clear-light-overview",
+        "bytes": 155069,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 1264.991092,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "d9a6f6e07406dd8beb20b3e63bad1f7f65b00f43e77dfa478a1e96e142f07ca7"
+      },
+      {
+        "label": "clear-light-article",
+        "bytes": 263876,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 207.17488,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "f48c63da6fbe06969ea9d1bbd35e08155489d1dc3ef5d65600010afd7266f7f5"
+      },
+      {
+        "label": "clear-light-settings",
+        "bytes": 154862,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 279.444589,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "f486d6f6d572f3f1ecc0cee92506d7cd1b4b12262b814e12a24183efb8c5bd19"
+      },
+      {
+        "label": "clear-dark-overview",
+        "bytes": 154048,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 168.193844,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "adaa5a55526f3f824dcdd70b4cd177154f9ab8b35191af276927a0f37049fa90"
+      },
+      {
+        "label": "clear-dark-article",
+        "bytes": 261824,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 219.160732,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "b7955551c2d9de4c54ec091697af9cd4d5c220649aec8b78f73400e99f1c2a26"
+      },
+      {
+        "label": "clear-dark-settings",
+        "bytes": 149244,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 199.595261,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "2f2b16162343abb80f073ce5a394278c1019ad14468ad8452dc23b0a38bf2e5c"
+      },
+      {
+        "label": "paper-light-overview",
+        "bytes": 154550,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 202.82986,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "678718a3e79794f4327a1b17eeda0f38c969527d66d7b16adc52b41155682976"
+      },
+      {
+        "label": "paper-light-article",
+        "bytes": 250756,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 191.963555,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "977b357fa374b27a2a5788df1ee26720cddd231bcb1b0ee5023ae682d77302ca"
+      },
+      {
+        "label": "paper-light-settings",
+        "bytes": 147492,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 227.464867,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "9de400e989fbe91b516a449ea3b7a29bf3d2aed6c48fa7ec86c011f974b60076"
+      },
+      {
+        "label": "paper-dark-overview",
+        "bytes": 153317,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 176.60721600000002,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "a24f79442ebd0237f47c296773ce6f25cb9998f8598099c5e784a822521560cb"
+      },
+      {
+        "label": "paper-dark-article",
+        "bytes": 248474,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 209.762117,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "351cb5986f87f9f33a51414a8401ff63a2fe3ed6faa07416b00427a4d81e9fa5"
+      },
+      {
+        "label": "paper-dark-settings",
+        "bytes": 140714,
+        "revision": 2,
+        "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+        "capture_ms": 200.494411,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "04e112d9abd79ad249681366de967735830f5bc35f1f434a489deb23510c468c"
+      },
+      {
+        "label": "slate-light-overview",
+        "bytes": 164284,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 190.603951,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "b6553284cca1a33057b477dc40e47f37e9d3385b9f3fd04da0a8976026d8a43b"
+      },
+      {
+        "label": "slate-light-article",
+        "bytes": 271560,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 201.71265699999998,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "1ead6374f7d6d48a4812d6c8a70e989b1ba4988ef619eeb50de914777a217d61"
+      },
+      {
+        "label": "slate-light-settings",
+        "bytes": 159992,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 201.964926,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "d2ec54578d64cf81ca19751d624c2c48724661136f43a4bd8f89ffd0c0f09dd4"
+      },
+      {
+        "label": "slate-dark-overview",
+        "bytes": 163191,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 182.406769,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "84be5f7593b869b8fc4a0a697c02a710f56c79d7cdbdd6c6f217c7dfa41f6c4c"
+      },
+      {
+        "label": "slate-dark-article",
+        "bytes": 270448,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 203.006606,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "86b74d130a22e2ac415f10ce1a4daf42618092be23d2855bf7490122b6907516"
+      },
+      {
+        "label": "slate-dark-settings",
+        "bytes": 154215,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 207.549742,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "fe287aef41dc1afe1b832bff2a293c02fc59e5a62abcc0b5136de46fb121c239"
+      },
+      {
+        "label": "recapture",
+        "bytes": 164285,
+        "revision": 3,
+        "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+        "capture_ms": 176.712706,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "4c077acbd4d5bbd49bc7bbf4846d799125e6ea995b37f67d43d337f9ad6cb64a"
+      },
+      {
+        "label": "reopen-0",
+        "bytes": 263877,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 1303.120509,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "aef34023dfaf6dbdba5f2349ee46eaddbecc827ea733b4abcd546141e8f90275"
+      },
+      {
+        "label": "reopen-1",
+        "bytes": 263877,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 1417.6705570000001,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "49ca27e465ced20947b73be57f291113229a98c1d5ff830fd090ec2a0d39a213"
+      },
+      {
+        "label": "reopen-2",
+        "bytes": 263875,
+        "revision": 1,
+        "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+        "capture_ms": 1266.396964,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "8e8fd539bfd25cc888c97b76ce93599354f80822b202bb2a5126e95580bd46d8"
+      },
+      {
+        "label": "stdio-paper",
+        "bytes": 250754,
+        "revision": 1,
+        "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+        "capture_ms": 1474.444803,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "b41d7e6eb0f981c1ddea40e99e195f3c4174c38ab2023bc37e64c657f3ddcdf8"
+      },
+      {
+        "label": "revoke",
+        "bytes": 250759,
+        "revision": 1,
+        "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+        "capture_ms": 1348.137698,
+        "logical_size": [
+          1280,
+          900
+        ],
+        "pixel_size": [
+          1280,
+          900
+        ],
+        "scale_factor": 1.0,
+        "display_backend": "GdkX11Display",
+        "sha256": "22ea8ecd18d6a7fb366a4aba34e15b3c34def5f3c99598dc8a9bf0c3f302217d"
+      }
+    ]
+  },
+  "raw_scenes": [
+    {
+      "scene": "overview",
+      "file": "x11-openbox-overview.png",
+      "sha256": "d9a6f6e07406dd8beb20b3e63bad1f7f65b00f43e77dfa478a1e96e142f07ca7"
+    },
+    {
+      "scene": "article",
+      "file": "x11-openbox-article.png",
+      "sha256": "f48c63da6fbe06969ea9d1bbd35e08155489d1dc3ef5d65600010afd7266f7f5"
+    },
+    {
+      "scene": "settings",
+      "file": "x11-openbox-settings.png",
+      "sha256": "f486d6f6d572f3f1ecc0cee92506d7cd1b4b12262b814e12a24183efb8c5bd19"
+    }
+  ]
+}

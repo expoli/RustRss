@@ -1,8 +1,10 @@
-# Theme preview in an isolated KWin Wayland compositor (2026-09-28)
+# Theme preview in isolated KWin Wayland and Openbox X11 sessions (2026-09-28)
 
 This is runtime evidence for Chorus task `ee4cce71-d7a1-46ed-a98b-366e2de78ec5`. The tested source was RustRss `b7bfada`; exact hashes and UTC build times of the fixture, desktop, and MCP binaries are in [results.json](results.json). The source and binaries predate the Windows/macOS adapter commits. All databases and captured content were fixed fixtures; the user's RSS database was not opened.
 
 After locally integrating the Windows and macOS adapters, source `835d551` was rebuilt and both virtual compositor sessions were repeated. [integrated-results.json](integrated-results.json) records the new desktop, MCP, and fixture binary SHA-256 values and mtimes, 39 fixture/24 product capture manifests per session, distinct three-scene hashes in every cell, the product's revision/configuration hash and capture geometry, and the six archived `integrated-*.png` originals. Both sessions passed the same assertions. This is the acceptance evidence for the integrated code; the original manifest above remains as the before-integration baseline.
+
+Independent task review round 1 found that the required X11 run under a window manager was missing. The follow-up used an **Xvfb X11 server with Openbox 3.6.1 actually managing windows**, confirmed by `_NET_SUPPORTING_WM_CHECK(WINDOW)`. The packages were downloaded and extracted only under `/tmp`; no system package was installed. [x11-openbox-results.json](x11-openbox-results.json) records package/binary fingerprints, the window-manager property, 39 fixture PNGs/47 checks and 24 production MCP PNGs, every capture hash and metadata, plus three archived `x11-openbox-*.png` originals. Every theme/mode/locale fixture cell and every product theme/mode cell had three different scene hashes. The product's `GdkX11Display` content area was 1280×900 logical and physical pixels at scale 1; the freshness marker and save/cancel/revocation assertions passed. This X11 result uses a virtual display with a real window manager; it does not claim a physical Xorg desktop or additional scaling modes.
 
 ## What ran
 
@@ -21,15 +23,18 @@ cargo build --workspace --features rustrss-desktop/snapshot-probe --bins --examp
 
 In a private `dbus-run-session`, create a mode-0700 `XDG_RUNTIME_DIR`, unset the parent `DISPLAY` and `WAYLAND_DISPLAY`, start `kwin_wayland --virtual --socket wayland-0 --width 1600 --height 1000 --no-lockscreen --no-global-shortcuts`, and wait for its socket. Set `WAYLAND_DISPLAY=wayland-0`, then run `/usr/bin/python3 scripts/verify-theme-ui.py --display wayland` and `/usr/bin/python3 scripts/verify-theme-preview.py --display wayland`. For the second run, call `kscreen-doctor output.Virtual-0.scale.1.5` before either probe. Keep the printed temporary output directories if regenerating a capture manifest; stop only the KWin process started for this run. The probes create isolated fixture databases and exit without touching the user's application instance.
 
+For the X11 run, start Xvfb at 1600×1000×24 in a private D-Bus/XDG session and set its `DISPLAY`. Start Openbox 3.6.1 with its matching `libobrender32`, `libobt2`, and `libimlib2t64` libraries, then require `xprop -root _NET_SUPPORTING_WM_CHECK` to report a window ID while Openbox is alive. Run the same two probes with `--display x11`. The exact Ubuntu package versions and SHA-256 values are in `x11-openbox-results.json`; this run extracted them in `/tmp` rather than installing them. The X11 branches in the two probe scripts use the supplied `DISPLAY` and leave creation of the server/window manager to this outer session.
+
 ## Boundaries and open checks
 
 | Check | Result |
 | --- | --- |
 | Virtual KWin Wayland, output scale 1, three scene pixels and MCP metadata | PASS |
 | Virtual KWin Wayland, output scale 1.5, WebView buffer scale 2 and three scene pixels | PASS, virtual output only |
+| Xvfb 1600×1000 with Openbox X11 window manager, scale 1 | PASS: three scene pixels and MCP metadata; virtual display only |
 | Physical KDE Wayland session in this daemon run | OPEN: session was locked; a direct fixture attempt reported `GdkWaylandDisplay` but produced no PNG before the 100-second harness timeout. It is not counted as a product failure or pass. |
 | GNOME Wayland | OPEN: no GNOME compositor installed on this host. |
 | Real minimize/restore | OPEN: not exercised by the virtual harness; a virtual output cannot substitute for physical-window behavior. |
 | Cross-monitor movement and human sharpness assessment | OPEN: virtual KWin had one output. Earlier physical KDE observations remain separately documented in [native-settings.md](../native-settings.md). |
 
-No product code was changed to obtain these results. The stored six PNGs cover two claimed virtual sessions; the larger fixture and MCP matrices have SHA-256 manifests in `results.json`, with full temporary outputs on the test host only.
+No product code was changed to obtain these runtime results. The stored representative PNGs cover the two KWin sessions and the X11/Openbox session; the larger fixture and MCP matrices have SHA-256 manifests in `results.json`, `integrated-results.json`, and `x11-openbox-results.json`, with full temporary outputs on the test host only.

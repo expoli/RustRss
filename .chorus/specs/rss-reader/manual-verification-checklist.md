@@ -1232,10 +1232,11 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] **如实边界**：① 面板截图 `about-source-panel.png` 由 `import -window root` 取得，按 §30 口径**不作数**，只算人工查看过；机械结论以 DOM 断言 + 打开器桩参数为准。② `window.__TAURI__.core.invoke` 实测**不可写**（证据 `invoke_writable: false`），JS 层拦 invoke 会被静默忽略，故改用 OS 层桩。③ 未验：真实桌面会话下浏览器真的打开；macOS / Windows 的系统打开器（本机只有 Linux）。④ `release.yml`（`v*` 标签通道）的 notes 改动**只做了静态校验**（`yaml.safe_load` + 文本核对），未端到端验证——尚未打过 `v*` 标签。
 - [ ] **未做（用户决定）**：不改写历史（242 个提交与 MIT 期历史保留）；MIT 期源码快照仍在公开历史里（`cfaf0dc` 及更早），其已发出的授权不可撤销。
 
-## 34. 虚拟 KWin Wayland 场景级截帧（2026-09-28）
+## 34. 虚拟 KWin Wayland 与 Openbox X11 场景级截帧（2026-09-28）
 
 - [x] 隔离的真实 KWin Wayland 合成器中，主题夹具 39 张 PNG / 47 项断言与产品 MCP 预览 24 张 PNG 均通过；overview、article、settings 三场景在每个预设/模式单元格有不同帧。原始图、逐图 SHA-256、场景/修订元数据及二进制指纹见 `2026-09-23-theme-preview/virtual-kwin-2026-09-28/`。
 - [x] KScreen 设定输出缩放 1.5 后，产品预览的 960×640 逻辑尺寸对应 1920×1280 PNG、WebView buffer scale 2；常规 scale 1 对应 960×640 PNG。该结果只证明虚拟合成器中的内容/缓冲区几何与场景新鲜度。
+- [x] 独立评审首轮指出缺少带窗口管理器的 X11 复测后，补跑隔离 Xvfb + Openbox 3.6.1；根窗口 `_NET_SUPPORTING_WM_CHECK` 证明 Openbox 已接管窗口。夹具 39 图 / 47 断言、产品 MCP 24 图均通过，各格三场景不同帧；产品 `GdkX11Display` 内容区 1280×900 逻辑/像素尺寸，scale 1。原始三图、逐图哈希、会话及二进制指纹见 `2026-09-23-theme-preview/virtual-kwin-2026-09-28/x11-openbox-results.json`。这是带真实窗口管理器的虚拟 X11 输出，不声称物理 Xorg 桌面。
 - [ ] 仍需 GNOME、最小化/遮挡、跨屏切换和真实显示器的分数缩放证据；Windows/macOS 的原生截帧另在各平台任务中验证。虚拟 KWin 通过不代替这些条件。
 ## 35. Windows 原生主题预览截图（2026-09-28，运行验收待办）
 

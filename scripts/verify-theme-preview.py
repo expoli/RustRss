@@ -18,7 +18,7 @@ from PIL import Image
 from PIL import ImageChops
 
 parser=argparse.ArgumentParser()
-parser.add_argument('--display',choices=['xvfb','wayland','macos'],default='xvfb')
+parser.add_argument('--display',choices=['xvfb','x11','wayland','macos'],default='xvfb')
 parser.add_argument('--scale',choices=['1','2'],default='1')
 options=parser.parse_args()
 if options.display=='macos' and platform.system()!='Darwin':raise RuntimeError('macOS runtime is required')
@@ -42,6 +42,10 @@ if options.display=='xvfb':
 elif options.display=='wayland':
     if not env.get('WAYLAND_DISPLAY'):raise RuntimeError('No native Wayland session available')
     env.pop('DISPLAY',None)
+elif options.display=='x11':
+    if not env.get('DISPLAY'):raise RuntimeError('No X11 session available')
+    env.pop('WAYLAND_DISPLAY',None)
+    env.pop('GDK_BACKEND',None)
 else:
     for key in ['DISPLAY','WAYLAND_DISPLAY','GDK_BACKEND','GDK_SCALE','EGL_PLATFORM']:
         env.pop(key,None)

@@ -10,7 +10,7 @@ import tempfile
 from PIL import Image
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--display', choices=['xvfb', 'wayland'], default='xvfb')
+parser.add_argument('--display', choices=['xvfb', 'x11', 'wayland'], default='xvfb')
 parser.add_argument('--scale', choices=['1', '2'], default='1')
 parser.add_argument('--evidence', type=Path, default=None,
                     help='optional path for the results JSON (e.g. the change evidence directory)')
@@ -31,10 +31,15 @@ try:
         runtime = root / 'runtime'
         runtime.mkdir(mode=0o700)
         env.update(XDG_RUNTIME_DIR=str(runtime), GDK_GL='disable', GDK_SCALE=args.scale)
-    else:
+    elif args.display == 'wayland':
         if not env.get('WAYLAND_DISPLAY'):
             raise RuntimeError('No native Wayland session available')
         env.pop('DISPLAY', None)
+    else:
+        if not env.get('DISPLAY'):
+            raise RuntimeError('No X11 session available')
+        env.pop('WAYLAND_DISPLAY', None)
+        env.pop('GDK_BACKEND', None)
     result = subprocess.run(['target/debug/examples/theme_ui', str(root / 'captures')], env=env, capture_output=True, text=True, timeout=100)
     (root / 'run.log').write_text(result.stdout + result.stderr)
     report_path = root / 'captures/results.json'
