@@ -83,3 +83,15 @@ adb shell input tap 365 618         # Edit
 # OPML import: pm clear → Settings → Data & backups → Import OPML… → pick file
 # offline: adb shell svc wifi disable && adb shell svc data disable
 ```
+
+## Round 2 — read-later persistence capture (review note N1)
+
+Dedicated before/after device capture for read-later persistence:
+
+1. `16-readlater-flag-on-articles.png` — Articles view with the probe entry's
+   ⚑ read-later flag enabled (tap on the row flag).
+2. `15-readlater-persisted.png` — after `am force-stop` + relaunch:
+   Saved → **Read later** segment lists the entry ("loaded 1 / 1 total").
+
+The starred-state capture (`10-restart-starred-persisted.png`) remains from
+round 1; read-later now has its own equivalent artifact.

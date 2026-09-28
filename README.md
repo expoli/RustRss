@@ -23,7 +23,7 @@ Rust + Tauri 2 · SQLite · RSS / Atom / JSON Feed
 cargo run -p rustrss-desktop
 ```
 
-RustRss 面向 Linux、Windows 和 macOS 桌面；Android 版正在开发中（共享入口已可构建运行，订阅与阅读流程仍在实现）。已发布的安装包和版本说明以 [GitHub Releases](https://github.com/expoli/RustRss/releases) 页面为准；也可以查看[快速开始](docs/getting-started.md)从源码运行。
+RustRss 面向 Linux、Windows 和 macOS 桌面；Android 版开发中——订阅、刷新与离线阅读已在设备上可用，AI 配置与侧载发布仍在实现。已发布的安装包和版本说明以 [GitHub Releases](https://github.com/expoli/RustRss/releases) 页面为准；也可以查看[快速开始](docs/getting-started.md)从源码运行。
 
 ## 文档
 

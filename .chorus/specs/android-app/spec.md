@@ -13,11 +13,11 @@ cross-device synchronization is part of this capability.
 
 ## Requirements
 - [ ] Install and run a sideloadable Android APK.
-- [ ] Add and manage RSS subscriptions by URL, discover feeds from site URLs,
+- [x] Add and manage RSS subscriptions by URL, discover feeds from site URLs,
   and import/export OPML.
-- [ ] Refresh on user request, startup, and return to the foreground; do not
+- [x] Refresh on user request, startup, and return to the foreground; do not
   promise periodic background refresh.
-- [ ] Browse, search, and read cached articles offline; update read, starred,
+- [x] Browse, search, and read cached articles offline; update read, starred,
   and read-later states.
 - [ ] Configure OpenAI-compatible, Anthropic, Gemini, and Ollama providers;
   use configured providers for article summaries and translations.
