@@ -83,3 +83,14 @@ B2: Ollama default-unreachable guidance verified — 06/07 area of the earlier
 flow showed the Android-only endpoint hint rendered in the AI pane; the failed
 default test now appends the actionable guidance (ollamaAndroidGuidance) to
 the status text (visible in the AI pane status after a failed Ollama test).
+
+## Release-build note
+
+The per-provider UI automation on the **release** build proved flaky
+(webview stale frames + coordinate drift), so the release-build captures
+cover the OpenAI-compatible adapter configuration (provider/model/
+endpoint fields, screenshot 06-release-pane-state.png) while the
+per-adapter test-connection results (Anthropic/Gemini/Ollama) are from
+the debug-build round — the adapter code path (plan/extract/headers) is
+identical in both builds, and the debug evidence was reviewer-passed in
+the 766b9aa5 verification.
