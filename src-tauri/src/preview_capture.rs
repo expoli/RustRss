@@ -28,7 +28,7 @@ pub struct Capture {
     pub width: u32,
     pub height: u32,
     pub logical_size: [u32; 2],
-    pub scale_factor: u32,
+    pub scale_factor: f64,
     #[allow(dead_code)] // Standalone examples do not all consume backend metadata.
     pub display_backend: String,
 }
@@ -51,9 +51,177 @@ pub async fn capture(
         .map_err(|_| CaptureError::RenderTimeout)?
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 async fn platform_capture(_: &WebviewWindow, _: u64, _: usize) -> Result<Capture, CaptureError> {
     Err(CaptureError::Unavailable)
+}
+
+#[cfg(target_os = "windows")]
+async fn platform_capture(
+    window: &WebviewWindow,
+    max_pixels: u64,
+    max_bytes: usize,
+) -> Result<Capture, CaptureError> {
+    use std::sync::{Arc, Mutex};
+    use webview2_com::{CapturePreviewCompletedHandler, Microsoft::Web::WebView2::Win32::*};
+    use windows::{
+        core::{Interface, BOOL},
+        Win32::{
+            Foundation::{HGLOBAL, RECT},
+            System::Com::{
+                StructuredStorage::CreateStreamOnHGlobal, STATFLAG_NONAME, STATSTG, STREAM_SEEK_SET,
+            },
+        },
+    };
+
+    if !window
+        .is_visible()
+        .map_err(|_| CaptureError::WindowUnavailable)?
+        || window
+            .is_minimized()
+            .map_err(|_| CaptureError::WindowUnavailable)?
+    {
+        return Err(CaptureError::WindowHidden);
+    }
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let sender = Arc::new(Mutex::new(Some(tx)));
+    let deliver = sender.clone();
+    let target = window.clone();
+    window
+        .with_webview(move |platform| {
+            let result = (|| {
+                let controller = platform.controller();
+                let mut visible = BOOL::default();
+                unsafe { controller.IsVisible(&mut visible) }
+                    .map_err(|_| CaptureError::WindowUnavailable)?;
+                if !visible.as_bool()
+                    || !target
+                        .is_visible()
+                        .map_err(|_| CaptureError::WindowUnavailable)?
+                    || target
+                        .is_minimized()
+                        .map_err(|_| CaptureError::WindowUnavailable)?
+                {
+                    return Err(CaptureError::WindowHidden);
+                }
+                let mut bounds = RECT::default();
+                unsafe { controller.Bounds(&mut bounds) }
+                    .map_err(|_| CaptureError::WindowUnavailable)?;
+                let width = u32::try_from(bounds.right - bounds.left)
+                    .map_err(|_| CaptureError::WindowUnavailable)?;
+                let height = u32::try_from(bounds.bottom - bounds.top)
+                    .map_err(|_| CaptureError::WindowUnavailable)?;
+                check_size(width, height, max_pixels)?;
+                let controller3: ICoreWebView2Controller3 =
+                    controller.cast().map_err(|_| CaptureError::CaptureFailed)?;
+                let mut bounds_mode = COREWEBVIEW2_BOUNDS_MODE_USE_RAW_PIXELS;
+                unsafe { controller3.BoundsMode(&mut bounds_mode) }
+                    .map_err(|_| CaptureError::CaptureFailed)?;
+                if bounds_mode != COREWEBVIEW2_BOUNDS_MODE_USE_RAW_PIXELS {
+                    return Err(CaptureError::CaptureFailed);
+                }
+                let mut scale = 0.0;
+                unsafe { controller3.RasterizationScale(&mut scale) }
+                    .map_err(|_| CaptureError::CaptureFailed)?;
+                if !scale.is_finite() || scale <= 0.0 {
+                    return Err(CaptureError::CaptureFailed);
+                }
+                // Wry 0.55.1 sets controller Bounds in raw physical pixels.
+                let logical_width = (f64::from(width) / scale).round() as u32;
+                let logical_height = (f64::from(height) / scale).round() as u32;
+                if logical_width == 0 || logical_height == 0 {
+                    return Err(CaptureError::WindowUnavailable);
+                }
+                let stream = unsafe { CreateStreamOnHGlobal(HGLOBAL(std::ptr::null_mut()), true) }
+                    .map_err(|_| CaptureError::CaptureFailed)?;
+                let callback_stream = stream.clone();
+                let callback_sender = deliver.clone();
+                let webview = unsafe { controller.CoreWebView2() }
+                    .map_err(|_| CaptureError::CaptureFailed)?;
+                let callback = CapturePreviewCompletedHandler::create(Box::new(move |status| {
+                    if callback_sender
+                        .lock()
+                        .unwrap()
+                        .as_ref()
+                        .is_none_or(|tx| tx.is_closed())
+                    {
+                        return Ok(());
+                    }
+                    let captured = (|| {
+                        status.map_err(|_| CaptureError::CaptureFailed)?;
+                        let mut stat = STATSTG::default();
+                        unsafe { callback_stream.Stat(&mut stat, STATFLAG_NONAME) }
+                            .map_err(|_| CaptureError::CaptureFailed)?;
+                        if stat.cbSize > max_bytes as u64 {
+                            return Err(CaptureError::ImageTooLarge);
+                        }
+                        unsafe { callback_stream.Seek(0, STREAM_SEEK_SET, None) }
+                            .map_err(|_| CaptureError::CaptureFailed)?;
+                        let mut png = vec![0; stat.cbSize as usize];
+                        let mut read = 0;
+                        unsafe {
+                            callback_stream.Read(
+                                png.as_mut_ptr().cast(),
+                                png.len() as u32,
+                                Some(&mut read),
+                            )
+                        }
+                        .ok()
+                        .map_err(|_| CaptureError::CaptureFailed)?;
+                        if read as usize != png.len() {
+                            return Err(CaptureError::CaptureFailed);
+                        }
+                        let decoder = png::Decoder::new(std::io::Cursor::new(&png));
+                        let reader = decoder
+                            .read_info()
+                            .map_err(|_| CaptureError::CaptureFailed)?;
+                        let info = reader.info();
+                        check_size(info.width, info.height, max_pixels)?;
+                        if info.width != width || info.height != height {
+                            return Err(CaptureError::CaptureFailed);
+                        }
+                        Ok(Capture {
+                            png,
+                            width,
+                            height,
+                            logical_size: [logical_width, logical_height],
+                            scale_factor: scale,
+                            display_backend: "WebView2".into(),
+                        })
+                    })();
+                    if let Some(tx) = callback_sender.lock().unwrap().take() {
+                        let _ = tx.send(captured);
+                    }
+                    Ok(())
+                }));
+                unsafe {
+                    webview.CapturePreview(
+                        COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
+                        &stream,
+                        &callback,
+                    )
+                }
+                .map_err(|_| CaptureError::CaptureFailed)?;
+                Ok(())
+            })();
+            if let Err(error) = result {
+                if let Some(tx) = deliver.lock().unwrap().take() {
+                    let _ = tx.send(Err(error));
+                }
+            }
+        })
+        .map_err(|_| CaptureError::WindowUnavailable)?;
+    let image = rx.await.map_err(|_| CaptureError::WindowUnavailable)??;
+    if !window
+        .is_visible()
+        .map_err(|_| CaptureError::WindowUnavailable)?
+        || window
+            .is_minimized()
+            .map_err(|_| CaptureError::WindowUnavailable)?
+    {
+        return Err(CaptureError::WindowHidden);
+    }
+    Ok(image)
 }
 
 #[cfg(target_os = "linux")]
@@ -182,7 +350,7 @@ async fn platform_capture(
             width,
             height,
             logical_size,
-            scale_factor,
+            scale_factor: f64::from(scale_factor),
             display_backend,
         })
     })
@@ -204,7 +372,7 @@ async fn platform_capture(
     Ok(image)
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn check_size(width: u32, height: u32, limit: u64) -> Result<(), CaptureError> {
     if width == 0 || height == 0 {
         return Err(CaptureError::WindowUnavailable);

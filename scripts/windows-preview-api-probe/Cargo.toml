@@ -1,0 +1,9 @@
+[package]
+name = "rustrss-wv2-api-probe"
+version = "0.0.0"
+edition = "2021"
+[dependencies]
+webview2-com = "=0.38.2"
+windows = { version = "=0.61.3", features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Com_StructuredStorage"] }
+
+[workspace]

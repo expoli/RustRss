@@ -253,7 +253,7 @@ impl Backend for Desktop {
                     _ => "capture_failed",
                 })?;
                 if image.logical_size != ready.viewport
-                    || (f64::from(image.scale_factor) - ready.dpr).abs() > 0.01
+                    || (image.scale_factor - ready.dpr).abs() > 0.01
                 {
                     return Err("viewport_mismatch");
                 }
@@ -290,8 +290,8 @@ impl Backend for Desktop {
         })
     }
 }
-#[cfg(target_os = "linux")]
-fn verify_marker(bytes: &[u8], colors: &[String], scale: u32) -> bool {
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+fn verify_marker(bytes: &[u8], colors: &[String], scale: f64) -> bool {
     let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
     let Ok(mut reader) = decoder.read_info() else {
         return false;
@@ -306,8 +306,8 @@ fn verify_marker(bytes: &[u8], colors: &[String], scale: u32) -> bool {
         _ => return false,
     };
     colors.iter().enumerate().all(|(i, c)| {
-        let x = (i as u32 * 4 + 2) * scale;
-        let y = 2 * scale;
+        let x = ((i as f64 * 4.0 + 2.0) * scale).floor() as u32;
+        let y = (2.0 * scale).floor() as u32;
         let offset = ((y * info.width + x) * channels) as usize;
         let expected = (0..3)
             .map(|k| u8::from_str_radix(&c[1 + k * 2..3 + k * 2], 16).unwrap())
@@ -315,8 +315,8 @@ fn verify_marker(bytes: &[u8], colors: &[String], scale: u32) -> bool {
         data.get(offset..offset + 3) == Some(expected.as_slice())
     })
 }
-#[cfg(not(target_os = "linux"))]
-fn verify_marker(_: &[u8], _: &[String], _: u32) -> bool {
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+fn verify_marker(_: &[u8], _: &[String], _: f64) -> bool {
     false
 }
 
@@ -372,7 +372,7 @@ mod tests {
         assert!(!matches_ready(&payload, &wrong));
     }
     #[test]
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     fn native_marker_rejects_stale_pixels() {
         let colors = vec!["#112233".into(); 8];
         let mut raw = vec![0u8; 40 * 8 * 3];
@@ -391,9 +391,9 @@ mod tests {
                 .write_image_data(&raw)
                 .unwrap();
         }
-        assert!(verify_marker(&bytes, &colors, 1));
+        assert!(verify_marker(&bytes, &colors, 1.0));
         let mut stale = colors;
         stale[7] = "#112234".into();
-        assert!(!verify_marker(&bytes, &stale, 1));
+        assert!(!verify_marker(&bytes, &stale, 1.0));
     }
 }

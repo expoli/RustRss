@@ -1237,3 +1237,9 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 隔离的真实 KWin Wayland 合成器中，主题夹具 39 张 PNG / 47 项断言与产品 MCP 预览 24 张 PNG 均通过；overview、article、settings 三场景在每个预设/模式单元格有不同帧。原始图、逐图 SHA-256、场景/修订元数据及二进制指纹见 `2026-09-23-theme-preview/virtual-kwin-2026-09-28/`。
 - [x] KScreen 设定输出缩放 1.5 后，产品预览的 960×640 逻辑尺寸对应 1920×1280 PNG、WebView buffer scale 2；常规 scale 1 对应 960×640 PNG。该结果只证明虚拟合成器中的内容/缓冲区几何与场景新鲜度。
 - [ ] 仍需 GNOME、最小化/遮挡、跨屏切换和真实显示器的分数缩放证据；Windows/macOS 的原生截帧另在各平台任务中验证。虚拟 KWin 通过不代替这些条件。
+## 35. Windows 原生主题预览截图（2026-09-28，运行验收待办）
+
+- [x] **机械检查**：WebView2 原生 `CapturePreview` 适配器已写入隔离工作树；Linux `cargo test --workspace --locked --offline` 通过。具体实现、锁定 API 和命令见 [Windows 截图记录](2026-09-23-theme-preview/windows-capture.md)。
+- [ ] **真机截图**：Windows 新二进制 SHA256、overview/article/settings 各自可见标记与独立 PNG、request/revision/hash/scene 元数据、内容区逻辑/像素尺寸和 DPR；100% 与可用分数或整数缩放分别记录。
+- [ ] **失败与文件生命周期**：最小化/隐藏、超时、失权和过期不发布旧图；取消仍可用；2MiB 单图、32 张/32MiB 服务预算、600 秒 TTL 在 Windows 真机验证。
+- [ ] **环境限制**：本机 Linux，Tailscale 两个 Windows peer 均离线；Windows target 的 `cargo check` 还被缺失的 `x86_64-w64-mingw32-gcc` 阻断。Linux 测试不能代替上述运行项。
