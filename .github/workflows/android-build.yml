@@ -1,0 +1,68 @@
+# Android 构建：在本地 release 签名链路建立后，为侧载 APK 提供持续构建检查。
+# 只做 x86_64 debug APK（调试签名自动生成，不需要密钥）；发布签名仍由本地
+# keystore.properties 完成（见 docs/development.md 的 Android 段）。
+# 桌面 CI（ci.yml / release.yml）保持不变。
+name: android-build
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "src-tauri/**"
+      - "crates/**"
+      - "ui/**"
+      - ".github/workflows/android-build.yml"
+  pull_request:
+    paths:
+      - "src-tauri/**"
+      - "crates/**"
+      - "ui/**"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager --install "ndk;27.2.12479018" > /dev/null
+
+      - name: Build Android APK (debug, x86_64 + aarch64)
+        env:
+          NDK_HOME: ${{ env.ANDROID_NDK_HOME || format('{0}/ndk-bundle', env.ANDROID_HOME) }}
+        run: cargo tauri android build --debug --target x86_64 --target aarch64 --apk
+
+      - name: Verify APK signature
+        run: |
+          APK="src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk"
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/apksigner" verify "$APK"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rustrss-android-debug-apk
+          path: src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+          if-no-files-found: error
+          retention-days: 14

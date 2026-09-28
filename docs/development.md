@@ -35,6 +35,27 @@ cargo tauri android build --target x86_64 --debug
 # 产物：src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
 ```
 
+**侧载发布（release APK）**：release 构建需要签名密钥。生成一次（自签名，有效期 10000 天）：
+
+```bash
+keytool -genkeypair -v -keystore src-tauri/gen/android/app/android-release.keystore \
+  -alias rustrss -keyalg RSA -keysize 2048 -validity 10000
+```
+
+并在 `src-tauri/gen/android/keystore.properties`（git-ignored）里写入：
+
+```properties
+storeFile=app/android-release.keystore
+storePassword=<生成时输入的 store 口令>
+keyAlias=rustrss
+keyPassword=<生成时输入的 key 口令>
+```
+
+然后 `cargo tauri android build --target x86_64`（无 `--debug` 即 release）；产物同目录下的
+`app-universal-release.apk`。**安装/升级**：`adb install -r <apk>`（升级用 `-r` 保留
+应用数据；侧载到无 adb 的手机时，把 APK 传到设备点击安装，升级直接覆盖安装同签名 APK，
+数据保留）。换签名密钥 = 换应用身份，必须先卸载旧版再装新版（数据不迁移）。
+
 ## 数据库与诊断
 
 开发库和外来 SQLite 文件不会自动迁移为当前格式。应用标识或 schema 版本不匹配时会拒绝打开；不要用真实用户库做开发截图或试验。可通过 `RUSTSS_DB` 指定隔离数据库。
