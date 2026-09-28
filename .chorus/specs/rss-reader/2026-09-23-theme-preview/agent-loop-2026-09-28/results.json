@@ -1,0 +1,223 @@
+{
+  "captured_at_utc": "2026-09-28T14:51:44.188934+00:00",
+  "source_head": "a4970b9ecc5a52244f835379598f408a7f4646b9",
+  "display_backend": "isolated virtual KWin Wayland",
+  "binaries": {
+    "rustrss-desktop": {
+      "sha256": "b433537f5cb180064eac491e0aae71e0ab5e414a2af7fc580e2987a79f6614a0",
+      "mtime_utc": "2026-09-28T14:51:01.575427+00:00"
+    },
+    "rustrss-mcp": {
+      "sha256": "24a1ac278fe408fa545c8642be50f592eef3da2766122437ea18676c54c6c2fa",
+      "mtime_utc": "2026-09-28T05:52:46.939257+00:00"
+    },
+    "theme_fixture": {
+      "sha256": "64e6032f2094ac98b34e2b53145f0824295364ed6560f826df4fa3a03cb2610f"
+    }
+  },
+  "steps": [
+    {
+      "label": "first-clear-article",
+      "file": "first-clear-article.png",
+      "sha256": "3c9086e4a92ec25517345c4412689eda111c42cf464be75bb56a665d92f65e1e",
+      "preview_revision": 1,
+      "config_hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture": {
+        "capture_ms": 1640.877046,
+        "captured_at": 1790607107646,
+        "display_backend": "GdkWaylandDisplay",
+        "fonts": {
+          "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+          "glyph_fallback": "unknown",
+          "requested": {
+            "line_height": 1.55,
+            "mono_family": [
+              "JetBrains Mono",
+              "Cascadia Mono",
+              "Menlo",
+              "monospace"
+            ],
+            "mono_size": 13,
+            "read_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "read_size": 14,
+            "ui_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "ui_size": 14
+          }
+        },
+        "freshness_marker_verified": true,
+        "logical_size": [
+          960,
+          640
+        ],
+        "output_scale": 1,
+        "pixel_size": [
+          960,
+          640
+        ],
+        "scale_factor": 1.0
+      },
+      "scene": "article"
+    },
+    {
+      "decision": "adjust",
+      "choice": {
+        "light_preset": "paper",
+        "reason": "I inspected the Clear article PNG: the cool background and dense list draw attention from the reading pane. Try Paper to compare the warmer reading surface before saving."
+      }
+    },
+    {
+      "label": "second-adjusted-article",
+      "file": "second-adjusted-article.png",
+      "sha256": "d9657e1b83350fa72df8eeca11ee844e02e9fbdc448059ea782fd1fa8af5be11",
+      "preview_revision": 2,
+      "config_hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture": {
+        "capture_ms": 139.94683899999998,
+        "captured_at": 1790607124228,
+        "display_backend": "GdkWaylandDisplay",
+        "fonts": {
+          "computed": "\"Noto Serif CJK SC\", Georgia, serif",
+          "glyph_fallback": "unknown",
+          "requested": {
+            "line_height": 1.9,
+            "mono_family": [
+              "JetBrains Mono",
+              "Cascadia Mono",
+              "Menlo",
+              "monospace"
+            ],
+            "mono_size": 13,
+            "read_family": [
+              "Noto Serif CJK SC",
+              "Georgia",
+              "serif"
+            ],
+            "read_size": 18,
+            "ui_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "ui_size": 14
+          }
+        },
+        "freshness_marker_verified": true,
+        "logical_size": [
+          960,
+          640
+        ],
+        "output_scale": 1,
+        "pixel_size": [
+          960,
+          640
+        ],
+        "scale_factor": 1.0
+      },
+      "scene": "article"
+    },
+    {
+      "decision": "save",
+      "choice": {
+        "action": "save",
+        "reason": "I inspected the second PNG: Paper changes the article to a warm serif reading surface while preserving the selected article and code/table content. Save this temporary candidate."
+      },
+      "saved_revision": 1,
+      "sqlite_theme": {
+        "schema_version": 1,
+        "revision": 1,
+        "mode": "light",
+        "light_preset": "paper",
+        "dark_preset": "paper",
+        "overrides": {}
+      }
+    },
+    {
+      "label": "third-cancel-candidate-settings",
+      "file": "third-cancel-candidate-settings.png",
+      "sha256": "b9101b56eae53d176df8916a20b4ec7dcb6151116c0009021a5845fa2bad8c18",
+      "preview_revision": 1,
+      "config_hash": "2eee5047bae8692b172414a9776b3e773e8fc8cdbad5e8e1e0aff8b852740e61",
+      "capture": {
+        "capture_ms": 1710.45804,
+        "captured_at": 1790607146183,
+        "display_backend": "GdkWaylandDisplay",
+        "fonts": {
+          "computed": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+          "glyph_fallback": "unknown",
+          "requested": {
+            "line_height": 1.7,
+            "mono_family": [
+              "JetBrains Mono",
+              "Cascadia Mono",
+              "Menlo",
+              "monospace"
+            ],
+            "mono_size": 13,
+            "read_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "read_size": 16,
+            "ui_family": [
+              "-apple-system",
+              "Noto Sans CJK SC",
+              "Segoe UI",
+              "sans-serif"
+            ],
+            "ui_size": 14
+          }
+        },
+        "freshness_marker_verified": true,
+        "logical_size": [
+          960,
+          640
+        ],
+        "output_scale": 1,
+        "pixel_size": [
+          960,
+          640
+        ],
+        "scale_factor": 1.0
+      },
+      "scene": "settings"
+    },
+    {
+      "decision": "cancel",
+      "choice": {
+        "action": "cancel",
+        "reason": "I inspected the Slate settings PNG: it is a distinct cooler candidate, but I prefer the saved Paper reading surface. Cancel this unsaved preview and verify SQLite remains at revision 1 Paper."
+      },
+      "sqlite_theme_after_cancel": {
+        "schema_version": 1,
+        "revision": 1,
+        "mode": "light",
+        "light_preset": "paper",
+        "dark_preset": "paper",
+        "overrides": {}
+      },
+      "cancel_result": {
+        "action": "cancel",
+        "affected": 0,
+        "ok": true
+      }
+    }
+  ],
+  "completed_at_utc": "2026-09-28T14:52:43.419600+00:00",
+  "binary_sha256": "b433537f5cb180064eac491e0aae71e0ab5e414a2af7fc580e2987a79f6614a0",
+  "sqlite_initial_theme": null,
+  "sqlite_after_adjust_before_save": null,
+  "agent_image_review": "The agent opened each of the three archived PNGs before writing the next decision command; choice reasons are in ordered steps."
+}

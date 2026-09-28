@@ -28,6 +28,8 @@ RustRss 面向 Linux、Windows 和 macOS 桌面；Android 版可在设备上侧�
 Windows 主题预览截图现通过 WebView2 的原生内容截图接口生成 PNG，并沿用 MCP 预览的修订号、像素标记、文件配额与到期规则。该适配器的 Windows 真机运行验收仍在进行中；当前不能把 Linux 截图结果当作 Windows 场景、缩放和最小化的通过证据。复验范围见 [Windows 预览验收记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/windows-capture.md)。
 macOS 主题预览现使用 WKWebView 内容截图适配器；真实 macOS 会话的三场景、缩放与失败路径仍待运行验收，步骤和证据状态见 [macOS 截图记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/macos-native-capture.md)。
 
+Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话通过场景级预览回归，并完成一次 agent 实际读图、调整、保存和取消后的 SQLite 回读；[运行证据](.chorus/specs/rss-reader/2026-09-23-theme-preview/agent-loop-2026-09-28/README.md)附原始 PNG 与二进制指纹。Windows/macOS 真机环境本次不可用，按用户指示跳过相应运行测试；两平台的原生截图与失败路径仍标为待验。
+
 ## 发布步骤
 
 1. 在根 `Cargo.toml` 的 `[workspace.package]` 和 `src-tauri/tauri.conf.json` 中同步更新版本号，提交版本变更。

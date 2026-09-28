@@ -1241,7 +1241,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 ## 35. Windows 原生主题预览截图（2026-09-28，运行验收待办）
 
-- [x] **机械检查**：WebView2 原生 `CapturePreview` 适配器已写入隔离工作树；Linux `cargo test --workspace --locked --offline` 通过。具体实现、锁定 API 和命令见 [Windows 截图记录](2026-09-23-theme-preview/windows-capture.md)。
+- [x] **机械检查**：WebView2 原生 `CapturePreview` 适配器已整合到主工作树；锁定 Windows API 探针、Linux `cargo test --workspace --locked --offline` 与最终 Linux 预览回归通过。具体实现与命令见 [Windows 截图记录](2026-09-23-theme-preview/windows-capture.md)；Chorus Windows 任务仅实现/可用环境 AC 经独立评审通过，原生 AC 仍 pending。
 - [ ] **真机截图**：Windows 新二进制 SHA256、overview/article/settings 各自可见标记与独立 PNG、request/revision/hash/scene 元数据、内容区逻辑/像素尺寸和 DPR；100% 与可用分数或整数缩放分别记录。
 - [ ] **失败与文件生命周期**：最小化/隐藏、超时、失权和过期不发布旧图；取消仍可用；2MiB 单图、32 张/32MiB 服务预算、600 秒 TTL 在 Windows 真机验证。
 - [ ] **环境限制**：本机 Linux，Tailscale 两个 Windows peer 均离线；Windows target 的 `cargo check` 还被缺失的 `x86_64-w64-mingw32-gcc` 阻断。Linux 测试不能代替上述运行项。
@@ -1252,3 +1252,9 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] **机械检查**：WKWebView 截图适配器已整合，锁定 API 对照和 Linux 共用协议回归见 [macOS 截图记录](2026-09-23-theme-preview/macos-native-capture.md)；不等于 macOS 编译或运行通过。
 - [ ] **真机截图与失败路径**：macOS 最终二进制/OS/WebKit 指纹、三场景可见内容与独立 PNG、修订/配置哈希、1x/2x 几何；最小化/隐藏/超时/失权/版本冲突、保存/取消与 TTL/配额仍需实机复验。
 - [ ] **环境限制**：本机无 macOS 主机；交叉编译停在 Objective-C 工具链。用户允许跳过本次不可用环境测试，原生运行项保持 open，不登记为 macOS 通过。
+
+## 37. 最终整合版 agent 读图闭环（2026-09-28）
+
+- [x] **实际读图后再调整**：agent 打开 Clear 文章 PNG，依据阅读区的冷色/密集列表改试 Paper；打开新 PNG 确认暖色衬底、衬线正文及文章内容，再决定保存。此顺序及选择原因、两张原图和不同 config hash 见 [证据](2026-09-23-theme-preview/agent-loop-2026-09-28/README.md)。
+- [x] **保存与取消有 SQLite 回读**：Paper 保存后 `ui.theme_config.current.revision=1`、`light_preset=paper`；再查看 Slate 设置候选图并取消，SQLite 与保存后的值完全相同。证据含最终 desktop/MCP/fixture 二进制 SHA-256、UTC 时间、三张 PNG 的 SHA-256、场景/预览修订/逻辑及像素尺寸/原生新鲜度标记。
+- [ ] **独立开放项**：Windows/macOS 真机截图及失败路径、GNOME/物理跨屏与最小化、第三方 GUI MCP 客户端、原生弹层及真实语音/盲文输出仍按各条目保持 open；本节只证明隔离 Linux 会话与本代理实际读图闭环。
