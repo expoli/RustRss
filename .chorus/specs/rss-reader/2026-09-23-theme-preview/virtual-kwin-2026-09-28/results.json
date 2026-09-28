@@ -1,0 +1,2030 @@
+{
+  "captured_at_utc": "2026-09-28T13:37:26+00:00",
+  "git_head": "b7bfadae02b167a70028c88dc1585a6b22cd9090",
+  "kwin_version": "kwin 6.6.6",
+  "fixture_binary": {
+    "path": "target/debug/examples/theme_ui",
+    "sha256": "672d2664b547c31b96dcce56b7e5bdc7d33330f8ec4020d13e5c24bdc6463c09",
+    "mtime_utc": "2026-09-28T13:13:54+00:00"
+  },
+  "desktop_binary": {
+    "path": "target/debug/rustrss-desktop",
+    "sha256": "43829a19249d2bf1e266be08c3d10a294676d00ef77e028dbc5d619a0581e5fc",
+    "mtime_utc": "2026-09-28T13:20:32+00:00"
+  },
+  "mcp_binary": {
+    "path": "target/debug/rustrss-mcp",
+    "sha256": "24a1ac278fe408fa545c8642be50f592eef3da2766122437ea18676c54c6c2fa",
+    "mtime_utc": "2026-09-28T05:52:46+00:00"
+  },
+  "sessions": [
+    {
+      "name": "scale-1",
+      "virtual_kwin": true,
+      "configured_output_scale": 1.0,
+      "output_scale_observation": "Virtual-0 Scale 1",
+      "fixture": {
+        "capture_count": 39,
+        "check_count": 47,
+        "scene_frames_per_cell": {
+          "clear-dark-en": 3,
+          "clear-dark-zh": 3,
+          "clear-light-en": 3,
+          "clear-light-zh": 3,
+          "paper-dark-en": 3,
+          "paper-dark-zh": 3,
+          "paper-light-en": 3,
+          "paper-light-zh": 3,
+          "slate-dark-en": 3,
+          "slate-dark-zh": 3,
+          "slate-light-en": 3,
+          "slate-light-zh": 3
+        },
+        "capture_manifest": [
+          {
+            "name": "clear-light-zh-CN-overview",
+            "sha256": "d63be47a47de1e40c6be89e8febdf47e223bd6978ea98c35a115f2915970d4c6",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-light-zh-CN-article",
+            "sha256": "888481823c1ae8be0cb3bc627fb9938ef7e7e5b297c535827d848ba70bc9fe46",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-light-zh-CN-settings",
+            "sha256": "876d568dc1c77ac72e91960aca16085df466c7b68e2cbef14b3b6d8e9998f563",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-dark-zh-CN-overview",
+            "sha256": "f5fc64da3c1a8e8d7f0ec3c3d595fa114f5fcb2cc68e656f02ed278544f69afd",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-dark-zh-CN-article",
+            "sha256": "acb5ae52ee698fda1756b1be62cd578b01125fe87bbd5613865645312d0e5c6c",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-dark-zh-CN-settings",
+            "sha256": "815e361547dfb2e0cc21df002b188a7c02e35c8ef2fc95441555afbcaba4f141",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-light-zh-CN-overview",
+            "sha256": "2413a5999a6af7154760e3a19ef5b93328772cb2adb651afaf3a0276486c90f3",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-light-zh-CN-article",
+            "sha256": "6af31fca9cc43155ebdc8e2b98fc0298f8a03a9edc9769890d17f7142d880ae6",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-light-zh-CN-settings",
+            "sha256": "168d19c6145dfd33e6246d3f48321fdfe49e50b61d598122d0dadab083e77406",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-dark-zh-CN-overview",
+            "sha256": "0c328ae92d50d2eca7ee7211a4e0fc4d75e5a9d888c24ff5ed4728a810d8f6c3",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-dark-zh-CN-article",
+            "sha256": "e38575b59501944d28c7127561992cf50d037e5e22cbe2fa6e934f88bccca987",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-dark-zh-CN-settings",
+            "sha256": "d47b7a7e7d6ff3671c1fef3b2d2e4b030e7e5bfb5ed198e68f5f8a78c0658576",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-light-zh-CN-overview",
+            "sha256": "ca08315331ad4543288abf4d70d2c7a4e78962d91be3fc2145fdee8ce054e047",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-light-zh-CN-article",
+            "sha256": "a882753869e594d80ecb522c98e66e8c2cad5dd2d477e11a5c50dc1fa3656873",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-light-zh-CN-settings",
+            "sha256": "575be77886651c4099031e45fb541a36b542a37af491addc8d6149b6d2a031d1",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-dark-zh-CN-overview",
+            "sha256": "50a06b95b1c591637838b52b6c8be2ff30f0b5bd4724c50cc8592a00af955915",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-dark-zh-CN-article",
+            "sha256": "339d0421ca75184989c59882c5fa55eb708d672206e5dc3ae8428813292a8de9",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-dark-zh-CN-settings",
+            "sha256": "38d1f37ddeb76cf22de6657bf620ae69bd57ca5fa47b1d1c41d60f442bc474ed",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-light-en-overview",
+            "sha256": "2e7194b9e5cb1ac87325a48ec2a54a2650f8e495c481138fc837cd13c76c7f7d",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-light-en-article",
+            "sha256": "e0290f1990858175567dad714f3aaf66b0594db0314a117d7511c82d7e1bf548",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-light-en-settings",
+            "sha256": "fbed312678aa01c73a54cfb9d9d6441ff9377800102c4f3ab721e3d001fd158d",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-dark-en-overview",
+            "sha256": "74cca21574d8dc885d930e807c11272bab01d75e65d7703c9c8209e0f868f830",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-dark-en-article",
+            "sha256": "ec871886db78c450e95af21cc8f43a1d289a01bffacb680ce75e75780fa47f05",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "clear-dark-en-settings",
+            "sha256": "ce47db88ba6bb638e70425dbad0fc14f06b3deed18cd056f3791dd46766d1916",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-light-en-overview",
+            "sha256": "c42a311c1186cf0408581949faac998aaed8adfaccbfddd5e261342a63c5ead9",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-light-en-article",
+            "sha256": "a25c78b534a3ed6ab4438d30fd86bf7f37a3f4835bf115b0281428eed88ed1d3",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-light-en-settings",
+            "sha256": "b58a3752ae860bc5f2a86cf77b90e248e394a606dff7b17fb4597ef3aca6419d",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-dark-en-overview",
+            "sha256": "635d0ff364f07371a9457b1f21553c3bde0d3a91f9feb12d53df5659bb5ce51c",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-dark-en-article",
+            "sha256": "f4f47d8026045bf9f4e5444391d9d682a4eeb0e0790debdb5a24125c9b133efc",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "paper-dark-en-settings",
+            "sha256": "625b9ed14e16ca382b97cbb53da2b777a7b8f49166fed4dba54a733e371fd6fb",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-light-en-overview",
+            "sha256": "6e5dbb82870bbabcac2a82703732f3408fc3841eaaa02ebda920bc9c4c871e1f",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-light-en-article",
+            "sha256": "9f1061ca27694cab0a095f5564a608751b61e82b7d61fc572e857ba5dfc28e87",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-light-en-settings",
+            "sha256": "84040146d2628b3cbb09dcd7b9efbc199d96dd9cd73b5653e39cfba565c60616",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-dark-en-overview",
+            "sha256": "611a9f6700c69bb5e9b06f711822fa48bb37f388cbcb1fd6d2266f7e5fe427b9",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-dark-en-article",
+            "sha256": "7b25c5eef90e53f2e2df5122419730360b6c0d2f8060726efc50bf004beb2994",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "slate-dark-en-settings",
+            "sha256": "58f8e5a45b0be0a45a08a2c380326562e435947216d7874aad9851e8c395dad8",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "layout-focus",
+            "sha256": "79e24ba0ec81a4961aaf1d2c7ee13f121cbd8dd32d6cb5f9bc448afad25104e5",
+            "pixels": [
+              1240,
+              773
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "narrow-article",
+            "sha256": "443685d71b9c217dd306840560df04c0c89ebf88b3377f16ae75e17a60b75f73",
+            "pixels": [
+              900,
+              600
+            ],
+            "logical_size": [
+              900,
+              600
+            ],
+            "scale_factor": 1
+          },
+          {
+            "name": "narrow-settings",
+            "sha256": "b0bde79085d18eec5c97c866a7aeab5daf785b01116c49aa3fdda697af04fe77",
+            "pixels": [
+              900,
+              600
+            ],
+            "logical_size": [
+              900,
+              600
+            ],
+            "scale_factor": 1
+          }
+        ]
+      },
+      "product": {
+        "capture_count": 24,
+        "scene_frames_per_cell": {
+          "clear-dark": 3,
+          "clear-light": 3,
+          "paper-dark": 3,
+          "paper-light": 3,
+          "slate-dark": 3,
+          "slate-light": 3
+        },
+        "temporary_no_write": true,
+        "stdio_bridge_file": true,
+        "saved_revision": 1,
+        "idempotent_save": true,
+        "revocation_reaped": true,
+        "freshness_marker_asserted_by_probe": true,
+        "capture_manifest": [
+          {
+            "label": "clear-light-overview",
+            "bytes": 86876,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 1589.3850280000001,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "7754fbcebf20a8c851269be6adde986fbdfb301de97a905dac6279c332b6b7d6"
+          },
+          {
+            "label": "clear-light-article",
+            "bytes": 146780,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 106.40732,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "df4e3881f5de7ac568a36e8bb30a67b66b21a07a26ea588a65c6e6ba0117e960"
+          },
+          {
+            "label": "clear-light-settings",
+            "bytes": 89364,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 160.050907,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "1a916127b9a0b8103f61a87da6e02f8024226563f2c41fcd1112b36ca964320b"
+          },
+          {
+            "label": "clear-dark-overview",
+            "bytes": 86572,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 94.344872,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "33fd1072f68304c5224ef6af1d94d2c3cd3cbf172517a12b0b1d32b916c1d172"
+          },
+          {
+            "label": "clear-dark-article",
+            "bytes": 146024,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 109.2847,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "6f660f0631646d41dee36d279c728c54e929eac92712c66b150f3f3c2a513b3d"
+          },
+          {
+            "label": "clear-dark-settings",
+            "bytes": 86822,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 109.456697,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "5215de8cd2625b0b7d1b24c7022074e14ab75f3fd9bfb1810f925a832f8f936a"
+          },
+          {
+            "label": "paper-light-overview",
+            "bytes": 86877,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 167.55442000000002,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "9992bfff76e66933da3ef64c49d8f332bd914ac6642c0c6958bd00f6cd7e6286"
+          },
+          {
+            "label": "paper-light-article",
+            "bytes": 137092,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 101.549988,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "7102721bd7449d17816e9484109019f88d5239232baf0c218c964d9d5cf62830"
+          },
+          {
+            "label": "paper-light-settings",
+            "bytes": 88284,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 103.127917,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "fb68cca3a3a5e2326a035f1444cb9c71be6bfd51a8eb348708c85b236d314f3f"
+          },
+          {
+            "label": "paper-dark-overview",
+            "bytes": 86299,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 86.564183,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "d670f9106d7ee105764ec2dac22673d424f1e8b3dd6a71d1cb9cedbab86d687b"
+          },
+          {
+            "label": "paper-dark-article",
+            "bytes": 136178,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 109.54095699999999,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "a8532041bf91d2cd087963903de35ff7cdcd0197aba0f102af3c8f3193766b63"
+          },
+          {
+            "label": "paper-dark-settings",
+            "bytes": 84960,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 104.687782,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "0c22c5308842ddaee25073fd6d4f90d5c7ca594729a8701669671ad23d14c81e"
+          },
+          {
+            "label": "slate-light-overview",
+            "bytes": 91347,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 105.04116400000001,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "329be921535c223187deb3f4a268d53b04fb70c2bbd44ccb3efbbcb2db81d4c9"
+          },
+          {
+            "label": "slate-light-article",
+            "bytes": 140260,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 107.880611,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "e68b75fdcbb690eff9c3dc01ab0b1bb701e2534272316a56dbec7c2a86f3b1e2"
+          },
+          {
+            "label": "slate-light-settings",
+            "bytes": 91652,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 107.91685,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "7f0339cecec16904d5f2b9e50ab0c0038eadf4a3950b1c7a7f72139a57457308"
+          },
+          {
+            "label": "slate-dark-overview",
+            "bytes": 90775,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 90.063444,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "cbe9c246023a285c1d27b42947cc622a9c0d464af5828ac297059e33ebb1bed8"
+          },
+          {
+            "label": "slate-dark-article",
+            "bytes": 139215,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 110.328404,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "20b3702f9c1fc74927e7d578c72f3ea6748b93e589d59784a7395b6b50817591"
+          },
+          {
+            "label": "slate-dark-settings",
+            "bytes": 88775,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 105.718462,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "c31e962a5c819b8d4f44291e9b8b1b95920a63dfc8dfb168418ce18a94824393"
+          },
+          {
+            "label": "recapture",
+            "bytes": 91348,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 86.393148,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "8ce5ba12994ea331d31990ef7ba4487c05998f432953f91a055020287622b83d"
+          },
+          {
+            "label": "reopen-0",
+            "bytes": 146779,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 1559.608979,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "80a881b02ba10416c9cc101fdb798e73e87c922cab4835ef6235043f966f0bf5"
+          },
+          {
+            "label": "reopen-1",
+            "bytes": 146779,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 1558.278199,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "177872f10c85fa94511184d3de01a7a1c459d499bc343a06c7a39f7f152f66fe"
+          },
+          {
+            "label": "reopen-2",
+            "bytes": 146779,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 1549.742745,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "6038611f4bf50ed7fb30632a7c8773f3f003fea1d1db804f30e0d2af99a1c387"
+          },
+          {
+            "label": "stdio-paper",
+            "bytes": 137090,
+            "revision": 1,
+            "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+            "capture_ms": 1585.7906750000002,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "64250316329aa62d59a320e0b738ebe52d6d8a13372d4d9c2aba3cd18a857271"
+          },
+          {
+            "label": "revoke",
+            "bytes": 137092,
+            "revision": 1,
+            "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+            "capture_ms": 1584.79364,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              960,
+              640
+            ],
+            "scale_factor": 1,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "2b6979bcb9f94d5c0262e7f972939c4757b780cfe7ce1c7c17ab4653ae6e0732"
+          }
+        ]
+      },
+      "archived_raw_scenes": [
+        {
+          "scene": "overview",
+          "file": "scale-1-overview.png",
+          "sha256": "7754fbcebf20a8c851269be6adde986fbdfb301de97a905dac6279c332b6b7d6",
+          "bytes": 86876
+        },
+        {
+          "scene": "article",
+          "file": "scale-1-article.png",
+          "sha256": "df4e3881f5de7ac568a36e8bb30a67b66b21a07a26ea588a65c6e6ba0117e960",
+          "bytes": 146780
+        },
+        {
+          "scene": "settings",
+          "file": "scale-1-settings.png",
+          "sha256": "1a916127b9a0b8103f61a87da6e02f8024226563f2c41fcd1112b36ca964320b",
+          "bytes": 89364
+        }
+      ]
+    },
+    {
+      "name": "scale-1.5",
+      "virtual_kwin": true,
+      "configured_output_scale": 1.5,
+      "output_scale_observation": "Virtual-0 Scale 1.5, wl_output integer scale 2",
+      "fixture": {
+        "capture_count": 39,
+        "check_count": 47,
+        "scene_frames_per_cell": {
+          "clear-dark-en": 3,
+          "clear-dark-zh": 3,
+          "clear-light-en": 3,
+          "clear-light-zh": 3,
+          "paper-dark-en": 3,
+          "paper-dark-zh": 3,
+          "paper-light-en": 3,
+          "paper-light-zh": 3,
+          "slate-dark-en": 3,
+          "slate-dark-zh": 3,
+          "slate-light-en": 3,
+          "slate-light-zh": 3
+        },
+        "capture_manifest": [
+          {
+            "name": "clear-light-zh-CN-overview",
+            "sha256": "da2fea29eefb741e135b1b1d0d567872a680680e530033d73d0dc4b13488f3ad",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-light-zh-CN-article",
+            "sha256": "9786b0de52149a6cdf9c1e59d6252068bbf68dc72148057b81fc7d1de2c48f01",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-light-zh-CN-settings",
+            "sha256": "a2cf6ced37cddc0e0f056bd49e4bdb852255123ade048216a7fe66f46dbb492e",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-dark-zh-CN-overview",
+            "sha256": "32af9023deecd1ca3d7ce6a0609ae45b05f097b86c29ff5956c871d3606d7577",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-dark-zh-CN-article",
+            "sha256": "55ff516774fa75dcd1a37208a09b8314727e74534fcd4fd6f8cc28445a54bd91",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-dark-zh-CN-settings",
+            "sha256": "6222d5fe44e78837916fe7633fbd5e1f4ccd408a55bfb8ce5da3b3a754c22d37",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-light-zh-CN-overview",
+            "sha256": "0aad1eb2f18521cbe026b6bf201e7266fbd5e8a25bcbfccc96f5314f5f452ca9",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-light-zh-CN-article",
+            "sha256": "f0627ad380c2f1b5e73e460c1ff7382590d8fd4d22a41fd199971acb9859fdb8",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-light-zh-CN-settings",
+            "sha256": "2083ae1d3ded8007627e9b3ce60f857a6719a3c8e39ad22a984589fc30fa7118",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-dark-zh-CN-overview",
+            "sha256": "f8acca0546718a5a8b1f5746a3a596324bc9c703b23ceab92ccc9a00a9e3a5cd",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-dark-zh-CN-article",
+            "sha256": "b69ccbc959735c3b34a6aff7013afdeafea7d906b9f73c8f1da7aad2c5c0d5ef",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-dark-zh-CN-settings",
+            "sha256": "bdffc760ef7052696b8e5832e2e3fc7b43eb36a1c9b7fdb7dba7db0a20316ee0",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-light-zh-CN-overview",
+            "sha256": "71b6c171105edc3d86965dd85000930f0d32e230d1ddc1b824f49ff4b4b8a12d",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-light-zh-CN-article",
+            "sha256": "032681e9035d14fca04b903b3d2171140acbcd2c4233daff3e7d8a335869eb39",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-light-zh-CN-settings",
+            "sha256": "1aec73732fe9e199c03696e9eaf23479b24f56284b7637b9523d232549e589e7",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-dark-zh-CN-overview",
+            "sha256": "258dbf25995ad6d1e23dd9cba4fce18d4076df11f34090dffa6aff03ce72a2fa",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-dark-zh-CN-article",
+            "sha256": "db88ee4bd998d4ed9ebfe0695f3d2e4aa7f15c9bc52ebbb185880b4b1ed19e3b",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-dark-zh-CN-settings",
+            "sha256": "1c407c6cefc9b3b36f5c0918e32cceaf36d9133200b9902ecfd312c59bf5836f",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-light-en-overview",
+            "sha256": "539f05fd6dbd3bd9a76ce0904f596c2fac31e21873a6c0cea6146cdffa3f8bb1",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-light-en-article",
+            "sha256": "b5a651bb5773ae7b0ad962f0773f7990423e5e760deb88d6cb12376b8f1c54cd",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-light-en-settings",
+            "sha256": "6a1a2fc613f0b967c38389c754ba2114079079cd30ed348b01a6990dc1b21813",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-dark-en-overview",
+            "sha256": "d5a19df78aa73726d8dc6156fedf5b314e036508a436b670b47f07d5ba393f9d",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-dark-en-article",
+            "sha256": "25ca9a4dcc7ad36b3a4c72de8da3863d29665050011f03b7e8d581e8eaed11c2",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "clear-dark-en-settings",
+            "sha256": "7c75f804964b4f58d43fe5ead262285ba9f76a0e7c480429641421a0dc2062de",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-light-en-overview",
+            "sha256": "345036b415ade7d83dbaaf7c9b6c0ec9ac4551adf579bc0b5799bb0bf2c537fc",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-light-en-article",
+            "sha256": "a3ebadf38df670b051d632a66b97aff81b78d2872d690702d6b645b96ec5863f",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-light-en-settings",
+            "sha256": "34c0cf105c5e2632980dc2930f388d39fe16a3584a8ca89bce4a2c661fcd48d6",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-dark-en-overview",
+            "sha256": "df2933881603aa4f1394a0051b53dd75eb9ae68788efff3b885615829e9f5cdc",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-dark-en-article",
+            "sha256": "bcf5a6574d61d17b995ad2500f119c58d66c2dec749ce996a424840aa21291b7",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "paper-dark-en-settings",
+            "sha256": "7f89429f43c5b5cd32ba528d932114c29c83ef36b93cb87720b6d00442ccc619",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-light-en-overview",
+            "sha256": "17113b3eb5ecfdfda176617a79bbae136499c6a4d2b31aa82ad59f09bb68ea53",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-light-en-article",
+            "sha256": "3d5b0db98738b2fd55d3fddd04b8ab7848e7303a8f9f287cebc06dd233426c19",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-light-en-settings",
+            "sha256": "0f1cd6ea2605a68ddefebb2bff431f71f5dff9611609ac54e14a81a49478999b",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-dark-en-overview",
+            "sha256": "4502de0767eeeb11409a2babb62b50871888dbbe7243d14e052d6ec650155b55",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-dark-en-article",
+            "sha256": "82a51ca13b8a2c2e98357579aa468145e77e2e5e0824bba188b18f3310055a0d",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "slate-dark-en-settings",
+            "sha256": "6d41fb88116f0e678311594d5c57c6777aa459f9f8dab2bdcc6d74175116558c",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "layout-focus",
+            "sha256": "778b4e74a87c4ad08727964c054bfd4554ca4866c0cf546b55b1a0079f0a2c75",
+            "pixels": [
+              2480,
+              1546
+            ],
+            "logical_size": [
+              1240,
+              773
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "narrow-article",
+            "sha256": "c0af0b539f86d2f54f6cb336a8e0060ba44b2cb86f013f97590b2ecccd5d1037",
+            "pixels": [
+              1800,
+              1200
+            ],
+            "logical_size": [
+              900,
+              600
+            ],
+            "scale_factor": 2
+          },
+          {
+            "name": "narrow-settings",
+            "sha256": "f976e42403cad6f7d4b7406d751c28fdda52897fc893542a31c0943af5d6e97b",
+            "pixels": [
+              1800,
+              1200
+            ],
+            "logical_size": [
+              900,
+              600
+            ],
+            "scale_factor": 2
+          }
+        ]
+      },
+      "product": {
+        "capture_count": 24,
+        "scene_frames_per_cell": {
+          "clear-dark": 3,
+          "clear-light": 3,
+          "paper-dark": 3,
+          "paper-light": 3,
+          "slate-dark": 3,
+          "slate-light": 3
+        },
+        "temporary_no_write": true,
+        "stdio_bridge_file": true,
+        "saved_revision": 1,
+        "idempotent_save": true,
+        "revocation_reaped": true,
+        "freshness_marker_asserted_by_probe": true,
+        "capture_manifest": [
+          {
+            "label": "clear-light-overview",
+            "bytes": 200535,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 1816.5666680000002,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "4920321103b940a6bb9af022d43c1e36efab34d615345eb8cec89669d4a45f2e"
+          },
+          {
+            "label": "clear-light-article",
+            "bytes": 335248,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 298.480667,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "57c67c097ee20c37398a6b79a2c781f4ec5a9713490da15f5cfd8e5409aba0a1"
+          },
+          {
+            "label": "clear-light-settings",
+            "bytes": 202314,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 368.158151,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "86860be7db12c29ddf1e6a31a90b37558db2efde41a27936a8442aeb4bedeaa2"
+          },
+          {
+            "label": "clear-dark-overview",
+            "bytes": 201765,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 263.59907300000003,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "0d6417cde6d2da8ef24576006325fea94309a6fc6d5a936b9911a5817aea476a"
+          },
+          {
+            "label": "clear-dark-article",
+            "bytes": 335800,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 310.16768099999996,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "4c92e80e843e70a18c40cfdbe159de441f601a6788f96b0ab5bfd2680f9d3a44"
+          },
+          {
+            "label": "clear-dark-settings",
+            "bytes": 196836,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 305.317673,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "652e5bf3b06ec0c2f54fcc91a413ccb425c73a627ee65ce571fecd6497d2b769"
+          },
+          {
+            "label": "paper-light-overview",
+            "bytes": 200252,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 295.86662800000005,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "cbb0168baa07617bd704f8e37426411c2e0676210febeffde94e6b0ad5ef256b"
+          },
+          {
+            "label": "paper-light-article",
+            "bytes": 316269,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 299.489495,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "5ee612682f27c8f77f90344e0d507128cecafe5a31b6f0aa1ed956aecb7baf17"
+          },
+          {
+            "label": "paper-light-settings",
+            "bytes": 199533,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 309.934709,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "993dac10a06bbfad2a8c162130d68bd304d29a5ddf616586c0803274f5e76878"
+          },
+          {
+            "label": "paper-dark-overview",
+            "bytes": 199969,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 260.61537200000004,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "3948f607e28ced7a85c72307d31b9bb2682cc0ab8d3fbca6c53818b30779ff82"
+          },
+          {
+            "label": "paper-dark-article",
+            "bytes": 315201,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 299.800165,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "e55066395163749827a7370d9a08e0b53f061c788889d767eedac9bd84e0cac1"
+          },
+          {
+            "label": "paper-dark-settings",
+            "bytes": 191502,
+            "revision": 2,
+            "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+            "capture_ms": 311.487049,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "f983cc6eacf4c53ff67a8e00d43ba2be85e682b80e7e7a4186edd5ae52c6dc98"
+          },
+          {
+            "label": "slate-light-overview",
+            "bytes": 209795,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 278.200407,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "421477f368e13d449850f0b01127f8d71c78c9f48106a85b707c4313a663ffe0"
+          },
+          {
+            "label": "slate-light-article",
+            "bytes": 317461,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 306.043362,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "6753900cd6b04b8c35712c68bc7b7f3e311d75cf04d075d9dee0113b06760a7d"
+          },
+          {
+            "label": "slate-light-settings",
+            "bytes": 206816,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 302.206308,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "def4bc58b8c2c96d895e6ec8b1238bc68a4648c991098da01d70c5ea67d0b468"
+          },
+          {
+            "label": "slate-dark-overview",
+            "bytes": 209171,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 272.340369,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "e54499c657a99aa5fffb5dc221af5019caa46e82396d610a83c39b8503412ef3"
+          },
+          {
+            "label": "slate-dark-article",
+            "bytes": 315881,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 320.365636,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "cdeab6005d0e745fd6ae776fc13479d54f51249d61511cf837bef4a66d37a299"
+          },
+          {
+            "label": "slate-dark-settings",
+            "bytes": 199959,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 303.673788,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "ffa6008a2ac77a8be6f2a4c7a940b8ff6b87d9bda4a05d53eea5b2dfb5439cb8"
+          },
+          {
+            "label": "recapture",
+            "bytes": 209794,
+            "revision": 3,
+            "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+            "capture_ms": 261.932696,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "b00a32fed12c7d556be89264690004de7e4229d0b4bc161c6ba31d48f41f47b1"
+          },
+          {
+            "label": "reopen-0",
+            "bytes": 335247,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 1819.9297809999998,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "c8d56bddef6977ceb4c395f1509c6e6ef2e9d2755c4ec496a7ee6f7be9a7327c"
+          },
+          {
+            "label": "reopen-1",
+            "bytes": 335249,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 1812.310428,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "45b4f6394d614751fd8314c90f37131faddd897592120f4084edaeea40df0799"
+          },
+          {
+            "label": "reopen-2",
+            "bytes": 335248,
+            "revision": 1,
+            "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+            "capture_ms": 1811.197092,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "eeab7d71247016a63a76ce41d6c61b3f33f4f47d2f66e86b953de12893a183e5"
+          },
+          {
+            "label": "stdio-paper",
+            "bytes": 316269,
+            "revision": 1,
+            "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+            "capture_ms": 1874.136668,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "e55d73b44be8ce41619c4835d48e0b78daa0e9ce776608df0c39928a5fac96bd"
+          },
+          {
+            "label": "revoke",
+            "bytes": 316270,
+            "revision": 1,
+            "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+            "capture_ms": 1865.087608,
+            "logical_size": [
+              960,
+              640
+            ],
+            "pixel_size": [
+              1920,
+              1280
+            ],
+            "scale_factor": 2,
+            "display_backend": "GdkWaylandDisplay",
+            "sha256": "1ca15cba9692345f5747c3ac3702495481646c51171aca71b06e34b412997fdd"
+          }
+        ]
+      },
+      "archived_raw_scenes": [
+        {
+          "scene": "overview",
+          "file": "scale-1.5-overview.png",
+          "sha256": "4920321103b940a6bb9af022d43c1e36efab34d615345eb8cec89669d4a45f2e",
+          "bytes": 200535
+        },
+        {
+          "scene": "article",
+          "file": "scale-1.5-article.png",
+          "sha256": "57c67c097ee20c37398a6b79a2c781f4ec5a9713490da15f5cfd8e5409aba0a1",
+          "bytes": 335248
+        },
+        {
+          "scene": "settings",
+          "file": "scale-1.5-settings.png",
+          "sha256": "86860be7db12c29ddf1e6a31a90b37558db2efde41a27936a8442aeb4bedeaa2",
+          "bytes": 202314
+        }
+      ]
+    }
+  ]
+}
