@@ -34,7 +34,8 @@ class SecureOut {
  * 密文（Base64(iv‖ct)）存进应用私有的 SharedPreferences。
  *
  * 明文只存在于调用参数与解密瞬间：不进 SQLite、不进偏好文件的明文、不进日志
- * （本类没有任何 Log 调用）。Keystore 密钥不出安全硬件（TEE/StrongBox），
+ * （本类没有任何 Log 调用）。Keystore 密钥不可导出（non-exportable）；
+ * 是否由安全硬件（TEE/StrongBox）支持取决于设备能力，除非显式请求并验证。
  * 卸载应用即随数据一起消失。
  */
 @TauriPlugin
