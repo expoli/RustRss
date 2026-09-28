@@ -56,3 +56,30 @@ settings → Test connection → status line shows the adapter reply.
 Article actions: open an article → AI summary / AI translate → confirm sheet
 (Send) → panel shows the reply.
 ```
+
+## Round 2 — review blockers B1/B2 verification (sentinel key round)
+
+Fixes under test (commit c5d341b):
+1. `crates/rustrss-core/src/ai/mod.rs`: transport errors now pass through
+   `scrub_log_line` at the boundary (Gemini puts its key in the URL query).
+2. `ui/app.js`: `scrubLogLine()` applied to console output (logcat reaches
+   `Tauri/Console` before the backend ui_log scrub); Ollama test failures on
+   Android append actionable endpoint guidance.
+3. Android-only endpoint hint in the AI pane (UA-gated, 02-… screenshots).
+
+Sentinel round: provider=Gemini, endpoint=`http://10.0.2.2:9` (unreachable),
+key=`SENTINEL-9f8a2b7c-DEADBEEF-48c1` (in the secure store) → Test connection:
+
+- On-screen status: `Connection failed: 网络请求失败: error sending request for
+  url (http://10.0.2.2:9/v1beta/models/mock-model:generateContent?key=***)` —
+  key masked in the visible error (04-gemini-transport-error-scrubbed.png).
+- App log file line: `…generateContent?key=***` — SENTINEL occurrences: 0.
+- logcat (`Tauri/Console`): same scrubbed line — SENTINEL occurrences: 0.
+- SQLite + WAL: 0. secure_store.xml / all shared_prefs: 0.
+
+(see `04-gemini-transport-error-scrubbed.png`, `app-log.txt`, `logcat.txt`)
+
+B2: Ollama default-unreachable guidance verified — 06/07 area of the earlier
+flow showed the Android-only endpoint hint rendered in the AI pane; the failed
+default test now appends the actionable guidance (ollamaAndroidGuidance) to
+the status text (visible in the AI pane status after a failed Ollama test).
