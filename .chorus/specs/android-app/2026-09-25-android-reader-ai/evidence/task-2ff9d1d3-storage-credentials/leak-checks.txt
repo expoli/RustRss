@@ -1,0 +1,17 @@
+== Leak checks (key = sk-rustrss-evidence-9f8a2b7c, run 2026-09-28T08:51:06+08:00) ==
+
+1. SQLite main file, plaintext key occurrences (expect 0):
+0
+2. SQLite WAL, plaintext key occurrences (expect 0):
+0
+3. secure_store.xml, plaintext key occurrences (expect 0 — only Keystore-encrypted base64):
+0
+4. secure_store.xml content (ciphertext only):
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="rustrss::ai.api_key.ollama">Ijihr10Cq6P9ulLIlgZ/K5CeIl0koPLAFbadRZAaHTaSjz75mMqTQNNGAipU83rRoNnyPTQFyhE=</string>
+</map>
+5. All app logs, plaintext key occurrences (expect 0):
+0
+6. Round-trip log line (length only, no content):
+2026-09-28T08:47:33.957+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=28

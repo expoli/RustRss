@@ -10,6 +10,7 @@
 
 mod ai;
 mod commands;
+mod credentials;
 mod mcp_server;
 mod notify;
 mod preview_capture;
@@ -181,10 +182,12 @@ pub fn run() {
         }
     }
 
-    // 移动端分享：注册 Kotlin SharePlugin（Android 系统分享面板，见 share.rs）。
+    // 移动端分享 + 凭据安全存储：注册对应 Kotlin 插件（见 share.rs / credentials.rs）。
     #[cfg(mobile)]
     {
-        builder = builder.plugin(share::plugin());
+        builder = builder
+            .plugin(share::plugin())
+            .plugin(credentials::mobile_plugin());
     }
 
     builder = theme_preview::register(builder);

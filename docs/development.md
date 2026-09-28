@@ -26,7 +26,7 @@ cargo run -p rustrss-desktop
 
 ### Android
 
-桌面与 Android 共用 `src-tauri/src/lib.rs` 的入口（`run()`）：单实例锁、系统托盘、应用内 MCP HTTP 服务是桌面专属（`cfg(desktop)`），Android 启动不注册它们；桌面专属命令（文件夹选择、窗口三键等）在移动端显式报「暂不支持」。移动端数据根由入口注入应用沙盒（`rustrss_core::paths::set_data_root`），库与日志仍走同一套目录规则。
+桌面与 Android 共用 `src-tauri/src/lib.rs` 的入口（`run()`）：单实例锁、系统托盘、应用内 MCP HTTP 服务是桌面专属（`cfg(desktop)`），Android 启动不注册它们；桌面专属命令（文件夹选择、窗口三键等）在移动端显式报「暂不支持」。移动端数据根由入口注入应用沙盒（`rustrss_core::paths::set_data_root`），库与日志仍走同一套目录规则。AI key 的凭据存取在 `src-tauri/src/credentials.rs` 分层：桌面走系统 keyring，Android 经 Kotlin `SecureStorePlugin` 用 Android Keystore（AES/GCM）加密后存应用私有存储——明文不落 SQLite/偏好文件/日志。
 
 构建需要 Android SDK/NDK、JDK 17 与 `cargo tauri`：
 
