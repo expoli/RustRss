@@ -1238,9 +1238,17 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] KScreen 设定输出缩放 1.5 后，产品预览的 960×640 逻辑尺寸对应 1920×1280 PNG、WebView buffer scale 2；常规 scale 1 对应 960×640 PNG。该结果只证明虚拟合成器中的内容/缓冲区几何与场景新鲜度。
 - [x] 独立评审首轮指出缺少带窗口管理器的 X11 复测后，补跑隔离 Xvfb + Openbox 3.6.1；根窗口 `_NET_SUPPORTING_WM_CHECK` 证明 Openbox 已接管窗口。夹具 39 图 / 47 断言、产品 MCP 24 图均通过，各格三场景不同帧；产品 `GdkX11Display` 内容区 1280×900 逻辑/像素尺寸，scale 1。原始三图、逐图哈希、会话及二进制指纹见 `2026-09-23-theme-preview/virtual-kwin-2026-09-28/x11-openbox-results.json`。这是带真实窗口管理器的虚拟 X11 输出，不声称物理 Xorg 桌面。
 - [ ] 仍需 GNOME、最小化/遮挡、跨屏切换和真实显示器的分数缩放证据；Windows/macOS 的原生截帧另在各平台任务中验证。虚拟 KWin 通过不代替这些条件。
+
 ## 35. Windows 原生主题预览截图（2026-09-28，运行验收待办）
 
 - [x] **机械检查**：WebView2 原生 `CapturePreview` 适配器已写入隔离工作树；Linux `cargo test --workspace --locked --offline` 通过。具体实现、锁定 API 和命令见 [Windows 截图记录](2026-09-23-theme-preview/windows-capture.md)。
 - [ ] **真机截图**：Windows 新二进制 SHA256、overview/article/settings 各自可见标记与独立 PNG、request/revision/hash/scene 元数据、内容区逻辑/像素尺寸和 DPR；100% 与可用分数或整数缩放分别记录。
 - [ ] **失败与文件生命周期**：最小化/隐藏、超时、失权和过期不发布旧图；取消仍可用；2MiB 单图、32 张/32MiB 服务预算、600 秒 TTL 在 Windows 真机验证。
 - [ ] **环境限制**：本机 Linux，Tailscale 两个 Windows peer 均离线；Windows target 的 `cargo check` 还被缺失的 `x86_64-w64-mingw32-gcc` 阻断。Linux 测试不能代替上述运行项。
+- [x] **用户授权的验收边界**：2026-09-28 用户允许跳过不可用环境的测试。Windows 适配器与锁定 API/可用环境回归可提交独立代码评审；以上真机截图和失败路径仍为 [ ] open，不登记为 Windows 通过。
+
+## 36. macOS 原生主题预览截图（2026-09-28，运行验收待办）
+
+- [x] **机械检查**：WKWebView 截图适配器已整合，锁定 API 对照和 Linux 共用协议回归见 [macOS 截图记录](2026-09-23-theme-preview/macos-native-capture.md)；不等于 macOS 编译或运行通过。
+- [ ] **真机截图与失败路径**：macOS 最终二进制/OS/WebKit 指纹、三场景可见内容与独立 PNG、修订/配置哈希、1x/2x 几何；最小化/隐藏/超时/失权/版本冲突、保存/取消与 TTL/配额仍需实机复验。
+- [ ] **环境限制**：本机无 macOS 主机；交叉编译停在 Objective-C 工具链。用户允许跳过本次不可用环境测试，原生运行项保持 open，不登记为 macOS 通过。

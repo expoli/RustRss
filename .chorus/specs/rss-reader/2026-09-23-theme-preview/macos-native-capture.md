@@ -1,6 +1,6 @@
 # macOS 主题预览截图：实现与待验收证据
 
-状态：适配器已实现；**macOS 构建和运行验收未通过，两个 Chorus 必需 AC 保持 open**。本记录不以 Linux 回归、Rust 目标标准库或 API 文档代替 macOS 实机结果。
+状态：适配器已实现；**macOS 构建和运行验收未执行，原生运行项保持 open**。2026-09-28 用户补充允许在特定环境不可用时跳过测试；Chorus 任务因此仅将实现、API 核对及可用环境回归设为必需验收，原生运行项保留为非必需且未验证。本记录不以 Linux 回归、Rust 目标标准库或 API 文档代替 macOS 实机结果。
 
 ## 实现边界
 
@@ -30,4 +30,4 @@ python3 scripts/verify-theme-preview.py --display macos
 
 ## 当前缺口
 
-实施主机是 Linux；Tailscale 当前无在线 macOS peer，未发现 macOS 远程桌面或 Xcode。`aarch64-apple-darwin` Rust 标准库可安装，但从 Linux 交叉 `cargo check` 停在 `objc2-exception-helper` 的 Objective-C 构建：本机 `cc` 不识别 `-arch` 与 `-mmacosx-version-min`。因此本轮没有 macOS 二进制、PNG、OS/WebKit 版本或真实失败路径证据；不应提交 `to_verify`。
+实施主机是 Linux；Tailscale 当前无在线 macOS peer，未发现 macOS 远程桌面或 Xcode。`aarch64-apple-darwin` Rust 标准库可安装，但从 Linux 交叉 `cargo check` 停在 `objc2-exception-helper` 的 Objective-C 构建：本机 `cc` 不识别 `-arch` 与 `-mmacosx-version-min`。因此本轮没有 macOS 二进制、PNG、OS/WebKit 版本或真实失败路径证据；只提交实现/可用环境回归供独立评审，原生运行项不作通过声明。

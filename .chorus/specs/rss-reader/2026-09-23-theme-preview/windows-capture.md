@@ -1,6 +1,6 @@
 # Windows 原生主题预览截图：实现与未完成验收
 
-日期：2026-09-28。基线：`b7bfadae02b167a70028c88dc1585a6b22cd9090`。本页记录实现和可复验步骤；**没有 Windows 运行通过证据**。
+日期：2026-09-28。基线：`b7bfadae02b167a70028c88dc1585a6b22cd9090`。本页记录实现和可复验步骤；**没有 Windows 运行通过证据**。用户同日补充允许在特定环境不可用时跳过测试；Chorus 任务仅将实现、锁定 API 与可用环境回归设为必需验收，Windows 原生运行项保留为非必需且未验证。
 
 ## 实现
 
@@ -21,7 +21,7 @@
 - Windows API 签名探针上述命令：通过（精确版本、Windows GNU target；未链接或运行）。
 - `cargo build --workspace --bins --example theme_fixture --locked --offline`：通过。当前 KDE Wayland 会话随后执行 `python3 scripts/verify-theme-preview.py --display wayland`，第一个 `preview_theme` HTTP 请求在客户端 10 秒截止时报 `TimeoutError`，没有得到 PNG；隔离日志和数据库在 `/tmp/rustrss-theme-preview-qzg59mud/`。日志仅显示主界面启动和 1240×820 DPR2，尚未定位预览窗口为何未返回 ready。此尝试不算 Linux 运行回归通过，也不归因于 Windows 代码。
 - `cargo check -p rustrss-desktop --target x86_64-pc-windows-gnu`：无法完成；本机缺 `x86_64-w64-mingw32-gcc`，原生依赖的 `cc-rs` 构建脚本先失败。没有 Windows 编译成功结论。
-- 本机是 Linux KDE Wayland；Tailscale 中两台 Windows peer `DESKTOP-D4CH2E7`、`小庞的a豆` 均离线，未发现可用本地 Windows VM。Windows 二进制指纹、三个场景 PNG、DPR/尺寸、隐藏或最小化、超时、失权、取消及 TTL/配额运行证据均**未取得**。对应 Chorus task 两项 required AC 保持 pending，不能提交验证。
+- 本机是 Linux KDE Wayland；Tailscale 中两台 Windows peer `DESKTOP-D4CH2E7`、`小庞的a豆` 均离线，未发现可用本地 Windows VM。Windows 二进制指纹、三个场景 PNG、DPR/尺寸、隐藏或最小化、超时、失权、取消及 TTL/配额运行证据均**未取得**。对应 Chorus task 原生运行项保持 open；只提交实现/可用环境回归供独立评审，不作 Windows 运行通过声明。
 
 ## Windows 真机复验步骤
 
