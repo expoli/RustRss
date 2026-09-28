@@ -12,17 +12,17 @@ features. Each device keeps its own local database; no cloud account or
 cross-device synchronization is part of this capability.
 
 ## Requirements
-- [ ] Install and run a sideloadable Android APK.
+- [x] Install and run a sideloadable Android APK.
 - [x] Add and manage RSS subscriptions by URL, discover feeds from site URLs,
   and import/export OPML.
 - [x] Refresh on user request, startup, and return to the foreground; do not
   promise periodic background refresh.
 - [x] Browse, search, and read cached articles offline; update read, starred,
   and read-later states.
-- [ ] Configure OpenAI-compatible, Anthropic, Gemini, and Ollama providers;
+- [x] Configure OpenAI-compatible, Anthropic, Gemini, and Ollama providers;
   use configured providers for article summaries and translations.
-- [ ] Keep the database in Android app storage and API keys in secure storage.
-- [ ] Prioritize portrait phone usability; tablets remain usable but are not a
+- [x] Keep the database in Android app storage and API keys in secure storage.
+- [x] Prioritize portrait phone usability; tablets remain usable but are not a
   first-release acceptance target.
 - [x] Use page-based phone navigation instead of a compressed three-pane
   layout: Articles is the default home, Subscriptions and Saved are peer
