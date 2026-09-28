@@ -84,13 +84,19 @@ flow showed the Android-only endpoint hint rendered in the AI pane; the failed
 default test now appends the actionable guidance (ollamaAndroidGuidance) to
 the status text (visible in the AI pane status after a failed Ollama test).
 
-## Release-build note
+## Release-build note (superseded 2026-09-28 round 2)
 
 The per-provider UI automation on the **release** build proved flaky
-(webview stale frames + coordinate drift), so the release-build captures
-cover the OpenAI-compatible adapter configuration (provider/model/
-endpoint fields, screenshot 06-release-pane-state.png) while the
-per-adapter test-connection results (Anthropic/Gemini/Ollama) are from
-the debug-build round — the adapter code path (plan/extract/headers) is
-identical in both builds, and the debug evidence was reviewer-passed in
-the 766b9aa5 verification.
+(webview stale frames + coordinate drift) in round 1, so the release-build
+captures covered the OpenAI-compatible adapter configuration only. **Round 2
+(re-open of d4c2a7b0) closed the gap on the release-signed APK**: the
+completed translation panels for all four adapters were captured on-device
+(`20-ai-summary-openai.png`, `21-ai-translate-openai.png`,
+`22-ai-translate-ollama.png`, `23-ai-translate-anthropic.png`,
+`24-ai-translate-gemini.png` — copied into the d4c2a7b0 evidence dir), and
+the release DB `ai_cache` rows corroborate each request
+(`ai_cache-round2.txt`, same dir). Round-2 leak-check artifacts from the
+release session: `applog-round2.txt` (112 lines, sentinel-key scan 0) and
+`shared_prefs-round2.txt` (scan 0). The per-adapter test-connection evidence
+from the debug round above remains valid; the adapter code path is identical
+in both builds.

@@ -1,0 +1,5 @@
+1|1|summarize|medium:中文|OpenAiCompatible/mock-model|MOCK-OK: mock reply for openai
+2|1|translate|中文|OpenAiCompatible/mock-model|MOCK-OK: mock reply for openai
+3|1|translate|中文|Ollama/mock-model|MOCK-OK: mock reply for ollama
+4|1|translate|中文|Anthropic/mock-model|MOCK-OK: mock reply for anthropic
+5|1|translate|中文|Gemini/mock-model|MOCK-OK: mock reply for gemini

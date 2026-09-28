@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>RustRss 订阅</title>
+  </head>
+  <body>
+    <outline type="rss" text="RustRss 验证源" title="RustRss 验证源" xmlUrl="http://10.0.2.2:8817/feed.xml" htmlUrl="http://example.invalid/"/>
+  </body>
+</opml>

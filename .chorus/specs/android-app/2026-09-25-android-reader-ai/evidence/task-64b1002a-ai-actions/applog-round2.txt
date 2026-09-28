@@ -1,0 +1,112 @@
+2026-09-28T15:42:00.499+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /data/user/0/tech.expoli.rustrss/rustrss/logs/rustrss-20260928-154200.log
+2026-09-28T15:42:00.501+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /data/user/0/tech.expoli.rustrss/rustrss/rustrss.sqlite
+2026-09-28T15:42:00.501+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: INFO（设置 log.level=""）
+2026-09-28T15:42:00.717+08:00 INFO  ui: [ui] inline script ran
+2026-09-28T15:42:00.754+08:00 INFO  ui: [ui] app.js start
+2026-09-28T15:42:00.770+08:00 INFO  ui: [ui] i18n selftest ok (keys=527)
+2026-09-28T15:42:00.774+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-09-28T15:42:00.774+08:00 INFO  ui: [ui] menu render selftest ok (items=5)
+2026-09-28T15:42:00.775+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-09-28T15:42:00.775+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-09-28T15:42:00.781+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-09-28T15:42:00.794+08:00 INFO  ui: [ui] renderSidebar feeds=1 1.3ms
+2026-09-28T15:42:01.329+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=0 loaded=0 total=0 totalKind=unread header= exhausted=true head=
+2026-09-28T15:42:01.329+08:00 INFO  ui: [ui] loaded feeds=1 entries=2 unread=0 starred=1 markReadOnNavigate=true refreshInterval=30 refreshOnStart=true notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-09-28T15:42:01.331+08:00 INFO  ui: [ui] viewport 412x839 dpr=2.625
+2026-09-28T15:42:01.335+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=light bgPanel=#ffffff minContrast=3.07 ratios=3.91/3.58/3.16/3.07/5.21/5.18/4.12/4.83)
+2026-09-28T15:42:01.335+08:00 INFO  ui: [ui] tags:rows=0 collapsed=0 rects=-
+2026-09-28T15:42:10.506+08:00 INFO  ui: [ui] refresh:start
+2026-09-28T15:42:10.508+08:00 INFO  rustrss_desktop_lib::scheduler: [rustrss] 自动刷新完成: fetched=0 not_modified=0 inserted=0 updated=0 failures=1
+2026-09-28T15:42:10.509+08:00 INFO  ui: [ui] refresh:done
+2026-09-28T15:42:10.511+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-09-28T15:42:10.514+08:00 INFO  ui: [ui] renderSidebar feeds=1 0.2ms
+2026-09-28T15:42:10.515+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=0 loaded=0 total=0 totalKind=unread header= exhausted=true head=
+2026-09-28T15:42:10.515+08:00 INFO  ui: [ui] loaded feeds=1 entries=2 unread=0 starred=1 markReadOnNavigate=true refreshInterval=30 refreshOnStart=true notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none silent（正文未重渲染）
+2026-09-28T15:42:10.516+08:00 INFO  ui: [ui] refresh:done 静默完成 selected=null→null 正文=327→327字 scrollTop=0→0
+2026-09-28T15:42:11.484+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-09-28T15:42:15.455+08:00 INFO  ui: [ui] settings pane=ai
+2026-09-28T16:01:37.399+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:01:37.408+08:00 INFO  ui: [ui] ai saved provider=openai model=mock-model has_key=true
+2026-09-28T16:01:39.874+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:01:39.882+08:00 INFO  ui: [ui] ai test failed: 网络请求失败: error sending request for url (http://10.0.2.2:8817/chat/completions)
+2026-09-28T16:04:45.111+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:04:45.125+08:00 INFO  ui: [ui] ai test ok reply=MOCK-OK: mock reply for openai
+2026-09-28T16:08:03.572+08:00 INFO  ui: [ui] renderSidebar feeds=1 9.1ms
+2026-09-28T16:08:03.629+08:00 INFO  ui: [ui] renderList rows=2 withTags=0 50.1ms
+2026-09-28T16:08:03.630+08:00 INFO  ui: [ui] view=all sort=newest hideRead=0 count=2 loaded=2 total=2 totalKind=all header=loaded 2 / 2 total exhausted=true head=1,2
+2026-09-28T16:08:05.601+08:00 INFO  ui: [ui] renderReader id=1 sanitize=1 innerHTML-set=3 highlight=4 total=5ms
+2026-09-28T16:08:05.602+08:00 INFO  ui: [ui] readerTags id=1 n=0 chips=- rect=-
+2026-09-28T16:08:05.604+08:00 INFO  ui: [ui] open id=1 markRead=true read=true
+2026-09-28T16:08:48.265+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:08:48.272+08:00 INFO  ui: [ui] ai preview send=true cache=false body=350 truncated=false
+2026-09-28T16:09:34.361+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:09:34.365+08:00 INFO  ui: [ui] ai summarize entry=1 from_cache=false chars=30 model=OpenAiCompatible/mock-model
+2026-09-28T16:12:10.557+08:00 INFO  ui: [ui] refresh:start
+2026-09-28T16:12:10.571+08:00 INFO  rustrss_desktop_lib::scheduler: [rustrss] 自动刷新完成: fetched=1 not_modified=0 inserted=0 updated=0 failures=0
+2026-09-28T16:12:10.572+08:00 INFO  ui: [ui] refresh:done
+2026-09-28T16:12:10.575+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:12:10.578+08:00 INFO  ui: [ui] renderSidebar feeds=1 0ms
+2026-09-28T16:12:10.579+08:00 INFO  ui: [ui] renderList rows=2 withTags=0 0.5ms
+2026-09-28T16:12:10.581+08:00 INFO  ui: [ui] view=all sort=newest hideRead=0 count=2 loaded=2 total=2 totalKind=all header=loaded 2 / 2 total exhausted=true head=1,2
+2026-09-28T16:12:10.581+08:00 INFO  ui: [ui] loaded feeds=1 entries=2 unread=0 starred=1 markReadOnNavigate=true refreshInterval=30 refreshOnStart=true notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=openai/mock-model hasKey=true mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none silent（正文未重渲染）
+2026-09-28T16:12:10.581+08:00 INFO  ui: [ui] refresh:done 静默完成 selected=1→1 正文=1648→1648字 scrollTop=0→0
+2026-09-28T16:12:33.720+08:00 INFO  ui: [ui] toggleReadLater id=1 readerScrollTop=0 aiPanel=open:30
+2026-09-28T16:12:33.721+08:00 INFO  ui: [ui] renderSidebar feeds=1 0.2ms
+2026-09-28T16:16:40.042+08:00 INFO  ui: [ui] share:native entry=1
+2026-09-28T16:17:05.745+08:00 INFO  rustrss_desktop_lib::scheduler: [rustrss] 前台恢复：触发一次刷新
+2026-09-28T16:17:05.751+08:00 INFO  rustrss_desktop_lib::scheduler: [rustrss] 自动刷新完成: fetched=1 not_modified=0 inserted=0 updated=0 failures=0
+2026-09-28T16:17:05.821+08:00 INFO  ui: [ui] refresh:start
+2026-09-28T16:17:05.863+08:00 INFO  ui: [ui] refresh:done
+2026-09-28T16:17:05.868+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:17:05.879+08:00 INFO  ui: [ui] renderSidebar feeds=1 0.8ms
+2026-09-28T16:17:06.003+08:00 INFO  ui: [ui] renderList rows=2 withTags=0 2.7ms
+2026-09-28T16:17:06.011+08:00 INFO  ui: [ui] view=all sort=newest hideRead=0 count=2 loaded=2 total=2 totalKind=all header=loaded 2 / 2 total exhausted=true head=1,2
+2026-09-28T16:17:06.011+08:00 INFO  ui: [ui] loaded feeds=1 entries=2 unread=0 starred=1 markReadOnNavigate=true refreshInterval=30 refreshOnStart=true notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=openai/mock-model hasKey=true mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none silent（正文未重渲染）
+2026-09-28T16:17:06.011+08:00 INFO  ui: [ui] refresh:done 静默完成 selected=1→1 正文=1672→1672字 scrollTop=0→0
+2026-09-28T16:17:20.075+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:17:20.076+08:00 INFO  ui: [ui] ai preview send=true cache=false body=337 truncated=false
+2026-09-28T16:17:34.848+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=11
+2026-09-28T16:17:34.857+08:00 INFO  ui: [ui] ai translate entry=1 from_cache=false chars=30 model=OpenAiCompatible/mock-model
+2026-09-28T16:18:21.834+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-09-28T16:19:34.028+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-09-28T16:19:34.028+08:00 INFO  ui: [ui] ai saved provider=ollama model=mock-model has_key=false
+2026-09-28T16:19:51.849+08:00 INFO  ui: [ui] renderReader id=1 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-09-28T16:19:51.850+08:00 INFO  ui: [ui] readerTags id=1 n=0 chips=- rect=-
+2026-09-28T16:19:51.850+08:00 INFO  ui: [ui] open id=1 markRead=true read=true
+2026-09-28T16:19:54.369+08:00 INFO  ui: [ui] ai preview send=true cache=false body=247 truncated=false
+2026-09-28T16:20:18.944+08:00 INFO  ui: [ui] ai translate entry=1 from_cache=false chars=30 model=Ollama/mock-model
+2026-09-28T16:20:41.635+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-09-28T16:21:49.533+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-09-28T16:21:49.534+08:00 INFO  ui: [ui] ai saved provider=anthropic model=mock-model has_key=false
+2026-09-28T16:22:16.637+08:00 INFO  ui: [ui] renderReader id=1 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-09-28T16:22:16.637+08:00 INFO  ui: [ui] readerTags id=1 n=0 chips=- rect=-
+2026-09-28T16:22:16.638+08:00 INFO  ui: [ui] open id=1 markRead=true read=true
+2026-09-28T16:22:19.157+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-09-28T16:22:19.158+08:00 INFO  ui: [ui] ai preview failed: 未配置 API key
+2026-09-28T16:22:19.158+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-09-28T16:22:19.159+08:00 INFO  ui: [ui] ai translate failed: 未配置 API key
+2026-09-28T16:22:41.483+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-09-28T16:22:45.435+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-09-28T16:22:45.436+08:00 INFO  ui: [ui] ai test failed: 未配置 API key
+2026-09-28T16:23:09.606+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-09-28T16:23:56.277+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-09-28T16:24:34.402+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-09-28T16:25:08.421+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=16
+2026-09-28T16:25:08.424+08:00 INFO  ui: [ui] ai saved provider=anthropic model=mock-model has_key=true
+2026-09-28T16:25:48.998+08:00 INFO  ui: [ui] renderReader id=1 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-09-28T16:25:48.998+08:00 INFO  ui: [ui] readerTags id=1 n=0 chips=- rect=-
+2026-09-28T16:25:48.999+08:00 INFO  ui: [ui] open id=1 markRead=true read=true
+2026-09-28T16:25:51.522+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=16
+2026-09-28T16:25:51.523+08:00 INFO  ui: [ui] ai preview send=true cache=false body=277 truncated=false
+2026-09-28T16:26:02.934+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=16
+2026-09-28T16:26:02.943+08:00 INFO  ui: [ui] ai translate entry=1 from_cache=false chars=33 model=Anthropic/mock-model
+2026-09-28T16:26:22.362+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-09-28T16:26:55.552+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=15
+2026-09-28T16:26:55.554+08:00 INFO  ui: [ui] ai saved provider=gemini model=mock-model has_key=true
+2026-09-28T16:27:10.798+08:00 INFO  ui: [ui] renderReader id=1 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-09-28T16:27:10.798+08:00 INFO  ui: [ui] readerTags id=1 n=0 chips=- rect=-
+2026-09-28T16:27:10.799+08:00 INFO  ui: [ui] open id=1 markRead=true read=true
+2026-09-28T16:27:13.320+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=15
+2026-09-28T16:27:13.322+08:00 INFO  ui: [ui] ai preview send=true cache=false body=381 truncated=false
+2026-09-28T16:27:27.154+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=15
+2026-09-28T16:27:27.158+08:00 INFO  ui: [ui] ai translate entry=1 from_cache=false chars=30 model=Gemini/mock-model
