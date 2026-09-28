@@ -54,6 +54,13 @@ jobs:
       - name: Install NDK
         run: sdkmanager --install "ndk;27.2.12479018" > /dev/null
 
+      # 项目为 Tauri 2（src-tauri/Cargo.toml: tauri = "2"）；CLI 装 ^2 大版本，
+      # 与本地 2.12.0 同线。--locked 保证依赖与发布锁一致；打印版本留痕。
+      - name: Install tauri-cli (Tauri 2 line)
+        run: |
+          cargo install tauri-cli --locked --version "^2"
+          cargo tauri --version
+
       - name: Build Android APK (debug, x86_64 + aarch64)
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_HOME || format('{0}/ndk-bundle', env.ANDROID_HOME) }}
