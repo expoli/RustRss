@@ -63,7 +63,9 @@ jobs:
 
       - name: Build Android APK (debug, x86_64 + aarch64)
         env:
-          NDK_HOME: ${{ env.ANDROID_NDK_HOME || format('{0}/ndk-bundle', env.ANDROID_HOME) }}
+          # sdkmanager 装的 NDK 在版本化目录 ndk/<ver>，不是旧的 ndk-bundle；
+          # tauri CLI 会校验 NDK_HOME 指向真实 NDK（含 source.properties）。
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: cargo tauri android build --debug --target x86_64 --target aarch64 --apk
 
       - name: Verify APK signature
