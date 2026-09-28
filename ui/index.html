@@ -283,6 +283,11 @@
               <input id="ai-base-url" autocomplete="off" />
             </div>
 
+            <!-- Android 专属指引：默认 127.0.0.1 指手机自身，Ollama 必须用设备
+                 可达的地址（评审 B2）。桌面不显示；mobile.js 按 UA 置 body 标记。 -->
+            <p id="ai-endpoint-android-hint" class="dim small android-hint" hidden
+              data-i18n="settings.ai.endpointAndroidHint"></p>
+
             <div class="setting-item">
               <div class="text">
                 <b data-i18n="settings.ai.target"></b>

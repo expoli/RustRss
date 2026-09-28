@@ -459,6 +459,8 @@ const DICTS = {
     'settings.ai.testing': '测试中…',
     'settings.ai.testOk': '连接可用。模型回复：{reply}',
     'settings.ai.testFailed': '连接失败：{error}',
+    'settings.ai.endpointAndroidHint': 'Android：端点必须是设备可达的地址——Ollama 不能用 127.0.0.1（那指手机自身）；模拟器可用 10.0.2.2 访问宿主机。',
+    'settings.ai.ollamaAndroidGuidance': 'Android：Ollama 端点须为设备可达的地址（127.0.0.1 指手机自身；模拟器可用 10.0.2.2 访问宿主机）。',
 
     'common.yes': '是',
     'common.no': '否',
@@ -1019,6 +1021,8 @@ const DICTS = {
     'settings.ai.testing': 'Testing…',
     'settings.ai.testOk': 'Connection works. Model replied: {reply}',
     'settings.ai.testFailed': 'Connection failed: {error}',
+    'settings.ai.endpointAndroidHint': 'Android: the endpoint must be reachable from the device — Ollama cannot be 127.0.0.1 (that is the phone itself); on the emulator use 10.0.2.2 to reach the host.',
+    'settings.ai.ollamaAndroidGuidance': 'Android: the Ollama endpoint must be reachable from the device (127.0.0.1 is the phone itself; on the emulator use 10.0.2.2 for the host).',
 
     'common.yes': 'yes',
     'common.no': 'no',

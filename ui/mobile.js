@@ -252,6 +252,13 @@
   // ---- 初始化 -----------------------------------------------------------
 
   function init() {
+    // Android 运行环境标记：桌面/移动共享的界面元素据此显示平台专属提示
+    //（如 AI 端点的设备可达指引）。
+    if (/Android/i.test(navigator.userAgent)) {
+      document.body.dataset.android = '1';
+      const hint = document.getElementById('ai-endpoint-android-hint');
+      if (hint) hint.hidden = false;
+    }
     if (el('m-nav')) {
       document.querySelectorAll('#m-nav .m-nav-btn').forEach(function (btn) {
         btn.addEventListener('click', function () { pickDestination(btn.dataset.mpageBtn); });

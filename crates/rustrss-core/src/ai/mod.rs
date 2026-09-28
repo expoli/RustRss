@@ -7,10 +7,13 @@
 //! 安全约定：
 //! - `api_key` 只进请求头，**不出现在错误信息、日志、预览里**；
 //! - provider 返回的错误体会被原样保留（用于定位问题），但会先对 key 做打码；
+//! - 传输失败时 reqwest 的错误串带完整 URL（Gemini 的 key 在查询串里），发送
+//!   边界会用 `scrub_log_line` 把查询串凭据打码后再进 `AiError::Transport`；
 //! - `preview()` 给出的请求预览里 key 已被替换，供「发送前让用户确认要发什么」使用。
 
 pub mod prompt;
 
+use crate::logging::scrub_log_line;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -205,10 +208,12 @@ impl AiClient {
             builder = builder.header(name, value);
         }
 
+        // reqwest 对发送失败的描述含完整 URL；Gemini 把 key 放查询串（本模块
+        // 安全约定：key 不出现在错误信息里）。边界处先过统一打码再交出去。
         let resp = builder
             .send()
             .await
-            .map_err(|e| AiError::Transport(e.to_string()))?;
+            .map_err(|e| AiError::Transport(scrub_log_line(&e.to_string())))?;
 
         let status = resp.status();
         let text = resp.text().await.unwrap_or_default();

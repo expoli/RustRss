@@ -291,9 +291,19 @@ async function invoke(cmd, args = {}) {
   }
 }
 
+/** 凭据形态打码（与后端 scrub_log_line 同口径）：URL 查询串里的 key/token 等
+ *  值抹成 ***。Android 上 console.log 会进 logcat（Tauri/Console），后端的
+ *  ui_log 打码保护不了它，所以这里在出口处先抹一遍。 */
+function scrubLogLine(line) {
+  return String(line).replace(
+    /([?&](?:key|apikey|api_key|api-key|token|access_token|refresh_token|secret|client_secret|password|passwd)=)[^&\s"')\]}>,]*/gi,
+    '$1***'
+  );
+}
+
 /** 诊断输出：打到应用 stdout，便于无人值守时核对界面状态（不依赖肉眼看屏幕） */
 function log(line) {
-  console.log('[ui]', line);
+  console.log('[ui]', scrubLogLine(line));
   invoke('ui_log', { line }).catch(() => {});
 }
 
@@ -4312,8 +4322,13 @@ async function boot() {
       el('ai-status').textContent = t('settings.ai.testOk', { reply });
       log(`ai test ok reply=${reply.slice(0, 40)}`);
     } catch (e) {
-      el('ai-status').textContent = t('settings.ai.testFailed', { error: e.message });
-      log(`ai test failed: ${e.message}`);
+      // Android 上默认的 127.0.0.1 指手机自身：给一条可行动的指引而不是裸失败
+      const ollamaHint =
+        document.body.dataset.android === '1' && el('ai-provider').value === 'ollama'
+          ? ' ' + t('settings.ai.ollamaAndroidGuidance')
+          : '';
+      el('ai-status').textContent = t('settings.ai.testFailed', { error: e.message }) + ollamaHint;
+      log(`ai test failed: ${scrubLogLine(e.message)}${ollamaHint ? ' (+ollama hint)' : ''}`);
     }
   };
 
