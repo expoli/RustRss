@@ -1,9 +1,12 @@
 """Real embedded HTTP + independent stdio writes, observed in rebuilt desktop UI."""
 import argparse
+import hashlib
 import io
 import json
 import os
 from pathlib import Path
+import platform
+import plistlib
 import select
 import socket
 import sqlite3
@@ -12,11 +15,13 @@ import tempfile
 import time
 import urllib.request
 from PIL import Image
+from PIL import ImageChops
 
 parser=argparse.ArgumentParser()
-parser.add_argument('--display',choices=['xvfb','wayland'],default='xvfb')
+parser.add_argument('--display',choices=['xvfb','wayland','macos'],default='xvfb')
 parser.add_argument('--scale',choices=['1','2'],default='1')
 options=parser.parse_args()
+if options.display=='macos' and platform.system()!='Darwin':raise RuntimeError('macOS runtime is required')
 subprocess.run(['df','-h','.'],check=True)
 root=Path(tempfile.mkdtemp(prefix='rustrss-theme-preview-'))
 dbpath=root/'fixture.sqlite'
@@ -34,9 +39,12 @@ if options.display=='xvfb':
     runtime=root/'runtime';runtime.mkdir(mode=0o700)
     env.update(DISPLAY=display,GDK_GL='disable',GDK_SCALE=options.scale,XDG_RUNTIME_DIR=str(runtime))
     for k in ['GDK_BACKEND','WAYLAND_DISPLAY','EGL_PLATFORM']:env.pop(k,None)
-else:
+elif options.display=='wayland':
     if not env.get('WAYLAND_DISPLAY'):raise RuntimeError('No native Wayland session available')
     env.pop('DISPLAY',None)
+else:
+    for key in ['DISPLAY','WAYLAND_DISPLAY','GDK_BACKEND','GDK_SCALE','EGL_PLATFORM']:
+        env.pop(key,None)
 app=None;stdio=None
 logfile=root/'desktop.log'
 def wait_for(fn,reason,seconds=15):
@@ -79,6 +87,7 @@ def capture(result,label):
 
 def done(p,action):return {'preview_id':p['preview_id'],'expected_preview_revision':p['preview_revision'],'action':action}
 captures=[]
+scene_images={}
 try:
     with logfile.open('w') as output:app=subprocess.Popen(['target/debug/rustrss-desktop'],env=env,stdout=output,stderr=output)
     wait_for(lambda:'loaded feeds=' in logfile.read_text(),'desktop boot')
@@ -96,6 +105,11 @@ try:
           args={'base_revision':0,'patch':{'light_preset':preset,'dark_preset':preset},'scene':scene,'mode':mode}
           if p:args.update(preview_id=p['preview_id'],expected_preview_revision=p['preview_revision'])
           p,img=capture(http('preview_theme',args),f'{preset}-{mode}-{scene}')
+          if options.display=='macos':
+            scene_images[scene]=img.crop((0,8,img.width,img.height)).copy()
+            if scene=='settings':
+              for left,right in [('overview','article'),('article','settings'),('overview','settings')]:
+                assert ImageChops.difference(scene_images[left],scene_images[right]).getbbox(),(preset,mode,left,right,'identical content pixels')
           if scene=='article':
             resolved=metadata(http('validate_theme',{'expected_revision':0,'patch':args['patch']},'fixture-read'))['theme'][mode]
             scale=p['capture']['scale_factor'];w,h=p['capture']['logical_size']
@@ -139,6 +153,10 @@ try:
     with sqlite3.connect(dbpath) as db:db.execute("UPDATE settings SET value='true' WHERE key='mcp.write_enabled'")
     assert http('finish_theme_preview',done(p,'save'))['isError']
     report={'output':str(root),'captures':captures,'temporary_no_write':True,'stdio_bridge_file':True,'saved_revision':1,'idempotent_save':True,'display':options.display,'requested_scale':options.scale if options.display=='xvfb' else None,'local_cancel':options.display=='xvfb','revocation_reaped':True,'article_renders_before_after':[initial_renders,logfile.read_text().count('renderReader id=')]}
+    if options.display=='macos':
+      binary=Path('target/debug/rustrss-desktop')
+      webkit=Path('/System/Library/Frameworks/WebKit.framework/Resources/Info.plist')
+      report.update(os_version=platform.mac_ver()[0],machine=platform.machine(),binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),webkit_bundle_version=plistlib.loads(webkit.read_bytes()).get('CFBundleVersion') if webkit.exists() else None,scene_content_pixels_differ=True)
     (root/'results.json').write_text(json.dumps(report,indent=2));print(json.dumps({k:v for k,v in report.items() if k!='captures'}));print('captures:',len(captures))
 finally:
     for child in [stdio,app]:

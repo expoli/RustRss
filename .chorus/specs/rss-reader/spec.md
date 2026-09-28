@@ -172,7 +172,7 @@ created: 2026-09-20
 - [x] T4 设置七类重组、独立外观页与 Aa 共用排版、草稿预览/保存/历史恢复；旧非主题控件 ID 保留，批量操作移至列表头。Linux Xvfb 真产物七类键盘导航/焦点回环与双语检查通过，见 [T4 证据](2026-09-23-theme-preview/t4-settings.md)。跨平台未验收；读屏器已于 2026-09-25 本机验通（清单 §32 + `screen-reader-results.json`，三态之 ①）。
 - [x] T6 Linux：MCP 临时修改→真实组件渲染→PNG 与版本→再调整→保存/取消；内嵌与独立 stdio 同库桥接验证通过，见 [T6 报告](2026-09-23-theme-preview/mcp-theme-preview.md)。其它平台及第三方 GUI 客户端未验收。
 - [x] T6 Linux：临时配置不落库、CAS 防覆盖、ready/原生像素双确认、超时取消与失权回收；Xvfb 正文无重建。TTL 用时钟边界测试，未做 30 分钟墙钟长测；阅读锚点由 T3 复用，Wayland 正文位置未在 T6 重验。
-- [ ] Windows/macOS/Linux X11/Wayland 原生截图及真实客户端闭环完成运行验证；图片尺寸/体积有界。（**已验**：Linux X11/Xvfb 100%/200% 像素验证 + 当前 KDE Wayland 原生探针 100 帧；截图**尺寸/体积有界**已在文件契约里落地[文件契约](2026-09-23-theme-preview/mcp-preview-files.md)。**未验**：Windows/macOS 原生截图与真实客户端闭环 → 环境依赖，保留 open）
+- [ ] Windows/macOS/Linux X11/Wayland 原生截图及真实客户端闭环完成运行验证；图片尺寸/体积有界。（**已验**：Linux X11/Xvfb 100%/200% 像素验证 + 当前 KDE Wayland 原生探针 100 帧；截图**尺寸/体积有界**已在文件契约里落地[文件契约](2026-09-23-theme-preview/mcp-preview-files.md)。**已实现但未运行验收**：macOS WKWebView 适配器，见 [macOS 记录](2026-09-23-theme-preview/macos-native-capture.md)。**未验**：Windows/macOS 原生截图与真实客户端闭环 → 环境依赖，保留 open）
 
 - [x] T5 MCP 主题配置五工具：共用 core 校验/CAS/历史；默认权限、轮换、审计；内嵌事件与独立 stdio 前台轮询同步，Linux Xvfb 真产物验证见 [T5 报告](2026-09-23-theme-preview/mcp-theme-config.md)。本项不代表截图接口或跨平台验收。
 

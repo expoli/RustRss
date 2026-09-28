@@ -39,6 +39,7 @@ pub fn register(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wr
     builder.manage(Arc::new(Shared::default())).register_uri_scheme_protocol("theme-fixture", |_ctx,request| {
         let (mime,body)=match request.uri().path() {
             "/"|"/index.html" => ("text/html",include_str!("../../ui/index.html").replace("src=\"app.js\"","src=\"preview.js\"").into_bytes()),
+            "/mobile.js" => ("text/javascript",include_bytes!("../../ui/mobile.js").to_vec()),
             "/preview.js" => ("text/javascript",include_bytes!("../../ui/preview.js").to_vec()),
             "/theme-settings.js" => ("text/javascript",include_bytes!("../../ui/theme-settings.js").to_vec()),
             "/theme.js" => ("text/javascript",include_bytes!("../../ui/theme.js").to_vec()),
@@ -290,7 +291,7 @@ impl Backend for Desktop {
         })
     }
 }
-#[cfg(any(target_os = "linux", target_os = "windows"))]
+#[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
 fn verify_marker(bytes: &[u8], colors: &[String], scale: f64) -> bool {
     let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
     let Ok(mut reader) = decoder.read_info() else {
@@ -315,7 +316,7 @@ fn verify_marker(bytes: &[u8], colors: &[String], scale: f64) -> bool {
         data.get(offset..offset + 3) == Some(expected.as_slice())
     })
 }
-#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+#[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
 fn verify_marker(_: &[u8], _: &[String], _: f64) -> bool {
     false
 }
@@ -372,7 +373,7 @@ mod tests {
         assert!(!matches_ready(&payload, &wrong));
     }
     #[test]
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
     fn native_marker_rejects_stale_pixels() {
         let colors = vec!["#112233".into(); 8];
         let mut raw = vec![0u8; 40 * 8 * 3];

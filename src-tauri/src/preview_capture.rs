@@ -51,7 +51,7 @@ pub async fn capture(
         .map_err(|_| CaptureError::RenderTimeout)?
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+#[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
 async fn platform_capture(_: &WebviewWindow, _: u64, _: usize) -> Result<Capture, CaptureError> {
     Err(CaptureError::Unavailable)
 }
@@ -224,6 +224,164 @@ async fn platform_capture(
     Ok(image)
 }
 
+#[cfg(target_os = "macos")]
+async fn platform_capture(
+    window: &WebviewWindow,
+    max_pixels: u64,
+    max_bytes: usize,
+) -> Result<Capture, CaptureError> {
+    use block2::RcBlock;
+    use objc2::{AnyThread, MainThreadMarker};
+    use objc2_app_kit::{
+        NSBitmapImageFileType, NSBitmapImageRep, NSBitmapImageRepPropertyKey, NSImage,
+    };
+    use objc2_foundation::{NSDictionary, NSError};
+    use objc2_web_kit::{WKSnapshotConfiguration, WKWebView};
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let sender = std::sync::Arc::new(std::sync::Mutex::new(Some(tx)));
+    let target = window.clone();
+    window
+        .with_webview(move |platform| {
+            // with_webview runs on Tauri's UI thread. The pointer belongs to
+            // Tauri; retain no native object outside this callback or WebKit's
+            // completion block.
+            let result = (|| {
+                if sender
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .is_none_or(|tx| tx.is_closed())
+                {
+                    return Ok(());
+                }
+                if !target
+                    .is_visible()
+                    .map_err(|_| CaptureError::WindowUnavailable)?
+                    || target
+                        .is_minimized()
+                        .map_err(|_| CaptureError::WindowUnavailable)?
+                {
+                    return Err(CaptureError::WindowHidden);
+                }
+                let mtm = MainThreadMarker::new().ok_or(CaptureError::WindowUnavailable)?;
+                let view = unsafe { &*platform.inner().cast::<WKWebView>() };
+                let bounds = view.bounds();
+                let native_window = view.window().ok_or(CaptureError::WindowUnavailable)?;
+                let scale = native_window.backingScaleFactor();
+                let (logical_width, logical_height, scale_factor) =
+                    mac_geometry(bounds.size.width, bounds.size.height, scale)?;
+                let width = logical_width
+                    .checked_mul(scale_factor)
+                    .ok_or(CaptureError::ImageTooLarge)?;
+                let height = logical_height
+                    .checked_mul(scale_factor)
+                    .ok_or(CaptureError::ImageTooLarge)?;
+                check_size(width, height, max_pixels)?;
+                let config = unsafe { WKSnapshotConfiguration::new(mtm) };
+                unsafe {
+                    config.setRect(bounds);
+                    config.setAfterScreenUpdates(true);
+                }
+                let callback_sender = sender.clone();
+                let callback = RcBlock::new(move |image: *mut NSImage, error: *mut NSError| {
+                    if callback_sender
+                        .lock()
+                        .unwrap()
+                        .as_ref()
+                        .is_none_or(|tx| tx.is_closed())
+                    {
+                        return;
+                    }
+                    let captured = (|| {
+                        if !error.is_null() || image.is_null() {
+                            return Err(CaptureError::CaptureFailed);
+                        }
+                        let image = unsafe { &*image };
+                        let cg_image = unsafe {
+                            image.CGImageForProposedRect_context_hints(
+                                std::ptr::null_mut(),
+                                None,
+                                None,
+                            )
+                        }
+                        .ok_or(CaptureError::CaptureFailed)?;
+                        let bitmap =
+                            NSBitmapImageRep::initWithCGImage(NSBitmapImageRep::alloc(), &cg_image);
+                        if bitmap.pixelsWide() != width as isize
+                            || bitmap.pixelsHigh() != height as isize
+                        {
+                            return Err(CaptureError::CaptureFailed);
+                        }
+                        let properties = NSDictionary::<
+                            NSBitmapImageRepPropertyKey,
+                            objc2::runtime::AnyObject,
+                        >::new();
+                        let data = unsafe {
+                            bitmap.representationUsingType_properties(
+                                NSBitmapImageFileType::PNG,
+                                &properties,
+                            )
+                        }
+                        .ok_or(CaptureError::CaptureFailed)?;
+                        if data.len() > max_bytes {
+                            return Err(CaptureError::ImageTooLarge);
+                        }
+                        Ok(Capture {
+                            png: data.to_vec(),
+                            width,
+                            height,
+                            logical_size: [logical_width, logical_height],
+                            scale_factor: f64::from(scale_factor),
+                            display_backend: "WKWebView".into(),
+                        })
+                    })();
+                    if let Some(tx) = callback_sender.lock().unwrap().take() {
+                        let _ = tx.send(captured);
+                    }
+                });
+                unsafe {
+                    view.takeSnapshotWithConfiguration_completionHandler(Some(&config), &callback);
+                }
+                Ok(())
+            })();
+            if let Err(error) = result {
+                if let Some(tx) = sender.lock().unwrap().take() {
+                    let _ = tx.send(Err(error));
+                }
+            }
+        })
+        .map_err(|_| CaptureError::WindowUnavailable)?;
+    let image = rx.await.map_err(|_| CaptureError::WindowUnavailable)??;
+    if !window
+        .is_visible()
+        .map_err(|_| CaptureError::WindowUnavailable)?
+        || window
+            .is_minimized()
+            .map_err(|_| CaptureError::WindowUnavailable)?
+    {
+        return Err(CaptureError::WindowHidden);
+    }
+    Ok(image)
+}
+
+#[cfg(target_os = "macos")]
+fn mac_geometry(width: f64, height: f64, scale: f64) -> Result<(u32, u32, u32), CaptureError> {
+    fn whole(value: f64) -> Option<u32> {
+        let rounded = value.round();
+        (value.is_finite()
+            && value > 0.
+            && rounded <= f64::from(u32::MAX)
+            && (value - rounded).abs() < 0.01)
+            .then_some(rounded as u32)
+    }
+    Ok((
+        whole(width).ok_or(CaptureError::WindowUnavailable)?,
+        whole(height).ok_or(CaptureError::WindowUnavailable)?,
+        whole(scale).ok_or(CaptureError::CaptureFailed)?,
+    ))
+}
+
 #[cfg(target_os = "linux")]
 async fn platform_capture(
     window: &WebviewWindow,
@@ -372,7 +530,7 @@ async fn platform_capture(
     Ok(image)
 }
 
-#[cfg(any(target_os = "linux", target_os = "windows"))]
+#[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
 fn check_size(width: u32, height: u32, limit: u64) -> Result<(), CaptureError> {
     if width == 0 || height == 0 {
         return Err(CaptureError::WindowUnavailable);

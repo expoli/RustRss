@@ -26,6 +26,7 @@ cargo run -p rustrss-desktop
 RustRss 面向 Linux、Windows 和 macOS 桌面；Android 版可在设备上侧载使用——订阅、刷新、离线阅读、AI 摘要/翻译（四家提供商）、外链打开与安全密钥存储均已在模拟器/设备上验证，构建/签名/安装步骤见 [docs/development.md](docs/development.md) 的 Android 段，持续构建由 Android CI（`android-build.yml`）承担。已发布的安装包和版本说明以 [GitHub Releases](https://github.com/expoli/RustRss/releases) 页面为准；也可以查看[快速开始](docs/getting-started.md)从源码运行。
 
 Windows 主题预览截图现通过 WebView2 的原生内容截图接口生成 PNG，并沿用 MCP 预览的修订号、像素标记、文件配额与到期规则。该适配器的 Windows 真机运行验收仍在进行中；当前不能把 Linux 截图结果当作 Windows 场景、缩放和最小化的通过证据。复验范围见 [Windows 预览验收记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/windows-capture.md)。
+macOS 主题预览现使用 WKWebView 内容截图适配器；真实 macOS 会话的三场景、缩放与失败路径仍待运行验收，步骤和证据状态见 [macOS 截图记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/macos-native-capture.md)。
 
 ## 发布步骤
 
