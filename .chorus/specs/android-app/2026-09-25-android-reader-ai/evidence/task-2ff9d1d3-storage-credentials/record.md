@@ -14,10 +14,13 @@ Build: `cargo tauri android build --target x86_64 --debug` (probe-free final bui
      keyring implementation (moved verbatim from ai.rs, incl. the
      `keyring_retry` Secret-Service workaround and its tests). Mobile =
      `SecureStorePlugin` bridge (`register_android_plugin` + `run_mobile_plugin`
-     get/set/delete).
+     get/set/delete). The Android Keystore key is non-exportable; TEE/StrongBox
+     hardware backing depends on device capability unless explicitly requested
+     and verified.
    - `gen/android/.../SecureStorePlugin.kt`: secret encrypted with an
-     Android Keystore AES/GCM key (256-bit, key never leaves the security
-     hardware); base64(iv‖ct) stored in app-private SharedPreferences
+     Android Keystore AES/GCM key (256-bit, non-exportable; TEE/StrongBox
+     backing depends on device capability unless explicitly requested and
+     verified); base64(iv‖ct) stored in app-private SharedPreferences
      (`secure_store.xml`). No Log calls in the class.
    - `ai.rs` keeps `KeySource` and re-exports `store_key/load_key/delete_key` —
      commands.rs and tests unchanged.
