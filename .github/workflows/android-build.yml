@@ -45,6 +45,11 @@ jobs:
           java-version: 17
 
       - uses: android-actions/setup-android@v3
+        with:
+          # 该 action 默认 packages 含已被 SDK Manager 移除的 "tools"，
+          # 显式只装 platform-tools；NDK 由下一步显式安装，build-tools
+          # 用 runner 镜像预装版本（apksigner 步骤按版本取最新）。
+          packages: platform-tools
 
       - name: Install NDK
         run: sdkmanager --install "ndk;27.2.12479018" > /dev/null
