@@ -33,7 +33,7 @@ emulator** (not the debug build), after the ProGuard plugin-DTO keep rules.
 
 | Step | Evidence | Result |
 |---|---|---|
-| Export OPML | `11-release-opml-export-dialog.png` (SAF save dialog), `11-release-opml-export.xml` (pulled file) | `adb pull /sdcard/Download/…` → valid OPML 2.0, exactly one `<outline type="rss">` per feed, no article content |
+| Export OPML | `11-release-opml-export-saf-dialog.png` (SAF save dialog, filename pre-filled `rustrss.opml`), `11-release-opml-export-saved.png` (settings pane after SAVE; the earlier round-2 record mislabeled this shot as the dialog), `11-release-opml-export.xml` (pulled file) | `adb pull /sdcard/Download/…` → valid OPML 2.0, exactly one `<outline type="rss">` per feed, no article content |
 | Import OPML (adds feed) | `12-release-opml-import-result.png` | Pushed a 2-feed OPML to Downloads, imported via Settings → Data & backups → Import OPML… → SAF picker → Subscriptions shows **FEEDS 2** ("Round2 Second Feed" + "RustRss 验证源") |
 
 ### AI actions end-to-end on the signed release build (provider via mock server 10.0.2.2:8817)
