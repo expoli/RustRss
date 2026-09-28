@@ -3179,19 +3179,19 @@ fn external_open_command(url: &str) -> std::process::Command {
 /// 只允许 http/https —— 文章里的链接是不可信输入，绝不能把 file:// 之类
 /// 交给系统打开器；也因此这里只用 `Command::new(程序).arg(地址)`，不经过 shell。
 ///
-/// Android 不启动子进程：Tauri 的移动端外链得走平台 intent（后续 UI 任务再接），
-/// 这里先明确报「暂不支持」。
+/// Android 走 Kotlin `LinkPlugin` 的 `ACTION_VIEW` intent（校验后的 URL 交给
+/// 设备浏览器；Kotlin 侧再校验一次 scheme 兜底，无处理器时返回明确错误）。
 #[tauri::command]
-pub fn open_external(url: String) -> R<()> {
+pub fn open_external(app: tauri::AppHandle, url: String) -> R<()> {
     let url = validate_external_url(&url)?;
     #[cfg(desktop)]
     {
+        let _ = app;
         spawn_external_opener(&url)
     }
     #[cfg(mobile)]
     {
-        let _ = url;
-        Err(MOBILE_UNSUPPORTED.into())
+        crate::opener::open_url(&app, &url)
     }
 }
 
@@ -3834,7 +3834,8 @@ mod credential_lock_tests {
 
 /// 机械守卫：桌面专属动作的移动端回退必须是**显式拒绝**（`MOBILE_UNSUPPORTED`），
 /// 不得被改成静默 `Ok(())`（用户点了没反应，比一句看得懂的拒绝更糟——与
-/// `open_external`/`open_logs_dir` 同一口径）。
+/// `open_logs_dir` 同一口径；`open_external` 已升级为受支持的移动端路径，
+/// 不再属于本守卫范围）。
 ///
 /// 与 lib.rs 的 cfg 门守卫同理：mobile 分支的运行行为在桌面宿主编译不到，
 /// 能机械钉住的是源码形态本身。变异可验：把任一移动端臂改成 `Ok(())`，本测试变红。
@@ -3868,5 +3869,21 @@ mod mobile_fallback_guard_tests {
                 "{what}（{signature}）的移动端分支必须是显式 MOBILE_UNSUPPORTED 拒绝"
             );
         }
+    }
+
+    /// `open_external` 已升级为受支持的移动端路径（Kotlin `LinkPlugin` 的
+    /// ACTION_VIEW）：移动分支必须路由到 `opener::open_url`，且不得再出现
+    /// MOBILE_UNSUPPORTED。变异可验：把移动臂改回拒绝分支，本测试变红。
+    #[test]
+    fn open_external_mobile_branch_routes_to_opener() {
+        let slice = command_slice("pub fn open_external", "在浏览器打开");
+        assert!(
+            slice.contains("opener::open_url"),
+            "open_external 的移动分支必须经过 opener::open_url（Kotlin LinkPlugin）"
+        );
+        assert!(
+            !slice.contains("MOBILE_UNSUPPORTED"),
+            "open_external 不再是移动端拒绝分支"
+        );
     }
 }

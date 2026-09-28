@@ -25,3 +25,5 @@
 -keep class tech.expoli.rustrss.SecureOut { *; }
 -keep class tech.expoli.rustrss.TextDocArgs { *; }
 -keep class tech.expoli.rustrss.TextDocOut { *; }
+-keep class tech.expoli.rustrss.ShareArgs { *; }
+-keep class tech.expoli.rustrss.OpenUrlArgs { *; }

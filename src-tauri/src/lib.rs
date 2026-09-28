@@ -13,6 +13,8 @@ mod commands;
 mod credentials;
 #[cfg(mobile)]
 mod documents;
+#[cfg(mobile)]
+mod opener;
 mod mcp_server;
 mod notify;
 mod preview_capture;
@@ -184,11 +186,13 @@ pub fn run() {
         }
     }
 
-    // 移动端分享 + 凭据安全存储：注册对应 Kotlin 插件（见 share.rs / credentials.rs）。
+    // 移动端分享、外链与凭据安全存储：注册对应 Kotlin 插件（见 share.rs /
+    // opener.rs / credentials.rs）。
     #[cfg(mobile)]
     {
         builder = builder
             .plugin(share::plugin())
+            .plugin(opener::plugin())
             .plugin(documents::plugin())
             .plugin(credentials::mobile_plugin());
     }
