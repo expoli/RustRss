@@ -2,6 +2,8 @@
 
 This is runtime evidence for Chorus task `ee4cce71-d7a1-46ed-a98b-366e2de78ec5`. The tested source was RustRss `b7bfada`; exact hashes and UTC build times of the fixture, desktop, and MCP binaries are in [results.json](results.json). The source and binaries predate the Windows/macOS adapter commits. All databases and captured content were fixed fixtures; the user's RSS database was not opened.
 
+After locally integrating the Windows and macOS adapters, source `835d551` was rebuilt and both virtual compositor sessions were repeated. [integrated-results.json](integrated-results.json) records the new desktop, MCP, and fixture binary SHA-256 values and mtimes, 39 fixture/24 product capture manifests per session, distinct three-scene hashes in every cell, the product's revision/configuration hash and capture geometry, and the six archived `integrated-*.png` originals. Both sessions passed the same assertions. This is the acceptance evidence for the integrated code; the original manifest above remains as the before-integration baseline.
+
 ## What ran
 
 - `kwin_wayland --virtual --no-lockscreen` on a private Wayland socket and private D-Bus session, once at output scale 1 and once after `kscreen-doctor output.Virtual-0.scale.1.5`.
