@@ -4,7 +4,7 @@
 
 ## 实现边界
 
-- `src-tauri/src/preview_capture.rs` 在 Tauri UI 线程取得当前预览 `WKWebView`，用 `WKSnapshotConfiguration` 的 WebView bounds 与 `afterScreenUpdates` 请求内容区域图像。像素预算在调用 WebKit 前校验；回调检查实际位图尺寸和 PNG 字节数。窗口隐藏/最小化、空图、尺寸不符均失败。
+- `src-tauri/src/preview_capture.rs` 在 Tauri UI 线程取得当前预览 `WKWebView`，用 `WKSnapshotConfiguration` 的 WebView bounds 与 `afterScreenUpdates` 请求内容区域图像。像素预算在调用 WebKit 前校验；回调检查实际位图尺寸，将 CGImage 转换为明确的 sRGB RGBA 后逐行编码 PNG，并在输出 writer 写入时限制 2MiB。超限返回 `ImageTooLarge`，不再先由 `NSBitmapImageRep` 生成完整的 PNG `NSData`。窗口隐藏/最小化、空图、尺寸不符均失败。
 - 超时后接收端关闭；迟到的回调不会把图像交给 MCP。现有 `theme_preview.rs` 的 ready request/revision/hash/scene/mode 校验和 PNG marker 像素校验也应用于 macOS。旧帧无法仅凭 ready 信号通过。
 - 保存、取消、CAS、临时文件配额与 TTL 继续使用现有 MCP/core 状态机；此改动没有添加另一套持久化路径。
 
@@ -13,8 +13,10 @@
 当前 `Cargo.lock` 锁定 Tauri `2.11.6`、Wry `0.55.1`、`objc2-web-kit` / `objc2-app-kit` / `objc2-foundation` `0.3.2`、`objc2` `0.6.4`、`block2` `0.6.2`。Tauri `PlatformWebview::inner()` 在 macOS 返回 WKWebView 指针；相应的 `objc2-web-kit 0.3.2` 绑定声明 `takeSnapshotWithConfiguration_completionHandler` 和 `WKSnapshotConfiguration` 的 `rect` / `afterScreenUpdates`。核对来源：
 
 - [Apple WKWebView 截图](https://developer.apple.com/documentation/webkit/wkwebview/takesnapshot%28with%3Acompletionhandler%3A%29)、[截图配置](https://developer.apple.com/documentation/webkit/wksnapshotconfiguration)
-- [Apple NSWindow backingScaleFactor](https://developer.apple.com/documentation/appkit/nswindow/backingscalefactor)、[NSBitmapImageRep CGImage 初始化](https://developer.apple.com/documentation/appkit/nsbitmapimagerep/init%28cgimage%3A%29-7o5tz)、[PNG 表示](https://developer.apple.com/documentation/appkit/nsbitmapimagerep/representation%28using%3Aproperties%3A%29)
-- 本机下载的锁定 crate 源码：`tauri-2.11.6/src/webview/mod.rs`、`objc2-web-kit-0.3.2/src/generated/WKWebView.rs` 和 `WKSnapshotConfiguration.rs`、`objc2-app-kit-0.3.2/src/generated/NSBitmapImageRep.rs`。
+- [Apple NSWindow backingScaleFactor](https://developer.apple.com/documentation/appkit/nswindow/backingscalefactor)、[CoreGraphics CGContextDrawImage](https://developer.apple.com/documentation/coregraphics/cgcontextdrawimage)
+- 本机下载的锁定 crate 源码：`tauri-2.11.6/src/webview/mod.rs`、`objc2-web-kit-0.3.2/src/generated/WKWebView.rs` 和 `WKSnapshotConfiguration.rs`、`objc2-core-graphics-0.3.2/src/generated/CGContext.rs`。
+
+Linux 上可运行的逐行编码测试 `cargo test -p rustrss-desktop --lib mac_png_tests --locked --offline` 验证颜色、行序和 2MiB 边界；不能代替 macOS 原生构建或运行。
 
 ## macOS 实机会话步骤
 

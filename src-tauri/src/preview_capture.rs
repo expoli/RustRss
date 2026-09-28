@@ -57,12 +57,19 @@ async fn platform_capture(_: &WebviewWindow, _: u64, _: usize) -> Result<Capture
 }
 
 #[cfg(target_os = "windows")]
+#[path = "windows_bounded_stream.rs"]
+mod windows_bounded_stream;
+
+#[cfg(target_os = "windows")]
 async fn platform_capture(
     window: &WebviewWindow,
     max_pixels: u64,
     max_bytes: usize,
 ) -> Result<Capture, CaptureError> {
-    use std::sync::{Arc, Mutex};
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    };
     use webview2_com::{CapturePreviewCompletedHandler, Microsoft::Web::WebView2::Win32::*};
     use windows::{
         core::{Interface, BOOL},
@@ -85,11 +92,23 @@ async fn platform_capture(
     }
     let (tx, rx) = tokio::sync::oneshot::channel();
     let sender = Arc::new(Mutex::new(Some(tx)));
+    struct CancelOnDrop(Arc<AtomicBool>);
+    impl Drop for CancelOnDrop {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::Release);
+        }
+    }
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let _cancel_on_drop = CancelOnDrop(cancelled.clone());
     let deliver = sender.clone();
+    let dispatch_cancelled = cancelled.clone();
     let target = window.clone();
     window
         .with_webview(move |platform| {
             let result = (|| {
+                if dispatch_cancelled.load(Ordering::Acquire) {
+                    return Ok(());
+                }
                 let controller = platform.controller();
                 let mut visible = BOOL::default();
                 unsafe { controller.IsVisible(&mut visible) }
@@ -132,14 +151,28 @@ async fn platform_capture(
                 if logical_width == 0 || logical_height == 0 {
                     return Err(CaptureError::WindowUnavailable);
                 }
-                let stream = unsafe { CreateStreamOnHGlobal(HGLOBAL(std::ptr::null_mut()), true) }
+                let inner = unsafe { CreateStreamOnHGlobal(HGLOBAL(std::ptr::null_mut()), true) }
                     .map_err(|_| CaptureError::CaptureFailed)?;
+                let limit_sender = deliver.clone();
+                let (stream, exceeded) = windows_bounded_stream::wrap(
+                    inner,
+                    max_bytes,
+                    dispatch_cancelled.clone(),
+                    move || {
+                        if let Some(tx) = limit_sender.lock().unwrap().take() {
+                            let _ = tx.send(Err(CaptureError::ImageTooLarge));
+                        }
+                    },
+                );
                 let callback_stream = stream.clone();
                 let callback_sender = deliver.clone();
+                let callback_cancelled = dispatch_cancelled.clone();
+                let callback_exceeded = exceeded.clone();
                 let webview = unsafe { controller.CoreWebView2() }
                     .map_err(|_| CaptureError::CaptureFailed)?;
                 let callback = CapturePreviewCompletedHandler::create(Box::new(move |status| {
-                    if callback_sender
+                    if callback_cancelled.load(Ordering::Acquire)
+                        || callback_sender
                         .lock()
                         .unwrap()
                         .as_ref()
@@ -148,6 +181,9 @@ async fn platform_capture(
                         return Ok(());
                     }
                     let captured = (|| {
+                        if callback_exceeded.load(Ordering::Acquire) {
+                            return Err(CaptureError::ImageTooLarge);
+                        }
                         status.map_err(|_| CaptureError::CaptureFailed)?;
                         let mut stat = STATSTG::default();
                         unsafe { callback_stream.Stat(&mut stat, STATFLAG_NONAME) }
@@ -189,8 +225,10 @@ async fn platform_capture(
                             display_backend: "WebView2".into(),
                         })
                     })();
-                    if let Some(tx) = callback_sender.lock().unwrap().take() {
-                        let _ = tx.send(captured);
+                    if !callback_cancelled.load(Ordering::Acquire) {
+                        if let Some(tx) = callback_sender.lock().unwrap().take() {
+                            let _ = tx.send(captured);
+                        }
                     }
                     Ok(())
                 }));
@@ -201,7 +239,13 @@ async fn platform_capture(
                         &callback,
                     )
                 }
-                .map_err(|_| CaptureError::CaptureFailed)?;
+                .map_err(|_| {
+                    if exceeded.load(Ordering::Acquire) {
+                        CaptureError::ImageTooLarge
+                    } else {
+                        CaptureError::CaptureFailed
+                    }
+                })?;
                 Ok(())
             })();
             if let Err(error) = result {
@@ -232,10 +276,12 @@ async fn platform_capture(
 ) -> Result<Capture, CaptureError> {
     use block2::RcBlock;
     use objc2::{AnyThread, MainThreadMarker};
-    use objc2_app_kit::{
-        NSBitmapImageFileType, NSBitmapImageRep, NSBitmapImageRepPropertyKey, NSImage,
+    use objc2_app_kit::NSImage;
+    use objc2_core_graphics::{
+        CGBitmapContextCreate, CGColorSpace, CGContext, CGImage, CGImageAlphaInfo,
+        CGImageByteOrderInfo, kCGColorSpaceSRGB,
     };
-    use objc2_foundation::{NSDictionary, NSError};
+    use objc2_foundation::{NSError, NSPoint, NSRect, NSSize};
     use objc2_web_kit::{WKSnapshotConfiguration, WKWebView};
 
     let (tx, rx) = tokio::sync::oneshot::channel();
@@ -306,29 +352,55 @@ async fn platform_capture(
                             )
                         }
                         .ok_or(CaptureError::CaptureFailed)?;
-                        let bitmap =
-                            NSBitmapImageRep::initWithCGImage(NSBitmapImageRep::alloc(), &cg_image);
-                        if bitmap.pixelsWide() != width as isize
-                            || bitmap.pixelsHigh() != height as isize
+                        if CGImage::width(Some(&cg_image)) != width as usize
+                            || CGImage::height(Some(&cg_image)) != height as usize
                         {
                             return Err(CaptureError::CaptureFailed);
                         }
-                        let properties = NSDictionary::<
-                            NSBitmapImageRepPropertyKey,
-                            objc2::runtime::AnyObject,
-                        >::new();
-                        let data = unsafe {
-                            bitmap.representationUsingType_properties(
-                                NSBitmapImageFileType::PNG,
-                                &properties,
+                        // CoreGraphics converts the snapshot into an explicitly
+                        // specified sRGB, big-endian premultiplied RGBA buffer.
+                        // NSBitmapImageRep can choose different channel layouts;
+                        // its PNG method allocates the complete NSData first.
+                        let row_bytes = (width as usize)
+                            .checked_mul(4)
+                            .ok_or(CaptureError::ImageTooLarge)?;
+                        let buffer_len = row_bytes
+                            .checked_mul(height as usize)
+                            .ok_or(CaptureError::ImageTooLarge)?;
+                        let mut rgba = vec![0; buffer_len];
+                        let color_space = unsafe {
+                            CGColorSpace::with_name(Some(kCGColorSpaceSRGB))
+                        }
+                        .ok_or(CaptureError::CaptureFailed)?;
+                        let bitmap_info = CGImageAlphaInfo::PremultipliedLast.0
+                            | CGImageByteOrderInfo::Order32Big.0;
+                        let context = unsafe {
+                            CGBitmapContextCreate(
+                                rgba.as_mut_ptr().cast(),
+                                width as usize,
+                                height as usize,
+                                8,
+                                row_bytes,
+                                Some(&color_space),
+                                bitmap_info,
                             )
                         }
                         .ok_or(CaptureError::CaptureFailed)?;
-                        if data.len() > max_bytes {
-                            return Err(CaptureError::ImageTooLarge);
-                        }
+                        CGContext::draw_image(
+                            Some(&context),
+                            NSRect::new(
+                                NSPoint::ZERO,
+                                NSSize::new(f64::from(width), f64::from(height)),
+                            ),
+                            Some(&cg_image),
+                        );
+                        CGContext::flush(Some(&context));
+                        drop(context); // Release all native access before reading rgba.
+                        let png = encode_mac_rgba_bounded(
+                            &rgba, width, height, row_bytes, max_bytes,
+                        )?;
                         Ok(Capture {
-                            png: data.to_vec(),
+                            png,
                             width,
                             height,
                             logical_size: [logical_width, logical_height],
@@ -380,6 +452,176 @@ fn mac_geometry(width: f64, height: f64, scale: f64) -> Result<(u32, u32, u32), 
         whole(height).ok_or(CaptureError::WindowUnavailable)?,
         whole(scale).ok_or(CaptureError::CaptureFailed)?,
     ))
+}
+
+// Kept portable so the byte cap and pixel conversion can be tested without a Mac.
+#[cfg(any(
+    target_os = "macos",
+    all(test, any(target_os = "linux", target_os = "windows"))
+))]
+fn encode_mac_rgba_bounded(
+    premultiplied: &[u8],
+    width: u32,
+    height: u32,
+    row_bytes: usize,
+    max_bytes: usize,
+) -> Result<Vec<u8>, CaptureError> {
+    use std::io::Write;
+
+    let pixel_bytes = (width as usize)
+        .checked_mul(4)
+        .ok_or(CaptureError::ImageTooLarge)?;
+    let buffer_bytes = row_bytes
+        .checked_mul(height as usize)
+        .ok_or(CaptureError::ImageTooLarge)?;
+    if width == 0
+        || height == 0
+        || row_bytes < pixel_bytes
+        || premultiplied.len() < buffer_bytes
+    {
+        return Err(CaptureError::CaptureFailed);
+    }
+
+    let mut output = MacLimitedPngWriter {
+        bytes: Vec::new(),
+        limit: max_bytes,
+        exceeded: false,
+    };
+    let result = (|| {
+        let mut encoder = png::Encoder::new(&mut output, width, height);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder.set_source_srgb(png::SrgbRenderingIntent::Perceptual);
+        let mut writer = encoder.write_header()?;
+        {
+            let mut stream = writer.stream_writer()?;
+            let mut row = vec![0; pixel_bytes];
+            // Quartz bitmap contexts use a lower-left origin. PNG rows start
+            // at the top, so consume the native rows in reverse order.
+            for source in premultiplied[..buffer_bytes].chunks_exact(row_bytes).rev() {
+                for (out, source) in row.chunks_exact_mut(4).zip(source.chunks_exact(4)) {
+                    let alpha = u32::from(source[3]);
+                    out[3] = source[3];
+                    for channel in 0..3 {
+                        out[channel] = if alpha == 0 {
+                            0
+                        } else {
+                            ((u32::from(source[channel]) * 255 + alpha / 2) / alpha)
+                                .min(255) as u8
+                        };
+                    }
+                }
+                stream.write_all(&row)?;
+            }
+            stream.finish()?;
+        }
+        writer.finish()
+    })();
+    if output.exceeded {
+        return Err(CaptureError::ImageTooLarge);
+    }
+    result.map_err(|_| CaptureError::CaptureFailed)?;
+    Ok(output.bytes)
+}
+
+#[cfg(any(
+    target_os = "macos",
+    all(test, any(target_os = "linux", target_os = "windows"))
+))]
+struct MacLimitedPngWriter {
+    bytes: Vec<u8>,
+    limit: usize,
+    exceeded: bool,
+}
+
+#[cfg(any(
+    target_os = "macos",
+    all(test, any(target_os = "linux", target_os = "windows"))
+))]
+impl std::io::Write for MacLimitedPngWriter {
+    fn write(&mut self, data: &[u8]) -> std::io::Result<usize> {
+        if data.len() > self.limit.saturating_sub(self.bytes.len()) {
+            self.exceeded = true;
+            return Err(std::io::Error::other("PNG byte limit exceeded"));
+        }
+        self.bytes.extend_from_slice(data);
+        Ok(data.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[cfg(all(
+    test,
+    any(target_os = "linux", target_os = "macos", target_os = "windows")
+))]
+mod mac_png_tests {
+    use super::*;
+
+    #[test]
+    fn bounded_png_preserves_colors_and_rejects_one_byte_over_budget() {
+        let premultiplied = [
+            64, 32, 0, 128, // straight RGBA: [128, 64, 0, 128]
+            0, 0, 0, 0, // transparent pixels remain black
+        ];
+        let png = encode_mac_rgba_bounded(&premultiplied, 2, 1, 8, MAX_PNG_BYTES).unwrap();
+        let mut decoder = png::Decoder::new(std::io::Cursor::new(&png));
+        decoder.set_transformations(png::Transformations::IDENTITY);
+        let mut reader = decoder.read_info().unwrap();
+        let mut decoded = vec![0; reader.output_buffer_size()];
+        let frame = reader.next_frame(&mut decoded).unwrap();
+        assert_eq!(frame.width, 2);
+        assert_eq!(frame.height, 1);
+        assert_eq!(&decoded[..frame.buffer_size()], &[128, 64, 0, 128, 0, 0, 0, 0]);
+        assert_eq!(
+            encode_mac_rgba_bounded(&premultiplied, 2, 1, 8, png.len()).unwrap(),
+            png
+        );
+        assert_eq!(
+            encode_mac_rgba_bounded(&premultiplied, 2, 1, 8, png.len() - 1),
+            Err(CaptureError::ImageTooLarge)
+        );
+        assert_eq!(
+            encode_mac_rgba_bounded(&premultiplied, 2, 1, 8, 0),
+            Err(CaptureError::ImageTooLarge)
+        );
+    }
+
+    #[test]
+    fn bounded_png_converts_bottom_up_rows_to_png_order() {
+        let native = [
+            0, 0, 255, 255, // Quartz bottom row: blue
+            255, 0, 0, 255, // Quartz top row: red
+        ];
+        let png = encode_mac_rgba_bounded(&native, 1, 2, 4, MAX_PNG_BYTES).unwrap();
+        let mut reader = png::Decoder::new(std::io::Cursor::new(png))
+            .read_info()
+            .unwrap();
+        let mut decoded = vec![0; reader.output_buffer_size()];
+        let frame = reader.next_frame(&mut decoded).unwrap();
+        assert_eq!(
+            &decoded[..frame.buffer_size()],
+            &[255, 0, 0, 255, 0, 0, 255, 255]
+        );
+    }
+
+    #[test]
+    fn bounded_png_rejects_malformed_dimensions() {
+        assert_eq!(
+            encode_mac_rgba_bounded(&[0; 8], 2, 2, 8, MAX_PNG_BYTES),
+            Err(CaptureError::CaptureFailed)
+        );
+        assert_eq!(
+            encode_mac_rgba_bounded(&[0; 8], 3, 1, 8, MAX_PNG_BYTES),
+            Err(CaptureError::CaptureFailed)
+        );
+        assert_eq!(
+            encode_mac_rgba_bounded(&[0; 8], u32::MAX, u32::MAX, usize::MAX, MAX_PNG_BYTES),
+            Err(CaptureError::ImageTooLarge)
+        );
+    }
 }
 
 #[cfg(target_os = "linux")]

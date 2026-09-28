@@ -26,6 +26,7 @@ version = "0.0.0"
 dependencies = [
  "webview2-com",
  "windows",
+ "windows-core",
 ]
 
 [[package]]

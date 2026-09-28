@@ -5,15 +5,15 @@
 ## 实现
 
 - `src-tauri/src/preview_capture.rs` 在 Windows 使用该窗口自己的 WebView2 `ICoreWebView2::CapturePreview(PNG)`，输出不含桌面或标题栏。截图前从 controller 读取可见状态、raw-pixel Bounds、RasterizationScale，并核对窗口可见且未最小化；截图后再次核对窗口状态。
-- Bounds 像素数在发起截图前限制为 6MP；COM 流完成后先检查 PNG 字节数不超过 2MiB，再读入并核对 PNG 尺寸与 WebView Bounds。元数据逻辑尺寸按 raw bounds / scale 计算。WebView2 的内存流写入期间无法强制 2MiB 上限，最终文件仍由共用文件管理器在发布前限制。
+- Bounds 像素数在发起截图前限制为 6MP；自定义 `IStream` 在 `Write`、`SetSize`、`Seek` 时限制 PNG 至 2MiB，拒绝会绕过限制的 `Clone`。超限立即返回 `ImageTooLarge`，超时后拒绝后续写入及发布；完成回调仍核对字节数、PNG 尺寸与 WebView Bounds。元数据逻辑尺寸按 raw bounds / scale 计算。此修复来自 Idea 整体验码第 1 轮 B1；原先仅在 HGLOBAL 全量写入后检查，已不再使用该无界路径。
 - 共用 `theme_preview.rs` 现在对 Windows PNG 做与 Linux 相同的八格 request 标记像素核验。只有新 request/revision/hash/scene 的 ready 与实际 PNG 标记一致，才交给共用预览文件流程；不匹配会在截止时间前重试，超时不发布旧图。
-- 无数据迁移；macOS 仍返回 unavailable。
+- 无数据迁移；macOS 的独立适配器见 [macOS 截图记录](macos-native-capture.md)。
 
 ## 锁定 API 的核对
 
 `Cargo.lock`：Tauri 2.11.6、Wry 0.55.1、`webview2-com` 0.38.2、`windows` 0.61.3。Tauri `with_webview` 在主线程提供 controller；Wry 0.55.1 给 controller 设置物理像素 Bounds。WebView2 的 [CapturePreview 说明](https://learn.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2?view=webview2-1.0.3856.49#capturepreview) 明确写入 `IStream` 并在完成回调后读取；在首次 ContentLoading 前可能失败。Microsoft 的 [Controller3 说明](https://learn.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2controller3?view=webview2-1.0.3856.49#get_boundsmode) 区分 raw-pixel Bounds 和 rasterization-scale Bounds；当前适配器只接受 Wry 使用的 raw-pixel 模式。Rust 函数签名已对照本机 Cargo 缓存中的精确版本源码。
 
-可重跑的签名探针：`cargo check --manifest-path scripts/windows-preview-api-probe/Cargo.toml --target x86_64-pc-windows-gnu --locked`。探针只类型检查 WebView2/Windows COM 方法，不证明 Tauri 整体构建或运行。
+可重跑的签名探针：`cargo check --manifest-path scripts/windows-preview-api-probe/Cargo.toml --target x86_64-pc-windows-gnu --locked`。探针也类型检查实际 `windows_bounded_stream.rs`，但不证明 Tauri 整体构建或运行。
 
 ## 本机验证与阻塞
 
