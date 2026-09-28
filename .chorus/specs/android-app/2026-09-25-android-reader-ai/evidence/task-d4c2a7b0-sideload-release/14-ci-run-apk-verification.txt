@@ -1,0 +1,30 @@
+# Hosted CI run + artifact verification (AC3, round 3)
+date: 2026-09-28
+
+Android run: https://github.com/expoli/RustRss/actions/runs/36407719856 -> success (job apk)
+Desktop run: https://github.com/expoli/RustRss/actions/runs/36407719768 -> success (admin-verified)
+PR: https://github.com/expoli/RustRss/pull/1 (branch feat/android-reader-sideload-ci-noreply @ 32bf433)
+
+## Artifact
+name: rustrss-android-debug-apk (id 10963712534, zip 152250196 bytes)
+file: app-universal-debug.apk (637672957 bytes)
+
+## SHA-256
+b78cdeb1ceffb7856af963980cd8f879d63bf43219cfb2c0a578d2f998eee0b8  app-universal-debug.apk
+
+## apksigner verify --verbose (build-tools 36.0.0)
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+
+## structure (key entries)
+ 10255504  01-01-1981 01:01   classes.dex
+313826408  01-01-1981 01:01   lib/arm64-v8a/librustrss_desktop_lib.so
+315839536  01-01-1981 01:01   lib/x86_64/librustrss_desktop_lib.so
+     7972  01-01-1981 01:01   AndroidManifest.xml
+  1142368  01-01-1981 01:01   resources.arsc

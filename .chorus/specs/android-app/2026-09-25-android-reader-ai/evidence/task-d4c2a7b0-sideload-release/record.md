@@ -70,15 +70,36 @@ appear on any captured surface. The Gemini confirm overlay masks the
 query-string key (`?key=***`), which is the transport-error scrub path
 (`scrub_log_line`) applied at the URL level.
 
-## Android CI (AC3) — local-only, pending push authorization
+## Android CI (AC3) — RESOLVED in round 3
 
-`.github/workflows/android-build.yml` exists in the repo but `master` is ~17
-commits ahead of `origin` and the workflow has never run remotely (`gh run
-list` → 404): no verifiable remote CI artifact yet. Pushing to the remote was
-flagged by review as beyond this task's authorization and is left to the
-owner's explicit decision; the workflow itself is syntax-valid
-(`actionlint`-style local review) and mirrors the documented local build
-(`cargo tauri android build --target x86_64` + `apksigner verify`).
+Resolved: see the "Hosted Android CI (AC3) — round 3, green + artifact
+verified" section above (this paragraph replaces the earlier local-only
+blocker note; history of the blocker loop is preserved in git).
+
+## Hosted Android CI (AC3) — round 3, green + artifact verified
+
+The blocker loop closed through three CI iterations, each fix landing on
+local master and fast-forwarded to PR branch
+`feat/android-reader-sideload-ci-noreply` by the admin (master never pushed
+or merged during this task):
+
+| Commit | CI failure it fixed |
+|---|---|
+| `4cd0875` | `setup-android@v3` default `packages: tools` — package removed from sdkmanager → explicit `platform-tools` |
+| `b3ea09e` | `cargo tauri` not installed → new "Install tauri-cli (Tauri 2 line)" step (`^2`, `--locked`, version printed) |
+| `32bf433` | `NDK_HOME` fallback resolved to nonexistent `ndk-bundle` → pinned to versioned `ndk/27.2.12479018` |
+
+Green run + independent artifact verification (full record:
+`14-ci-run-apk-verification.txt`):
+
+- Android run [36407719856](https://github.com/expoli/RustRss/actions/runs/36407719856)
+  → **success** (job `apk`); desktop run 36407719768 → success (admin-verified)
+- Artifact `rustrss-android-debug-apk` → `app-universal-debug.apk`
+  (637,672,957 bytes), SHA-256 `b78cdeb1…98eee0b8`
+- `apksigner verify` → **Verifies (v2 scheme)**, 1 signer
+- Structure: `AndroidManifest.xml`, `classes.dex`, `resources.arsc`,
+  `lib/x86_64/librustrss_desktop_lib.so` (315 MB),
+  `lib/arm64-v8a/librustrss_desktop_lib.so` (313 MB) — both targets present
 
 ## Known release-build notes
 
