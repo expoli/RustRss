@@ -349,3 +349,23 @@ mod tests {
         assert_eq!(due_feed_ids(None, &stale, now), vec![id]);
     }
 }
+
+/// 前台恢复（Android onResume → `RunEvent::Resumed`）触发的一次全量刷新。
+///
+/// 与手动/启动/定时共用 `background_refresh`（单 flight + 同一事件管线）：
+/// 恢复时若手动刷新正在跑，这里会静默让路。移动端没有常驻后台调度
+/// （进程挂起即停），「回到前台就拉新」由本入口补上。
+#[cfg(mobile)]
+pub fn resume_refresh(app: &AppHandle) {
+    // 初始 resume 可能在 setup 完成前到达（AppState 还没 manage）：跳过——
+    // 那种情况下的首刷由 refresh_on_start 的启动刷新覆盖。
+    if app.try_state::<AppState>().is_none() {
+        log::debug!("[rustrss] 前台恢复：应用尚未初始化完成，跳过刷新");
+        return;
+    }
+    let handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        log::info!("[rustrss] 前台恢复：触发一次刷新");
+        background_refresh(&handle, None).await;
+    });
+}

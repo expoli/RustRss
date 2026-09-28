@@ -2984,9 +2984,18 @@ pub async fn export_opml(app: tauri::AppHandle, state: State<'_, AppState>) -> R
     let Some(file_path) = picked else {
         return Ok(None);
     };
-    let path = file_path.into_path().map_err(|e| format!("路径无效: {e}"))?;
-    std::fs::write(&path, content).map_err(|e| format!("写入 {} 失败: {e}", path.display()))?;
-    Ok(Some(path.display().to_string()))
+    // Android：CREATE_DOCUMENT 返回 content:// URI，经 ContentResolver 写入。
+    #[cfg(mobile)]
+    {
+        crate::documents::write_text(&file_path.to_string(), &content).map_err(err)?;
+        Ok(Some(file_path.to_string()))
+    }
+    #[cfg(desktop)]
+    {
+        let path = file_path.into_path().map_err(|e| format!("路径无效: {e}"))?;
+        std::fs::write(&path, content).map_err(|e| format!("写入 {} 失败: {e}", path.display()))?;
+        Ok(Some(path.display().to_string()))
+    }
 }
 
 /// 导入 OPML：弹原生打开对话框 → 读文件 → 导入。返回统计（用户取消则 None）。
@@ -3003,9 +3012,15 @@ pub async fn import_opml(
     let Some(file_path) = picked else {
         return Ok(None);
     };
-    let path = file_path.into_path().map_err(|e| format!("路径无效: {e}"))?;
-    let content =
-        std::fs::read_to_string(&path).map_err(|e| format!("读取 {} 失败: {e}", path.display()))?;
+    // Android 的文档选择器返回 content:// URI（std::fs 读不了），经 Kotlin
+    // DocumentsPlugin 用 ContentResolver 读全文；桌面保持 std::fs。
+    #[cfg(mobile)]
+    let content = crate::documents::read_text(&file_path.to_string()).map_err(err)?;
+    #[cfg(desktop)]
+    let content = {
+        let path = file_path.into_path().map_err(|e| format!("路径无效: {e}"))?;
+        std::fs::read_to_string(&path).map_err(|e| format!("读取 {} 失败: {e}", path.display()))?
+    };
     state
         .with_store(|s| rustrss_core::opml::import(s, &content).map_err(err))
         .map(Some)

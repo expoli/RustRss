@@ -11,6 +11,8 @@
 mod ai;
 mod commands;
 mod credentials;
+#[cfg(mobile)]
+mod documents;
 mod mcp_server;
 mod notify;
 mod preview_capture;
@@ -187,6 +189,7 @@ pub fn run() {
     {
         builder = builder
             .plugin(share::plugin())
+            .plugin(documents::plugin())
             .plugin(credentials::mobile_plugin());
     }
 
@@ -251,6 +254,19 @@ pub fn run() {
             );
             use tauri::Manager;
             app.manage(app_state);
+
+            // 前台恢复刷新（移动端）：tauri-runtime-wry 把 Android resume 作为
+            // WindowEvent::Resumed 只发给**窗口监听**（不走 RunEvent/app 级钩子），
+            // 所以必须在窗口上注册。进程挂起时调度器停摆，恢复即补一次刷新。
+            #[cfg(mobile)]
+            if let Some(win) = app.get_webview_window("main") {
+                let handle = app.handle().clone();
+                win.on_window_event(move |event| {
+                    if matches!(event, tauri::WindowEvent::Resumed) {
+                        crate::scheduler::resume_refresh(&handle);
+                    }
+                });
+            }
 
             // 应用内 MCP HTTP 服务只在桌面端拉起（Android 不注册 MCP，AC3）。
             #[cfg(desktop)]
