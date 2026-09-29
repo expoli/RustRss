@@ -499,16 +499,19 @@ fn encode_mac_rgba_bounded(
             // Quartz bitmap contexts use a lower-left origin. PNG rows start
             // at the top, so consume the native rows in reverse order.
             for source in premultiplied[..buffer_bytes].chunks_exact(row_bytes).rev() {
-                for (out, source) in row.chunks_exact_mut(4).zip(source.chunks_exact(4)) {
+                for (out, source) in row
+                    .as_chunks_mut::<4>()
+                    .0
+                    .iter_mut()
+                    .zip(source.as_chunks::<4>().0.iter())
+                {
                     let alpha = u32::from(source[3]);
                     out[3] = source[3];
                     for channel in 0..3 {
-                        out[channel] = if alpha == 0 {
-                            0
-                        } else {
-                            ((u32::from(source[channel]) * 255 + alpha / 2) / alpha)
-                                .min(255) as u8
-                        };
+                        out[channel] = (u32::from(source[channel]) * 255 + alpha / 2)
+                            .checked_div(alpha)
+                            .unwrap_or(0)
+                            .min(255) as u8;
                     }
                 }
                 stream.write_all(&row)?;
