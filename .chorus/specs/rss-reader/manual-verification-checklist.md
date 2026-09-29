@@ -1283,3 +1283,13 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 复现：`python3 scripts/sync-icons.py --check`；生成使用 Tauri CLI 2.12.0。
 设备步骤：使用独立测试模拟器，安装上一轮同签名预览 → 导入 OPML 测试订阅 → 在应用抽屉截旧图标 → `adb -s <test-serial> install -r <new-apk>` → 截新图标并点击启动 → 确认原订阅保留与新 OPML 可导入。不得对真实用户设备执行 evidence/signed-smoke.py 的卸载初始化。
+
+## 41. 正式补丁版本 v0.2.1（2026-09-29）
+
+- [x] workspace/Tauri/lock 版本 0.2.1；本地 466 测试、严格 Clippy 与图标一致性通过。
+- [x] annotated v0.2.1 指向测试产品提交6101f26；源 CI、Android CI 与三平台 release 矩阵均通过。
+- [x] 公开 Release 的四份附件实际下载，字节数与 GitHub SHA256 匹配；下载 APK 再核对原证书、0.2.1/code2001、双架构/非调试。
+- [x] API36 专用设备从正式0.2.0原 APK 覆盖到0.2.1，UID/测试订阅保留，启动器图标、IME上方输入、OPML与设置分类通过。旧0.2.0tag及四份资产不变。
+- [ ] 实体ARM64手机与其他Android提供者/输入法/启动器，Windows/macOS原生运行待验。
+
+记录：[v0.2.1发布验证](../../../docs/releases/v0.2.1.md)。

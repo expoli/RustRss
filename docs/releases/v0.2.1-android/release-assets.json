@@ -1,0 +1,26 @@
+[
+  {
+    "name": "RustRss_0.2.1_aarch64.dmg",
+    "bytes": 11340038,
+    "sha256": "9220e66a353ea793a2b00ac47041f64cc67ba60f7c79df8c2a9a86acfd661321",
+    "url": "https://github.com/expoli/RustRss/releases/download/v0.2.1/RustRss_0.2.1_aarch64.dmg"
+  },
+  {
+    "name": "RustRss_0.2.1_amd64.deb",
+    "bytes": 14231840,
+    "sha256": "4669195f41052e429b8f1552fff9d3a4a3b6433dfdc4a3650c73dc9f8a89a989",
+    "url": "https://github.com/expoli/RustRss/releases/download/v0.2.1/RustRss_0.2.1_amd64.deb"
+  },
+  {
+    "name": "RustRss_0.2.1_android-universal.apk",
+    "bytes": 73050838,
+    "sha256": "b0e9474f7364b3713195e080ed87b99fb0cf29e6e09345e3aef6394076a8b6c1",
+    "url": "https://github.com/expoli/RustRss/releases/download/v0.2.1/RustRss_0.2.1_android-universal.apk"
+  },
+  {
+    "name": "RustRss_0.2.1_x64-setup.exe",
+    "bytes": 7530710,
+    "sha256": "2cf66e65830792a44ea955721098d1f9dc0632fe1dd037669d8a369533f203f9",
+    "url": "https://github.com/expoli/RustRss/releases/download/v0.2.1/RustRss_0.2.1_x64-setup.exe"
+  }
+]
