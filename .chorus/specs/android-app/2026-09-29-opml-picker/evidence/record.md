@@ -36,3 +36,9 @@ API36 x86_64 /系统 Downloads 提供者，未直接操作用户实体手机或�
 使用 `adb install -r` 覆盖新预览 APK 后，UID 不变、原 XML 订阅保留；通过相同设置按钮，普通 MIME `.opml` 已启用，实际点击可导入，订阅页同时出现 Picker generic 与 Picker xml。手机纵向设置首页仍保留。`signed-results.json`、`signed-*.png` 为原生实际界面证据；UI 文件选择与调试命令检查分别记录。
 
 这是后续预览包，正式 v0.2.0 tag 与四项资产未修改。
+
+## 独立评审与收口
+
+Round 1 独立评审 `99ddb79c-69bd-41d2-9dc1-4745d89163bb`：VERDICT PASS，4 项 AC 通过，0 blockers / 0 notes；完整原文见 `independent-review.md`。独立重新运行六个原生 Downloads 场景，结果与普通 MIME OPML 可选截图见 `independent/`；另独立通过工作区测试、严格 Clippy 和工作区构建。签名安装/升级截图由开发阶段采集，评审重新检查，未将它描述为评审重新安装。
+
+Chorus 四项 AC 已登记 passed，任务 `120623c8-4e4b-4eb1-99fc-764f8a37960b` 于 2026-09-29 验收为 done。生产提交 `02884cf` 的 [CI](https://github.com/expoli/RustRss/actions/runs/36528893104) 与 [Android build](https://github.com/expoli/RustRss/actions/runs/36528893114) 均成功；签名证据提交 `5e69c01` 的 [CI](https://github.com/expoli/RustRss/actions/runs/36529254832) 成功。实体手机/第三方提供者仍在验证边界之外。
