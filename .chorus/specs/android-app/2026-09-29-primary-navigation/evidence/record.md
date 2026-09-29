@@ -8,8 +8,11 @@ Chorus task: `9b4debc8-67db-4cd2-a15d-fa3399cfb47f`。
 用户提供的四张手机截图中，文章/收藏底栏文字被裁切、订阅完整，设置则覆盖底栏。
 在保留的修复前 debug 构建上，将 UI 字号设为 18px，文章/收藏的布局视口变为
 432×908，而实际可见视口仍为约 412.19×867.05；订阅两种视口一致。
-`baseline-results.json` 与 `before-*.png` 留存对照。此构建是已有手机设置修复后的
-调试包，不冒称重新下载/安装的正式 v0.2.1。
+`baseline-results.json` 留存几何失败；当时 `settingsOpen=true`，测量的是设置覆盖层
+下面的一级页面，并非无遮挡的文章页面视觉对照。`before-articles.png` 与
+`before-settings.png` 实际为相同的 Settings/System UI ANR 截图，只保留为失败
+环境诊断，不用于证明文章裁切。用户提供的原截图记录了实际裁切外观。此构建是
+已有手机设置修复后的调试包，不冒称重新下载/安装的正式 v0.2.1。
 
 - 搜索输入设置 `min-width:0`，在工具栏剩余宽度内收缩，消除横向溢出。
 - 内容、状态镜像与底栏共用 flex 布局，按实际底栏高度分配空间，移除写死的底栏
@@ -67,3 +70,14 @@ workspace Rust 测试、严格 all-target Clippy、59 个现有 JS 测试通过�
 边界：本轮不证明实体 ARM64 手机、厂商输入法、Android 系统字体缩放、其它
 Android API 或 Windows/macOS 原生运行行为。CSS 字号测试与系统字体缩放是
 不同检查；在真实 Android WebView 中模拟桌面宽度也不替代原生 Linux 检查。
+
+## 独立验收
+
+Round 1 评论 `4b4d0259-3554-4cac-b042-738d8ab96570` 为 **PASS WITH NOTES**：
+四条 AC 通过、无 blocker。原文见 `independent-review.md`，本轮独立截图/XML、
+JSON 与日志在 `independent/`。评审重新执行 466 个 Rust 测试、59 个 JS 测试、
+严格 Clippy、构建与图标检查，并复核已安装签名 APK 的四页底栏、两种系统导航
+模式、真实边缘 Back、键盘可见、主题字号 14→25 后切页并恢复为 14，以及原生
+Linux 桌面模态键盘逻辑。读者列表滚动与三种 CSS 字号采用已检查的保留证据，
+本轮未在非调试签名包上冒称重跑 CDP。N1 旧截图标签问题已在上文明确标注，
+原图和原评审结论保留；未改变产品源码或签名预览包。

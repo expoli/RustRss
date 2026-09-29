@@ -1,0 +1,11 @@
+{
+  "serial": "emulator-5580",
+  "foreground": "tech.expoli.rustrss/.MainActivity",
+  "page": "Settings category home",
+  "navigationMode": "gestural",
+  "uninstalled": false,
+  "cleared": false,
+  "fixtureImported": false,
+  "savedSettingsChanged": false,
+  "released": true
+}

@@ -1,0 +1,17 @@
+{
+  "modal": {
+    "role": "dialog",
+    "modal": "true",
+    "parent": "BODY",
+    "nav": "none",
+    "focus": "tab-appearance"
+  },
+  "tabwrap": {
+    "prevented": true,
+    "wrapped": true
+  },
+  "escape": {
+    "closed": true,
+    "focus": "tab-appearance"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "old": "14",
+  "nativeTyped": "25",
+  "reopened": "14",
+  "passed": true,
+  "harnessCorrection": "UIAutomator EditText text includes accessible field label after comma; first assertion used full text instead of numeric value"
+}

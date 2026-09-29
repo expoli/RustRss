@@ -1,0 +1,19 @@
+{
+  "modal": {
+    "role": "dialog",
+    "modal": "true",
+    "parent": "BODY",
+    "nav": "none",
+    "focus": "tab-appearance"
+  },
+  "tabwrap": {
+    "prevented": true,
+    "wrapped": true
+  },
+  "escape": {
+    "closed": true,
+    "focus": "btn-settings"
+  },
+  "runtime": "rebuilt native Linux Wayland WebKitGTK; DOM keyboard events, no hardware key claim",
+  "passed": true
+}
