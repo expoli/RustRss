@@ -1,0 +1,25 @@
+# Changelog
+
+## [0.2.0] - 2026-09-29
+
+### 新增与改进
+
+- Android 侧载应用：手机导航与阅读界面、订阅管理、刷新、离线阅读与搜索、收藏和稍后读、系统分享、OPML 导入导出及设备浏览器打开外链。
+- Android AI：OpenAI、Anthropic、Gemini 与 Ollama 的配置、连接测试、摘要和翻译；密钥使用 AndroidKeyStore 管理的加密存储。
+- 主题与 MCP 预览：新增 Windows WebView2 和 macOS WKWebView 原生截图适配；补齐 Linux KWin Wayland、Openbox X11 场景截图，以及 agent 读图后调整、保存和取消的验证证据。
+- 截图资源限制：Windows/macOS 在输出或编码过程中执行单图 2 MiB 上限，超限、超时或失效结果不会发布。
+
+### 修复
+
+- Android 共享应用入口与桌面专属服务隔离、外链浏览器交接及 CI 构建配置。
+- AI 传输错误的敏感信息清理，以及 Android Ollama 服务地址提示。
+- macOS 截图依赖的 AppKit 特性配置，以及 PNG 转换代码的严格 Clippy 检查。
+
+### 已知限制
+
+- Windows/macOS 原生编译与桌面打包已通过 CI；截图界面、缩放、隐藏/最小化、超时及文件生命周期仍待真机运行验收。
+- GNOME Wayland、物理跨屏、真实最小化和第三方 GUI MCP 客户端等仍保留待验项。
+- 桌面 Release 提供 Linux deb（Ubuntu 24.04 基线）、Windows NSIS 和 macOS arm64 dmg。macOS 包未签名，首次打开需右键选择「打开」。
+- Android 构建与侧载步骤见 [开发文档](docs/development.md)，本次桌面 Release 不包含 APK。
+
+[0.2.0]: https://github.com/expoli/RustRss/compare/v0.1.0...v0.2.0

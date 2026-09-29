@@ -32,8 +32,10 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 
 ## 发布步骤
 
+版本变更和已知限制见 [CHANGELOG.md](CHANGELOG.md)。
+
 1. 在根 `Cargo.toml` 的 `[workspace.package]` 和 `src-tauri/tauri.conf.json` 中同步更新版本号，提交版本变更。
-2. 更新或创建 `CHANGELOG.md`，记录该版本变更并提交；当前仓库尚未跟踪此文件。正式 Release 说明由工作流自动生成，CHANGELOG 需单独维护。
+2. 更新 `CHANGELOG.md`，记录该版本变更和已知限制并提交。正式 Release 说明由工作流自动生成，发布时核对并补充 CHANGELOG 中的内容。
 3. 将上述提交推送到 `master`，再创建并推送与版本号一致的 `vX.Y.Z` tag。`release.yml` 会校验 tag 与两处版本号，构建 Linux `.deb`、Windows NSIS `.exe`、macOS arm64 `.dmg`，并创建 GitHub Release；macOS 包目前未签名。
 4. 从该次运行三个 build job 的 `Record bundle size` 摘要记录各安装包字节数，回填 `.chorus/specs/rss-reader/spec.md` 的「安装包体积实测值」条目。
 

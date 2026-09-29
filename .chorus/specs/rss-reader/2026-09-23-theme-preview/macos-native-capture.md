@@ -1,6 +1,8 @@
 # macOS 主题预览截图：实现与待验收证据
 
-状态：适配器已实现；**macOS 构建和运行验收未执行，原生运行项保持 open**。2026-09-28 用户补充允许在特定环境不可用时跳过测试；Chorus 任务因此仅将实现、API 核对及可用环境回归设为必需验收，原生运行项保留为非必需且未验证。本记录不以 Linux 回归、Rust 目标标准库或 API 文档代替 macOS 实机结果。
+状态：适配器已实现，**macOS 原生 release 编译与 dmg 打包已通过 CI，界面运行验收仍保持 open**。2026-09-28 用户补充允许在特定环境不可用时跳过测试；Chorus 任务因此仅将实现、API 核对及可用环境回归设为必需验收，原生运行项保留为非必需且未验证。本记录不以 Linux 回归、Rust 目标标准库或 API 文档代替 macOS 实机结果。
+
+2026-09-29 [三平台发布预检](https://github.com/expoli/RustRss/actions/runs/36504225374) 使用 `d67ff3e`，在 macOS runner 完成原生 release 编译、arm64 dmg 打包和产物上传。首轮构建暴露 AppKit `NSGraphicsContext` / `NSImageRep` 特性缺失，已补齐后重跑通过。此结果只关闭原生构建缺口，不代替三场景、缩放和失败路径的运行证据。
 
 ## 实现边界
 

@@ -15,7 +15,11 @@
 
 可重跑的签名探针：`cargo check --manifest-path scripts/windows-preview-api-probe/Cargo.toml --target x86_64-pc-windows-gnu --locked`。探针也类型检查实际 `windows_bounded_stream.rs`，但不证明 Tauri 整体构建或运行。
 
-## 本机验证与阻塞
+## 2026-09-29 CI 原生构建
+
+[三平台发布预检](https://github.com/expoli/RustRss/actions/runs/36504225374) 使用 `d67ff3e`：Windows 原生 release 编译、NSIS 打包与产物上传通过。该结果关闭原生构建缺口，不代表截图界面、缩放、隐藏/最小化或文件生命周期运行验收通过；这些运行项仍保持 open。
+
+## 2026-09-28 本机验证与阻塞
 
 - `cargo test --workspace --locked --offline`：通过。该结果只验证 Linux 分支及共用协议/文件测试。
 - Windows API 签名探针上述命令：通过（精确版本、Windows GNU target；未链接或运行）。
