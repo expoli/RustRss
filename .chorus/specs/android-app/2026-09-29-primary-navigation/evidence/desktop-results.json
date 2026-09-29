@@ -1,0 +1,18 @@
+{
+  "runtime": "rebuilt native Linux Wayland WebKitGTK",
+  "modal": {
+    "modal": "true",
+    "focus": "tab-appearance",
+    "parent": "BODY",
+    "nav": "none"
+  },
+  "tab": {
+    "wrapped": true,
+    "prevented": true
+  },
+  "escape": {
+    "closed": true,
+    "focus": "btn-settings"
+  },
+  "limits": "DOM event keyboard dispatch; not native hardware key input"
+}

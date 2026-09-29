@@ -1,0 +1,43 @@
+        Info Using installed NDK: /usr/lib/android-sdk/ndk/27.2.12479018
+        Info Looking up installed tauri packages to check mismatched versions...
+[1m[92m   Compiling[0m rustrss-desktop v0.2.1 (/home/tcy/Github/RustRss/src-tauri)
+[1m[92m    Finished[0m `release` profile [optimized] target(s) in 32.97s
+        Info symlinking lib "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" in jniLibs dir "/home/tcy/Github/RustRss/src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a"
+        Info "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libandroid.so"
+        Info "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libdl.so"
+        Info "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "liblog.so"
+        Info "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libm.so"
+        Info "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libc.so"
+        Info symlink at "/home/tcy/Github/RustRss/src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a/librustrss_desktop_lib.so" points to "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so"
+        Info symlink at "/home/tcy/Github/RustRss/src-tauri/gen/android/app/src/main/jniLibs/x86_64/librustrss_desktop_lib.so" points to "/home/tcy/Github/RustRss/target/x86_64-linux-android/debug/librustrss_desktop_lib.so"
+        Info connection; remote_addr=127.0.0.1:56960 conn_id=0
+        Info connection; remote_addr=127.0.0.1:56962 conn_id=1
+[1m[32m        Info[0m Using installed NDK: /usr/lib/android-sdk/ndk/27.2.12479018
+[1m[32m        Info[0m Using installed NDK: /usr/lib/android-sdk/ndk/27.2.12479018
+[1m[92m    Blocking[0m waiting for file lock on package cache
+[1m[92m    Blocking[0m waiting for file lock on package cache
+[1m[92m    Blocking[0m waiting for file lock on package cache
+[1m[92m    Blocking[0m waiting for file lock on package cache
+[1m[92m    Blocking[0m waiting for file lock on package cache
+[1m[92m    Blocking[0m waiting for file lock on package cache
+[1m[92m    Blocking[0m waiting for file lock on build directory
+[1m[92m   Compiling[0m rustrss-desktop v0.2.1 (/home/tcy/Github/RustRss/src-tauri)
+[1m[92m    Finished[0m `release` profile [optimized] target(s) in 39.97s
+[1m[32m        Info[0m symlinking lib "/home/tcy/Github/RustRss/target/x86_64-linux-android/release/librustrss_desktop_lib.so" in jniLibs dir "/home/tcy/Github/RustRss/src-tauri/gen/android/app/src/main/jniLibs/x86_64"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/x86_64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libandroid.so"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/x86_64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libdl.so"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/x86_64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "liblog.so"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/x86_64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libm.so"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/x86_64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libc.so"
+[1m[92m   Compiling[0m rustrss-desktop v0.2.1 (/home/tcy/Github/RustRss/src-tauri)
+[1m[92m    Finished[0m `release` profile [optimized] target(s) in 1m 10s
+[1m[32m        Info[0m symlinking lib "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" in jniLibs dir "/home/tcy/Github/RustRss/src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libandroid.so"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libdl.so"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "liblog.so"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libm.so"
+[1m[32m        Info[0m "/home/tcy/Github/RustRss/target/aarch64-linux-android/release/librustrss_desktop_lib.so" requires shared lib "libc.so"
+Configuration cache entry reused.
+    Finished 1 APK at:
+        /home/tcy/Github/RustRss/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+

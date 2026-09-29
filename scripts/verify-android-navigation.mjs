@@ -44,9 +44,9 @@ async function geometry(name) {
 }
 async function native(selector) {
   const r=await js(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,dpr:devicePixelRatio};})()`);
-  adb('shell','uiautomator','dump','/data/local/tmp/navigation-test.xml');
-  const xml=adb('shell','cat','/data/local/tmp/navigation-test.xml').toString();
-  const top=Number(xml.match(/class="android.webkit.WebView"[^>]*bounds="\[\d+,(\d+)\]/)[1]);
+  // The attached surface metadata supplies the native origin. IME changes its
+  // height, not this top inset; screenshot checkpoints retain native XML too.
+  const top=JSON.parse(target.description).screenY;
   adb('shell','input','tap',String(Math.round(r.x*r.dpr)),String(Math.round(top+r.y*r.dpr)));await wait(400);
 }
 const back=async()=>{adb('shell','input','keyevent','KEYCODE_BACK');await wait(500);};
@@ -63,14 +63,18 @@ try {
     if(populated) {
       await native('[data-mpage-btn="articles"]');await click('[data-mview="all"]');
       assert((await js(`document.querySelectorAll('#entries li[data-id]').length`))>5);
-      await js(`window.__navRows=[...document.querySelectorAll('#entries li[data-id]')];document.querySelector('#entries').scrollTop=180;window.__navScroll=document.querySelector('#entries').scrollTop`);
-      await click('#entries li[data-id]:nth-child(6)');
+      for(const offset of [180,'bottom']) {
+      const id=await js(`(() => {window.__navRows=[...document.querySelectorAll('#entries li[data-id]')];const list=document.querySelector('#entries');list.scrollTop=${offset==='bottom'?'list.scrollHeight':offset};window.__navScroll=list.scrollTop;const box=list.getBoundingClientRect();return window.__navRows.find(n=>{const r=n.getBoundingClientRect();return r.top>=box.top&&r.bottom<=box.bottom;}).dataset.id;})()`);
+      // Touch an actually visible row. Programmatically clicking an offscreen
+      // row legitimately scrolls it into view before opening the reader.
+      await native('#entries li[data-id="'+id+'"]');
       assert.equal(await js(`document.body.dataset.mpage`),'reader');
       assert.equal(await js(`getComputedStyle(document.querySelector('#m-nav')).display`),'none');
       writeFileSync(`${out}/reader.png`,adb('exec-out','screencap','-p'));
       await back();assert.equal(await js(`document.body.dataset.mpage`),'articles');
       assert(await js(`Math.abs(document.querySelector('#entries').scrollTop-window.__navScroll)<1 && window.__navRows.every(n=>n.isConnected)`));
-      checks.push({name:'reader-back-preserves-list-scroll-and-rows',passed:true});
+      checks.push({name:'reader-back-preserves-list-scroll-and-rows-'+offset,passed:true});
+      }
       await native('[data-mpage-btn="settings"]');
     }
     await native('#tab-reading');assert.equal(await js(`document.querySelector('.settings-dialog').dataset.screen`),'detail');

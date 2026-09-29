@@ -27,6 +27,7 @@ created: 2026-09-20
 桌面三平台为 v1 目标；核心逻辑与 Tauri 解耦，便于后续接其他前端。
 
 - [x] 各平台应用图标资源统一使用 Ferris＋RSS 图案；桌面 PNG/ICO/ICNS、Android 普通/圆形/自适应与 iOS 衍生资源同源生成，CI 校验源与衍生哈希和 Android 打包资源同步。Android API36 启动器实际展示已验证；Windows/macOS/iOS 启动器展示未实测，iOS 仅资源同步，不代表支持。
+- [x] Android 四个一级页面及设置详情共用完整底栏，工具栏不撑大可见视口；系统返回遵循详情→分类→来源页，阅读器返回保留列表行与滚动。API36 x86_64 的手势/三键模式、14/18/24 CSS px 字号及 Linux 原生桌面模态回归通过；实体 ARM64、Android 系统字体缩放与 Windows/macOS 原生运行未覆盖。见 [底栏与返回验证](../android-app/2026-09-29-primary-navigation/evidence/record.md)。
 
 - [ ] Windows / macOS / Linux 三平台均可从 release 资产安装并启动，启动后能完成「添加订阅 → 刷新 → 阅读 → 标记已读 → OPML 导出」全流程
 - [ ] 数据目录遵循各平台惯例（`%APPDATA%` / `~/Library/Application Support` / `~/.local/share`）；存在便携标记文件时改为程序同级 `data/` 目录，且迁移后订阅与已读状态不丢

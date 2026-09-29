@@ -44,6 +44,17 @@ cross-device synchronization is part of this capability.
   advanced typography/AI options, and preserve explicit save/discard behavior;
   verify 360/412 CSS px widths and desktop layout. Evidence:
   [phone UX verification](2026-09-29-phone-ux/evidence/record.md).
+- [x] Keep the complete primary bottom navigation on Articles, Subscriptions,
+  Saved and Settings, including category details; size the shell from actual
+  content instead of a fixed footer estimate, and prevent toolbar overflow from
+  enlarging the Android layout viewport. API36 x86_64, gesture/three-button
+  system modes and 14/18/24 CSS px UI fonts verified; physical ARM64 and Android
+  system font scaling remain untested. [Navigation evidence](2026-09-29-primary-navigation/evidence/record.md).
+- [x] Enable native Android WebView history Back explicitly; verify Settings
+  detail to categories to source destination and reader return from middle/end
+  of a populated list without replacing its rows or losing scroll position.
+  Unsaved theme drafts are discarded when leaving Settings; desktop keeps its
+  modal/focus behavior. See the navigation evidence above for runtime limits.
 
 ## Non-goals
 - iOS support.
