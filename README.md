@@ -29,7 +29,7 @@ RustRss 面向 Linux、Windows 和 macOS 桌面；Android 版可在设备上侧�
 
 0.2.1 补丁版汇总 Android 键盘避让、手机设置布局、OPML 文件选择和图标一致性修复；更新说明见 [CHANGELOG](CHANGELOG.md#021---2026-09-29)。Android APK 沿用原发布签名，可覆盖安装保留数据。
 
-Android 手机界面中，订阅地址入口位于订阅页上方；键盘弹出时页面避让并滚动到当前输入框。设置采用分类列表与独立详情页，系统返回先回到分类列表，再关闭设置；阅读先展示字号、行距和段落间距，字体与代码排版、高级 AI 参数按需展开。主题修改仍需点保存，关闭设置会放弃未保存的主题草稿。Android OPML 导入允许选择普通文档，按实际内容校验，避免文件管理器把 `.opml` 标成普通文件时无法点击；桌面保留 OPML/XML 过滤。Android 的数据设置只提供 OPML 订阅导入导出；OPML 不包含文章、阅读状态或 AI 设置，不支持的整库备份/恢复入口已隐藏。此次改进的设备证据见 [手机交互验证](.chorus/specs/android-app/2026-09-29-phone-ux/evidence/record.md)。
+Android 手机界面中，文章、订阅、收藏和设置共用完整的底部导航；搜索框在工具栏内收缩，内容区按底栏实际高度布局。设置是一级页面，分类首页和详情均保留底栏；系统返回先回到分类首页，再回到进入设置前的页面。订阅地址入口位于订阅页上方，键盘弹出时页面避让并滚动到当前输入框。阅读先展示字号、行距和段落间距，字体与代码排版、高级 AI 参数按需展开。主题修改仍需点保存，切到其它一级页面会放弃未保存的主题草稿；桌面设置继续使用模态弹窗。Android OPML 导入允许选择普通文档，按实际内容校验，避免文件管理器把 `.opml` 标成普通文件时无法点击；桌面保留 OPML/XML 过滤。Android 的数据设置只提供 OPML 订阅导入导出；OPML 不包含文章、阅读状态或 AI 设置，不支持的整库备份/恢复入口已隐藏。输入和表单的既有设备证据见 [手机交互验证](.chorus/specs/android-app/2026-09-29-phone-ux/evidence/record.md)。
 
 Windows 主题预览截图现通过 WebView2 的原生内容截图接口生成 PNG，并沿用 MCP 预览的修订号、像素标记、文件配额与到期规则。该适配器的 Windows 真机运行验收仍在进行中；当前不能把 Linux 截图结果当作 Windows 场景、缩放和最小化的通过证据。复验范围见 [Windows 预览验收记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/windows-capture.md)。
 macOS 主题预览现使用 WKWebView 内容截图适配器；真实 macOS 会话的三场景、缩放与失败路径仍待运行验收，步骤和证据状态见 [macOS 截图记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/macos-native-capture.md)。

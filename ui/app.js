@@ -4125,6 +4125,7 @@ function bindSettingDropdowns() {
 }
 
 function openSettings() {
+  if (!el('settings-overlay').classList.contains('hidden')) return;
   settingsReturnFocus = mobileSettings()
     ? document.querySelector('#m-nav [data-mpage-btn="settings"]') : document.activeElement;
   themeEditors.forEach(e => e.dispose());
@@ -4148,6 +4149,8 @@ function openSettings() {
   fillMcpForm();
   showPane(currentPane);
   el('settings-overlay').classList.remove('hidden');
+  el('settings-overlay').setAttribute('role', mobileSettings() ? 'region' : 'dialog');
+  el('settings-overlay').setAttribute('aria-modal', String(!mobileSettings()));
   if (mobileSettings()) showSettingsHome();
   else el('tab-' + currentPane).focus();
 }
@@ -4362,8 +4365,13 @@ async function boot() {
   el('aa-dialog').addEventListener('keydown', e => e.stopPropagation());
 
   el('settings-overlay').addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !el('ctx-menu')) { e.preventDefault(); e.stopPropagation(); closeSettings(); return; }
-    if (e.key === 'Tab') {
+    if (e.key === 'Escape' && !el('ctx-menu')) {
+      e.preventDefault(); e.stopPropagation();
+      if (mobileSettings() && document.querySelector('.settings-dialog').dataset.screen === 'detail') showSettingsHome();
+      else closeSettings();
+      return;
+    }
+    if (e.key === 'Tab' && !mobileSettings()) {
       const focusable = [...el('settings-overlay').querySelectorAll('button, input, select, textarea, [tabindex="0"]')].filter(n => !n.disabled && n.tabIndex >= 0 && n.getClientRects().length);
       const first = focusable[0], last = focusable.at(-1);
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }

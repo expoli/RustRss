@@ -16,6 +16,7 @@
 
   // 阅读器打开前的目的地：popstate 恢复时回到哪里。
   var returnPage = 'articles';
+  var settingsReturnPage = 'articles';
   // History 栈的镜像：[{ t: 'reader', returnPage } | { t: 'ovl', id, closeSel }]。
   // 不依赖 event.state（各实现交付时机不一致），自己记 LIFO。
   var historyStack = [];
@@ -36,10 +37,9 @@
 
   function syncNav() {
     var page = bodyPage();
-    var settingsOpen = !el('settings-overlay').classList.contains('hidden');
     document.querySelectorAll('#m-nav .m-nav-btn').forEach(function (btn) {
       var name = btn.dataset.mpageBtn;
-      var on = name === 'settings' ? settingsOpen : name === page;
+      var on = name === page;
       btn.classList.toggle('active', on);
       btn.setAttribute('aria-current', on ? 'page' : 'false');
     });
@@ -65,11 +65,11 @@
   function pickDestination(name) {
     if (!active()) return;
     if (name === 'settings') {
-      // 设置是覆盖层而非 body 页面：直接复用应用的 openSettings（按钮隐藏也可程序化点击），
-      // 它的压栈/返回由 watchOverlays 的观察器接管。
+      // 复用设置初始化/草稿生命周期，页面和返回栈由观察器同步。
       el('btn-settings').click();
       return;
     }
+    if (!el('settings-overlay').classList.contains('hidden')) el('settings-close').click();
     var kind = (document.querySelector('#views li.active') || {}).dataset?.kind;
     if (name === 'articles' && (kind === 'starred' || kind === 'later')) {
       pickView('unread'); // 收藏视图不属于文章目的地：切回默认未读
@@ -138,9 +138,14 @@
         var top = historyStack[historyStack.length - 1];
         var mine = function (e) { return e.t === 'ovl' && e.id === ov.id; };
         if (shown) {
+          if (ov.id === 'settings-overlay' && bodyPage() !== 'settings') {
+            settingsReturnPage = bodyPage() || 'articles';
+            setPage('settings');
+          }
           syncNav();
           if (!top || !mine(top)) pushEntry({ t: 'ovl', id: ov.id, closeSel: ov.closeSel });
         } else {
+          if (ov.id === 'settings-overlay' && bodyPage() === 'settings') setPage(settingsReturnPage);
           syncNav();
           var index = historyStack.findLastIndex(mine);
           if (index >= 0) {
@@ -277,13 +282,18 @@
   // ---- 宽度档位切换 -----------------------------------------------------
 
   function applyMode() {
+    el('settings-overlay').setAttribute('role', active() ? 'region' : 'dialog');
+    el('settings-overlay').setAttribute('aria-modal', String(!active()));
     document.querySelectorAll('.m-setting-advanced').forEach(function (details) { details.open = !active(); });
     if (active()) {
+      // 同一设置 DOM 放入主内容区，底栏是它的兄弟；桌面仍使用原模态窗口。
+      document.querySelector('main').append(el('settings-overlay'));
       if (!bodyPage()) setPage('articles');
       // 保留同一套订阅行为，只搬动表单；手机入口常驻上方。
       el('views').after(el('add-row'));
       el('add-row').classList.remove('hidden');
     } else {
+      document.body.append(el('settings-overlay'));
       historyStack = [];
       delete document.body.dataset.mpage;
       document.querySelector('.sidebar-foot').before(el('add-row'));

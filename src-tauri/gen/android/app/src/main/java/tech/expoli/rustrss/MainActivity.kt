@@ -7,6 +7,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : TauriActivity() {
+  // TauriActivity disables Wry's default history navigation. The phone UI
+  // pushes reader/settings entries, so both button and gesture Back must use it.
+  override val handleBackNavigation: Boolean = true
+
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
