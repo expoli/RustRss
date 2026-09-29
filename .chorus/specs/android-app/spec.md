@@ -15,6 +15,10 @@ cross-device synchronization is part of this capability.
 - [x] Install and run a sideloadable Android APK.
 - [x] Add and manage RSS subscriptions by URL, discover feeds from site URLs,
   and import/export OPML.
+- [x] Allow Android OPML import from documents identified as generic MIME types;
+  validate OPML content after selection, retain duplicate/error/cancel semantics
+  and desktop OPML/XML filtering. API36 Downloads evidence:
+  [OPML picker verification](2026-09-29-opml-picker/evidence/record.md).
 - [x] Refresh on user request, startup, and return to the foreground; do not
   promise periodic background refresh.
 - [x] Browse, search, and read cached articles offline; update read, starred,

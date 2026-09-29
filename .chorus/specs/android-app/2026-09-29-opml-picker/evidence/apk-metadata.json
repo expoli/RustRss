@@ -1,0 +1,14 @@
+{
+  "file": "RustRss_0.2.0_android-opml-fix-preview.apk",
+  "sha256": "cc1712bb44c19f4e42ab755fe4f5a575ffb10652ff0dc25f477286a7f69aa1f9",
+  "bytes": 72993910,
+  "certificate_sha256": "89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5",
+  "abis": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "versionName": "0.2.0",
+  "versionCode": 2000,
+  "non_debuggable": true,
+  "kind": "OPML import fix preview; includes phone UX; published0.2.0 remains unchanged"
+}

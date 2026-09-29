@@ -3004,11 +3004,13 @@ pub async fn import_opml(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
 ) -> R<Option<rustrss_core::opml::ImportReport>> {
-    let picked = app
-        .dialog()
-        .file()
-        .add_filter("OPML", &["opml", "xml"])
-        .blocking_pick_file();
+    let picker = app.dialog().file();
+    // Android 把扩展名转换为 MIME 过滤；部分文档提供者把 .opml 标成普通
+    // 文件，限制为 XML 会使它可见但不可选。手机接受任意可打开文档，
+    // 仍经 ContentResolver 读取、core OPML 解析校验；桌面保留扩展名过滤。
+    #[cfg(desktop)]
+    let picker = picker.add_filter("OPML", &["opml", "xml"]);
+    let picked = picker.blocking_pick_file();
     let Some(file_path) = picked else {
         return Ok(None);
     };

@@ -1264,3 +1264,10 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 机械验证：真实 Android API 36 / x86_64 WebView 上执行 `scripts/verify-android-mobile.mjs`，订阅地址、阅读字号、AI 地址与密钥四类输入均触发实际软键盘；WebView 高度从 867 CSS px 缩至 554/599 px，输入框完整位于可见区域。360/412 CSS px 两档设置页面无横向溢出，系统返回、主题保存/放弃及关闭时草稿丢弃通过。
 - 设备快照与复现步骤：[手机交互验证](../android-app/2026-09-29-phone-ux/evidence/record.md)。桌面隔离实例检查了原设置侧栏、全部阅读字段、AI 高级项与添加订阅入口，双语 key 集合一致。
 - 环境限制：本轮使用独立模拟器与 Gboard；用户实体手机及其万象拼音输入法仍需复测。窄屏检查包含真实 WebView 的视口模拟，不能代替不同手机上的系统缩放验收。
+
+## 39. Android OPML 文件选择兼容性（2026-09-29）
+
+- 修复前原生 Downloads 中 `.opml` 灰显禁用、`.xml` 可选；回归脚本首先在未修复 APK 上失败，截图与失败输出已保留。
+- 修复后 `scripts/verify-android-opml.mjs` 六场景通过：普通 MIME `.opml`、XML、重复导入、非 OPML 报错、损坏 XML 报错、取消；错误与取消不添加订阅，重复导入不重复添加。脚本使用原生文件列表点击、ContentResolver 和产品 import_opml 命令，读取持久化订阅列表交叉验证。
+- 证据：[OPML 选择器验证](../android-app/2026-09-29-opml-picker/evidence/record.md)。桌面仍使用 OPML/XML 扩展名过滤，core 解析/存储逻辑未改。
+- 环境限制：API36 x86_64 /系统 Downloads 提供者；用户实体手机和第三方网盘/文件管理器需再试，未声称覆盖全部提供者。

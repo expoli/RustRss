@@ -1,0 +1,20 @@
+/tmp/rustrss-opml-before/RustRss-generic.opml: 1 file pushed, 0 skipped. 1.8 MB/s (157 bytes in 0.000s)
+/tmp/rustrss-opml-before/RustRss-xml.xml: 1 file pushed, 0 skipped. 3.2 MB/s (149 bytes in 0.000s)
+/tmp/rustrss-opml-before/RustRss-invalid.opml: 1 file pushed, 0 skipped. 0.6 MB/s (34 bytes in 0.000s)
+/tmp/rustrss-opml-before/RustRss-malformed.opml: 1 file pushed, 0 skipped. 0.5 MB/s (20 bytes in 0.000s)
+node:internal/modules/run_main:111
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: RustRss-generic.opml is disabled by picker MIME filtering: <node index="0" text="RustRss-generic.opml" resource-id="android:id/title" class="android.widget.TextView" package="com.google.android.documentsui" content-desc="" checkable="false" checked="false" clickable="false" enabled="false" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[196,1096][497,1147]" drawing-order="2" hint="" />
+    at pick (file:///home/tcy/Github/RustRss/scripts/verify-android-opml.mjs:46:2)
+    at async file:///home/tcy/Github/RustRss/scripts/verify-android-opml.mjs:59:8 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v26.10.0

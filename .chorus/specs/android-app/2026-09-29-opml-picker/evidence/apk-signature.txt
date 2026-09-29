@@ -1,0 +1,17 @@
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+Signer #1 certificate DN: CN=RustRss, OU=RustRss, O=RustRss, L=Shanghai, ST=Shanghai, C=CN
+Signer #1 certificate SHA-256 digest: 89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5
+Signer #1 certificate SHA-1 digest: fda25fbd2c2fbf2a74ddd8a5f91c694d7025d17c
+Signer #1 certificate MD5 digest: 093717cfba12e05b7b6abca5237cfcd5
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 2048
+Signer #1 public key SHA-256 digest: 37048b3c7ca49d7d5f9711fa66b1efaa6dc34850e1dc1f4611d61c62e33747c0
+Signer #1 public key SHA-1 digest: b82adf170b6ac60ca7b6cdb4cb1e28138e1c3342
+Signer #1 public key MD5 digest: 41659296d71a2ee6e0ba4da859257238

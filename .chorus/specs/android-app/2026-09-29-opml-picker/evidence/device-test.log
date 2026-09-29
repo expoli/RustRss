@@ -1,0 +1,5 @@
+/tmp/rustrss-opml-green/RustRss-generic.opml: 1 file pushed, 0 skipped. 1.8 MB/s (171 bytes in 0.000s)
+/tmp/rustrss-opml-green/RustRss-xml.xml: 1 file pushed, 0 skipped. 2.0 MB/s (163 bytes in 0.000s)
+/tmp/rustrss-opml-green/RustRss-invalid.opml: 1 file pushed, 0 skipped. 0.8 MB/s (34 bytes in 0.000s)
+/tmp/rustrss-opml-green/RustRss-malformed.opml: 1 file pushed, 0 skipped. 0.4 MB/s (20 bytes in 0.000s)
+{"out":"/tmp/rustrss-opml-green","checks":6}

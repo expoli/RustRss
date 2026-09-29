@@ -1,0 +1,53 @@
+{
+  "serial": "emulator-5580",
+  "initialFeeds": 4,
+  "finalFeeds": 6,
+  "checks": [
+    {
+      "label": "01-generic",
+      "result": {
+        "feeds_added": 1,
+        "feeds_skipped": 0,
+        "folders_created": 0,
+        "outlines_ignored": 0,
+        "added_feed_ids": [
+          5
+        ]
+      }
+    },
+    {
+      "label": "02-duplicate",
+      "result": {
+        "feeds_added": 0,
+        "feeds_skipped": 1,
+        "folders_created": 0,
+        "outlines_ignored": 0,
+        "added_feed_ids": []
+      }
+    },
+    {
+      "label": "03-xml",
+      "result": {
+        "feeds_added": 1,
+        "feeds_skipped": 0,
+        "folders_created": 0,
+        "outlines_ignored": 0,
+        "added_feed_ids": [
+          6
+        ]
+      }
+    },
+    {
+      "label": "04-invalid",
+      "error": "OPML 解析失败: 输入里没有 <opml> 根节点，可能不是 OPML 文件"
+    },
+    {
+      "label": "05-malformed",
+      "error": "OPML 解析失败: syntax error: tag not closed: `>` not found before end of input（位置 20)"
+    },
+    {
+      "label": "06-cancel",
+      "result": null
+    }
+  ]
+}
