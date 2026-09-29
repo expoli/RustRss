@@ -1,0 +1,7 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Checking rustrss-core v0.2.1 (/home/tcy/Github/RustRss/crates/rustrss-core)
+   Compiling rustrss-desktop v0.2.1 (/home/tcy/Github/RustRss/src-tauri)
+    Checking rustrss-mcp v0.2.1 (/home/tcy/Github/RustRss/crates/rustrss-mcp)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.85s

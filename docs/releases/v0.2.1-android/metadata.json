@@ -1,0 +1,15 @@
+{
+  "source_commit": "6101f269d0f428c3dab53595c592aad7d88acec1",
+  "source_tag": "v0.2.1",
+  "name": "RustRss_0.2.1_android-universal.apk",
+  "sha256": "b0e9474f7364b3713195e080ed87b99fb0cf29e6e09345e3aef6394076a8b6c1",
+  "bytes": 73050838,
+  "cert_sha256": "89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5",
+  "version_name": "0.2.1",
+  "version_code": 2001,
+  "abis": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "debuggable": false
+}

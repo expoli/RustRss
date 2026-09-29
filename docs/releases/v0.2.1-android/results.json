@@ -1,0 +1,14 @@
+{
+  "serial": "emulator-5580",
+  "published_020_hash": "b10b05f27f2d8d0c539cc99fb81120ba9859e735bb640617f08a5c1cdb0e0868",
+  "same_uid": true,
+  "uid": "10231",
+  "two_fixture_feeds_retained": true,
+  "version_name": "0.2.1",
+  "version_code": 2001,
+  "higher_version_code": true,
+  "opml_fix_retained": true,
+  "phone_settings_retained": true,
+  "warm_ime_input_visible": true,
+  "new_launcher_launch": true
+}
