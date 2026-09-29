@@ -275,7 +275,7 @@ async fn platform_capture(
     max_bytes: usize,
 ) -> Result<Capture, CaptureError> {
     use block2::RcBlock;
-    use objc2::{AnyThread, MainThreadMarker};
+    use objc2::MainThreadMarker;
     use objc2_app_kit::NSImage;
     use objc2_core_graphics::{
         CGBitmapContextCreate, CGColorSpace, CGContext, CGImage, CGImageAlphaInfo,
