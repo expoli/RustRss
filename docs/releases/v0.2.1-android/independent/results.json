@@ -1,0 +1,18 @@
+{
+  "installed_sha256": "b0e9474f7364b3713195e080ed87b99fb0cf29e6e09345e3aef6394076a8b6c1",
+  "version": "0.2.1",
+  "code": 2001,
+  "uid": 10231,
+  "two_existing_feeds": true,
+  "settings_category_home": true,
+  "chronological_upgrade": "developer retained evidence inspected; not rerun by reviewer",
+  "visible_feeds_screenshot": "subscriptions-visible.png",
+  "warm_ime_bounds": [
+    42,
+    341,
+    887,
+    459
+  ],
+  "warm_ime_screenshot": "warm-ime-reviewer.png",
+  "settings_screenshot": "settings-category-reviewer.png"
+}
