@@ -1271,3 +1271,15 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 修复后 `scripts/verify-android-opml.mjs` 六场景通过：普通 MIME `.opml`、XML、重复导入、非 OPML 报错、损坏 XML 报错、取消；错误与取消不添加订阅，重复导入不重复添加。脚本使用原生文件列表点击、ContentResolver 和产品 import_opml 命令，读取持久化订阅列表交叉验证。
 - 证据：[OPML 选择器验证](../android-app/2026-09-29-opml-picker/evidence/record.md)。桌面仍使用 OPML/XML 扩展名过滤，core 解析/存储逻辑未改。
 - 环境限制：API36 x86_64 /系统 Downloads 提供者；用户实体手机和第三方网盘/文件管理器需再试，未声称覆盖全部提供者。
+
+## 40. 统一跨平台应用图标（2026-09-29）
+
+- [x] 原资源一致性检查先失败；同源生成之后通过。修改原生 PNG 或主 SVG 的变异检查均能报错，恢复后全绿。
+- [x] 桌面 PNG/ICO/ICNS、Windows store、Android 五密度和 iOS 衍生资源从 Ferris＋RSS SVG 生成；Android 原生工程逐文件同步，正常 CI / Android CI 均校验。
+- [x] Android 普通、圆形及自适应入口指向一致资源，前景半径 32.045dp 在 33dp 安全圆内；APK 中三类 xxxhdpi PNG 像素与生成资源一致。
+- [x] 原签名双架构非调试 APK：先安装上一轮 OPML 预览并导入 XML 测试源，再 install-r 新版；UID 与旧源保留。Pixel Launcher 的实际新图标可点击启动；继续导入普通 MIME OPML，手机设置分类保留。
+- [x] 工作区测试与严格 Clippy 通过。证据：[统一图标记录](../android-app/2026-09-29-unified-icons/evidence/record.md)。
+- [ ] 用户实体手机及其他 Android 启动器；Windows/macOS/iOS 系统启动器实际展示未验收。iOS 只同步图标资源，不代表平台支持。
+
+复现：`python3 scripts/sync-icons.py --check`；生成使用 Tauri CLI 2.12.0。
+设备步骤：使用独立测试模拟器，安装上一轮同签名预览 → 导入 OPML 测试订阅 → 在应用抽屉截旧图标 → `adb -s <test-serial> install -r <new-apk>` → 截新图标并点击启动 → 确认原订阅保留与新 OPML 可导入。不得对真实用户设备执行 evidence/signed-smoke.py 的卸载初始化。

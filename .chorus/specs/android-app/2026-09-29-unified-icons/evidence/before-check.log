@@ -1,0 +1,22 @@
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml
+Android manifest must reference regular and round launcher resources
+Android adaptive launcher resource is missing
+Stale template resource: drawable-v24/ic_launcher_foreground.xml
+Stale template resource: drawable/ic_launcher_background.xml
+Icon provenance is missing; regenerate from the canonical SVG

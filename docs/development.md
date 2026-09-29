@@ -24,6 +24,19 @@ cargo run -p rustrss-desktop
 
 修改 `ui/` 后要重新构建桌面应用，因为 Tauri 会把静态资源嵌入程序。UI 行为需要无头复现时，项目的流程和限制见 [`rustrss-headless-ui-verification`](../.agents/skills/rustrss-headless-ui-verification/SKILL.md)。
 
+### 图标资源
+
+唯一图案源是 `src-tauri/icons/src/rustrss-icon.svg`。用 Tauri CLI 2.12.0 与 Python 3 生成 Linux/Windows/macOS 图标及 Android/iOS 衍生资源：
+
+```bash
+python3 scripts/sync-icons.py
+python3 scripts/sync-icons.py --check
+```
+
+生成命令同时更新 `src-tauri/icons/` 与 Android 实际打包输入 `src-tauri/gen/android/app/src/main/res/`，并记录源文件和衍生资源哈希。CI 的检查命令不需要安装 Tauri CLI。修改图案源或生成脚本后应重新生成并提交相关资源与 `provenance.json`，不能只替换桌面 PNG。
+
+Android 普通、圆形及 API26+ 自适应图标共用图案；自适应前景去除背景并缩至 60%，背景使用 `#1c1f26`，让螃蟹与 RSS 保持在 [Android 官方规定的安全圆](https://developer.android.com/codelabs/basic-android-kotlin-compose-training-change-app-icon) 内。外形随系统启动器变化。iOS 图标资源同步生成不代表已支持或实机验证 iOS。
+
 ### Android
 
 桌面与 Android 共用 `src-tauri/src/lib.rs` 的入口（`run()`）：单实例锁、系统托盘、应用内 MCP HTTP 服务是桌面专属（`cfg(desktop)`），Android 启动不注册它们；桌面专属命令（文件夹选择、窗口三键等）在移动端显式报「暂不支持」。移动端数据根由入口注入应用沙盒（`rustrss_core::paths::set_data_root`），库与日志仍走同一套目录规则。AI key 的凭据存取在 `src-tauri/src/credentials.rs` 分层：桌面走系统 keyring，Android 经 Kotlin `SecureStorePlugin` 用 Android Keystore（AES/GCM）加密后存应用私有存储——明文不落 SQLite/偏好文件/日志。

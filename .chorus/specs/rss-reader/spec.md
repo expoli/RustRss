@@ -26,6 +26,8 @@ created: 2026-09-20
 
 桌面三平台为 v1 目标；核心逻辑与 Tauri 解耦，便于后续接其他前端。
 
+- [x] 各平台应用图标资源统一使用 Ferris＋RSS 图案；桌面 PNG/ICO/ICNS、Android 普通/圆形/自适应与 iOS 衍生资源同源生成，CI 校验源与衍生哈希和 Android 打包资源同步。Android API36 启动器实际展示已验证；Windows/macOS/iOS 启动器展示未实测，iOS 仅资源同步，不代表支持。
+
 - [ ] Windows / macOS / Linux 三平台均可从 release 资产安装并启动，启动后能完成「添加订阅 → 刷新 → 阅读 → 标记已读 → OPML 导出」全流程
 - [ ] 数据目录遵循各平台惯例（`%APPDATA%` / `~/Library/Application Support` / `~/.local/share`）；存在便携标记文件时改为程序同级 `data/` 目录，且迁移后订阅与已读状态不丢
 - [x] 外部链接仅允许 http/https，且打开动作不经 shell 解析（Windows 下 URL 中的 `&` 等元字符无法注入命令；见 2026-09-22-audit-remediation-1）——⚠ **局限**：Windows 端运行时未实测（证据截至单测 + Windows 分支 `rustc --emit=metadata` 类型检查），遗留项见验证清单 §17.2

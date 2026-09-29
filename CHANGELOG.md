@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- 统一桌面与 Android 应用图标为 Ferris＋RSS 图案；同步 Windows/macOS/iOS 衍生资源，补齐 Android 圆形和自适应图标，并在 CI 校验资源一致性。
+
 - 修复 Android OPML 导入选择器对普通 MIME 类型的 `.opml` 文件禁用问题；移动端按文档内容校验，桌面过滤保留。
 
 - Android 输入时同时避让系统栏和软键盘，订阅地址入口移至页面上方。

@@ -13,6 +13,10 @@ cross-device synchronization is part of this capability.
 
 ## Requirements
 - [x] Install and run a sideloadable Android APK.
+- [x] Share the desktop Ferris + RSS application artwork and dark palette;
+  synchronize regular/round/adaptive launcher resources with native build
+  inputs. API36 Pixel Launcher screenshot verified; other device launchers
+  remain untested. [Icon verification](2026-09-29-unified-icons/evidence/record.md).
 - [x] Add and manage RSS subscriptions by URL, discover feeds from site URLs,
   and import/export OPML.
 - [x] Allow Android OPML import from documents identified as generic MIME types;

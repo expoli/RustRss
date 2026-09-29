@@ -1,0 +1,7 @@
+All platform icon hashes, Android copies and launcher references match
+All platform icon hashes, Android copies and launcher references match
+Mutation correctly rejected: src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+Android resource differs: src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+Mutation correctly rejected: src-tauri/icons/src/rustrss-icon.svg
+Icon/source changed without regeneration: src-tauri/icons/src/rustrss-icon.svg
+Adaptive nontransparent motif radius: 32.045 dp <=33dp safe circle

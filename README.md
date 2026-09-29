@@ -25,6 +25,8 @@ cargo run -p rustrss-desktop
 
 RustRss 面向 Linux、Windows 和 macOS 桌面；Android 版可在设备上侧载使用——订阅、刷新、离线阅读、AI 摘要/翻译（四家提供商）、外链打开与安全密钥存储均已在模拟器/设备上验证，构建/签名/安装步骤见 [docs/development.md](docs/development.md) 的 Android 段，持续构建由 Android CI（`android-build.yml`）承担。已发布的安装包和版本说明以 [GitHub Releases](https://github.com/expoli/RustRss/releases) 页面为准；也可以查看[快速开始](docs/getting-started.md)从源码运行。
 
+各平台应用图标统一为橙色 Ferris 螃蟹＋蓝色 RSS、深色背景；Android 按系统外形使用普通、圆形或自适应版本，图案与配色一致。所有打包资源从同一份 SVG 生成并同步到 Android 原生工程，维护命令见[图标资源](docs/development.md#图标资源)。
+
 Android 手机界面中，订阅地址入口位于订阅页上方；键盘弹出时页面避让并滚动到当前输入框。设置采用分类列表与独立详情页，系统返回先回到分类列表，再关闭设置；阅读先展示字号、行距和段落间距，字体与代码排版、高级 AI 参数按需展开。主题修改仍需点保存，关闭设置会放弃未保存的主题草稿。Android OPML 导入允许选择普通文档，按实际内容校验，避免文件管理器把 `.opml` 标成普通文件时无法点击；桌面保留 OPML/XML 过滤。Android 的数据设置只提供 OPML 订阅导入导出；OPML 不包含文章、阅读状态或 AI 设置，不支持的整库备份/恢复入口已隐藏。此次改进的设备证据见 [手机交互验证](.chorus/specs/android-app/2026-09-29-phone-ux/evidence/record.md)。
 
 Windows 主题预览截图现通过 WebView2 的原生内容截图接口生成 PNG，并沿用 MCP 预览的修订号、像素标记、文件配额与到期规则。该适配器的 Windows 真机运行验收仍在进行中；当前不能把 Linux 截图结果当作 Windows 场景、缩放和最小化的通过证据。复验范围见 [Windows 预览验收记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/windows-capture.md)。

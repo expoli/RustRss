@@ -1,0 +1,13 @@
+{
+  "name": "RustRss_0.2.0_android-unified-icons-preview.apk",
+  "sha256": "605c1815bf544174d1385048f287b5f9701f1aa99a974c29d6ed8351c3802955",
+  "bytes": 73039038,
+  "cert_sha256": "89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5",
+  "abis": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "version": "0.2.0",
+  "version_code": 2000,
+  "debuggable": false
+}
