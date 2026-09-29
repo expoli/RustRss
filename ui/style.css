@@ -1395,6 +1395,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   .add-row input { width: 100%; min-width: 0; }
   .add-row input, .add-row button, .toolbar button, .m-seg button,
   .section-title button, .views li, .feeds li, .tags li { min-height: 44px; }
+  .section-title button { min-width: 44px; }
   .add-row input, .add-row button { padding: 10px 12px; }
 
   /* ---- 设置：分类列表 -> 详情页，顶部返回，表单单列 ---- */

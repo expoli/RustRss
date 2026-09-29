@@ -48,19 +48,29 @@ async function layout() {
   })()`);
 }
 async function keyboard(selector, name) {
-  await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`);
-  await wait(200);
-  const before = await layout();
-  const rect = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,dpr:devicePixelRatio};})()`);
+  // Reset focus left by programmatic navigation before a real native touch.
+  await evaluate(`document.activeElement?.blur(); document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`);
+  await wait(1000);
   run('shell', 'uiautomator', 'dump', '/sdcard/mobile-test.xml');
   const xml = run('shell', 'cat', '/sdcard/mobile-test.xml').toString();
   const nativeTop = Number(xml.match(/class="android.webkit.WebView"[^>]*bounds="\[\d+,(\d+)\]/)[1]);
+  const before = await layout();
+  const rect = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,dpr:devicePixelRatio};})()`);
+  console.log(JSON.stringify({ name, rect, nativeTop }));
   // Native touch also reopens an IME dismissed while the input retained focus.
-  run('shell', 'input', 'tap', String(Math.round(rect.x * rect.dpr)), String(Math.round(rect.y * rect.dpr + nativeTop)));
-  await wait(1200);
-  assert(/mInputShown=true/.test(run('shell', 'dumpsys', 'input_method').toString()), `${name}: Android IME did not open`);
-  const after = await evaluate(`(() => {const n=document.querySelector(${JSON.stringify(selector)}),r=n.getBoundingClientRect();return {height:innerHeight,top:r.top,bottom:r.bottom,focused:n===document.activeElement};})()`);
+  const x = String(Math.round(rect.x * rect.dpr)), y = String(Math.round(rect.y * rect.dpr + nativeTop));
+  run('shell', 'input', 'tap', x, y);
+  let shown = false;
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    shown = /mInputShown=true/.test(run('shell', 'dumpsys', 'input_method').toString());
+    if (shown) break;
+    await wait(100);
+  }
+  await wait(500);
   screenshot(name);
+  assert(shown, `${name}: Android IME did not open`);
+  const after = await evaluate(`(() => {const n=document.querySelector(${JSON.stringify(selector)}),r=n.getBoundingClientRect();return {height:innerHeight,top:r.top,bottom:r.bottom,focused:n===document.activeElement};})()`);
   assert(after.focused, name);
   assert(after.height < before.height - 150, `${name}: WebView failed to resize: ${JSON.stringify({before,after})}`);
   assert(after.top >= 0 && after.bottom <= after.height, `${name}: focused input is obscured: ${JSON.stringify(after)}`);
@@ -73,11 +83,22 @@ async function editSize(value) {
   await wait(350);
 }
 try {
+  // The inspector endpoint is available before scripts and asynchronous boot.
+  let ready = false;
+  for (let i = 0; i < 100; i++) {
+    ready = await evaluate(`document.readyState==='complete' && typeof I18N!=='undefined' && !!document.querySelector('#btn-settings')?.onclick`);
+    if (ready) break;
+    await wait(100);
+  }
+  assert(ready, 'Application scripts and command bindings did not finish booting');
   await evaluate(`window.__TAURI__.core.invoke('set_ui_locale',{locale:'zh-CN'})`);
   await evaluate(`I18N.setLocale('zh-CN'); I18N.applyStaticI18n()`);
   await click('[data-mpage-btn="subscriptions"]');
   const feed = await evaluate(`(() => {const r=document.querySelector('#add-row').getBoundingClientRect();return {top:r.top,bottom:r.bottom,label:document.querySelector('label[for="add-url"]').textContent};})()`);
   assert(feed.top < 160 && feed.label); record('subscription-entry-at-top', feed);
+  const targets = await evaluate(`['add-ok','btn-add','btn-new-folder'].map(id=>{const r=document.getElementById(id).getBoundingClientRect();return {id,width:r.width,height:r.height};})`);
+  assert(targets.every(r=>r.width>=43.9&&r.height>=43.9), `Subscription touch targets: ${JSON.stringify(targets)}`);
+  record('subscription-touch-targets', targets);
   screenshot('01-subscriptions');
   await keyboard('#add-url', '02-feed-keyboard');
   await click('#btn-add');
@@ -91,7 +112,13 @@ try {
   assert.equal(await evaluate(`document.querySelector('#reading-editor [data-theme-field="reader.layout"]')`), null);
   screenshot('04-reading');
   await keyboard('#reading-editor [data-theme-field="typography.read_size"]', '05-reading-keyboard');
+  await click('#reading-editor .theme-advanced summary');
+  await keyboard('#reading-editor [data-theme-field="typography.read_family"]', '05b-font-keyboard');
+  await click('#reading-editor .theme-advanced summary');
   const initial = await snapshot(); const oldSize = initial.light.typography.read_size;
+  await click('#reading-editor .theme-editor-actions button:nth-child(2)');
+  assert.equal(await evaluate(`document.querySelector('#reading-editor .theme-preview-details').open`), true);
+  assert.equal((await snapshot()).config.revision, initial.config.revision);
   await editSize(oldSize === 18 ? 19 : 18);
   await click('#reading-editor .theme-editor-actions button:last-child');
   assert.equal(Number(await evaluate(`document.querySelector('#reading-editor [data-theme-field="typography.read_size"]').value`)), oldSize);
@@ -121,6 +148,7 @@ try {
     for (const pane of ['appearance', 'reading', 'subscriptions', 'ai', 'data', 'general']) {
       await click('#tab-' + pane);
       const l = await layout(); assert.deepEqual(l.overflowing, [], `${pane} overflow at ${l.width}px`);
+      if (pane === 'data') assert.equal(await evaluate(`document.querySelector('#act-backup-db').getClientRects().length`), 0);
       record(`${pane}-${l.width}px`, l); await click('#m-settings-back');
     }
     await click('#settings-close');

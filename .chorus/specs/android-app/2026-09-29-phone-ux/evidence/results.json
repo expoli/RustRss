@@ -10,6 +10,26 @@
       }
     },
     {
+      "name": "subscription-touch-targets",
+      "detail": [
+        {
+          "id": "add-ok",
+          "width": 53.529762268066406,
+          "height": 44
+        },
+        {
+          "id": "btn-add",
+          "width": 81.5297622680664,
+          "height": 44
+        },
+        {
+          "id": "btn-new-folder",
+          "width": 44,
+          "height": 44
+        }
+      ]
+    },
+    {
       "name": "02-feed-keyboard",
       "detail": {
         "beforeHeight": 867,
@@ -30,10 +50,20 @@
       }
     },
     {
+      "name": "05b-font-keyboard",
+      "detail": {
+        "beforeHeight": 867,
+        "height": 554,
+        "top": 401.702392578125,
+        "bottom": 445.702392578125,
+        "focused": true
+      }
+    },
+    {
       "name": "theme-save-and-discard",
       "detail": {
-        "beforeRevision": 1,
-        "savedRevision": 2
+        "beforeRevision": 3,
+        "savedRevision": 4
       }
     },
     {
@@ -61,8 +91,8 @@
       "detail": {
         "beforeHeight": 867,
         "height": 554,
-        "top": 410.375,
-        "bottom": 454.375,
+        "top": 245.0416717529297,
+        "bottom": 289.0416717529297,
         "focused": true
       }
     },

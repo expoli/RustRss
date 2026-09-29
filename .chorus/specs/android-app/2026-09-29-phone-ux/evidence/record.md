@@ -14,8 +14,8 @@ Chorus task: `f225e9c5-35e1-4065-a3e4-ebb68049d345`，Android 原提案的交付
 
 - 订阅入口在内容上方，显式 URL 标签、URL 输入键盘和 Enter 提交；标题栏添加直接聚焦同一输入框；空页提供可执行指引，手机日常页面不展示数据库路径和桌面标签快捷键提示。
 - 设置首页为纵向分类列表，详情页有返回与关闭；系统 Back 先回分类再关闭，显式关闭会消费详情和弹层两条历史。复用原设置提交路径与主题草稿，不另建一份设置状态。
-- 表单改为标签在上、输入在下，交互目标至少 44 CSS px；阅读常用项为字号/行距/段落间距，字体与代码参数放入默认收起的高级排版；手机隐藏桌面列宽/阅读布局/j-k 行为选项；AI 高级参数默认收起。
-- 四类输入通过实际 `adb shell input tap` 触发 Gboard，断言系统 IME 已显示，当前输入有焦点且矩形完整在 WebView 内；视口由 867 CSS px 缩至 554/599 px，见 `results.json`。
+- 表单改为标签在上、输入在下，交互目标至少 44 CSS px；阅读常用项为字号/行距/段落间距，字体与代码参数放入默认收起的高级排版；手机隐藏桌面列宽/阅读布局/j-k 行为选项，以及 Android 不支持的数据库备份/恢复入口，说明 OPML 只含订阅；AI 高级参数默认收起。
+- 五类输入通过实际 `adb shell input tap` 触发 Gboard，断言系统 IME 已显示，当前输入有焦点且矩形完整在 WebView 内；视口由 867 CSS px 缩至 554/599 px，见 `results.json`（22 项检查全部通过）。
 - 主题保存提升持久化 revision；放弃恢复字段且 revision 不变；关闭后重开不保留未保存草稿；系统 Back 与页面返回均检查。
 - 使用 CDP Emulation 在真实 Android WebView 中检查 360/412 CSS px 视口，六个设置分类无横向溢出；双语界面和 desktop-only 隐藏检查通过。视口模拟与真实设备键盘检查分别记录。
 - Linux 原生桌面隔离实例运行重建后的应用，检查设置侧栏、全部阅读字段、展开的 AI 高级参数及原订阅输入位置。`desktop-results.json` 与 `desktop-settings.png` 为机械检查与 WebView 快照；该快照仅作布局辅助证据。
@@ -28,6 +28,7 @@ adb -s <isolated-emulator> install -r src-tauri/gen/android/app/build/outputs/ap
 adb -s <isolated-emulator> shell am start -n tech.expoli.rustrss/.MainActivity
 # 调试 WebView 的 socket 名后缀为应用 PID；只转发本机回环端口。
 adb -s <isolated-emulator> forward tcp:9227 localabstract:webview_devtools_remote_<pid>
+# 先关闭残留键盘；脚本会等待 JS 绑定完成并重置程序化导航留下的焦点。
 ANDROID_SERIAL=<isolated-emulator> timeout 180 node scripts/verify-android-mobile.mjs <temporary-evidence-dir>
 ```
 
@@ -42,6 +43,7 @@ ANDROID_SERIAL=<isolated-emulator> timeout 180 node scripts/verify-android-mobil
 | `03-settings-home.png` | 纵向分类首页 |
 | `04-reading.png` | 常用阅读项、收起的高级排版和预览、明确保存操作 |
 | `05-reading-keyboard.png` | 字号输入在数字键盘上方 |
+| `05b-font-keyboard.png` | 高级字体输入在实际键盘上方 |
 | `06-ai-settings.png` | 单列 AI 配置与收起的高级参数 |
 | `07-ai-endpoint-keyboard.png` / `08-ai-key-keyboard.png` | 地址/密钥输入可见 |
 | `09-reading-en.png` | 英文阅读设置布局 |
