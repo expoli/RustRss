@@ -35,6 +35,22 @@ async function evaluate(expression) {
 }
 const click = async selector => { await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`); await wait(350); };
 const screenshot = name => writeFileSync(`${out}/${name}.png`, run('exec-out', 'screencap', '-p'));
+async function nativeButton(text) {
+  // WebView accessibility can become ready after the JS command bindings.
+  let node;
+  for (let i = 0; i < 5; i++) {
+    run('shell', 'uiautomator', 'dump', '/sdcard/mobile-test.xml');
+    const xml = run('shell', 'cat', '/sdcard/mobile-test.xml').toString();
+    node = [...xml.matchAll(/<node\b[^>]*>/g)].map(m => m[0])
+      .find(n => n.includes(`text="${text}"`) && n.includes('class="android.widget.Button"'));
+    if (node) break;
+    await wait(200);
+  }
+  assert(node, `Native button not found: ${text}`);
+  const [, x1, y1, x2, y2] = node.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/).map(Number);
+  run('shell', 'input', 'tap', String(Math.round((x1+x2)/2)), String(Math.round((y1+y2)/2)));
+  await wait(350);
+}
 const checks = [];
 const record = (name, detail) => checks.push({ name, detail });
 async function layout() {
@@ -47,9 +63,9 @@ async function layout() {
       settingsOpen:!document.querySelector('#settings-overlay').classList.contains('hidden')};
   })()`);
 }
-async function keyboard(selector, name) {
+async function keyboard(selector, name, resetFocus = true) {
   // Reset focus left by programmatic navigation before a real native touch.
-  await evaluate(`document.activeElement?.blur(); document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`);
+  await evaluate(`${resetFocus ? 'document.activeElement?.blur();' : ''} document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`);
   await wait(1000);
   run('shell', 'uiautomator', 'dump', '/sdcard/mobile-test.xml');
   const xml = run('shell', 'cat', '/sdcard/mobile-test.xml').toString();
@@ -93,14 +109,18 @@ try {
   assert(ready, 'Application scripts and command bindings did not finish booting');
   await evaluate(`window.__TAURI__.core.invoke('set_ui_locale',{locale:'zh-CN'})`);
   await evaluate(`I18N.setLocale('zh-CN'); I18N.applyStaticI18n()`);
-  await click('[data-mpage-btn="subscriptions"]');
+  // Real navigation establishes Android WebView touch focus on a fresh launch.
+  await nativeButton('订阅');
   const feed = await evaluate(`(() => {const r=document.querySelector('#add-row').getBoundingClientRect();return {top:r.top,bottom:r.bottom,label:document.querySelector('label[for="add-url"]').textContent};})()`);
   assert(feed.top < 160 && feed.label); record('subscription-entry-at-top', feed);
   const targets = await evaluate(`['add-ok','btn-add','btn-new-folder'].map(id=>{const r=document.getElementById(id).getBoundingClientRect();return {id,width:r.width,height:r.height};})`);
   assert(targets.every(r=>r.width>=43.9&&r.height>=43.9), `Subscription touch targets: ${JSON.stringify(targets)}`);
   record('subscription-touch-targets', targets);
   screenshot('01-subscriptions');
-  await keyboard('#add-url', '02-feed-keyboard');
+  // Match the reported entry path: native Add establishes the input connection.
+  await nativeButton('添加订阅');
+  assert.equal(await evaluate(`document.activeElement.id`), 'add-url');
+  await keyboard('#add-url', '02-feed-keyboard', false);
   await click('#btn-add');
   assert.equal(await evaluate(`document.activeElement.id`), 'add-url');
   await click('[data-mpage-btn="settings"]');

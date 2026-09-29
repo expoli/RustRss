@@ -1,0 +1,6 @@
+Success
+Performing Streamed Install
+Success
+Performing Streamed Install
+Success
+{"out": "/tmp/rustrss-phone-ux-signed-mxmjmm91", "result": {"serial": "emulator-5580", "published_sha256": "b10b05f27f2d8d0c539cc99fb81120ba9859e735bb640617f08a5c1cdb0e0868", "preview_sha256": "15ab09e6ab6c76a935d0461f87d47cb69c40335c5feac343388ae7e7e3ada097", "same_uid": true, "fixture_feed_retained": true, "signed_ime_visible": true, "input_bounds": [42, 341, 887, 459], "webview_bounds": [0, 63, 1080, 1517], "non_debuggable": true, "screenshots": ["signed-settings-home.png", "signed-feed-keyboard.png", "signed-after-upgrade.png", "signed-before-upgrade.png"]}}

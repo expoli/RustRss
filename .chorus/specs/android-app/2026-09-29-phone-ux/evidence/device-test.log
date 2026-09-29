@@ -1,0 +1,6 @@
+{"name":"02-feed-keyboard","rect":{"x":175.33035278320312,"y":128.45833587646484,"dpr":2.625},"nativeTop":63}
+{"name":"05-reading-keyboard","rect":{"x":175.33035278320312,"y":195.39285278320312,"dpr":2.625},"nativeTop":63}
+{"name":"05b-font-keyboard","rect":{"x":170.37797927856445,"y":423.702392578125,"dpr":2.625},"nativeTop":63}
+{"name":"07-ai-endpoint-keyboard","rect":{"x":201.1428680419922,"y":423.4047546386719,"dpr":2.625},"nativeTop":63}
+{"name":"08-ai-key-keyboard","rect":{"x":201.1428680419922,"y":552.375,"dpr":2.625},"nativeTop":63}
+{"out":"/tmp/rustrss-android-ux-final-driver","checks":22}

@@ -62,8 +62,8 @@
     {
       "name": "theme-save-and-discard",
       "detail": {
-        "beforeRevision": 3,
-        "savedRevision": 4
+        "beforeRevision": 0,
+        "savedRevision": 1
       }
     },
     {

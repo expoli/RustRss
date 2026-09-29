@@ -9,5 +9,6 @@
   ],
   "versionName": "0.2.0",
   "versionCode": 2000,
-  "kind": "phone UX preview; not the published v0.2.0 asset"
+  "kind": "phone UX preview; not the published v0.2.0 asset",
+  "production_source_commit": "7880c6f91499707c99bf01129776f7c0a6cbc8b9"
 }
