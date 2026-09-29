@@ -1258,3 +1258,9 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] **实际读图后再调整**：agent 打开 Clear 文章 PNG，依据阅读区的冷色/密集列表改试 Paper；打开新 PNG 确认暖色衬底、衬线正文及文章内容，再决定保存。此顺序及选择原因、两张原图和不同 config hash 见 [证据](2026-09-23-theme-preview/agent-loop-2026-09-28/README.md)。
 - [x] **保存与取消有 SQLite 回读**：Paper 保存后 `ui.theme_config.current.revision=1`、`light_preset=paper`；再查看 Slate 设置候选图并取消，SQLite 与保存后的值完全相同。证据含最终 desktop/MCP/fixture 二进制 SHA-256、UTC 时间、三张 PNG 的 SHA-256、场景/预览修订/逻辑及像素尺寸/原生新鲜度标记。
 - [ ] **独立开放项**：Windows/macOS 真机截图及失败路径、GNOME/物理跨屏与最小化、第三方 GUI MCP 客户端、原生弹层及真实语音/盲文输出仍按各条目保持 open；本节只证明隔离 Linux 会话与本代理实际读图闭环。
+
+## 38. Android 手机输入与设置改进（2026-09-29）
+
+- 机械验证：真实 Android API 36 / x86_64 WebView 上执行 `scripts/verify-android-mobile.mjs`，订阅地址、阅读字号、AI 地址与密钥四类输入均触发实际软键盘；WebView 高度从 867 CSS px 缩至 554/599 px，输入框完整位于可见区域。360/412 CSS px 两档设置页面无横向溢出，系统返回、主题保存/放弃及关闭时草稿丢弃通过。
+- 设备快照与复现步骤：[手机交互验证](../android-app/2026-09-29-phone-ux/evidence/record.md)。桌面隔离实例检查了原设置侧栏、全部阅读字段、AI 高级项与添加订阅入口，双语 key 集合一致。
+- 环境限制：本轮使用独立模拟器与 Gboard；用户实体手机及其万象拼音输入法仍需复测。窄屏检查包含真实 WebView 的视口模拟，不能代替不同手机上的系统缩放验收。

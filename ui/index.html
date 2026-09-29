@@ -78,6 +78,7 @@
         <button id="btn-new-folder" data-i18n-title="folder.newTitle" aria-label="new folder">＋</button>
       </div>
       <ul id="feeds" class="feeds"></ul>
+      <p id="m-feeds-empty" class="m-only hidden dim" data-i18n="m.feedsEmpty"></p>
       <!-- 标签区：颜色圆点 + 名称 + 未读计数，置顶优先（顺序由 core 直出）；
            行可拖拽排序，右键出管理菜单（重命名/颜色/置顶/删除）。 -->
       <div id="tags-head" class="section-title tags-head" role="button" tabindex="0"
@@ -89,7 +90,8 @@
       <ul id="tags" class="tags"></ul>
       <div id="tags-empty" class="tags-empty dim hidden" data-i18n="sidebar.tagsEmpty"></div>
       <div id="add-row" class="add-row hidden">
-        <input id="add-url" data-i18n-placeholder="sidebar.addPlaceholder" autocomplete="off" />
+        <label class="m-only" for="add-url" data-i18n="m.feedUrl"></label>
+        <input id="add-url" type="url" inputmode="url" enterkeyhint="go" data-i18n-placeholder="sidebar.addPlaceholder" autocomplete="off" autocapitalize="none" spellcheck="false" />
         <button id="add-ok" data-i18n="sidebar.add"></button>
       </div>
       <div class="sidebar-foot">
@@ -171,6 +173,10 @@
   </dialog>
   <div id="settings-overlay" class="overlay hidden" role="dialog" aria-modal="true">
     <div class="settings-dialog">
+      <header class="m-settings-header m-only">
+        <button id="m-settings-back" type="button" data-i18n="m.settingsBack"></button>
+        <h2 id="m-settings-title" tabindex="-1" data-i18n="settings.title"></h2>
+      </header>
       <nav class="settings-nav">
         <div class="settings-nav-title" data-i18n="settings.title"></div>
         <ul id="settings-nav-list" role="tablist" aria-orientation="vertical"><li role="presentation"><button type="button" role="tab" id="tab-appearance" data-pane="appearance" aria-controls="pane-appearance" aria-selected="false" tabindex="-1" data-i18n="settings.nav.appearance"></button></li><li role="presentation"><button type="button" role="tab" id="tab-reading" data-pane="reading" aria-controls="pane-reading" aria-selected="false" tabindex="-1" data-i18n="settings.nav.reading"></button></li><li role="presentation"><button type="button" role="tab" id="tab-subscriptions" data-pane="subscriptions" aria-controls="pane-subscriptions" aria-selected="false" tabindex="-1" data-i18n="settings.nav.subscriptions"></button></li><li role="presentation"><button type="button" role="tab" id="tab-ai" data-pane="ai" aria-controls="pane-ai" aria-selected="false" tabindex="-1" data-i18n="settings.nav.ai"></button></li><li role="presentation" data-desktop-only><button type="button" role="tab" id="tab-mcp" data-pane="mcp" aria-controls="pane-mcp" aria-selected="false" tabindex="-1" data-i18n="settings.nav.mcp"></button></li><li role="presentation"><button type="button" role="tab" id="tab-data" data-pane="data" aria-controls="pane-data" aria-selected="false" tabindex="-1" data-i18n="settings.nav.data"></button></li><li role="presentation"><button type="button" role="tab" id="tab-general" data-pane="general" aria-controls="pane-general" aria-selected="false" tabindex="-1" data-i18n="settings.nav.general"></button></li></ul>
@@ -180,7 +186,7 @@
       </nav>
 
       <section class="settings-body"><div class="pane hidden" id="pane-appearance" role="tabpanel" aria-labelledby="tab-appearance" data-pane="appearance"><h3 data-i18n="settings.nav.appearance"></h3><div id="appearance-editor"></div></div>
-<div class="pane hidden" id="pane-reading" role="tabpanel" aria-labelledby="tab-reading" data-pane="reading"><h3 data-i18n="settings.nav.reading"></h3><div id="reading-editor"></div><div class="setting-block">
+<div class="pane hidden" id="pane-reading" role="tabpanel" aria-labelledby="tab-reading" data-pane="reading"><h3 data-i18n="settings.nav.reading"></h3><div id="reading-editor"></div><div class="setting-block" data-desktop-only>
             <h4 data-i18n="settings.section.readBehaviour"></h4>
             <div class="setting-item">
               <div class="text">
@@ -231,10 +237,10 @@
           </div><div class="setting-block">
             <h4 data-i18n="settings.section.rsshubInstance"></h4>
             <div class="setting-item">
-              <div class="text">
+              <label class="text" for="set-rsshub-mirror">
                 <b data-i18n="settings.rsshub.mirror"></b>
                 <small data-i18n="settings.rsshub.mirrorHint"></small>
-              </div>
+              </label>
               <input id="set-rsshub-mirror" autocomplete="off" />
             </div>
             <div class="setting-actions">
@@ -256,9 +262,9 @@
             <h4 data-i18n="settings.section.provider"></h4>
 
             <div class="setting-item">
-              <div class="text">
+              <label class="text" for="ai-provider">
                 <b data-i18n="settings.ai.provider"></b>
-              </div>
+              </label>
               <select id="ai-provider">
                 <option value="ollama" data-i18n="settings.ai.providerOllama"></option>
                 <option value="openai" data-i18n="settings.ai.providerOpenai"></option>
@@ -268,18 +274,18 @@
             </div>
 
             <div class="setting-item">
-              <div class="text">
+              <label class="text" for="ai-model">
                 <b data-i18n="settings.ai.model"></b>
                 <small data-i18n="settings.ai.modelPlaceholder"></small>
-              </div>
+              </label>
               <input id="ai-model" autocomplete="off" />
             </div>
 
             <div class="setting-item">
-              <div class="text">
+              <label class="text" for="ai-base-url">
                 <b data-i18n="settings.ai.baseUrl"></b>
                 <small data-i18n="settings.ai.baseUrlPlaceholder"></small>
-              </div>
+              </label>
               <input id="ai-base-url" autocomplete="off" />
             </div>
 
@@ -288,17 +294,19 @@
             <p id="ai-endpoint-android-hint" class="dim small android-hint" hidden
               data-i18n="settings.ai.endpointAndroidHint"></p>
 
+            <details class="m-setting-advanced" open>
+              <summary data-i18n="m.advancedAi"></summary>
             <div class="setting-item">
-              <div class="text">
+              <label class="text" for="ai-target">
                 <b data-i18n="settings.ai.target"></b>
-              </div>
+              </label>
               <input id="ai-target" autocomplete="off" />
             </div>
             <div class="setting-item">
-              <div class="text">
+              <label class="text" for="ai-max-tokens">
                 <b data-i18n="settings.ai.maxTokens"></b>
                 <small data-i18n="settings.ai.maxTokensHint"></small>
-              </div>
+              </label>
               <input id="ai-max-tokens" type="number" min="256" max="32768" step="256" autocomplete="off" />
             </div>
             <div class="setting-item">
@@ -308,13 +316,14 @@
               </div>
               <button type="button" id="set-ai-reasoning" class="setting-dropdown" aria-haspopup="menu"></button>
             </div>
+            </details>
           </div><div class="setting-block">
             <h4 data-i18n="settings.section.credentials"></h4>
             <div class="setting-item">
-              <div class="text">
+              <label class="text" for="ai-key">
                 <b data-i18n="settings.ai.key"></b>
                 <small id="ai-key-hint" data-i18n="settings.ai.keyPlaceholder"></small>
-              </div>
+              </label>
               <input id="ai-key" type="password" autocomplete="off" />
             </div>
             <div class="setting-actions">

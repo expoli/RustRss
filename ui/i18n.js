@@ -15,6 +15,15 @@
 
 const DICTS = {
   'zh-CN': {
+    'm.feedUrl': '订阅地址',
+    'm.settingsBack': '返回',
+    'm.feedsEmpty': '还没有订阅。在上方输入网站或 RSS 地址，开始阅读。',
+    'm.themeDraftHint': '修改后点保存生效。关闭设置会放弃未保存的修改。',
+    'm.advancedTypography': '高级排版',
+    'm.advancedAi': '高级 AI 参数',
+    'm.inherit': '重置',
+    'm.preview': '预览',
+    'm.discard': '放弃修改',
     'startup.refused.title': '数据库不兼容，已停止加载',
     'startup.refused.body': '这个数据库来自旧版本（缺少当前版本的应用标识）。为避免误读旧数据，应用不会打开它。可以先把订阅导出为 OPML，再重建数据目录。',
     'startup.refused.dbPath': '数据库位置',
@@ -575,6 +584,15 @@ const DICTS = {
   },
 
   en: {
+    'm.feedUrl': 'Feed or website URL',
+    'm.settingsBack': 'Back',
+    'm.feedsEmpty': 'No subscriptions yet. Enter a website or RSS URL above to start reading.',
+    'm.themeDraftHint': 'Save to apply your changes. Closing settings discards unsaved changes.',
+    'm.advancedTypography': 'Advanced typography',
+    'm.advancedAi': 'Advanced AI options',
+    'm.inherit': 'Reset',
+    'm.preview': 'Preview',
+    'm.discard': 'Discard changes',
     'startup.refused.title': 'Incompatible database - not loaded',
     'startup.refused.body': 'This database comes from an older version (it lacks the current application marker). The app will not open it, to avoid misreading old data. Export your subscriptions to OPML first, then rebuild the data directory.',
     'startup.refused.dbPath': 'Database',

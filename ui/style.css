@@ -1250,7 +1250,8 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
    页面可见性由 body[data-mpage] 驱动（mobile.js），阅读页是**覆盖层**：
    列表页保持渲染不被 display:none，返回时过滤器/选中/滚动位置原样保留。 */
 
-#m-nav, #m-reader-back, .m-seg, #m-status { display: none; }
+#m-nav, #m-reader-back, .m-seg, #m-status, .m-only { display: none; }
+.m-setting-advanced > summary { display: none; }
 
 @media (max-width: 900px) and (pointer: coarse) {
   /* 桌面专属控件（窗口三键/MCP/托盘关闭行为/日志目录）不在移动端出现 */
@@ -1376,36 +1377,91 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   body[data-mpage="reader"] #m-status { display: none; }
   #m-status-text.error { color: var(--danger); }
 
-  /* ---- 设置 = 全屏页（overlay 压过主导航），导航条横排置顶 ---- */
+  /* ---- 订阅：输入入口在内容顶部，列表和标签连续滚动 ---- */
+  .m-only:not(.hidden) { display: block; }
+  .sidebar { overflow-y: auto; padding-top: 0; }
+  .sidebar .feeds { flex: none; overflow: visible; }
+  .sidebar-foot, #tags-empty { display: none; }
+  #m-feeds-empty { margin: 12px 16px 24px; line-height: 1.6; }
+  .add-row, .add-row.hidden {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-panel);
+  }
+  .add-row label { grid-column: 1 / -1; font-weight: 600; }
+  .add-row input { width: 100%; min-width: 0; }
+  .add-row input, .add-row button, .toolbar button, .m-seg button,
+  .section-title button, .views li, .feeds li, .tags li { min-height: 44px; }
+  .add-row input, .add-row button { padding: 10px 12px; }
+
+  /* ---- 设置：分类列表 -> 详情页，顶部返回，表单单列 ---- */
   .overlay { z-index: 60; }
   .settings-dialog {
     display: flex;
     flex-direction: column;
-    width: 100vw;
-    height: 100dvh;
+    width: 100%;
+    height: 100%;
     max-height: none;
     border-radius: 0;
     border: none;
   }
-  .settings-nav {
+  .m-settings-header {
+    display: flex !important;
     flex: 0 0 auto;
-    flex-direction: row;
     align-items: center;
-    border-right: none;
+    gap: 8px;
+    min-height: 64px;
+    padding: 8px 64px 8px 12px;
     border-bottom: 1px solid var(--line);
-    padding: 10px 12px;
-    gap: 10px;
   }
-  .settings-nav-title { padding: 0; white-space: nowrap; }
-  .settings-nav ul {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    flex: 1;
+  .m-settings-header h2 { font-size: 20px; line-height: 1.3; margin: 0; }
+  #m-settings-back { flex: none; min-height: 44px; }
+  .settings-dialog[data-screen="home"] #m-settings-back { display: none; }
+  .settings-nav { flex: 1; border: 0; padding: 12px 16px; min-height: 0; }
+  .settings-nav-title, .settings-nav-foot { display: none; }
+  .settings-nav ul { display: block; overflow-x: hidden; overflow-y: auto; }
+  .settings-nav li { border-bottom: 1px solid var(--line); border-radius: 0; }
+  .settings-nav li > button {
+    display: flex; align-items: center; justify-content: space-between;
+    min-height: 64px; padding: 16px 8px; font-size: 16px; white-space: normal;
   }
-  .settings-nav li { flex: none; }
-  .settings-nav li > button { padding: 10px 12px; white-space: nowrap; }
-  .settings-nav-foot { display: none; }
-  .settings-body { flex: 1; min-height: 0; padding: 16px 14px 34px; }
-  .settings-close { position: fixed; top: 10px; right: 10px; z-index: 2; }
+  .settings-nav li > button::after { content: '›'; font-size: 24px; color: var(--fg-dim); }
+  .settings-nav li.active { background: transparent; }
+  .settings-nav li.active > button { color: var(--fg); }
+  .settings-dialog[data-screen="home"] .settings-body,
+  .settings-dialog[data-screen="detail"] .settings-nav { display: none; }
+  .settings-body { flex: 1; min-height: 0; padding: 16px; scroll-padding-block: 16px 100px; }
+  .settings-body .pane > h3 { display: none; }
+  .settings-close { position: absolute; top: 10px; right: 12px; min-width: 44px; min-height: 44px; z-index: 2; }
+  .setting-block { margin-bottom: 24px; }
+  .setting-block h4 { font-size: 14px; margin-bottom: 12px; }
+  .setting-item { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 16px 0; }
+  .setting-item:has(.switch) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .setting-item input:not([type=checkbox]), .setting-item select,
+  .setting-item .setting-dropdown { width: 100%; min-height: 44px; font-size: 16px; }
+  .setting-item small, .android-hint { overflow-wrap: anywhere; }
+  .setting-actions { flex-wrap: wrap; gap: 8px; }
+  .setting-actions button { min-height: 44px; padding: 10px 14px; }
+  .settings-body button { min-height: 44px; }
+  .m-setting-advanced { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; margin-top: 16px; }
+  .m-setting-advanced > summary { display: list-item; min-height: 48px; padding: 14px 0; font-weight: 600; }
+  #ai-save { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .theme-field { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; padding: 14px 0; }
+  .theme-field label { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  .theme-field input:not([type=checkbox]):not([type=color]), .theme-field select { width: 100%; min-height: 44px; font-size: 16px; }
+  .theme-field button { min-height: 44px; padding: 10px 12px; }
+  .theme-field:has(input[type=checkbox]) { align-items: center; }
+  .theme-field:has(input[type=checkbox]) label { flex-direction: row; justify-content: space-between; }
+  .theme-editor-fields > label { display: flex; flex-direction: column; gap: 8px; }
+  .theme-editor-fields > label select { min-height: 44px; font-size: 16px; }
+  .theme-editor-fields details, .theme-preview-details { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; margin: 16px 0; }
+  .theme-editor-fields summary, .theme-preview-details summary { min-height: 48px; padding: 14px 0; font-weight: 600; }
+  .theme-editor-actions { position: sticky; bottom: -16px; flex-wrap: wrap; padding: 12px 0; }
+  .theme-editor-actions button { min-height: 44px; flex: 1 1 auto; padding: 10px 12px; }
+  .theme-editor-status { min-height: 0; font-size: 13px; }
+  .theme-presets button { min-height: 44px; }
+  .settings-body code { overflow-wrap: anywhere; }
 }

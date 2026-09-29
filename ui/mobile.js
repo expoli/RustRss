@@ -98,6 +98,8 @@
     } else if (entry.t === 'ovl') {
       var closer = el(entry.id) && el(entry.id).querySelector(entry.closeSel);
       if (closer) closer.click();
+    } else if (entry.t === 'settings-pane') {
+      el('m-settings-back').click();
     }
   });
 
@@ -140,16 +142,50 @@
           if (!top || !mine(top)) pushEntry({ t: 'ovl', id: ov.id, closeSel: ov.closeSel });
         } else {
           syncNav();
-          if (top && mine(top)) {
+          var index = historyStack.findLastIndex(mine);
+          if (index >= 0) {
             // 弹层经自己的按钮关闭：消费掉那条历史，让下一次返回不被它占住。
-            historyStack.pop();
+            // 设置还可能有一条详情历史，关闭时一起消费。
+            var count = historyStack.length - index;
+            historyStack.splice(index);
             consuming = true;
-            history.back();
+            history.go(-count);
           }
         }
         if (ov.onToggle) ov.onToggle();
       }).observe(node, { attributes: true, attributeFilter: [ov.attr] });
     });
+  }
+
+  function watchSettingsNavigation() {
+    var dialog = document.querySelector('.settings-dialog');
+    new MutationObserver(function () {
+      if (!active() || el('settings-overlay').classList.contains('hidden')) return;
+      var top = historyStack[historyStack.length - 1];
+      if (dialog.dataset.screen === 'detail') {
+        if (!top || top.t !== 'settings-pane') pushEntry({ t: 'settings-pane' });
+      } else if (top && top.t === 'settings-pane') {
+        historyStack.pop(); consuming = true; history.back();
+      }
+    }).observe(dialog, { attributes: true, attributeFilter: ['data-screen'] });
+  }
+
+  // 原生层负责 IME 避让；WebView 缩小后让当前输入滚进可用区域。
+  // 只滚动输入所在容器，不重建列表，也不改变阅读状态。
+  function keepInputVisible() {
+    var pending;
+    var reveal = function () {
+      clearTimeout(pending);
+      pending = setTimeout(function () {
+        var input = document.activeElement;
+        if (active() && input?.matches('input, textarea, select')) {
+          input.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+      }, 120);
+    };
+    window.addEventListener('resize', reveal);
+    window.visualViewport?.addEventListener('resize', reveal);
+    document.addEventListener('focusin', reveal);
   }
 
   // ---- 状态镜像 ---------------------------------------------------------
@@ -241,11 +277,17 @@
   // ---- 宽度档位切换 -----------------------------------------------------
 
   function applyMode() {
+    document.querySelectorAll('.m-setting-advanced').forEach(function (details) { details.open = !active(); });
     if (active()) {
       if (!bodyPage()) setPage('articles');
+      // 保留同一套订阅行为，只搬动表单；手机入口常驻上方。
+      el('views').after(el('add-row'));
+      el('add-row').classList.remove('hidden');
     } else {
       historyStack = [];
       delete document.body.dataset.mpage;
+      document.querySelector('.sidebar-foot').before(el('add-row'));
+      el('add-row').classList.add('hidden');
     }
   }
 
@@ -282,6 +324,8 @@
     if (el('views')) watchViewsActive();
     watchReader();
     watchOverlays();
+    watchSettingsNavigation();
+    keepInputVisible();
     watchSidebarSelection();
     initLongPress();
     if (MQ.addEventListener) MQ.addEventListener('change', applyMode);

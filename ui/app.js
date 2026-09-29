@@ -683,6 +683,7 @@ function renderSidebar() {
   reconcileTags(collectRows('tags'));
   paintTagsSection();
   setText(el('feeds-meta'), t('sidebar.feedCount', { n: state.feeds.length }));
+  el('m-feeds-empty').classList.toggle('hidden', state.feeds.length !== 0);
   if (state.db) {
     const info = el('db-info');
     setText(info, `${state.db.entries} 篇 · ${state.db.dbPath}`);
@@ -3897,6 +3898,22 @@ function showPane(name) {
     pane.classList.toggle('hidden', pane.dataset.pane !== name);
   }
   document.querySelector('.settings-body').scrollTop = 0;
+  if (mobileSettings()) {
+    document.querySelector('.settings-dialog').dataset.screen = 'detail';
+    el('m-settings-title').textContent = el('tab-' + name).textContent;
+    el('m-settings-title').focus();
+  }
+}
+
+function mobileSettings() {
+  return window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches;
+}
+
+function showSettingsHome() {
+  document.querySelector('.settings-dialog').dataset.screen = 'home';
+  el('m-settings-title').textContent = t('settings.title');
+  for (const tab of el('settings-nav-list').querySelectorAll('[data-pane]')) tab.tabIndex = 0;
+  el('tab-' + currentPane).focus();
 }
 
 /// 记住上次看的是哪个分类（同一次运行内）
@@ -3906,6 +3923,7 @@ let aaEditor;
 let settingsReturnFocus;
 function mountThemeEditor(id, kind) {
   return window.RustRssThemeSettings.createEditor(el(id), { kind,
+    mobile: mobileSettings(),
     getSnapshot: () => state.settings.theme_snapshot, invoke, t, fontNames: () => state.fontFamilies,
     apply: settings => { acceptSettings(settings); applyTheme(); themeEditors.forEach(e => e.refresh()); },
   });
@@ -4107,7 +4125,8 @@ function bindSettingDropdowns() {
 }
 
 function openSettings() {
-  settingsReturnFocus = document.activeElement;
+  settingsReturnFocus = mobileSettings()
+    ? document.querySelector('#m-nav [data-mpage-btn="settings"]') : document.activeElement;
   themeEditors.forEach(e => e.dispose());
   themeEditors = [mountThemeEditor('appearance-editor', 'appearance'), mountThemeEditor('reading-editor', 'reading')];
   el('set-mark-read').checked = state.settings.mark_read_on_navigate;
@@ -4129,7 +4148,8 @@ function openSettings() {
   fillMcpForm();
   showPane(currentPane);
   el('settings-overlay').classList.remove('hidden');
-  el('tab-' + currentPane).focus();
+  if (mobileSettings()) showSettingsHome();
+  else el('tab-' + currentPane).focus();
 }
 
 /**
@@ -4249,7 +4269,8 @@ async function boot() {
   log(`tags:rows=${(state.sidebarTags || []).length} collapsed=${state.tagsCollapsed ? 1 : 0} rects=${tagSidebarRects()}`);
   el('btn-add').onclick = () => {
     const row = el('add-row');
-    row.classList.toggle('hidden');
+    if (mobileSettings()) row.classList.remove('hidden');
+    else row.classList.toggle('hidden');
     if (!row.classList.contains('hidden')) el('add-url').focus();
   };
   el('btn-settings').onclick = openSettings;
@@ -4333,6 +4354,7 @@ async function boot() {
   };
 
   el('settings-close').onclick = closeSettings;
+  el('m-settings-back').onclick = showSettingsHome;
   el('aa-close').onclick = () => el('aa-dialog').close();
   el('keyboard-help-close').onclick = () => el('keyboard-help').close();
   el('keyboard-help').addEventListener('keydown', e => e.stopPropagation());

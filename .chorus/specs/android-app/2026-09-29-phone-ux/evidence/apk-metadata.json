@@ -1,0 +1,13 @@
+{
+  "file": "RustRss_0.2.0_android-phone-ux-preview.apk",
+  "bytes": 72994590,
+  "sha256": "bfc773b66d46270025030b3107c43a83f2f9f8aec7420d50574ac2b56abcfc05",
+  "certificate_sha256": "89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5",
+  "abis": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "versionName": "0.2.0",
+  "versionCode": 2000,
+  "kind": "phone UX preview; not the published v0.2.0 asset"
+}

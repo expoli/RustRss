@@ -1,0 +1,200 @@
+{
+  "serial": "emulator-5580",
+  "checks": [
+    {
+      "name": "subscription-entry-at-top",
+      "detail": {
+        "top": 60.761905670166016,
+        "bottom": 167.22024154663086,
+        "label": "订阅地址"
+      }
+    },
+    {
+      "name": "02-feed-keyboard",
+      "detail": {
+        "beforeHeight": 867,
+        "height": 554,
+        "top": 106.45833587646484,
+        "bottom": 150.45833587646484,
+        "focused": true
+      }
+    },
+    {
+      "name": "05-reading-keyboard",
+      "detail": {
+        "beforeHeight": 867,
+        "height": 599,
+        "top": 173.39285278320312,
+        "bottom": 217.39285278320312,
+        "focused": true
+      }
+    },
+    {
+      "name": "theme-save-and-discard",
+      "detail": {
+        "beforeRevision": 1,
+        "savedRevision": 2
+      }
+    },
+    {
+      "name": "android-back-detail-to-home",
+      "detail": {
+        "width": 412,
+        "height": 867,
+        "overflowing": [],
+        "screen": "home",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "07-ai-endpoint-keyboard",
+      "detail": {
+        "beforeHeight": 867,
+        "height": 554,
+        "top": 401.4047546386719,
+        "bottom": 445.4047546386719,
+        "focused": true
+      }
+    },
+    {
+      "name": "08-ai-key-keyboard",
+      "detail": {
+        "beforeHeight": 867,
+        "height": 554,
+        "top": 410.375,
+        "bottom": 454.375,
+        "focused": true
+      }
+    },
+    {
+      "name": "android-back-home-closes-settings",
+      "detail": {
+        "width": 412,
+        "height": 867,
+        "overflowing": [],
+        "screen": "home",
+        "settingsOpen": false
+      }
+    },
+    {
+      "name": "appearance-360px",
+      "detail": {
+        "width": 360,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "reading-360px",
+      "detail": {
+        "width": 360,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "subscriptions-360px",
+      "detail": {
+        "width": 360,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "ai-360px",
+      "detail": {
+        "width": 360,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "data-360px",
+      "detail": {
+        "width": 360,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "general-360px",
+      "detail": {
+        "width": 360,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "appearance-412px",
+      "detail": {
+        "width": 412,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "reading-412px",
+      "detail": {
+        "width": 412,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "subscriptions-412px",
+      "detail": {
+        "width": 412,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "ai-412px",
+      "detail": {
+        "width": 412,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "data-412px",
+      "detail": {
+        "width": 412,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    },
+    {
+      "name": "general-412px",
+      "detail": {
+        "width": 412,
+        "height": 867,
+        "overflowing": [],
+        "screen": "detail",
+        "settingsOpen": true
+      }
+    }
+  ]
+}

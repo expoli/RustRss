@@ -28,6 +28,14 @@ cross-device synchronization is part of this capability.
   layout: Articles is the default home, Subscriptions and Saved are peer
   destinations, Settings is a peer destination, and opening an article pushes
   a full-screen reader that returns to the preserved list state.
+- [x] Keep subscription, reading and AI inputs visible above the Android IME;
+  use a top subscription entry and scroll the focused control into the resized
+  viewport (API 36 x86_64 / Gboard device evidence, 2026-09-29).
+- [x] Use a vertical settings category list with full-width details and Android
+  Back from detail to categories before closing. Stack phone forms, collapse
+  advanced typography/AI options, and preserve explicit save/discard behavior;
+  verify 360/412 CSS px widths and desktop layout. Evidence:
+  [phone UX verification](2026-09-29-phone-ux/evidence/record.md).
 
 ## Non-goals
 - iOS support.

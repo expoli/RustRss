@@ -50,7 +50,7 @@
       },
     };
   }
-  function createEditor(host, { kind, getSnapshot, invoke, apply, t, fontNames = () => [], readOnly = false }) {
+  function createEditor(host, { kind, getSnapshot, invoke, apply, t, fontNames = () => [], readOnly = false, mobile = false }) {
     const session = draftSession(getSnapshot(), (expectedRevision, patch) => invoke('validate_ui_theme', { expectedRevision, patch }));
     let busy = false, disposed = false, previewMode = 'light', renderer, controls = [];
     const node = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
@@ -62,13 +62,25 @@
     sample.append(heading, node('p', t('settings.fontPreviewSample')), node('code', 'let theme = "RustRss";'));
     const actions = node('div', '', 'theme-editor-actions');
     const save = button(t('theme.save'), () => commit());
-    const cancel = button(t('theme.cancel'), () => reset());
-    const preview = button(t('theme.preview'), async () => { await validate(); sample.scrollIntoView({ block: 'nearest' }); });
-    actions.append(preview, save, cancel);
+    if (mobile) save.classList.add('primary');
+    const cancel = button(t(mobile ? 'm.discard' : 'theme.cancel'), () => reset());
+    let previewDetails;
+    const preview = button(t(mobile ? 'm.preview' : 'theme.preview'), async () => {
+      if (previewDetails) previewDetails.open = true;
+      await validate(); sample.scrollIntoView({ block: 'nearest' });
+    });
+    if (mobile) actions.append(save, preview, cancel);
+    else actions.append(preview, save, cancel);
     const mode = node('select'); mode.setAttribute('aria-label', t('theme.previewMode'));
     for (const v of ['light', 'dark']) { const o = node('option', t('settings.theme' + (v === 'light' ? 'Light' : 'Dark'))); o.value = v; mode.append(o); }
     mode.onchange = () => { previewMode = mode.value; validate(); };
-    host.replaceChildren(node('p', t(readOnly ? 'themePreview.readOnly' : 'theme.draftHint'), 'dim'), form, mode, sample, status, actions);
+    const hint = readOnly ? 'themePreview.readOnly' : mobile ? 'm.themeDraftHint' : 'theme.draftHint';
+    host.replaceChildren(node('p', t(hint), 'dim'), form, mode, sample, status, actions);
+    if (mobile) {
+      previewDetails = node('details', '', 'theme-preview-details');
+      previewDetails.append(node('summary', t('m.preview')), mode, sample);
+      status.before(previewDetails);
+    }
     const fonts = node('datalist'); fonts.id = host.id + '-fonts'; host.append(fonts);
     function refreshFonts() {
       if (disposed) return;
@@ -116,7 +128,7 @@
         change('overrides.' + path, parseField(field, type === 'boolean' ? input.checked : input.value));
       };
       label.append(input); row.append(label);
-      const inherit = button(t('theme.inherit'), () => change('overrides.' + path, null));
+      const inherit = button(t(mobile ? 'm.inherit' : 'theme.inherit'), () => change('overrides.' + path, null));
       inherit.setAttribute('aria-label', label.firstChild.textContent + ': ' + t('theme.inherit'));
       row.append(inherit); parent.append(row); controls.push({ path, input, type });
     }
@@ -134,7 +146,16 @@
       }
       form.append(button(t('theme.clearOverrides'), () => { session.set('overrides', null); validate(); save.disabled = false; cancel.disabled = false; }));
     }
-    fields.filter(f => f[1] === kind).forEach(f => control(f));
+    const advanced = mobile ? node('details', '', 'theme-advanced') : null;
+    if (advanced) advanced.append(node('summary', t('m.advancedTypography')));
+    const desktopFields = ['chrome.sidebar_width', 'chrome.list_width', 'reader.width', 'reader.layout'];
+    const advancedFields = ['typography.ui_family', 'typography.ui_size', 'chrome.radius',
+      'typography.read_family', 'typography.mono_family', 'typography.mono_size'];
+    fields.filter(f => f[1] === kind).forEach(f => {
+      if (mobile && desktopFields.includes(f[0])) return;
+      control(f, advanced && advancedFields.includes(f[0]) ? advanced : form);
+    });
+    if (advanced) form.append(advanced);
     if (kind === 'appearance') {
       for (const variant of ['light', 'dark']) {
         const details = node('details'); details.append(node('summary', t('theme.' + variant + 'Colors')));
