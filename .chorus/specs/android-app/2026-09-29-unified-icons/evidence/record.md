@@ -64,3 +64,19 @@ Downloads directory from the prior OPML regression. `signed-smoke.log` records
 actual install and install-r Success. Reproduction on a fresh fixture device
 requires first pushing the XML/generic OPML fixtures from the OPML regression
 script; never run its uninstall step on a user device.
+
+## Independent verification and completion
+
+Round1 task review `623cec11-8251-471a-931d-a77e0453ad44` posted VERDICT PASS,
+4AC passed, zero blockers/notes; original comment retained in
+`independent-review.md`. Fresh read-only resource/mutation checks, APK checks,
+workspace tests/strict Clippy/build and live Pixel Launcher navigation passed.
+Independent screenshots include all derivative/ICO/ICNS representations,
+live launcher and native OPML picker in `independent/`; reviewer did not claim
+to rerun developer's chronological signed upgrade. Chorus task92539caf is done.
+
+Production source commit `1d08d9eb113d5d3e96049e98af0e0110187e5eff` has successful
+[CI](https://github.com/expoli/RustRss/actions/runs/36531797786) and
+[Android build](https://github.com/expoli/RustRss/actions/runs/36531797893).
+Owned emulator-5580 was closed after review release; shared emulator-5554 remains
+untouched. Final retention changes add only evidence/docs, not product code.

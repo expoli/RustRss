@@ -9,5 +9,6 @@
   ],
   "version": "0.2.0",
   "version_code": 2000,
-  "debuggable": false
+  "debuggable": false,
+  "production_source_commit": "1d08d9eb113d5d3e96049e98af0e0110187e5eff"
 }
