@@ -1,0 +1,12 @@
+{
+  "filename": "RustRss_0.2.0_android-universal.apk",
+  "bytes": 72965714,
+  "sha256": "b10b05f27f2d8d0c539cc99fb81120ba9859e735bb640617f08a5c1cdb0e0868",
+  "abis": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "versionName": "0.2.0",
+  "versionCode": 2000,
+  "certificate_sha256": "89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5"
+}

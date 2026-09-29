@@ -1,0 +1,4 @@
+package: name='tech.expoli.rustrss' versionCode='2000' versionName='0.2.0' platformBuildVersionName='17' platformBuildVersionCode='37' compileSdkVersion='37' compileSdkVersionCodename='17'
+sdkVersion:'24'
+targetSdkVersion:'37'
+native-code: 'arm64-v8a' 'x86_64'

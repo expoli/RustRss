@@ -1,0 +1,9 @@
+{
+  "upgrade": "0.1.0 -> 0.2.0 signed release",
+  "install": "Success",
+  "uid_preserved": true,
+  "private_file_preserved": true,
+  "pid": "4981",
+  "device": "isolated Android API 36 x86_64 emulator",
+  "crash_markers": false
+}

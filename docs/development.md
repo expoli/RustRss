@@ -35,7 +35,7 @@ cargo tauri android build --target x86_64 --debug
 # 产物：src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
 ```
 
-**侧载发布（release APK）**：release 构建需要签名密钥。生成一次（自签名，有效期 10000 天）：
+**侧载发布（release APK）**：release 构建需要签名密钥。后续版本沿用项目已有密钥；只在首次建立签名身份时生成一次（自签名，有效期 10000 天）：
 
 ```bash
 keytool -genkeypair -v -keystore src-tauri/gen/android/app/android-release.keystore \
@@ -51,8 +51,16 @@ keyAlias=rustrss
 keyPassword=<生成时输入的 key 口令>
 ```
 
-然后 `cargo tauri android build --target x86_64`（无 `--debug` 即 release）；产物同目录下的
-`app-universal-release.apk`。**安装/升级**：`adb install -r <apk>`（升级用 `-r` 保留
+从发布 tag 的产品源码构建双架构 APK（无 `--debug` 即 release）：
+
+```bash
+cargo tauri android build --target aarch64 --target x86_64 --apk --ci
+# 产物：src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+```
+
+用 Android SDK 的 `aapt dump badging <apk>` 核对版本、`arm64-v8a` / `x86_64` 架构和非 debuggable 状态，用 `apksigner verify --verbose --print-certs <apk>` 核对有效签名及证书与上一版本一致。安装升级验证通过后，重命名为 `RustRss_X.Y.Z_android-universal.apk`，用 `gh release upload vX.Y.Z <apk>` 上传到对应 Release，并下载回读核对 SHA-256。私钥和 `keystore.properties` 均不提交、不作为附件上传。Android CI 生成 debug APK 用于构建检查，目前不自动发布签名 release APK。
+
+**安装/升级**：`adb install -r <apk>`（升级用 `-r` 保留
 应用数据；侧载到无 adb 的手机时，把 APK 传到设备点击安装，升级直接覆盖安装同签名 APK，
 数据保留）。换签名密钥 = 换应用身份，必须先卸载旧版再装新版（数据不迁移）。
 
@@ -64,7 +72,7 @@ keyPassword=<生成时输入的 key 口令>
 
 ## 发布
 
-push 到 master 或提交 PR 会运行测试与 Clippy，不生成安装包。nightly 安装包需从 `master` 手动触发；正式版则由匹配版本的 `v*` tag 触发。版本号需要同时更新根 `Cargo.toml` 和 `src-tauri/tauri.conf.json`，并与 tag 一致；发布工作流会在构建前检查三者。正式版包含 Linux `.deb`、Windows NSIS 和 macOS `.dmg`。手动触发 release 工作流只构建检查产物，不创建 Release。工作流定义和平台依赖见 [`.github/workflows/release.yml`](../.github/workflows/release.yml)；macOS 包目前未签名。
+push 到 master 或提交 PR 会运行测试与 Clippy，不生成安装包。nightly 安装包需从 `master` 手动触发；正式桌面版则由匹配版本的 `v*` tag 触发。版本号需要同时更新根 `Cargo.toml` 和 `src-tauri/tauri.conf.json`，并与 tag 一致；发布工作流会在构建前检查三者。工作流生成 Linux `.deb`、Windows NSIS 和 macOS `.dmg`；Android 签名 APK 按上面的步骤构建并补到同一 Release。手动触发 release 工作流只构建检查产物，不创建 Release。工作流定义和平台依赖见 [`.github/workflows/release.yml`](../.github/workflows/release.yml)；macOS 包目前未签名。
 
 ## 项目资料
 

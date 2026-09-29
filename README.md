@@ -37,7 +37,8 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 1. 在根 `Cargo.toml` 的 `[workspace.package]` 和 `src-tauri/tauri.conf.json` 中同步更新版本号，提交版本变更。
 2. 更新 `CHANGELOG.md`，记录该版本变更和已知限制并提交。正式 Release 说明由工作流自动生成，发布时核对并补充 CHANGELOG 中的内容。
 3. 将上述提交推送到 `master`，再创建并推送与版本号一致的 `vX.Y.Z` tag。`release.yml` 会校验 tag 与两处版本号，构建 Linux `.deb`、Windows NSIS `.exe`、macOS arm64 `.dmg`，并创建 GitHub Release；macOS 包目前未签名。
-4. 从该次运行三个 build job 的 `Record bundle size` 摘要记录各安装包字节数，回填 `.chorus/specs/rss-reader/spec.md` 的「安装包体积实测值」条目。
+4. 从 tag 对应的产品源码，沿用项目发布密钥构建 Android ARM64 / x86_64 通用 release APK，检查版本、签名和安装升级后上传到同一 Release。命令与密钥配置见 [Android 发布步骤](docs/development.md#android)；`android-build.yml` 的 debug APK 仅用于持续构建检查，不会自动成为 Release 附件。
+5. 从正式附件记录各安装包字节数与 SHA-256，回填 `.chorus/specs/rss-reader/spec.md` 的「安装包体积实测值」条目和 `docs/releases/` 的发布记录。
 
 只需测量体积时，在 GitHub Actions 手动触发 `release.yml`（`workflow_dispatch`）：它构建并上传三平台产物，但不创建 Release；无需为测量打 `v*` tag。
 

@@ -20,6 +20,6 @@
 - Windows/macOS 原生编译与桌面打包已通过 CI；截图界面、缩放、隐藏/最小化、超时及文件生命周期仍待真机运行验收。
 - GNOME Wayland、物理跨屏、真实最小化和第三方 GUI MCP 客户端等仍保留待验项。
 - 桌面 Release 提供 Linux deb（Ubuntu 24.04 基线）、Windows NSIS 和 macOS arm64 dmg。macOS 包未签名，首次打开需右键选择「打开」。
-- Android 构建与侧载步骤见 [开发文档](docs/development.md)，本次桌面 Release 不包含 APK。
+- Android Release 提供使用项目发布密钥签名的 ARM64 / x86_64 通用 APK（Android 7.0+）；构建与侧载步骤见 [开发文档](docs/development.md)。
 
 [0.2.0]: https://github.com/expoli/RustRss/compare/v0.1.0...v0.2.0
