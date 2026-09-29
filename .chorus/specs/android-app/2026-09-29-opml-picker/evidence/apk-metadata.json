@@ -10,5 +10,6 @@
   "versionName": "0.2.0",
   "versionCode": 2000,
   "non_debuggable": true,
-  "kind": "OPML import fix preview; includes phone UX; published0.2.0 remains unchanged"
+  "kind": "OPML import fix preview; includes phone UX; published0.2.0 remains unchanged",
+  "production_source_commit": "02884cfcc55dfd23ea7e61814e07a9626e6d33cf"
 }

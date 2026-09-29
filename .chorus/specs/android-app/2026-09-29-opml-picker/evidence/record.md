@@ -26,3 +26,13 @@ Android `tauri-plugin-dialog 2.7.3` 把扩展名过滤经 MimeTypeMap 转成 EXT
 ## 验证边界
 
 API36 x86_64 /系统 Downloads 提供者，未直接操作用户实体手机或所有第三方文档/网盘提供者。新版包含此前手机输入/设置修复，正式 v0.2.0 tag/资产保持不变。
+
+## 签名安装包的实际界面检查
+
+新版 SHA-256 `cc1712bb44c19f4e42ab755fe4f5a575ffb10652ff0dc25f477286a7f69aa1f9`，ARM64/x86_64 通用、非 debuggable、versionName 0.2.0 / code2000；证书 SHA256 与原发布密钥一致，见 metadata/signature。
+
+先在上一轮已签名手机界面预览包中，通过原生 Settings → Data → Import OPML 进入选择器：`.opml` 仍禁用，`.xml` 可以实际导入。其订阅行带失败抓取状态和0未读，原生无障碍文本为 `Picker xml ● 0`（不是仅标题）；核对完整标题前缀并截屏。
+
+使用 `adb install -r` 覆盖新预览 APK 后，UID 不变、原 XML 订阅保留；通过相同设置按钮，普通 MIME `.opml` 已启用，实际点击可导入，订阅页同时出现 Picker generic 与 Picker xml。手机纵向设置首页仍保留。`signed-results.json`、`signed-*.png` 为原生实际界面证据；UI 文件选择与调试命令检查分别记录。
+
+这是后续预览包，正式 v0.2.0 tag 与四项资产未修改。
