@@ -1018,7 +1018,9 @@ function renderList() {
       actions.appendChild(retry);
       li.appendChild(actions);
     } else {
-      li.textContent = t(listEmptyKey());
+      const emptyKey = listEmptyKey();
+      li.textContent = t(emptyKey === 'list.emptySubscriptions' && mobileSettings()
+        ? 'list.emptySubscriptionsMobile' : emptyKey);
     }
     list.appendChild(li);
     installSentinel();

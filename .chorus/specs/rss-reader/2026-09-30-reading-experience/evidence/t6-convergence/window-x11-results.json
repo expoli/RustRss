@@ -1,0 +1,93 @@
+{
+  "binarySha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
+  "session": "real XWayland display with isolated owned app HOME/XDG_DATA_HOME/DB",
+  "input": "WebKit button activation; Tauri native window state and process exit readbacks",
+  "checks": [
+    {
+      "name": "native-window",
+      "detail": {
+        "size": {
+          "type": "Physical",
+          "width": 1240,
+          "height": 820
+        },
+        "minimized": false,
+        "maximized": false,
+        "visible": false
+      }
+    },
+    {
+      "name": "native-maximize",
+      "detail": {
+        "before": {
+          "size": {
+            "type": "Physical",
+            "width": 1240,
+            "height": 820
+          },
+          "minimized": false,
+          "maximized": false,
+          "visible": false
+        },
+        "after": {
+          "size": {
+            "type": "Physical",
+            "width": 2560,
+            "height": 1536
+          },
+          "minimized": false,
+          "maximized": true,
+          "visible": true
+        }
+      }
+    },
+    {
+      "name": "native-unmaximize",
+      "detail": {
+        "size": {
+          "type": "Physical",
+          "width": 1240,
+          "height": 820
+        },
+        "minimized": false,
+        "maximized": false,
+        "visible": true
+      }
+    },
+    {
+      "name": "native-minimize",
+      "passed": true,
+      "detail": {
+        "size": {
+          "type": "Physical",
+          "width": 1240,
+          "height": 820
+        },
+        "minimized": true,
+        "maximized": false,
+        "visible": true
+      }
+    },
+    {
+      "name": "native-restore-after-minimize",
+      "passed": false,
+      "detail": {
+        "size": {
+          "type": "Physical",
+          "width": 1240,
+          "height": 820
+        },
+        "minimized": true,
+        "maximized": false,
+        "visible": true
+      }
+    },
+    {
+      "name": "native-close-exit",
+      "detail": {
+        "exitCode": 0
+      }
+    }
+  ],
+  "passed": false
+}

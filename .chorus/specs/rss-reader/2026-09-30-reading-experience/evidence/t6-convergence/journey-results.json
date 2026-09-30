@@ -1,0 +1,111 @@
+{
+  "binarySha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
+  "feedUrl": "http://127.0.0.1:37425/feed.xml",
+  "checks": [
+    {
+      "name": "add-form-open",
+      "detail": null
+    },
+    {
+      "name": "add-feed-and-fetch",
+      "detail": {
+        "feed": [
+          4,
+          "T6 Local Reading",
+          null
+        ],
+        "entry": [
+          31,
+          "T6 Converged Article",
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "folder-created",
+      "detail": 25
+    },
+    {
+      "name": "feed-moved-via-menu",
+      "detail": 25
+    },
+    {
+      "name": "sort-oldest-saved",
+      "detail": [
+        "oldest"
+      ]
+    },
+    {
+      "name": "search-finds-added-article",
+      "detail": null
+    },
+    {
+      "name": "reader-opened",
+      "detail": null
+    },
+    {
+      "name": "star-later-independent",
+      "detail": [
+        1,
+        1
+      ]
+    },
+    {
+      "name": "tag-attached",
+      "detail": [
+        1
+      ]
+    },
+    {
+      "name": "return-from-search-reader",
+      "detail": null
+    },
+    {
+      "name": "focus-layout-width-anchor",
+      "detail": {
+        "before": {
+          "top": 115.6875,
+          "scroll": 420,
+          "entry": "1"
+        },
+        "after": {
+          "top": 115.6875,
+          "scroll": 420,
+          "same": true,
+          "entry": "1",
+          "width": "760px",
+          "grid": "150px 220px 870px"
+        }
+      }
+    },
+    {
+      "name": "reading-cancel-restores-saved-width",
+      "detail": null
+    },
+    {
+      "name": "appearance-preview-zero-write",
+      "detail": null
+    },
+    {
+      "name": "appearance-save-persists",
+      "detail": null
+    },
+    {
+      "name": "appearance-cancel-zero-write",
+      "detail": null
+    },
+    {
+      "name": "theme-return-keeps-reader",
+      "detail": null
+    },
+    {
+      "name": "native-opml-export",
+      "detail": {
+        "path": "/tmp/rustrss-t6-journey-rexj4lea/home/t6-export.opml",
+        "bytes": 840
+      }
+    }
+  ],
+  "passed": true
+}

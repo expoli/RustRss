@@ -1,0 +1,5 @@
+Accepting client connections on sockets: QList("wayland-rustrss-t6-window")
+kwin_xkbcommon: XKB: Multiple definitions of group 0 name in map 'basic'; Using 'Chinese', ignoring 'English (US)'
+kwin_screencast: Failed to connect PipeWire context
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Unable to open /proc/2832787/root")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Unable to open /proc/2832787/root")

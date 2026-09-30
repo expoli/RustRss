@@ -1,0 +1,8 @@
+
+** (rustrss-desktop:2832847): WARNING **: 21:57:34.664: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+
+(rustrss-desktop:2832847): libayatana-appindicator-WARNING **: 21:57:34.707: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+
+(rustrss-desktop:2832847): Gtk-CRITICAL **: 21:57:34.870: gtk_widget_get_scale_factor: assertion 'GTK_IS_WIDGET (widget)' failed
+
+(rustrss-desktop:2832847): Gtk-CRITICAL **: 21:57:39.246: gtk_widget_get_scale_factor: assertion 'GTK_IS_WIDGET (widget)' failed

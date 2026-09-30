@@ -1327,3 +1327,14 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] 物理 ARM64 Android：360×800 与更小/更大系统字体下，双行标题首段≤40%，长标题与 Back/Aa/星标/稍后读/更多不遮挡；屏幕阅读器实际朗读名称与状态。
 - [ ] 物理 Android：浏览器打开与系统分享表返回、离线图片替代文字、软键盘打开搜索并返回，Android Back 不退出应用或丢掉列表查询/滚动锚点。
 - [ ] Linux 实体键盘和 Windows/macOS：阅读更多的方向键、Enter 默认激活、Esc/焦点返回；Aa 预览/取消/保存后正文锚点及全文/AI/分享的平台行为。
+
+## 阅读体验 T6：桌面与平板汇合
+
+- [x] 重建 Linux WebKitGTK 产物，隔离 Xvfb 真窗口 920/959/960/961/1049/1050/1051/1280/1440 CSS px；三栏、工具栏、设置模态框无裁切/重复底栏。桌面配置最小宽 900，850 断点未冒充桌面窗口测试。
+- [x] Pixel Tablet 硬件 profile Android 36 AVD 安装本轮 APK，物理分辨率与 320 dpi、DPR 2 读回；768/849/850/851/959/960/961/1024 CSS px 每档保留截图，960/961 两侧导航与栏布局符合预期，显示覆盖值已恢复。
+- [x] Linux XTest 原生 Tab/Shift+Tab/Enter/Escape、`?`、`/`、右键菜单与设置模态焦点返回 20 项；单进程本地源→文件夹/标签→搜索/排序→阅读/星标/稍后读→主题草稿→原生 GTK OPML 导出 17 项及 SQLite/XML 读回。
+- [x] Clear/Paper/Slate × light/dark × en/zh-CN 十二格原生截图；栏宽、列表宽、字体、密度、自定义强调色保存后 CSS/SQLite/重启读回，主题对比度快照达阈值。
+- [ ] KDE Wayland 原生最小化：标题栏和直接 IPC 均返回成功，但 Tauri `isMinimized=false,isVisible=true`；同二进制 XWayland 返回 `isMinimized=true`，经 inspector `unminimize()/show()` 未读回恢复。需从任务栏手工恢复或核对 KWin compositor 窗口状态，再定位后端差异。
+- [ ] Windows/macOS 真机、实体平板、桌面标签原生拖拽、真实托盘和系统文件管理器/浏览器外链效果仍待验证；见逐 ID 桌面矩阵，不用 Linux/模拟器结果替代。
+
+证据：[T6 原生记录](2026-09-30-reading-experience/evidence/t6-convergence/record.md)与[桌面逐 ID 矩阵](2026-09-30-reading-experience/evidence/t6-convergence/desktop-action-matrix.md)。

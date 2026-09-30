@@ -1,0 +1,109 @@
+{
+  "binarySha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
+  "session": "real Wayland display with isolated owned app HOME/XDG_DATA_HOME/DB",
+  "input": "WebKit button activation; Tauri native window state and process exit readbacks",
+  "checks": [
+    {
+      "name": "native-window",
+      "detail": {
+        "size": {
+          "type": "Physical",
+          "width": 2480,
+          "height": 1640
+        },
+        "minimized": false,
+        "maximized": false,
+        "visible": false
+      }
+    },
+    {
+      "name": "native-maximize",
+      "detail": {
+        "before": {
+          "size": {
+            "type": "Physical",
+            "width": 2480,
+            "height": 1640
+          },
+          "minimized": false,
+          "maximized": false,
+          "visible": false
+        },
+        "after": {
+          "size": {
+            "type": "Physical",
+            "width": 3658,
+            "height": 2194
+          },
+          "minimized": false,
+          "maximized": true,
+          "visible": true
+        }
+      }
+    },
+    {
+      "name": "native-unmaximize",
+      "detail": {
+        "size": {
+          "type": "Physical",
+          "width": 2480,
+          "height": 1640
+        },
+        "minimized": false,
+        "maximized": false,
+        "visible": true
+      }
+    },
+    {
+      "name": "native-minimize",
+      "passed": false,
+      "detail": {
+        "size": {
+          "type": "Physical",
+          "width": 2480,
+          "height": 1640
+        },
+        "minimized": false,
+        "maximized": false,
+        "visible": true
+      }
+    },
+    {
+      "name": "native-minimize-direct-ipc-diagnostic",
+      "passed": false,
+      "detail": {
+        "result": "ok",
+        "after": {
+          "size": {
+            "type": "Physical",
+            "width": 2480,
+            "height": 1640
+          },
+          "minimized": false,
+          "maximized": false,
+          "visible": true
+        }
+      }
+    },
+    {
+      "name": "native-restore-after-minimize",
+      "detail": {
+        "size": {
+          "type": "Physical",
+          "width": 2480,
+          "height": 1640
+        },
+        "minimized": false,
+        "maximized": false,
+        "visible": true
+      }
+    },
+    {
+      "name": "native-close-exit",
+      "detail": {
+        "exitCode": 0
+      }
+    }
+  ],
+  "passed": false
+}
