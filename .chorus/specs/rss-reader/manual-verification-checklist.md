@@ -1319,3 +1319,11 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 ## 2026-09-30 阅读体验 T2 操作面板
 
 任务 `17a5a3e7-c1b6-447f-a880-cdf44e2a37b4`：源、文件夹与标签显式更多入口、手机内部选择页、桌面级联菜单与键盘、危险确认。隔离 Android API 36 x86_64 模拟器 37 项运行检查、启用 TalkBack 后的原生无障碍树、Linux 虚拟 KWin Wayland/WebKitGTK 11 项菜单键盘检查、通用 ARM64+x86_64 签名 APK 哈希与复现步骤见 [T2 证据](2026-09-30-reading-experience/evidence/t2-menu/record.md)。`node --test scripts/tests/*.test.cjs` 61/61、`cargo test --workspace` 全通过；物理手机、语音输出、Windows/macOS 和原生实体键盘注入未在本轮声称通过。
+
+## 阅读体验 T4：物理设备与桌面组合复核
+
+自动化已在任务独立 Android 36 x86_64 AVD、虚拟 KWin Linux WebKitGTK 完成，结果见 [T4 设备记录](2026-09-30-reading-experience/evidence/t4-reader/record.md)。下面保留自动化没有声称覆盖的平台行为。
+
+- [ ] 物理 ARM64 Android：360×800 与更小/更大系统字体下，双行标题首段≤40%，长标题与 Back/Aa/星标/稍后读/更多不遮挡；屏幕阅读器实际朗读名称与状态。
+- [ ] 物理 Android：浏览器打开与系统分享表返回、离线图片替代文字、软键盘打开搜索并返回，Android Back 不退出应用或丢掉列表查询/滚动锚点。
+- [ ] Linux 实体键盘和 Windows/macOS：阅读更多的方向键、Enter 默认激活、Esc/焦点返回；Aa 预览/取消/保存后正文锚点及全文/AI/分享的平台行为。

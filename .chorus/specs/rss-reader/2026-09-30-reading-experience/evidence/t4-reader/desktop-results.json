@@ -1,0 +1,15 @@
+{
+  "window": "Linux WebKitGTK in virtual KWin Wayland",
+  "input": "DOM KeyboardEvent via WebKit Inspector",
+  "checks": [
+    "reader More exposes desktop menu role",
+    "first reader menu item receives focus",
+    "ArrowDown moves reader menu focus",
+    "Escape closes and restores More focus",
+    "direct article opening marked read",
+    "focused mark-unread activation writes once",
+    "Aa reading editor opens with named size field",
+    "Aa Close button dismisses dialog"
+  ],
+  "passed": true
+}

@@ -215,5 +215,6 @@ created: 2026-09-20
 
 - [x] T1 共享静态 SVG 图标、间距/五类控件样式与本地化可访问名称已接入列表、阅读、菜单和设置；原主题配置结构及保存覆盖不变。六套预设/明暗真组件矩阵、60 项对比度、设置草稿/历史/CAS 与 MCP 预览检查见 [T1 证据](2026-09-30-reading-experience/evidence/README.md)。360×800 粗指针 CSS 夹具检查 13 个主要目标≥48×48；Android 原生命中仍待测。
 - [x] T2 订阅、文件夹、标签与文章标签操作入口接入手机底部面板和桌面键盘菜单；独立 AVD 上 37 项操作、输入法/窄屏与 TalkBack 语义树，Linux WebKitGTK 上 11 项菜单键盘检查见 [T2 证据](2026-09-30-reading-experience/evidence/t2-menu/record.md)。物理 ARM64 与 Windows/macOS 原生行为留待 T7。
+- [ ] T4 实现和证据已提交待独立验证：手机阅读首屏在 360 CSS px 的双行标题下首段位于可用高度 27.85%，四行中英长标题下为 35.22%；Back、Aa、星标、稍后读和更多均保留。M09–M12 Android 原生操作、AI 合成端点确认/结果/失败恢复、全文重试、离线图片替代文字、Aa 锚点、返回列表/搜索状态、TalkBack 语义树和桌面 WebKitGTK 键盘主路径见 [T4 证据](2026-09-30-reading-experience/evidence/t4-reader/record.md)。物理 ARM64、实体桌面键盘和跨端组合仍由 T7 复核。
 - [ ] T2–T6 完成操作面板、列表、阅读、设置与桌面/平板汇合，并逐动作回填台账。
 - [ ] T7 用重建的 Android APK 和桌面产物完成同场景 before/after、原生触控/键盘/TalkBack、字号、断点及热路径集成验收；Windows/macOS 若不可用需明列未测项。

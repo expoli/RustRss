@@ -1,0 +1,279 @@
+{
+  "serial": "emulator-5582",
+  "fixtureSha256": "03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91",
+  "checks": [
+    {
+      "name": "reader-geometry-360",
+      "viewport": {
+        "width": 360,
+        "height": 776
+      },
+      "first": {
+        "x": 18,
+        "y": 273.29168701171875,
+        "width": 314.0952453613281,
+        "height": 21.696428298950195,
+        "bottom": 294.98811531066895
+      },
+      "title": {
+        "x": 18,
+        "y": 70.76190948486328,
+        "width": 314.0952453613281,
+        "height": 114.38095092773438,
+        "bottom": 185.14286041259766
+      },
+      "meta": {
+        "x": 18,
+        "y": 191.1428680419922,
+        "width": 314.0952453613281,
+        "height": 20.1488094329834,
+        "bottom": 211.2916774749756
+      },
+      "actions": {
+        "x": 18,
+        "y": 8,
+        "width": 314.0952453613281,
+        "height": 54.761905670166016,
+        "bottom": 62.761905670166016
+      },
+      "back": {
+        "x": 10,
+        "y": 8,
+        "width": 48,
+        "height": 48,
+        "bottom": 56
+      },
+      "buttons": [
+        {
+          "id": "act-aa",
+          "width": 48,
+          "height": 48,
+          "aria": null
+        },
+        {
+          "id": "act-star",
+          "width": 48,
+          "height": 48,
+          "aria": "加星标"
+        },
+        {
+          "id": "act-later",
+          "width": 48,
+          "height": 48,
+          "aria": "稍后读"
+        },
+        {
+          "id": "act-more",
+          "width": 48,
+          "height": 48,
+          "aria": null
+        }
+      ],
+      "pageScrollWidth": 360,
+      "firstRatio": 0.35218000903572005
+    },
+    {
+      "name": "long-mixed-content-offline-image",
+      "paragraphs": 81,
+      "codeBlocks": 1,
+      "tables": 1,
+      "offlineImageFallback": "Fixture illustration",
+      "readerOverflow": false,
+      "articleOverflow": false
+    },
+    {
+      "name": "more-opens-with-zero-network-actions",
+      "rows": [
+        "标为未读",
+        "管理标签",
+        "浏览器打开",
+        "复制链接",
+        "分享",
+        "获取全文",
+        "AI 摘要",
+        "AI 翻译"
+      ],
+      "minHeight": 48,
+      "beforeMenu": {
+        "ai": 0,
+        "fulltext": 0
+      },
+      "afterMenu": {
+        "ai": 0,
+        "fulltext": 0
+      },
+      "autoReadRowIdentity": true,
+      "autoReadRowClass": true
+    },
+    {
+      "name": "more-native-back-focus-zero-actions",
+      "focus": "act-more",
+      "page": "reader"
+    },
+    {
+      "name": "read-star-later-store",
+      "markReadOnNavigate": false,
+      "directListTapRead": true,
+      "afterMenuUnread": false,
+      "starred": true,
+      "later": true
+    },
+    {
+      "name": "tag-search-create-attach-remove",
+      "attached": [
+        "T4Tag"
+      ],
+      "chip": {
+        "role": "button",
+        "tabIndex": 0,
+        "height": 48
+      }
+    },
+    {
+      "name": "copy-link-clipboard",
+      "matchesFixture": true
+    },
+    {
+      "name": "external-browser-open-back",
+      "opened": true,
+      "returnedToReader": true
+    },
+    {
+      "name": "share-native-open-cancel",
+      "sheet": true,
+      "returnedToReader": true
+    },
+    {
+      "name": "fulltext-failure-retry-available",
+      "needsFulltext": true,
+      "endpointRequests": 1
+    },
+    {
+      "name": "fulltext-retry-success-store",
+      "needsFulltext": false,
+      "endpointRequests": 2
+    },
+    {
+      "name": "short-title-first-paragraph",
+      "titleLines": 1.9996669742610904,
+      "firstRatio": 0.2784809230529156
+    },
+    {
+      "name": "fulltext-success-store",
+      "needsFulltext": false,
+      "hasSyntheticText": true
+    },
+    {
+      "name": "ai-confirm-synthetic-preview",
+      "endpoint": "http://10.0.2.2:18080/api/generate",
+      "headersRedacted": true,
+      "bodyChars": 2725,
+      "requestCountBeforeSend": 0
+    },
+    {
+      "name": "ai-cancel-zero-send",
+      "requestCount": 0
+    },
+    {
+      "name": "ai-summary-result",
+      "kind": "AI 摘要",
+      "meta": "Ollama/synthetic-t4｜本次新请求",
+      "requestCount": 1
+    },
+    {
+      "name": "ai-regenerate-replaced",
+      "requestCount": 2
+    },
+    {
+      "name": "ai-close-keeps-article",
+      "panelHidden": true,
+      "articleRetained": true,
+      "requestCount": 2
+    },
+    {
+      "name": "ai-translation-result",
+      "kind": "AI 翻译",
+      "requestCount": 3
+    },
+    {
+      "name": "ai-failure-retry",
+      "failed": true,
+      "requestCount": 4
+    },
+    {
+      "name": "ai-retry-and-dont-ask",
+      "recovered": true,
+      "confirmBeforeSend": false,
+      "requestCount": 5,
+      "kind": "AI 翻译",
+      "meta": "Ollama/synthetic-t4｜本次新请求"
+    },
+    {
+      "name": "aa-preview-cancel-save-anchor",
+      "revisionBefore": 0,
+      "revisionAfter": 1,
+      "fontBefore": 14,
+      "fontAfter": 15,
+      "storedReadSize": 15,
+      "beforeAa": {
+        "text": "Offline fixture paragraph for reade",
+        "top": -537.1130981445312,
+        "scrollTop": 899.8095092773438
+      },
+      "afterCancel": {
+        "text": "Offline fixture paragraph for reade",
+        "top": -537.1130981445312,
+        "scrollTop": 899.8095092773438
+      },
+      "afterSave": {
+        "text": "Offline fixture paragraph for reade",
+        "top": -537.1130981445312,
+        "scrollTop": 899.8095092773438
+      }
+    },
+    {
+      "name": "reader-back-list-state",
+      "before": {
+        "view": "all",
+        "scrollTop": 0,
+        "selected": "2",
+        "count": "30/30",
+        "search": ""
+      },
+      "after": {
+        "view": "all",
+        "scrollTop": 0,
+        "selected": "2",
+        "count": "30/30",
+        "search": ""
+      }
+    },
+    {
+      "name": "search-reader-android-back-ime",
+      "before": {
+        "query": "English",
+        "kind": "search",
+        "count": "5",
+        "rowId": "13"
+      },
+      "after": {
+        "query": "English",
+        "kind": "search",
+        "count": "5",
+        "rowId": "13"
+      },
+      "imeHeight": 521.1428833007812
+    },
+    {
+      "name": "search-cancel-all-scroll-anchor",
+      "before": 499.80950927734375,
+      "after": 499.80950927734375
+    },
+    {
+      "name": "tag-chip-opens-tag-view",
+      "kind": "tag",
+      "tagId": "1",
+      "hasTaggedEntry": true
+    }
+  ]
+}

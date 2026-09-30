@@ -35,6 +35,8 @@ Android 手机界面中，文章、订阅、收藏和设置共用完整的底部
 
 订阅、文件夹和标签行现提供独立的“更多操作”按钮；手机以带内部选择页的底部操作面板呈现刷新间隔、移动文件夹及标签颜色，桌面保留右键级联菜单并支持方向键与 Esc。添加订阅支持网站候选源选择和 RSSHub 地址输入；删除文件夹、取消订阅和删除标签会先显示影响并要求确认。Android 模拟器、Linux WebKitGTK 键盘与 TalkBack 语义树的验证步骤及范围见 [T2 操作面板证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t2-menu/record.md)。
 
+手机阅读页把返回、Aa、星标、稍后读和“更多”保持在首屏；“更多”承载已读、标签、链接、分享、全文和 AI 动作，打开菜单本身不会请求全文或 AI。AI 发送前仍展示目标、脱敏头和正文预览，可取消或选择以后不再询问；离线图片失败时显示替代文字。Aa 保存会保持当前正文锚点。Android 原生操作、桌面键盘及 TalkBack 语义树的范围和安装包哈希见 [T4 阅读器证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t4-reader/record.md)。
+
 Windows 主题预览截图现通过 WebView2 的原生内容截图接口生成 PNG，并沿用 MCP 预览的修订号、像素标记、文件配额与到期规则。该适配器的 Windows 真机运行验收仍在进行中；当前不能把 Linux 截图结果当作 Windows 场景、缩放和最小化的通过证据。复验范围见 [Windows 预览验收记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/windows-capture.md)。
 macOS 主题预览现使用 WKWebView 内容截图适配器；真实 macOS 会话的三场景、缩放与失败路径仍待运行验收，步骤和证据状态见 [macOS 截图记录](.chorus/specs/rss-reader/2026-09-23-theme-preview/macos-native-capture.md)。
 

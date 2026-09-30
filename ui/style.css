@@ -555,8 +555,8 @@ main {
 .entries li.active .row-tag-btn { opacity: .75; }
 .row-tag-btn:hover { opacity: 1; color: var(--accent); border-color: var(--accent); }
 
-/* 阅读器 meta 行的 chips + 「＋标签」（常驻：这是打标的主入口） */
-.reader-head .tag-bar {
+/* 阅读器标签单列，元信息保持一行；chips 更新不移动正文的其他节点。 */
+.reader-tags-row .tag-bar {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -564,7 +564,7 @@ main {
   /* 常驻固定高度：chips 出现/消失不引起正文位移（布局跳动红线） */
   min-height: 20px;
 }
-.reader-head .tag-bar .tag-add {
+.reader-tags-row .tag-bar .tag-add {
   border: 1px dashed var(--line);
   border-radius: 9px;
   background: transparent;
@@ -576,7 +576,8 @@ main {
   cursor: pointer;
   white-space: nowrap;
 }
-.reader-head .tag-bar .tag-add:hover { color: var(--accent); border-color: var(--accent); }
+.reader-tags-row .tag-bar .tag-add:hover { color: var(--accent); border-color: var(--accent); }
+.reader-tags-row { max-width: var(--reader-width, 680px); margin-bottom: 12px; }
 
 /* 标签选择器：输入框常驻焦点 + 候选行（最近使用优先序由 core 直出） */
 .tag-sheet { width: min(420px, 92vw); }
@@ -955,6 +956,7 @@ main {
 
 .reader-head h1 { font-size: 24px; line-height: 1.3; margin: 0 0 6px; }
 .reader-head .meta { color: var(--fg-dim); font-size: 13px; margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+.reader-head h1, .article { overflow-wrap: anywhere; }
 
 .reader-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 /* 词中折行修复：中文按钮文案在窄窗口下被截成两行（「标为未/读」「浏览器打/开」）。
@@ -973,6 +975,7 @@ main {
 .article h3 { font-size: 16px; margin: 1.3em 0 .4em; }
 .article p { margin: 0 0 var(--paragraph-gap, 1em); }
 .article img { max-width: 100%; height: auto; border-radius: 6px; display: block; margin: 1em 0; }
+.reader-image-fallback { display: block; margin: 1em 0; padding: 12px; border: 1px dashed var(--line); border-radius: 6px; color: var(--fg-dim); overflow-wrap: anywhere; }
 .article a { color: var(--accent); }
 .article blockquote {
   margin: 1em 0;
@@ -996,6 +999,7 @@ main {
   line-height: 1.5;
 }
 .article table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 13px; }
+.article table { display: block; max-width: 100%; overflow-x: auto; }
 .article th, .article td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
 .article hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
 
@@ -1437,16 +1441,56 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   .entries .summary { line-height: 1.4; }
 
   /* ---- 全屏阅读器 ---- */
+  body[data-mpage="reader"] > .toolbar { display: none; }
   body[data-mpage="reader"] #m-reader-back {
-    display: inline-block;
-    align-self: flex-start;
-    margin: 10px 18px 0;
-    padding: 8px 14px;
+    display: inline-flex;
+    position: absolute;
+    z-index: 8;
+    top: 8px;
+    left: 10px;
+    margin: 0;
+    padding: 8px;
+    width: 48px;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+    overflow: hidden;
   }
-  .reader { padding: 14px 18px 40px; }
-  .reader-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-  .reader-actions button { padding: 9px 12px; min-height: 48px; }
-  .reader-head .tag-bar .tag-add { min-width: 48px; min-height: 48px; }
+  #m-reader-back .ui-icon { width: 22px; height: 22px; }
+  .reader { padding: 8px 18px 40px; overflow-x: hidden; display: flex; flex-direction: column; }
+  .reader-actions {
+    order: -1;
+    position: sticky;
+    top: -8px;
+    z-index: 7;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    justify-content: flex-end;
+    padding: 0 0 6px 50px;
+    margin: 0 0 8px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .reader-actions button { padding: 8px; min-width: 48px; min-height: 48px; justify-content: center; }
+  .reader-actions .action-label { display: none; }
+  .reader-head h1 { font-size: 22px; line-height: 1.3; }
+  .reader-head .meta {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    margin-bottom: 6px;
+  }
+  .reader-head .meta > span { flex: none; }
+  .reader-tags-row { margin-bottom: 8px; }
+  .reader-tags-row .tag-bar .tag-add { min-width: 48px; min-height: 48px; }
+  .reader-tags-row .tag-chip { min-height: 48px; box-sizing: border-box; }
+  .ai-panel-head { flex-wrap: wrap; }
+  .ai-panel-head button, #aa-close, #aa-dialog .theme-editor-actions button,
+  #ai-confirm-overlay button, #tag-picker-close { min-width: 48px; min-height: 48px; }
+  .tag-picker-list li { min-height: 48px; box-sizing: border-box; }
 
   /* ---- 触控目标 ---- */
   .toolbar button { padding: 8px 12px; min-height: 48px; white-space: nowrap; }

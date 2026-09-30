@@ -1,0 +1,209 @@
+{
+  "serial": "emulator-5582",
+  "scenes": [
+    {
+      "slug": "zh-light",
+      "settings": {
+        "locale": "zh-CN",
+        "theme": "light"
+      },
+      "viewport": {
+        "width": 360,
+        "height": 776
+      },
+      "titleLines": 3.999333948522181,
+      "firstY": 273.29168701171875,
+      "firstRatio": 0.35218000903572005,
+      "metaHeight": 20.1488094329834,
+      "buttons": [
+        {
+          "id": "act-aa",
+          "width": 48,
+          "height": 48,
+          "label": "Aa"
+        },
+        {
+          "id": "act-star",
+          "width": 48,
+          "height": 48,
+          "label": "加星标"
+        },
+        {
+          "id": "act-later",
+          "width": 48,
+          "height": 48,
+          "label": "稍后读"
+        },
+        {
+          "id": "act-more",
+          "width": 48,
+          "height": 48,
+          "label": "更多"
+        }
+      ],
+      "back": {
+        "width": 48,
+        "height": 48
+      },
+      "readerOverflow": false,
+      "pageOverflow": false,
+      "background": "rgb(247, 248, 250)",
+      "color": "rgb(28, 31, 38)",
+      "more": "更多",
+      "offlineFallback": "Fixture illustration"
+    },
+    {
+      "slug": "zh-dark",
+      "settings": {
+        "locale": "zh-CN",
+        "theme": "dark"
+      },
+      "viewport": {
+        "width": 360,
+        "height": 776
+      },
+      "titleLines": 3.999333948522181,
+      "firstY": 273.29168701171875,
+      "firstRatio": 0.35218000903572005,
+      "metaHeight": 20.1488094329834,
+      "buttons": [
+        {
+          "id": "act-aa",
+          "width": 48,
+          "height": 48,
+          "label": "Aa"
+        },
+        {
+          "id": "act-star",
+          "width": 48,
+          "height": 48,
+          "label": "加星标"
+        },
+        {
+          "id": "act-later",
+          "width": 48,
+          "height": 48,
+          "label": "稍后读"
+        },
+        {
+          "id": "act-more",
+          "width": 48,
+          "height": 48,
+          "label": "更多"
+        }
+      ],
+      "back": {
+        "width": 48,
+        "height": 48
+      },
+      "readerOverflow": false,
+      "pageOverflow": false,
+      "background": "rgb(20, 22, 26)",
+      "color": "rgb(230, 232, 236)",
+      "more": "更多",
+      "offlineFallback": "Fixture illustration"
+    },
+    {
+      "slug": "en-light",
+      "settings": {
+        "locale": "en",
+        "theme": "light"
+      },
+      "viewport": {
+        "width": 360,
+        "height": 776
+      },
+      "titleLines": 3.999333948522181,
+      "firstY": 273.29168701171875,
+      "firstRatio": 0.35218000903572005,
+      "metaHeight": 20.1488094329834,
+      "buttons": [
+        {
+          "id": "act-aa",
+          "width": 48,
+          "height": 48,
+          "label": "Aa"
+        },
+        {
+          "id": "act-star",
+          "width": 48,
+          "height": 48,
+          "label": "Star"
+        },
+        {
+          "id": "act-later",
+          "width": 48,
+          "height": 48,
+          "label": "Read later"
+        },
+        {
+          "id": "act-more",
+          "width": 49.77381134033203,
+          "height": 48,
+          "label": "More"
+        }
+      ],
+      "back": {
+        "width": 48,
+        "height": 48
+      },
+      "readerOverflow": false,
+      "pageOverflow": false,
+      "background": "rgb(247, 248, 250)",
+      "color": "rgb(28, 31, 38)",
+      "more": "More",
+      "offlineFallback": "Fixture illustration"
+    },
+    {
+      "slug": "en-dark",
+      "settings": {
+        "locale": "en",
+        "theme": "dark"
+      },
+      "viewport": {
+        "width": 360,
+        "height": 776
+      },
+      "titleLines": 3.999333948522181,
+      "firstY": 273.29168701171875,
+      "firstRatio": 0.35218000903572005,
+      "metaHeight": 20.1488094329834,
+      "buttons": [
+        {
+          "id": "act-aa",
+          "width": 48,
+          "height": 48,
+          "label": "Aa"
+        },
+        {
+          "id": "act-star",
+          "width": 48,
+          "height": 48,
+          "label": "Star"
+        },
+        {
+          "id": "act-later",
+          "width": 48,
+          "height": 48,
+          "label": "Read later"
+        },
+        {
+          "id": "act-more",
+          "width": 49.77381134033203,
+          "height": 48,
+          "label": "More"
+        }
+      ],
+      "back": {
+        "width": 48,
+        "height": 48
+      },
+      "readerOverflow": false,
+      "pageOverflow": false,
+      "background": "rgb(20, 22, 26)",
+      "color": "rgb(230, 232, 236)",
+      "more": "More",
+      "offlineFallback": "Fixture illustration"
+    }
+  ]
+}

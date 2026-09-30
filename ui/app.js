@@ -1210,21 +1210,16 @@ function renderReader(entry) {
   reader.innerHTML = window.RustRssComponents.readerHead({
     title: escapeHtml(entry.title),
     meta: `<span>${escapeHtml(entry.feed_title)}</span><span>${fmtTime(entry.published_at)}</span>
-      ${entry.author ? `<span>${escapeHtml(entry.author)}</span>` : ''}
-      <span class="tag-bar" id="reader-tags">${readerTagChipsHtml(entry)}</span>`,
+      ${entry.author ? `<span>${escapeHtml(entry.author)}</span>` : ''}`,
   });
   reader.insertAdjacentHTML('beforeend', `
-    <div class="reader-actions">
+    <div class="reader-actions" role="toolbar" aria-label="${t('reader.actions')}">
       <button id="act-aa" aria-haspopup="dialog" title="${t('theme.reading')}">Aa</button>
-      <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
-      <button id="act-star">${window.RustRssIcons.svg('star')}<span class="action-label">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</span></button>
-      <button id="act-later" class="${entry.read_later ? 'later-active' : ''}">${window.RustRssIcons.svg('later')}<span class="action-label">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</span></button>
-      <button id="act-tags" aria-haspopup="dialog">${t('menu.articleTags')}</button>
-      ${entry.url ? `<button id="act-open">${t('reader.openInBrowser')}</button><button id="act-copy">${t('reader.copyLink')}</button><button id="act-share">${t('reader.share')}</button>` : ''}
-      ${entry.needs_fulltext ? `<button id="act-fulltext" title="${t('reader.fetchFulltextTitle')}">${t('reader.fetchFulltext')}</button>` : ''}
-      <button id="act-summarize" title="${t('reader.summarizeTitle')}">${t('reader.summarize')}</button>
-      <button id="act-translate" title="${t('reader.translateTitle')}">${t('reader.translate')}</button>
+      <button id="act-star" aria-pressed="${!!entry.starred}" aria-label="${entry.starred ? t('reader.removeStar') : t('reader.addStar')}">${window.RustRssIcons.svg('star')}<span class="action-label">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</span></button>
+      <button id="act-later" class="${entry.read_later ? 'later-active' : ''}" aria-pressed="${!!entry.read_later}" aria-label="${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}">${window.RustRssIcons.svg('later')}<span class="action-label">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</span></button>
+      <button id="act-more" aria-haspopup="menu">${t('reader.more')}</button>
     </div>
+    <div class="reader-tags-row"><span class="tag-bar" id="reader-tags">${readerTagChipsHtml(entry)}</span></div>
     <div id="ai-panel" class="ai-panel hidden">
       <div class="ai-panel-head">
         <b id="ai-panel-title"></b>
@@ -1258,24 +1253,11 @@ function renderReader(entry) {
   );
 
   el('act-aa').onclick = openAa;
-  el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
   el('act-later').onclick = () => toggleReadLater();
-  el('act-tags').onclick = () => openTagPicker(entry.id);
-  el('act-summarize').onclick = () => runAi('summarize');
-  el('act-translate').onclick = () => runAi('translate');
+  el('act-more').onclick = (ev) => { ev.stopPropagation(); openReaderMore(ev, entry); };
   el('ai-regenerate').onclick = () => runAi(currentAiTask, { refresh: true });
   el('ai-close').onclick = () => el('ai-panel').classList.add('hidden');
-  if (entry.url) {
-    el('act-open').onclick = () => invoke('open_external', { url: entry.url }).catch((e) => setStatus(e.message, true));
-    el('act-copy').onclick = () =>
-      invoke('clip_write', { text: entry.url })
-        .then(() => setStatus(t('reader.linkCopied')))
-        .catch((e) => setStatus(t('reader.copyFailed', { error: e.message }), true));
-    el('act-share').onclick = () => shareEntry(entry);
-  }
-  // 只有摘要型条目的行会带这个按钮（needs_fulltext 由 Rust 侧判定，列表行恒为 false）
-  if (entry.needs_fulltext) el('act-fulltext').onclick = () => fetchFulltext(entry.id);
 
   // 正文里的链接交给系统浏览器，避免在应用内导航走丢
   reader.querySelectorAll('a[href]').forEach((a) => {
@@ -1284,7 +1266,44 @@ function renderReader(entry) {
       invoke('open_external', { url: a.getAttribute('href') }).catch((e) => setStatus(e.message, true));
     };
   });
+  // Keep offline articles readable when a remote illustration cannot load.
+  reader.querySelectorAll('.article img').forEach((img) => {
+    img.addEventListener('error', () => {
+      const fallback = document.createElement('span');
+      fallback.className = 'reader-image-fallback';
+      fallback.textContent = img.alt || t('reader.imageUnavailable');
+      fallback.setAttribute('role', 'img');
+      fallback.setAttribute('aria-label', fallback.textContent);
+      img.replaceWith(fallback);
+    }, { once: true });
+    if (img.complete && !img.naturalWidth) img.dispatchEvent(new Event('error'));
+  });
   reader.scrollTop = 0;
+}
+
+/** Actions are evaluated only when selected, never while the More sheet is rendered. */
+function openReaderMore(ev, entry) {
+  const shown = state.readerEntry?.id === entry.id ? state.readerEntry : entry;
+  const items = [
+    { header: true, label: t('reader.group.organize') },
+    { label: shown.read ? t('reader.markUnread') : t('reader.markRead'), action: () => toggleRead() },
+    { label: t('menu.articleTags'), action: () => openTagPicker(entry.id) },
+  ];
+  if (entry.url) items.push(
+    { header: true, label: t('reader.group.link') },
+    { label: t('reader.openInBrowser'), action: () => invoke('open_external', { url: entry.url }).catch((e) => setStatus(e.message, true)) },
+    { label: t('reader.copyLink'), action: () => invoke('clip_write', { text: entry.url })
+      .then(() => setStatus(t('reader.linkCopied')))
+      .catch((e) => setStatus(t('reader.copyFailed', { error: e.message }), true)) },
+    { label: t('reader.share'), action: () => shareEntry(entry) },
+  );
+  if (shown.needs_fulltext) items.push({ label: t('reader.fetchFulltext'), action: () => fetchFulltext(entry.id) });
+  items.push(
+    { header: true, label: t('reader.group.ai') },
+    { label: t('reader.summarize'), action: () => runAi('summarize') },
+    { label: t('reader.translate'), action: () => runAi('translate') },
+  );
+  openContextMenu(ev, items, el('act-more'), entry.title);
 }
 
 /// 分享文章：触屏设备经 Rust 命令（share.rs）→ Kotlin SharePlugin 拉起
@@ -1317,11 +1336,6 @@ let fulltextInFlight = null;
 async function fetchFulltext(entryId) {
   if (fulltextInFlight !== null) return;
   fulltextInFlight = entryId;
-  const btn = el('act-fulltext');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = t('reader.fetching');
-  }
   setStatus(t('reader.fetching'));
   try {
     const row = await invoke('fetch_fulltext', { entryId });
@@ -1334,10 +1348,6 @@ async function fetchFulltext(entryId) {
   } catch (e) {
     setStatus(t('status.fulltextFailed', { error: e.message }), true);
     log(`fetch_fulltext failed entry=${entryId}: ${e.message}`);
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = t('reader.fetchFulltext');
-    }
   } finally {
     fulltextInFlight = null;
   }
@@ -1360,7 +1370,7 @@ function tagColorStyle(tag) {
 
 /** 单个 chip（阅读器与列表行共用同一份构造：转义与 data 属性只有一处） */
 function tagChipHtml(tag) {
-  return `<span class="tag-chip" data-tag-id="${tag.id}" title="${escapeHtml(tag.name)}"${tagColorStyle(tag)}>${escapeHtml(tag.name)}</span>`;
+  return `<span class="tag-chip" role="button" tabindex="0" data-tag-id="${tag.id}" title="${escapeHtml(tag.name)}"${tagColorStyle(tag)}>${escapeHtml(tag.name)}</span>`;
 }
 
 /** 列表行 chips：≤2 个 + `+N`（被折叠的标签名进 title，悬停仍能看全） */
@@ -1655,6 +1665,11 @@ function initTagPickerEvents() {
  * 冒泡阶段再拦就已经晚了（点击 chip 会先打开文章再筛选）。
  */
 function initTagEvents() {
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.closest?.('.tag-chip[data-tag-id]')) {
+      ev.preventDefault(); ev.stopPropagation(); ev.target.click();
+    }
+  });
   document.addEventListener(
     'click',
     (ev) => {
@@ -2588,8 +2603,9 @@ async function cancelSearch() {
 async function markViewedRead(id) {
   await invoke('set_read', { ids: [id], read: true });
   state.readSessionIds.add(id);
-  const row = state.entries.find((e) => e.id === id);
-  if (row) row.read = true;
+  // The reader details were fetched before set_read. Keep both held rows in
+  // sync so the deferred More action reflects the state already stored.
+  setEntryFlag(id, 'read', true);
   // 未读视图里读过的文章**灰显而非立即删行**：立即删行会把高亮/键盘锚点/操作
   // 按钮的目标一起挪到下一篇，而阅读区还停在刚点开的文章——三者互相脱钩
   // （实测 2026-09-22：高亮在下一篇、正文还是被点的这篇）。灰显让「显示 =
@@ -2598,10 +2614,6 @@ async function markViewedRead(id) {
   if (unreadFilteredView()) {
     renderListCount();
   }
-  // renderReader 用的是 set_read 前取的 entry：按钮文案会滞后一拍（已读却写着
-  // 「标为已读」）。只改这一个按钮的文本，不重渲染整个阅读区。
-  const readBtn = el('act-read');
-  if (readBtn && state.selectedId === id) setText(readBtn, t('reader.markUnread'));
   // 计数刷新节流：连续快速阅读时合并为一次全量刷新（600ms 去抖）
   refreshCountsSoon();
 }
@@ -3549,14 +3561,10 @@ async function toggleRead() {
   // 双向都生效（读→灰、取消未读→恢复），计数口径同步更新。
   const li = rowEl(row.id);
   if (li) li.classList.toggle('read', read);
-  // 阅读区只改动作按钮的文案：正文 DOM（含滚动位置与 AI 面板内容）一个字节都不动。
+  // 正文 DOM（含滚动位置与 AI 面板内容）一个字节都不动。
   // 先前这里走 renderReader 全量重建——renderReader 内 `reader.scrollTop = 0` 加上
   // 重建 `ai-panel`（初始 class=hidden、空 body），按 u 就是「正文跳回顶部 + 已生成的
   // 摘要消失」（审计 P1-2）。
-  if (state.readerEntry && state.readerEntry.id === row.id) {
-    const readBtn = el('act-read');
-    if (readBtn) readBtn.textContent = read ? t('reader.markUnread') : t('reader.markRead');
-  }
   logReaderState('toggleRead', row.id);
   if (unreadFilteredView()) {
     renderListCount();
@@ -3588,7 +3596,12 @@ async function toggleStar() {
   // 阅读区只改按钮文案，正文 DOM 不动（同 toggleRead）
   if (state.readerEntry && state.readerEntry.id === row.id) {
     const starBtn = el('act-star');
-    if (starBtn) setText(starBtn.querySelector('.action-label'), starred ? t('reader.removeStar') : t('reader.addStar'));
+    if (starBtn) {
+      const label = starred ? t('reader.removeStar') : t('reader.addStar');
+      setText(starBtn.querySelector('.action-label'), label);
+      starBtn.setAttribute('aria-label', label);
+      starBtn.setAttribute('aria-pressed', String(starred));
+    }
   }
   // 星标视图里取消星标 → 该行不再属于本视图：定向移除该行（先前是 renderList 整表重建）
   if (state.view.kind === 'starred' && !starred) dropRowFromList(row.id);
@@ -3614,6 +3627,8 @@ async function toggleReadLater(id = state.selectedId) {
     if (laterBtn) {
       setText(laterBtn.querySelector('.action-label'), readLater ? t('reader.removeLater') : t('reader.markLater'));
       laterBtn.classList.toggle('later-active', readLater);
+      laterBtn.setAttribute('aria-label', readLater ? t('reader.removeLater') : t('reader.markLater'));
+      laterBtn.setAttribute('aria-pressed', String(readLater));
     }
   }
   // 稍后读视图里取消标记 → 该行离开视图：定向移除（先前走 loadAll 整体重载）
@@ -4058,8 +4073,15 @@ async function runAi(kind, { refresh = false } = {}) {
   if (!state.selectedId) return;
   // 快照：确认框开着的时候选中项可能变（Tab 逃逸/鼠标），但用户确认的是这一篇
   const entryId = state.selectedId;
-  currentAiTask = kind === 'translate' ? 'translate' : 'summarize';
   const panel = el('ai-panel');
+  const prior = {
+    hidden: panel.classList.contains('hidden'),
+    title: el('ai-panel-title').textContent,
+    meta: el('ai-panel-meta').textContent,
+    body: el('ai-panel-body').textContent,
+    task: currentAiTask,
+  };
+  currentAiTask = kind === 'translate' ? 'translate' : 'summarize';
   panel.classList.remove('hidden');
   el('ai-panel-title').textContent =
     currentAiTask === 'summarize' ? t('ai.panel.summary') : t('ai.panel.translate');
@@ -4085,7 +4107,11 @@ async function runAi(kind, { refresh = false } = {}) {
           // 命中缓存 → 根本不会外发，不需要问（仅 refresh=false 时会出现）
           setStatus(t('status.aiCachedNoSend'));
         } else if (!(await confirmAiSend(preview))) {
-          panel.classList.add('hidden');
+          panel.classList.toggle('hidden', prior.hidden);
+          el('ai-panel-title').textContent = prior.title;
+          el('ai-panel-meta').textContent = prior.meta;
+          el('ai-panel-body').textContent = prior.body;
+          currentAiTask = prior.task;
           setStatus(t('status.aiCancelled'));
           log('ai send cancelled by user');
           return;
@@ -4218,11 +4244,20 @@ let currentPane = 'appearance';
 let themeEditors = [];
 let aaEditor;
 let settingsReturnFocus;
-function mountThemeEditor(id, kind) {
+function mountThemeEditor(id, kind, preserveReaderAnchor = false) {
   return window.RustRssThemeSettings.createEditor(el(id), { kind,
     mobile: mobileSettings(),
     getSnapshot: () => state.settings.theme_snapshot, invoke, t, fontNames: () => state.fontFamilies,
-    apply: settings => { acceptSettings(settings); applyTheme(); themeEditors.forEach(e => e.refresh()); },
+    apply: settings => {
+      const reader = preserveReaderAnchor ? el('reader') : null;
+      const top = reader?.getBoundingClientRect().top;
+      const anchor = reader && [...reader.querySelectorAll('.article > *')]
+        .find(node => node.getBoundingClientRect().bottom > top + 8);
+      const anchorY = anchor?.getBoundingClientRect().top;
+      acceptSettings(settings); applyTheme();
+      if (anchor?.isConnected) reader.scrollTop += anchor.getBoundingClientRect().top - anchorY;
+      themeEditors.forEach(e => e.refresh());
+    },
   });
 }
 function closeSettings() {
@@ -4232,7 +4267,7 @@ function closeSettings() {
 }
 function openAa() {
   prefetchFontFamilies();
-  aaEditor?.dispose(); aaEditor = mountThemeEditor('aa-editor', 'reading');
+  aaEditor?.dispose(); aaEditor = mountThemeEditor('aa-editor', 'reading', true);
   el('aa-dialog').showModal();
 }
 

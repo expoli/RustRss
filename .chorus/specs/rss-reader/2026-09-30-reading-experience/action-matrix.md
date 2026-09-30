@@ -53,31 +53,31 @@
 | M08.pin | 置顶/取消置顶 | 右键 → 行更多/右键 | 双端 | 顺序变化；切换并回读 | T2 | 通过：[T2 设备与重启证据](evidence/t2-menu/record.md) |
 | M08.sort | 标签上移/下移、拖拽 | 拖拽/右键 → 更多排序/桌面拖拽 | 双端 | 无触屏拖拽依赖；移动并回读 | T2/T6 | 待验（T2 手机更多菜单上移/下移已通过；既有桌面拖拽的最终组合复核归 T6；[T2 证据](evidence/t2-menu/record.md)） |
 | M08.delete | 删除标签 | 右键 → 更多危险组 | 双端 | 影响数量与确认；取消/确认及焦点去向 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M09.search | 搜索标签 | 标签选择器/t → 阅读更多/选择器 | 双端 | 键入中英；结果筛选 | T2/T4 | 通过：[T2 中英搜索与选择证据](evidence/t2-menu/record.md) |
-| M09.create | 新建标签 | 标签选择器 → 阅读更多/选择器 | 双端 | 新建并附加；回读 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M09.attach | 附加标签 | 标签选择器 → 阅读更多/选择器 | 双端 | 文章标签关系；回读 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M09.remove | 移除标签 | 标签 chip → chip/更多 | 双端 | 关系删除，标签仍在 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M09.open | 跳转标签视图 | 标签 chip → 原位 | 双端 | 跳转并可返回 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M10.aa | Aa 阅读设置 | 阅读工具条 → 阅读页头 | 双端 | 字号/行高草稿；打开 | T4 | 待验 |
-| M10.read | 已读/未读 | 阅读工具条/u → 阅读更多/u | 双端 | 改状态；回读 | T4/T6 | 待验 |
-| M10.star | 星标/取消 | 阅读工具条/s → 阅读底部/s | 双端 | 星标独立；回读 | T4/T6 | 待验 |
-| M10.later | 稍后读/取消 | 阅读工具条 → 阅读底部 | 双端 | 待读独立；回读 | T4 | 待验 |
-| M10.open | 浏览器打开 | 阅读工具条 → 阅读更多 | 双端 | 外链交给系统；点击 | T4 | 待验 |
-| M10.copy | 复制链接 | 阅读工具条 → 阅读更多 | 双端 | 剪贴板含原 URL；点击 | T4 | 待验 |
-| M10.share | 原生分享 | 阅读工具条 → 阅读更多 | Android | 系统分享表；点击/取消 | T4 | 待验 |
-| M10.fulltext | 按需全文 | 阅读工具条 → 阅读更多 | 双端 | 不提前请求；触发/失败/重试 | T4 | 待验 |
-| M11.summary | AI 摘要 | 阅读工具条 → 更多 AI 组 | 双端 | 经原确认；取消不请求 | T4 | 待验 |
-| M11.translate | AI 翻译 | 阅读工具条 → 更多 AI 组 | 双端 | 经原确认；取消不请求 | T4 | 待验 |
-| M11.result | 结果类型与元信息 | AI 面板 → 原位 | 双端 | 摘要/翻译来源可辨；打开 | T4 | 待验 |
-| M11.retry | 重新生成 | AI 面板按钮 → 原位 | 双端 | 再确认/替换结果；点击 | T4 | 待验 |
-| M11.close | 关闭结果 | AI 面板按钮 → 原位 | 双端 | 不影响正文；关闭 | T4 | 待验 |
-| M11.error | AI 成功/失败/取消 | AI 面板 → 稳定反馈位 | 双端 | 三态明确；模拟响应 | T4/T5 | 待验 |
-| M12.target | 发送目标地址 | AI 确认 → 原确认 | 双端 | 地址真实；查看 | T4/T5 | 待验 |
-| M12.headers | 脱敏 headers | AI 确认 → 原确认 | 双端 | 无密钥明文；查看 | T4/T5 | 待验 |
-| M12.body | 正文与大小 | AI 确认 → 原确认 | 双端 | 范围正确；查看 | T4/T5 | 待验 |
-| M12.cancel | 取消发送 | AI 确认 → 原确认 | 双端 | 零网络；取消并查日志 | T4/T5 | 待验 |
-| M12.send | 确认发送 | AI 确认 → 原确认 | 双端 | 仅确认后请求；执行 | T4/T5 | 待验 |
-| M12.remember | 不再询问 | AI 确认 → 原确认 | 双端 | 保持既有设置语义；切换 | T4/T5 | 待验 |
+| M09.search | 搜索标签 | 标签选择器/t → 阅读更多/选择器 | 双端 | 键入中英；结果筛选 | T2/T4 | 通过：[T2 中英搜索与选择证据](evidence/t2-menu/record.md)、[T4 Android](evidence/t4-reader/record.md) |
+| M09.create | 新建标签 | 标签选择器 → 阅读更多/选择器 | 双端 | 新建并附加；回读 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md)、[T4 Android](evidence/t4-reader/record.md) |
+| M09.attach | 附加标签 | 标签选择器 → 阅读更多/选择器 | 双端 | 文章标签关系；回读 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md)、[T4 Android](evidence/t4-reader/record.md) |
+| M09.remove | 移除标签 | 标签 chip → chip/更多 | 双端 | 关系删除，标签仍在 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md)、[T4 Android](evidence/t4-reader/record.md) |
+| M09.open | 跳转标签视图 | 标签 chip → 原位 | 双端 | 跳转并可返回 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md)、[T4 Android](evidence/t4-reader/record.md) |
+| M10.aa | Aa 阅读设置 | 阅读工具条 → 阅读页头 | 双端 | 字号/行高草稿；打开 | T4 | Android/桌面主路径通过：[T4](evidence/t4-reader/record.md)；跨端组合待 T6 |
+| M10.read | 已读/未读 | 阅读工具条/u → 阅读更多/u | 双端 | 改状态；回读 | T4/T6 | Android/桌面主路径通过：[T4](evidence/t4-reader/record.md)；跨端组合待 T6 |
+| M10.star | 星标/取消 | 阅读工具条/s → 阅读底部/s | 双端 | 星标独立；回读 | T4/T6 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M10.later | 稍后读/取消 | 阅读工具条 → 阅读底部 | 双端 | 待读独立；回读 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M10.open | 浏览器打开 | 阅读工具条 → 阅读更多 | 双端 | 外链交给系统；点击 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M10.copy | 复制链接 | 阅读工具条 → 阅读更多 | 双端 | 剪贴板含原 URL；点击 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M10.share | 原生分享 | 阅读工具条 → 阅读更多 | Android | 系统分享表；点击/取消 | T4 | Android 原生通过：[T4](evidence/t4-reader/record.md) |
+| M10.fulltext | 按需全文 | 阅读工具条 → 阅读更多 | 双端 | 不提前请求；触发/失败/重试 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M11.summary | AI 摘要 | 阅读工具条 → 更多 AI 组 | 双端 | 经原确认；取消不请求 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M11.translate | AI 翻译 | 阅读工具条 → 更多 AI 组 | 双端 | 经原确认；取消不请求 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M11.result | 结果类型与元信息 | AI 面板 → 原位 | 双端 | 摘要/翻译来源可辨；打开 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M11.retry | 重新生成 | AI 面板按钮 → 原位 | 双端 | 再确认/替换结果；点击 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M11.close | 关闭结果 | AI 面板按钮 → 原位 | 双端 | 不影响正文；关闭 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M11.error | AI 成功/失败/取消 | AI 面板 → 稳定反馈位 | 双端 | 三态明确；模拟响应 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M12.target | 发送目标地址 | AI 确认 → 原确认 | 双端 | 地址真实；查看 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M12.headers | 脱敏 headers | AI 确认 → 原确认 | 双端 | 无密钥明文；查看 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M12.body | 正文与大小 | AI 确认 → 原确认 | 双端 | 范围正确；查看 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M12.cancel | 取消发送 | AI 确认 → 原确认 | 双端 | 零网络；取消并查日志 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M12.send | 确认发送 | AI 确认 → 原确认 | 双端 | 仅确认后请求；执行 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
+| M12.remember | 不再询问 | AI 确认 → 原确认 | 双端 | 保持既有设置语义；切换 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合待 T6 |
 | M13.mode | 系统/浅/深 | 外观设置 → 外观常用 | 双端 | 三态、系统切换无写；切换 | T1/T5 | 待验 |
 | M13.presets | 浅深 Clear/Paper/Slate | 外观设置 → 外观常用 | 双端 | 独立预设，旧 ID 不变；六格查看 | T1/T5 | 待验 |
 | M13.override.clear | 清除全部覆盖 | 外观设置 → 外观高级 | 双端 | 预设值恢复；取消/保存回读 | T1/T5 | 待验 |
@@ -95,7 +95,7 @@
 | M13.history.refresh | 刷新历史 | 外观设置 → 外观高级 | 双端 | 修订列表正确；打开 | T1/T5 | 待验 |
 | M13.history.restore | 恢复历史 | 外观设置 → 外观高级 | 双端 | 新修订、CAS；执行回读 | T1/T5 | 待验 |
 | M14.type.family | 正文字体 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | 待验 |
-| M14.type.size | 正文字号 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | 待验 |
+| M14.type.size | 正文字号 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | Android 通过：[T4 Aa](evidence/t4-reader/record.md)；其它平台待 T5/T6 |
 | M14.type.line | 正文行高 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | 待验 |
 | M14.type.paragraph | 段落间距 | 阅读设置/Aa → 阅读高级 | 双端 | 正文锚点；调节并回读 | T4/T5 | 待验 |
 | M14.code.family | 等宽字体 | 阅读设置 → 阅读高级 | 双端 | 代码块；调节并查看 | T4/T5 | 待验 |

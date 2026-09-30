@@ -1,0 +1,45 @@
+{
+  "readerToolbar": "toolbar",
+  "moreLabel": "更多",
+  "chipRole": "button",
+  "chipHeight": 48,
+  "menuRole": "dialog",
+  "menuItems": [
+    {
+      "label": "标为未读",
+      "role": "menuitem",
+      "height": 48
+    },
+    {
+      "label": "管理标签",
+      "role": "menuitem",
+      "height": 48
+    },
+    {
+      "label": "浏览器打开",
+      "role": "menuitem",
+      "height": 48
+    },
+    {
+      "label": "复制链接",
+      "role": "menuitem",
+      "height": 48
+    },
+    {
+      "label": "分享",
+      "role": "menuitem",
+      "height": 48
+    },
+    {
+      "label": "AI 摘要",
+      "role": "menuitem",
+      "height": 48
+    },
+    {
+      "label": "AI 翻译",
+      "role": "menuitem",
+      "height": 48
+    }
+  ],
+  "backgroundInert": true
+}
