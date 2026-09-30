@@ -1,0 +1,22 @@
+2026-10-01T01:57:14.017+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /data/user/0/tech.expoli.rustrss/rustrss/logs/rustrss-20261001-015714.log
+2026-10-01T01:57:14.031+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /data/user/0/tech.expoli.rustrss/rustrss/rustrss.sqlite
+2026-10-01T01:57:14.033+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: INFO（设置 log.level=""）
+2026-10-01T01:57:14.266+08:00 INFO  ui: [ui] inline script ran
+2026-10-01T01:57:14.330+08:00 INFO  ui: [ui] app.js start
+2026-10-01T01:57:14.356+08:00 INFO  ui: [ui] i18n selftest ok (keys=569)
+2026-10-01T01:57:14.364+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-10-01T01:57:14.367+08:00 INFO  ui: [ui] menu render selftest FAILED: checked 条目未打勾
+2026-10-01T01:57:14.372+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-10-01T01:57:14.374+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-10-01T01:57:15.471+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-10-01T01:57:15.490+08:00 INFO  ui: [ui] renderSidebar feeds=13 1.7ms
+2026-10-01T01:57:15.510+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=0 loaded=0 total=0 totalKind=unread header= exhausted=true head=
+2026-10-01T01:57:15.512+08:00 INFO  ui: [ui] loaded feeds=13 entries=0 unread=0 starred=0 markReadOnNavigate=true refreshInterval=off refreshOnStart=false notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-10-01T01:57:15.515+08:00 INFO  ui: [ui] viewport 1280x744 dpr=2
+2026-10-01T01:57:15.519+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=light bgPanel=#ffffff minContrast=3.07 ratios=3.91/3.58/3.16/3.07/5.21/5.18/4.12/4.83)
+2026-10-01T01:57:15.520+08:00 INFO  ui: [ui] tags:rows=0 collapsed=0 rects=-
+2026-10-01T01:57:19.241+08:00 INFO  ui: [ui] refresh_all Refreshed: 13 fetched | 0 not modified | 0 new | 0 failed
+2026-10-01T01:57:19.246+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-10-01T01:57:19.253+08:00 INFO  ui: [ui] renderSidebar feeds=13 0.2ms
+2026-10-01T01:57:19.255+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=0 loaded=0 total=0 totalKind=unread header= exhausted=true head=
+2026-10-01T01:57:19.256+08:00 INFO  ui: [ui] loaded feeds=13 entries=0 unread=0 starred=0 markReadOnNavigate=true refreshInterval=off refreshOnStart=false notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none

@@ -1,0 +1,36 @@
+2026-10-01T01:57:56.383+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /data/user/0/tech.expoli.rustrss/rustrss/logs/rustrss-20261001-015756.log
+2026-10-01T01:57:56.397+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /data/user/0/tech.expoli.rustrss/rustrss/rustrss.sqlite
+2026-10-01T01:57:56.397+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: INFO（设置 log.level=""）
+2026-10-01T01:57:56.626+08:00 INFO  ui: [ui] inline script ran
+2026-10-01T01:57:56.723+08:00 INFO  ui: [ui] app.js start
+2026-10-01T01:57:56.759+08:00 INFO  ui: [ui] i18n selftest ok (keys=569)
+2026-10-01T01:57:56.779+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-10-01T01:57:56.781+08:00 INFO  ui: [ui] menu render selftest FAILED: checked 条目未打勾
+2026-10-01T01:57:56.782+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-10-01T01:57:56.784+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-10-01T01:57:57.090+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-10-01T01:57:57.123+08:00 INFO  ui: [ui] renderSidebar feeds=1 1.3ms
+2026-10-01T01:57:57.135+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=0 loaded=0 total=0 totalKind=unread header= exhausted=true head=
+2026-10-01T01:57:57.136+08:00 INFO  ui: [ui] loaded feeds=1 entries=0 unread=0 starred=0 markReadOnNavigate=true refreshInterval=off refreshOnStart=false notifyNewArticles=true fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-10-01T01:57:57.138+08:00 INFO  ui: [ui] viewport 1280x744 dpr=2
+2026-10-01T01:57:57.141+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=light bgPanel=#ffffff minContrast=3.07 ratios=3.91/3.58/3.16/3.07/5.21/5.18/4.12/4.83)
+2026-10-01T01:57:57.141+08:00 INFO  ui: [ui] tags:rows=0 collapsed=0 rects=-
+2026-10-01T01:58:00.303+08:00 INFO  rustrss_desktop_lib::scheduler: [rustrss] 前台恢复：触发一次刷新
+2026-10-01T01:58:00.322+08:00 INFO  ui: [ui] refresh:start
+2026-10-01T01:58:00.417+08:00 INFO  rustrss_desktop_lib::scheduler: [rustrss] 自动刷新完成: fetched=1 not_modified=0 inserted=1 updated=0 failures=0
+2026-10-01T01:58:00.420+08:00 INFO  rustrss_desktop_lib::notify: [rustrss] 新文章通知: 1 篇（locale=en）
+2026-10-01T01:58:00.500+08:00 INFO  ui: [ui] refresh:done
+2026-10-01T01:58:00.544+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-10-01T01:58:00.580+08:00 INFO  ui: [ui] renderSidebar feeds=1 0.5ms
+2026-10-01T01:58:00.600+08:00 INFO  ui: [ui] renderList rows=1 withTags=0 4.5ms
+2026-10-01T01:58:00.602+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=1 loaded=1 total=1 totalKind=unread header=loaded 1 / 1 unread exhausted=true head=1
+2026-10-01T01:58:00.604+08:00 INFO  ui: [ui] loaded feeds=1 entries=1 unread=1 starred=0 markReadOnNavigate=true refreshInterval=off refreshOnStart=false notifyNewArticles=true fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none silent（正文未重渲染）
+2026-10-01T01:58:00.739+08:00 INFO  ui: [ui] refresh:done 静默完成 selected=null→null 正文=327→327字 scrollTop=0→0
+2026-10-01T01:58:03.475+08:00 INFO  ui: [ui] refresh_all Refreshed: 1 fetched | 0 not modified | 1 new | 0 failed
+2026-10-01T01:58:03.530+08:00 INFO  rustrss_desktop_lib::credentials::mobile: [rustrss] credentials get: len=0
+2026-10-01T01:58:03.579+08:00 INFO  ui: [ui] renderSidebar feeds=1 0.4ms
+2026-10-01T01:58:03.601+08:00 INFO  ui: [ui] renderList rows=2 withTags=0 1.1ms
+2026-10-01T01:58:03.603+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=2 loaded=2 total=2 totalKind=unread header=loaded 2 / 2 unread exhausted=true head=2,1
+2026-10-01T01:58:03.608+08:00 INFO  ui: [ui] loaded feeds=1 entries=2 unread=2 starred=0 markReadOnNavigate=true refreshInterval=off refreshOnStart=false notifyNewArticles=true fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-10-01T01:58:05.862+08:00 INFO  ui: [ui] list_font_families failed: 该功能需要桌面系统能力，移动端暂不支持（字体下拉只有「跟随主题」）
+2026-10-01T01:58:07.646+08:00 INFO  ui: [ui] settings pane=subscriptions

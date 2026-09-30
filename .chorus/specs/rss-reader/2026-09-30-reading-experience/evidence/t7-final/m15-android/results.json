@@ -1,0 +1,438 @@
+{
+  "device": "emulator-5586",
+  "avd": "RustRssT7M15",
+  "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091",
+  "android": "16",
+  "checks": [
+    {
+      "name": "global-15-override-120-tick",
+      "elapsed": 67.06
+    },
+    {
+      "name": "ui-concurrency-12-loaded"
+    },
+    {
+      "name": "ui-refresh-all-13-feeds-concurrency-12",
+      "requests": 13,
+      "maxActive": 12
+    },
+    {
+      "name": "cold-start-false-10s",
+      "hits": []
+    },
+    {
+      "name": "cold-start-true-10s",
+      "hits": [
+        [
+          "/startup/1",
+          11.754
+        ]
+      ]
+    },
+    {
+      "name": "android-notification-permission"
+    },
+    {
+      "name": "background-positive-delta-notification",
+      "unread": 1,
+      "records": 1
+    },
+    {
+      "name": "manual-refresh-no-extra-notification",
+      "unread": 2,
+      "notificationsBefore": 1,
+      "notificationsAfter": 1
+    },
+    {
+      "name": "rsshub-all-four-local-503",
+      "status": "全部探测路由均未返回 2xx（实例可达但路由未覆盖，或被拦截）"
+    }
+  ],
+  "phases": {
+    "intervalStart": {
+      "pid": 5915,
+      "startMonotonic": 236466.413326215,
+      "startWall": 1790790959.7765965
+    },
+    "intervalInitialResumeHits": [],
+    "interval": {
+      "hits": [
+        {
+          "path": "/interval/global",
+          "phase": "interval-tick",
+          "time": 1790791031.3402717,
+          "monotonic": 236538.298197207,
+          "status": 200
+        }
+      ],
+      "waitSeconds": 67.06410753398086,
+      "dbRows": "1|1790791030|\n2|1790789164|120"
+    },
+    "concurrencyFixtureSha256": "1817bfdc7f0e8fe1fc4906197d91714ef393f42e169cd640f808982e2a3b5130",
+    "concurrencyPrimeHits": [],
+    "concurrency": {
+      "hits": [
+        {
+          "path": "/concurrency/4",
+          "phase": "concurrency-manual",
+          "time": 1790791038.4477446,
+          "monotonic": 236545.405669945,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/13",
+          "phase": "concurrency-manual",
+          "time": 1790791038.4481034,
+          "monotonic": 236545.406028066,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/3",
+          "phase": "concurrency-manual",
+          "time": 1790791038.448213,
+          "monotonic": 236545.406137554,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/5",
+          "phase": "concurrency-manual",
+          "time": 1790791038.448312,
+          "monotonic": 236545.406236672,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/2",
+          "phase": "concurrency-manual",
+          "time": 1790791038.4484193,
+          "monotonic": 236545.406343946,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/10",
+          "phase": "concurrency-manual",
+          "time": 1790791038.4485452,
+          "monotonic": 236545.406469995,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/7",
+          "phase": "concurrency-manual",
+          "time": 1790791038.4486275,
+          "monotonic": 236545.406551841,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/12",
+          "phase": "concurrency-manual",
+          "time": 1790791038.4487026,
+          "monotonic": 236545.406626743,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/9",
+          "phase": "concurrency-manual",
+          "time": 1790791038.4487882,
+          "monotonic": 236545.406712657,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/1",
+          "phase": "concurrency-manual",
+          "time": 1790791038.448855,
+          "monotonic": 236545.406779644,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/11",
+          "phase": "concurrency-manual",
+          "time": 1790791038.448953,
+          "monotonic": 236545.40687743,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/8",
+          "phase": "concurrency-manual",
+          "time": 1790791038.4491298,
+          "monotonic": 236545.407054406,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/6",
+          "phase": "concurrency-manual",
+          "time": 1790791039.2501755,
+          "monotonic": 236546.208100355,
+          "status": 200
+        }
+      ],
+      "maxActive": 12,
+      "tap": {
+        "selector": "#btn-refresh",
+        "x": 978.13671875,
+        "y": 24.84765625,
+        "w": 117.7890625,
+        "h": 33.6953125,
+        "dpr": 2,
+        "visible": true
+      },
+      "trustedTaps": [
+        {
+          "id": "btn-refresh",
+          "trusted": true
+        }
+      ]
+    },
+    "startup-falseFixtureSha256": "61173891b377ce23874a98645084224eab2932d9f0c794fd2abd23f8dd7933fb",
+    "startup-false": {
+      "start": {
+        "pid": 6198,
+        "startMonotonic": 236548.117706876,
+        "startWall": 1790791041.4173882
+      },
+      "hits": []
+    },
+    "startup-trueFixtureSha256": "e7ef86387c11dd4071fb55ec2757939262737c21defa940db096f50aec5b1a5d",
+    "startup-true": {
+      "start": {
+        "pid": 6323,
+        "startMonotonic": 236565.023130292,
+        "startWall": 1790791058.330547
+      },
+      "hits": [
+        {
+          "path": "/startup/1",
+          "phase": "startup-true",
+          "time": 1790791069.8187711,
+          "monotonic": 236576.776696107,
+          "status": 200,
+          "sinceStartSeconds": 11.754
+        }
+      ]
+    },
+    "notifyFixtureSha256": "c246484d47d91be6a23bc580ca30ee9cc88bea9a52ac19cbaee50c3da484adcc",
+    "notifyPrimeHits": [],
+    "notifyBackground": {
+      "hits": [
+        {
+          "path": "/notify",
+          "phase": "notify-background",
+          "time": 1790791081.1893485,
+          "monotonic": 236588.147274057,
+          "status": 200
+        }
+      ],
+      "unread": 1,
+      "activeRecords": [
+        "    NotificationRecord(0x0e578574: pkg=tech.expoli.rustrss user=UserHandle{0} id=115635551 tag=null importance=3 key=0|tech.expoli.rustrss|115635551|null|10216: Notification(channel=default shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE color=0x00000000 vis=PRIVATE))"
+      ]
+    },
+    "notifyManual": {
+      "hits": [
+        {
+          "path": "/notify",
+          "phase": "notify-manual",
+          "time": 1790791084.1067464,
+          "monotonic": 236591.064672273,
+          "status": 200
+        }
+      ],
+      "unread": 2,
+      "activeRecords": [
+        "    NotificationRecord(0x0e578574: pkg=tech.expoli.rustrss user=UserHandle{0} id=115635551 tag=null importance=3 key=0|tech.expoli.rustrss|115635551|null|10216: Notification(channel=default shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONLY_ALERT_ONCE color=0x00000000 vis=PRIVATE))"
+      ]
+    },
+    "rsshub": {
+      "tap": {
+        "selector": "#btn-rsshub-test",
+        "x": 490.75,
+        "y": 465.31640625,
+        "w": 123.609375,
+        "h": 33.6953125,
+        "dpr": 2,
+        "visible": true
+      },
+      "hits": [
+        {
+          "path": "/version",
+          "phase": "rsshub-503",
+          "time": 1790791088.770716,
+          "monotonic": 236595.728641833,
+          "status": 503
+        },
+        {
+          "path": "/",
+          "phase": "rsshub-503",
+          "time": 1790791088.8007667,
+          "monotonic": 236595.758693364,
+          "status": 503
+        },
+        {
+          "path": "/rsshub/rss",
+          "phase": "rsshub-503",
+          "time": 1790791088.832268,
+          "monotonic": 236595.79019418,
+          "status": 503
+        },
+        {
+          "path": "/feed/rsshub/rss",
+          "phase": "rsshub-503",
+          "time": 1790791088.8350675,
+          "monotonic": 236595.792992658,
+          "status": 503
+        }
+      ],
+      "uiStatus": "全部探测路由均未返回 2xx（实例可达但路由未覆盖，或被拦截）"
+    }
+  },
+  "passed": true,
+  "fixtureSha256": "b44d4adf1c78ba79e9b31b62a097b14fd5aa61e2cbcf7a9ac360249bda131faf",
+  "serverPort": 33887,
+  "allHits": [
+    {
+      "path": "/interval/global",
+      "phase": "interval-tick",
+      "time": 1790791031.3402717,
+      "monotonic": 236538.298197207,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/4",
+      "phase": "concurrency-manual",
+      "time": 1790791038.4477446,
+      "monotonic": 236545.405669945,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/13",
+      "phase": "concurrency-manual",
+      "time": 1790791038.4481034,
+      "monotonic": 236545.406028066,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/3",
+      "phase": "concurrency-manual",
+      "time": 1790791038.448213,
+      "monotonic": 236545.406137554,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/5",
+      "phase": "concurrency-manual",
+      "time": 1790791038.448312,
+      "monotonic": 236545.406236672,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/2",
+      "phase": "concurrency-manual",
+      "time": 1790791038.4484193,
+      "monotonic": 236545.406343946,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/10",
+      "phase": "concurrency-manual",
+      "time": 1790791038.4485452,
+      "monotonic": 236545.406469995,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/7",
+      "phase": "concurrency-manual",
+      "time": 1790791038.4486275,
+      "monotonic": 236545.406551841,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/12",
+      "phase": "concurrency-manual",
+      "time": 1790791038.4487026,
+      "monotonic": 236545.406626743,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/9",
+      "phase": "concurrency-manual",
+      "time": 1790791038.4487882,
+      "monotonic": 236545.406712657,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/1",
+      "phase": "concurrency-manual",
+      "time": 1790791038.448855,
+      "monotonic": 236545.406779644,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/11",
+      "phase": "concurrency-manual",
+      "time": 1790791038.448953,
+      "monotonic": 236545.40687743,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/8",
+      "phase": "concurrency-manual",
+      "time": 1790791038.4491298,
+      "monotonic": 236545.407054406,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/6",
+      "phase": "concurrency-manual",
+      "time": 1790791039.2501755,
+      "monotonic": 236546.208100355,
+      "status": 200
+    },
+    {
+      "path": "/startup/1",
+      "phase": "startup-true",
+      "time": 1790791069.8187711,
+      "monotonic": 236576.776696107,
+      "status": 200
+    },
+    {
+      "path": "/notify",
+      "phase": "notify-background",
+      "time": 1790791081.1893485,
+      "monotonic": 236588.147274057,
+      "status": 200
+    },
+    {
+      "path": "/notify",
+      "phase": "notify-manual",
+      "time": 1790791084.1067464,
+      "monotonic": 236591.064672273,
+      "status": 200
+    },
+    {
+      "path": "/version",
+      "phase": "rsshub-503",
+      "time": 1790791088.770716,
+      "monotonic": 236595.728641833,
+      "status": 503
+    },
+    {
+      "path": "/",
+      "phase": "rsshub-503",
+      "time": 1790791088.8007667,
+      "monotonic": 236595.758693364,
+      "status": 503
+    },
+    {
+      "path": "/rsshub/rss",
+      "phase": "rsshub-503",
+      "time": 1790791088.832268,
+      "monotonic": 236595.79019418,
+      "status": 503
+    },
+    {
+      "path": "/feed/rsshub/rss",
+      "phase": "rsshub-503",
+      "time": 1790791088.8350675,
+      "monotonic": 236595.792992658,
+      "status": 503
+    }
+  ]
+}

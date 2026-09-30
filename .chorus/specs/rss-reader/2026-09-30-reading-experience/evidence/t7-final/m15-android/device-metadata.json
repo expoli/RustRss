@@ -1,0 +1,14 @@
+{
+  "avd": "RustRssT7M15",
+  "serial": "emulator-5586",
+  "androidRelease": "16",
+  "sdk": "36",
+  "abi": "x86_64",
+  "device": "emu64xa",
+  "wmSize": "Physical size: 2560x1600",
+  "wmDensity": "Physical density: 320",
+  "apkPathAtRun": "/home/tcy/Github/RustRss/src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk",
+  "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091",
+  "packageBadging": "package: name='tech.expoli.rustrss' versionCode='2001' versionName='0.2.1' platformBuildVersionName='17' platformBuildVersionCode='37' compileSdkVersion='37' compileSdkVersionCodename='17'",
+  "notificationPermissionLine": "android.permission.POST_NOTIFICATIONS: granted=true, flags=[ USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]"
+}
