@@ -1,0 +1,42 @@
+{
+  "display": ":70",
+  "source": "XTestFakeKeyEvent on isolated Xvfb",
+  "window": "0x200013",
+  "desktopSha256": "8cd5472c2a78efb9d6ed165e1e4fa0cc178a8d3029e292fe017c72b27b55ba60",
+  "storedBefore": 1,
+  "storedAfter": 0,
+  "keyEvents": [
+    {
+      "key": "Tab",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "Unidentified",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "Enter",
+      "trusted": true
+    }
+  ],
+  "checks": [
+    "More opens with first item focused",
+    "opened entry stored as read",
+    "trusted Tab moves focus",
+    "trusted Shift+Tab restores first item",
+    "trusted Escape closes and restores More focus",
+    "Escape cancellation causes zero write",
+    "mark unread has keyboard focus",
+    "trusted Enter activates mark unread once",
+    "keyboard events are trusted browser input"
+  ],
+  "passed": true
+}

@@ -34,6 +34,9 @@
   function setPage(name) {
     if (name !== bodyPage()) window.RustRssMenu?.close();
     document.body.dataset.mpage = name;
+    // The reader visually covers the list, so remove that background page from
+    // TalkBack and keyboard traversal while keeping its DOM/scroll anchor live.
+    document.querySelector('main > .list').inert = name === 'reader';
     syncNav();
     syncSegments();
   }
@@ -97,7 +100,7 @@
       if (pendingMenuAction) {
         const action = pendingMenuAction;
         pendingMenuAction = null;
-        action();
+        window.RustRssMenu?.runAction(action);
       }
       return;
     }
@@ -343,6 +346,7 @@
       document.body.append(el('settings-overlay'));
       historyStack = [];
       delete document.body.dataset.mpage;
+      document.querySelector('main > .list').inert = false;
       document.querySelector('.sidebar-foot').before(el('add-row'));
       el('add-row').classList.add('hidden');
     }

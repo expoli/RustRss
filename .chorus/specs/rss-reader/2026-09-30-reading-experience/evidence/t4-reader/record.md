@@ -7,7 +7,7 @@
 | 产物 | SHA-256 | 说明 |
 | --- | --- | --- |
 | `src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk` | `7a719a531d33d216b8b82268f76ab648e08a4b19890f086ee996b60c3ae9dddb` | 703,502,654 字节；Android 36 x86_64 模拟器实测 |
-| `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk` | `c9fd508e53240461af3e268dc3532a6f75edad1592c6bedc7dc1548364695d72` | 73,071,838 字节；0.2.1，ARM64 + x86_64；`apksigner verify` 成功，证书 SHA-256 `89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5` |
+| `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk` | `de426cde0689d0a16ec59670429712f464d29d8a75c725ae832e6fa9d76b95d5` | 补丁后重建，73,071,782 字节；0.2.1，ARM64 + x86_64；`apksigner verify` 成功，证书 SHA-256 `89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5`；本轮运行测试安装的是 debug APK |
 | `target/debug/rustrss-desktop` | `10a19cb23e56c14f8385446416422ba8c479011c04f0df5e56b21c290f5a05a9` | 虚拟 KWin Wayland 的真实 Linux WebKitGTK |
 
 先运行 `cargo run -p rustrss-core --example reading_experience_fixture -- /tmp/rustrss-t4-fixture.sqlite 30`，然后在这份临时库中将 `entries.id=1` 的 `url` 改为 `http://10.0.2.2:18080/missing`、`entries.id=2` 改为 `http://10.0.2.2:18080/page`，并把 `settings.key='ui.mark_read_on_navigate'` 设为 `false`。本次夹具 SHA-256 为 `03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91`。脚本通过真实 `get_ui_settings` 回读该标记，不能只相信预设说明。列表的直接点按显式传 `markRead:true`，故入口记录从 `read=false` 变为 `true`；更多菜单随之提供“标为未读”。测试同时断言原列表行 DOM 身份未变且其 `read` 类已更新。
@@ -54,3 +54,20 @@ INSERT INTO settings(key,value,updated_at) VALUES('ui.mark_read_on_navigate','fa
 - **第二页和返回锚点**：All 视图最早排序落库为 `oldest`，列表由 200/400 续页到 400/400；选取已加载后半页中的复制夹具行 `296`，从非零 `scrollTop=26672.38` 打开文章。Android 系统 Back 后，All、`oldest`、400/400、400 行、顶部可见行 `363`、偏移约 -32px 和滚动值全部与打开前相同；所选行变为实际打开的 `296`。截图：[第二页列表](13-page-two-list.png)、[阅读](14-page-two-reader.png)、[返回](15-page-two-back.png)。正文搜索的非空查询和取消后的 All 锚点由主结果的 `search-reader-android-back-ime`、`search-cancel-all-scroll-anchor` 单独证明。
 
 `node --test scripts/tests/*.test.cjs` 61/61、`cargo test --workspace --locked` 全通过；`git diff --check` 无空白错误。T2 共享菜单回归在本任务 AVD 复测原生 Back 零写、焦点恢复及选择后一次写入。截图均取自安装后的 Android WebView/系统界面，不是 CSS 注入预览。通用 APK 的 ARM64 ABI 与签名已检查，但没有物理 ARM64 手机；Windows/macOS 和实体键盘留待跨端总验收。
+
+## 第一轮独立评审后的补证（2026-09-30）
+
+针对评审评论 `eef58dbe-771e-4af9-b3ac-a8bad17b5d10` 的三个阻塞项，在**重新编译并安装**的 Android debug APK（SHA-256 `d2b793fdceb6bc0318fc704e098adc373ce9265f0db17e7f78fcb4c229de7891`）和重新编译的 Linux 桌面程序（SHA-256 `8cd5472c2a78efb9d6ed165e1e4fa0cc178a8d3029e292fe017c72b27b55ba60`）上复测。上述哈希替代本记录前部的初轮 debug APK/桌面哈希；通用 release APK也在补丁后重新编译签名，哈希见上表，尚未另行安装运行。`emulator-5582` 是本任务独立创建的 API 36 Google APIs x86_64 AVD `RustRssT4Review`；没有操作 `emulator-5554`。复测只用生成夹具 `03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91`，没有真实订阅或密钥。
+
+| 评审点 | 复测结果与原始文件 |
+| --- | --- |
+| 被拒绝的更多菜单读状态写入 | [Android 回读](review-android-results.json)和[阅读页可见错误截图](review-read-failure-visible.png)：测试先确认 Tauri core `invoke` 覆盖生效，再令一次 `set_read` Promise 拒绝。错误横幅在阅读页可见，`get_entry(1).read` 和列表行仍为 `true`，没有未处理拒绝。恢复真实 IPC 后同一入口只写一次，存储变成 `false`；两种 Aa 字号下打开更多后用系统 Back 取消，写入计数仍为 1。最初直接覆盖不可写的 `core.invoke` 会造成测试注入无效，最终脚本改为替换可写的 `window.__TAURI__.core` 对象并断言替换成功。 |
+| 放大 Aa 与安全区域 | [同一结果](review-android-results.json)记录正文计算字号从 14px 到 18px（1.286 倍）和 28px（2 倍）；[18px 首屏](review-aa-18-top.png)、[18px 文末](review-aa-18-bottom.png)、[28px 首屏](review-aa-28-top.png)、[28px 文末](review-aa-28-bottom.png)来自安装后的 WebView。长文最后一块仍可滚动到可见区域，正文/阅读页无横向溢出，返回和操作按钮保持 48×48 CSS px 且在可用视口内。Android `dumpsys window` 状态栏底为物理 y=63、导航栏顶为 y=2337，WebView 正好在 y=63…2337；`visualViewport.height × devicePixelRatio` 与 WebView 物理高度差小于 3px。 |
+| Android 原生无障碍 | [TalkBack 结果](review-talkback-results.json)、[原生 AccessibilityService 事件](review-talkback-events.log)、[更多截图](review-talkback-more.png)、[关闭截图](review-talkback-closed.png)：TalkBack 和临时 `T4 Focus Logger` 同时绑定，用任务 AVD 的 `/dev/input/event1` 物理键事件发送 TalkBack Alt+Right、Alt+Enter、Alt+Backspace。无障碍焦点依次到达返回、Aa、星标、稍后读、更多，阅读页覆盖的列表由 `inert` 排除；更多首项“标为未读”取得无障碍焦点。Alt+Enter 执行后存储 `true→false`，面板关闭并回焦“更多”；再次打开后 Alt+Backspace 取消，存储不变且回焦“更多”。事件流有原生 `TYPE_VIEW_ACCESSIBILITY_FOCUSED`，不是只检查 DOM 或语义树。 |
+| 桌面实体输入路径 | [桌面结果](review-desktop-results.json)、[X11 窗口树](review-desktop-windows.txt)、[应用日志](review-desktop-app.log)、[Xvfb 日志](review-desktop-xvfb.log)：独立 Xvfb `:70` 和实际 `target/debug/rustrss-desktop`，XTest 将 Tab、Shift+Tab、Escape、Enter 送到已确认持有 X 输入焦点的应用窗口。浏览器收到 `isTrusted=true` 事件；Esc 取消零写并回焦“更多”，聚焦首项后 Enter 使合成库 `read` 从 1→0 一次。 |
+
+复现时先按前述夹具步骤重置任务 AVD 内的 SQLite，安装上述**重新编译** debug APK，启动应用并转发应用进程的 `webview_devtools_remote_<pid>` 到本机 `tcp:9229`。执行 `ANDROID_SERIAL=emulator-5582 CDP_URL=http://127.0.0.1:9229/json APK_SHA256=<上方哈希> node scripts/verify-reading-experience-review-android.mjs <本目录>`；脚本在 CDP 中只布置可验证的拒绝注入和读取结果，读状态菜单点按、Aa 按钮及返回由 Android 系统输入发送。桌面执行 `/usr/bin/python3 scripts/verify-reading-experience-review-desktop.py <本目录>`；它用独立临时 HOME/SQLite，Xvfb 可由 `T4_XVFB` 指定。此主机没有已安装的 Xvfb，因此从 Ubuntu `xvfb` deb 解包到 `/tmp/rustrss-t4-xvfb/root/usr/bin/Xvfb`，没有改系统包。
+
+TalkBack 复测的 `T4 Focus Logger` 源码在 `scripts/t4-focus-logger/`，仅用于任务 AVD；将其编译安装后，以 `cmd appops set tech.expoli.rustrss.focuslogger ACCESS_RESTRICTED_SETTINGS allow` 允许侧载无障碍服务，并把它与 `com.google.android.marvin.talkback/.TalkBackService` 一起设为启用服务。`dumpsys accessibility` 必须同时显示两者 Bound 和 `TouchExplorer`，然后执行 `ANDROID_SERIAL=emulator-5582 CDP_URL=http://127.0.0.1:9229/json node scripts/verify-reading-experience-review-talkback.mjs <本目录>`。`uiautomator dump` 会重连服务并清除当时的无障碍焦点，因此最终动作链保留服务事件与系统截图，没有在激活之前运行 dump。
+
+本轮证明的是 Android x86_64 模拟器上的无障碍焦点/动作事件和 Linux X11 虚拟显示上的可信键盘事件；没有录取语音播报、物理 ARM64 手机或 Windows/macOS 输入事件。T4 规格复选框仍待独立复评及管理员验收。

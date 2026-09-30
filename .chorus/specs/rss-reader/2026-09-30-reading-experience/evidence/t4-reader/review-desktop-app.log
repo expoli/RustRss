@@ -1,0 +1,6 @@
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+
+** (rustrss-desktop:2445997): WARNING **: 16:05:40.923: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+
+(rustrss-desktop:2445997): libayatana-appindicator-WARNING **: 16:05:40.968: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.

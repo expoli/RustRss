@@ -1286,7 +1286,7 @@ function openReaderMore(ev, entry) {
   const shown = state.readerEntry?.id === entry.id ? state.readerEntry : entry;
   const items = [
     { header: true, label: t('reader.group.organize') },
-    { label: shown.read ? t('reader.markUnread') : t('reader.markRead'), action: () => toggleRead() },
+    { label: shown.read ? t('reader.markUnread') : t('reader.markRead'), action: () => toggleRead(entry.id) },
     { label: t('menu.articleTags'), action: () => openTagPicker(entry.id) },
   ];
   if (entry.url) items.push(
@@ -2782,12 +2782,23 @@ function touchMenuBack() {
   } else closeContextMenu();
   return true;
 }
-window.RustRssMenu = { back: touchMenuBack, close: closeContextMenu, isOpen: touchMenuActive };
+window.RustRssMenu = { back: touchMenuBack, close: closeContextMenu, isOpen: touchMenuActive, runAction: runMenuAction };
+function runMenuAction(action) {
+  if (el('status').classList.contains('error')) setStatus('');
+  try {
+    Promise.resolve(action()).catch(reportMenuActionError);
+  } catch (error) {
+    reportMenuActionError(error);
+  }
+}
+function reportMenuActionError(error) {
+  setStatus(t('status.markFailed', { error: error?.message || String(error) }), true);
+}
 function executeMenuAction(action) {
   const touch = touchMenuActive();
   closeContextMenu(true);
   if (touch) window.dispatchEvent(new CustomEvent('rustrss-menu-action', { detail: action }));
-  else action();
+  else runMenuAction(action);
 }
 
 /// 子菜单：同一时刻至多一个。收起走延时——父项与子菜单之间隔着 2px 缝隙，指针
@@ -3549,8 +3560,8 @@ function jump(toEnd) {
   openEntry(target.id, { markRead: state.settings.mark_read_on_navigate });
 }
 
-async function toggleRead() {
-  const row = toggleTarget();
+async function toggleRead(id = state.selectedId) {
+  const row = toggleTarget(id);
   if (!row) return;
   const read = !row.read;
   await invoke('set_read', { ids: [row.id], read });

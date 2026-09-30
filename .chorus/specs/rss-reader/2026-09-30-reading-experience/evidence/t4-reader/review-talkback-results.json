@@ -1,0 +1,71 @@
+{
+  "serial": "emulator-5582",
+  "source": "physical /dev/input/event1 Alt+Right, Alt+Enter and Alt+Backspace with TalkBack bound",
+  "services": [
+    "TalkBack",
+    "T4 Focus Logger"
+  ],
+  "listInert": true,
+  "toolbarFocus": [
+    "null",
+    "m-reader-back",
+    "reader",
+    "null",
+    "null",
+    "null",
+    "null",
+    "act-aa",
+    "act-star",
+    "act-later",
+    "act-more"
+  ],
+  "menuFirstFocus": "09-30 16:19:03.817  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=标为未读 desc=null a11yFocus=true",
+  "menuItems": [
+    {
+      "label": "标为未读",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "管理标签",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "浏览器打开",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "复制链接",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "分享",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "获取全文",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "AI 摘要",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "AI 翻译",
+      "role": "menuitem",
+      "checked": null
+    }
+  ],
+  "readBefore": true,
+  "readAfterAction": false,
+  "closeFocus": "act-more",
+  "backCancelledWrite": true,
+  "speechCapture": "not available on emulator",
+  "passed": true
+}

@@ -1,0 +1,81 @@
+--------- beginning of main
+09-30 16:18:59.703  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false
+09-30 16:18:59.715  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=true
+09-30 16:18:59.735  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=true
+09-30 16:18:59.749  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=true
+09-30 16:18:59.749  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:18:59.916  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false
+09-30 16:18:59.932  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=m-reader-back text=返回列表 desc=null a11yFocus=true
+09-30 16:18:59.932  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:00.020  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=com.android.systemui id=com.android.systemui:id/clock text=4:19 desc=4:19 PM a11yFocus=false
+09-30 16:19:00.105  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=com.android.systemui id=com.android.systemui:id/clock text=4:19 desc=4:19 PM a11yFocus=false
+09-30 16:19:00.199  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=m-reader-back text=返回列表 desc=null a11yFocus=false
+09-30 16:19:00.199  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:00.220  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=reader text= desc=null a11yFocus=true
+09-30 16:19:00.515  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=reader text= desc=null a11yFocus=false
+09-30 16:19:00.532  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口 desc=null a11yFocus=true
+09-30 16:19:00.532  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:00.815  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口 desc=null a11yFocus=false
+09-30 16:19:00.835  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=中文阅读 · 日常观察 desc=null a11yFocus=true
+09-30 16:19:00.835  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:01.132  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=中文阅读 · 日常观察 desc=null a11yFocus=false
+09-30 16:19:01.149  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=08:00 desc=null a11yFocus=true
+09-30 16:19:01.149  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:01.465  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=08:00 desc=null a11yFocus=false
+09-30 16:19:01.465  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:01.485  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=示例作者 desc=null a11yFocus=true
+09-30 16:19:01.765  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=示例作者 desc=null a11yFocus=false
+09-30 16:19:01.765  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:01.770  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=act-aa text=Aa desc=null a11yFocus=true
+09-30 16:19:02.048  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=act-aa text=Aa desc=null a11yFocus=false
+09-30 16:19:02.066  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=act-star text=加星标 desc=null a11yFocus=true
+09-30 16:19:02.066  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:02.349  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=act-star text=加星标 desc=null a11yFocus=false
+09-30 16:19:02.366  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=act-later text=稍后读 desc=null a11yFocus=true
+09-30 16:19:02.366  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:02.665  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=act-later text=稍后读 desc=null a11yFocus=false
+09-30 16:19:02.682  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:02.682  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:03.020  7265  7265 I T4A11Y  : type=TYPE_VIEW_FOCUSED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false
+09-30 16:19:03.033  7265  7265 I T4A11Y  : type=TYPE_VIEW_FOCUSED package=tech.expoli.rustrss id=m-reader-back text=返回列表 desc=null a11yFocus=true
+09-30 16:19:03.034  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=false
+09-30 16:19:03.040  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=null
+09-30 16:19:03.040  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:03.752  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false
+09-30 16:19:03.760  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false
+09-30 16:19:03.763  7265  7265 I T4A11Y  : type=TYPE_VIEW_FOCUSED package=tech.expoli.rustrss id=null text=标为未读 desc=null a11yFocus=true
+09-30 16:19:03.769  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=标为未读 desc=null a11yFocus=false
+09-30 16:19:03.784  7265  7265 I T4A11Y  : type=TYPE_VIEW_CLICKED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=true
+09-30 16:19:03.784  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=标为未读 desc=null a11yFocus=false
+09-30 16:19:03.787  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=true
+09-30 16:19:03.801  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false
+09-30 16:19:03.817  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=标为未读 desc=null a11yFocus=true
+09-30 16:19:04.353  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=null
+09-30 16:19:04.366  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false
+09-30 16:19:04.368  7265  7265 I T4A11Y  : type=TYPE_VIEW_FOCUSED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:04.372  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:04.374  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=status text= desc=null a11yFocus=false
+09-30 16:19:04.386  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text= desc=null a11yFocus=false
+09-30 16:19:04.401  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:04.415  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:04.417  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:04.418  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:04.775  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false
+09-30 16:19:04.782  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false
+09-30 16:19:04.783  7265  7265 I T4A11Y  : type=TYPE_VIEW_FOCUSED package=tech.expoli.rustrss id=null text=标为已读 desc=null a11yFocus=true
+09-30 16:19:04.799  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=标为已读 desc=null a11yFocus=true
+09-30 16:19:04.800  7265  7265 I T4A11Y  : type=TYPE_VIEW_CLICKED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false
+09-30 16:19:04.825  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=标为已读 desc=null a11yFocus=false
+09-30 16:19:04.825  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=null text=标为已读 desc=null a11yFocus=false
+09-30 16:19:04.826  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:04.843  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=标为已读 desc=null a11yFocus=true
+09-30 16:19:04.961  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=null
+09-30 16:19:04.965  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false
+09-30 16:19:04.982  7265  7265 I T4A11Y  : type=TYPE_VIEW_FOCUSED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:04.984  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:04.985  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=status text= desc=null a11yFocus=false
+09-30 16:19:04.985  7265  7265 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text= desc=null a11yFocus=false
+09-30 16:19:04.999  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:05.021  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true
+09-30 16:19:05.021  7265  7265 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null
+09-30 16:19:05.032  7265  7265 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=act-more text=更多 desc=null a11yFocus=true

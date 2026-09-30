@@ -1,0 +1,384 @@
+{
+  "serial": "emulator-5582",
+  "apk": "d2b793fdceb6bc0318fc704e098adc373ce9265f0db17e7f78fcb4c229de7891",
+  "checks": [
+    {
+      "name": "rejected-reader-mark-unread-visible-and-unchanged",
+      "before": true,
+      "failure": {
+        "attempts": 1,
+        "status": "操作失败：synthetic T4 write failure",
+        "error": true,
+        "visible": true,
+        "statusBottom": 867.0476341247559,
+        "viewportHeight": 867.047607421875,
+        "unhandled": [],
+        "readClass": true,
+        "reader": "reader"
+      },
+      "storedAfterFailure": true,
+      "storedAfterRetry": false,
+      "retryWrites": 1,
+      "navigationEvents": [
+        "rustrss-menu-close",
+        "rustrss-menu-action",
+        "popstate",
+        "rustrss-menu-close",
+        "rustrss-menu-action",
+        "popstate"
+      ]
+    },
+    {
+      "name": "android-system-bar-safe-area",
+      "statusBottom": 63,
+      "navigationTop": 2337,
+      "webviewTop": 63,
+      "webviewBottom": 2337,
+      "viewport": {
+        "width": 412.19049072265625,
+        "height": 867.047607421875,
+        "scale": 2.625
+      }
+    },
+    {
+      "name": "aa-effective-1.3-long-content-reachable",
+      "top": {
+        "size": 18,
+        "viewport": {
+          "width": 412.19049072265625,
+          "height": 867.047607421875
+        },
+        "title": {
+          "x": 18,
+          "y": 70.76190948486328,
+          "right": 384.2857360839844,
+          "bottom": 185.14286041259766,
+          "width": 366.2857360839844,
+          "height": 114.38095092773438
+        },
+        "back": {
+          "x": 10,
+          "y": 8,
+          "right": 58,
+          "bottom": 56,
+          "width": 48,
+          "height": 48
+        },
+        "actions": [
+          {
+            "id": "act-aa",
+            "x": 174.2857208251953,
+            "y": 8,
+            "right": 222.2857208251953,
+            "bottom": 56,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-star",
+            "x": 228.2857208251953,
+            "y": 8,
+            "right": 276.2857208251953,
+            "bottom": 56,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-later",
+            "x": 282.28570556640625,
+            "y": 8,
+            "right": 330.28570556640625,
+            "bottom": 56,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-more",
+            "x": 336.28570556640625,
+            "y": 8,
+            "right": 384.28570556640625,
+            "bottom": 56,
+            "width": 48,
+            "height": 48
+          }
+        ],
+        "readerOverflow": false,
+        "articleOverflow": false,
+        "pageOverflow": false,
+        "readerScrollTop": 0,
+        "readerScrollHeight": 6531,
+        "readerClientHeight": 841,
+        "first": {
+          "x": 18,
+          "y": 273.29168701171875,
+          "right": 384.2857360839844,
+          "bottom": 301.19049644470215,
+          "width": 366.2857360839844,
+          "height": 27.8988094329834
+        },
+        "last": {
+          "x": 18,
+          "y": 6417.52978515625,
+          "right": 384.2857360839844,
+          "bottom": 6473.327404022217,
+          "width": 366.2857360839844,
+          "height": 55.7976188659668
+        }
+      },
+      "bottom": {
+        "size": 18,
+        "viewport": {
+          "width": 412.19049072265625,
+          "height": 867.047607421875
+        },
+        "title": {
+          "x": 18,
+          "y": -5619.52392578125,
+          "right": 384.2857360839844,
+          "bottom": -5505.142974853516,
+          "width": 366.2857360839844,
+          "height": 114.38095092773438
+        },
+        "back": {
+          "x": 10,
+          "y": 8,
+          "right": 58,
+          "bottom": 56,
+          "width": 48,
+          "height": 48
+        },
+        "actions": [
+          {
+            "id": "act-aa",
+            "x": 174.2857208251953,
+            "y": 0,
+            "right": 222.2857208251953,
+            "bottom": 48,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-star",
+            "x": 228.2857208251953,
+            "y": 0,
+            "right": 276.2857208251953,
+            "bottom": 48,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-later",
+            "x": 282.28570556640625,
+            "y": 0,
+            "right": 330.28570556640625,
+            "bottom": 48,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-more",
+            "x": 336.28570556640625,
+            "y": 0,
+            "right": 384.28570556640625,
+            "bottom": 48,
+            "width": 48,
+            "height": 48
+          }
+        ],
+        "readerOverflow": false,
+        "articleOverflow": false,
+        "pageOverflow": false,
+        "readerScrollTop": 5690.28564453125,
+        "readerScrollHeight": 6531,
+        "readerClientHeight": 841,
+        "first": {
+          "x": 18,
+          "y": -5416.994140625,
+          "right": 384.2857360839844,
+          "bottom": -5389.095331192017,
+          "width": 366.2857360839844,
+          "height": 27.8988094329834
+        },
+        "last": {
+          "x": 18,
+          "y": 727.2440795898438,
+          "right": 384.2857360839844,
+          "bottom": 783.0416984558105,
+          "width": 366.2857360839844,
+          "height": 55.7976188659668
+        }
+      },
+      "effectiveScale": 1.2857142857142858
+    },
+    {
+      "name": "aa-effective-2.0-long-content-reachable",
+      "top": {
+        "size": 28,
+        "viewport": {
+          "width": 412.19049072265625,
+          "height": 867.047607421875
+        },
+        "title": {
+          "x": 18,
+          "y": 70.76190948486328,
+          "right": 384.2857360839844,
+          "bottom": 185.14286041259766,
+          "width": 366.2857360839844,
+          "height": 114.38095092773438
+        },
+        "back": {
+          "x": 10,
+          "y": 8,
+          "right": 58,
+          "bottom": 56,
+          "width": 48,
+          "height": 48
+        },
+        "actions": [
+          {
+            "id": "act-aa",
+            "x": 174.2857208251953,
+            "y": 8,
+            "right": 222.2857208251953,
+            "bottom": 56,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-star",
+            "x": 228.2857208251953,
+            "y": 8,
+            "right": 276.2857208251953,
+            "bottom": 56,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-later",
+            "x": 282.28570556640625,
+            "y": 8,
+            "right": 330.28570556640625,
+            "bottom": 56,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-more",
+            "x": 336.28570556640625,
+            "y": 8,
+            "right": 384.28570556640625,
+            "bottom": 56,
+            "width": 48,
+            "height": 48
+          }
+        ],
+        "readerOverflow": false,
+        "articleOverflow": false,
+        "pageOverflow": false,
+        "readerScrollTop": 0,
+        "readerScrollHeight": 16901,
+        "readerClientHeight": 841,
+        "first": {
+          "x": 18,
+          "y": 273.29168701171875,
+          "right": 384.2857360839844,
+          "bottom": 360.0893096923828,
+          "width": 366.2857360839844,
+          "height": 86.79762268066406
+        },
+        "last": {
+          "x": 18,
+          "y": 16658.94140625,
+          "right": 384.2857360839844,
+          "bottom": 16832.536651611328,
+          "width": 366.2857360839844,
+          "height": 173.59524536132812
+        }
+      },
+      "bottom": {
+        "size": 28,
+        "viewport": {
+          "width": 412.19049072265625,
+          "height": 867.047607421875
+        },
+        "title": {
+          "x": 18,
+          "y": -15988.6669921875,
+          "right": 384.2857360839844,
+          "bottom": -15874.286041259766,
+          "width": 366.2857360839844,
+          "height": 114.38095092773438
+        },
+        "back": {
+          "x": 10,
+          "y": 8,
+          "right": 58,
+          "bottom": 56,
+          "width": 48,
+          "height": 48
+        },
+        "actions": [
+          {
+            "id": "act-aa",
+            "x": 174.2857208251953,
+            "y": 0,
+            "right": 222.2857208251953,
+            "bottom": 48,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-star",
+            "x": 228.2857208251953,
+            "y": 0,
+            "right": 276.2857208251953,
+            "bottom": 48,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-later",
+            "x": 282.28570556640625,
+            "y": 0,
+            "right": 330.28570556640625,
+            "bottom": 48,
+            "width": 48,
+            "height": 48
+          },
+          {
+            "id": "act-more",
+            "x": 336.28570556640625,
+            "y": 0,
+            "right": 384.28570556640625,
+            "bottom": 48,
+            "width": 48,
+            "height": 48
+          }
+        ],
+        "readerOverflow": false,
+        "articleOverflow": false,
+        "pageOverflow": false,
+        "readerScrollTop": 16059.4287109375,
+        "readerScrollHeight": 16901,
+        "readerClientHeight": 841,
+        "first": {
+          "x": 18,
+          "y": -15786.13671875,
+          "right": 384.2857360839844,
+          "bottom": -15699.339096069336,
+          "width": 366.2857360839844,
+          "height": 86.79762268066406
+        },
+        "last": {
+          "x": 18,
+          "y": 599.5119018554688,
+          "right": 384.2857360839844,
+          "bottom": 773.1071472167969,
+          "width": 366.2857360839844,
+          "height": 173.59524536132812
+        }
+      },
+      "effectiveScale": 2
+    }
+  ]
+}

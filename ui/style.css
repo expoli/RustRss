@@ -1551,6 +1551,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   }
   body[data-mpage="reader"] #m-status,
   body[data-mpage="settings"] #m-status { display: none; }
+  body[data-mpage="reader"] #m-status:has(#m-status-text.error) { display: block; }
   #m-status-text.error { color: var(--danger); }
 
   /* ---- 订阅：输入入口在内容顶部，列表和标签连续滚动 ---- */
