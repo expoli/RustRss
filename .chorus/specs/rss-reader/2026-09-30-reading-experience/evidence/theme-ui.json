@@ -731,9 +731,9 @@
   },
   "scene_frames_note": "1 distinct frame per cell means scene toggles did not refresh the native snapshot in this environment; DOM assertions carry the per-scene claims",
   "display": "wayland",
-  "run_log": "/tmp/rustrss-theme-ui-m9hnlhlx/run.log",
+  "run_log": "/tmp/rustrss-theme-ui-sbi7beo1/run.log",
   "binary": "target/debug/examples/theme_ui",
-  "binary_sha256": "e34d03b5ca80f8a0460597b94d7e28f6015591f69212a17acf0343d0dc26efe6",
-  "binary_mtime": "2026-09-30T09:23:07",
-  "captured_at": "2026-09-30T01:23:25+00:00"
+  "binary_sha256": "525da48ec1114578b93d2878c783dbf969ee29674abf74e3994161c627546f34",
+  "binary_mtime": "2026-09-30T09:38:19",
+  "captured_at": "2026-09-30T01:38:32+00:00"
 }

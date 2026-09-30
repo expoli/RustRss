@@ -1,5 +1,5 @@
 Filesystem      Size  Used Avail Use% Mounted on
-/dev/nvme1n1p1  315G  244G   68G  79% /home
-{"output": "/tmp/rustrss-theme-preview-_cnkk6xw", "temporary_no_write": true, "stdio_bridge_file": true, "saved_revision": 1, "idempotent_save": true, "display": "wayland", "requested_scale": null, "local_cancel": false, "revocation_reaped": true, "article_renders_before_after": [0, 0]}
+/dev/nvme1n1p1  315G  245G   67G  79% /home
+{"output": "/tmp/rustrss-theme-preview-psa8kqf_", "temporary_no_write": true, "stdio_bridge_file": true, "saved_revision": 1, "idempotent_save": true, "display": "wayland", "requested_scale": null, "local_cancel": false, "revocation_reaped": true, "article_renders_before_after": [0, 0]}
 captures: 24
-Evidence: /tmp/rustrss-theme-preview-_cnkk6xw
+Evidence: /tmp/rustrss-theme-preview-psa8kqf_

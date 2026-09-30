@@ -31,7 +31,8 @@ cargo run -p rustrss-core --example reading_experience_fixture -- /tmp/rustrss-r
 - `fixture-results.json`：30/200 行隔离库的实际条目、文件夹、状态、长标题、图与代码/表格计数；数据库留在 `/tmp`，可按上面命令重建。
 - `contrast.json`：从 core 的六个内置解析快照计算文字、焦点、按钮、边框对比度；不会改写任意用户自定义颜色。测试方法：sRGB 线性化、(Lmax+0.05)/(Lmin+0.05)。
 - `theme-ui.json` 与同目录 `theme-*.png`：重建 Linux WebKitGTK 的真实组件矩阵。本批私有虚拟 KWin Wayland 的 12 个预设/模式/语言单元各有 3 个不同场景帧；`theme-preview.json` 与 `preview-*.png` 记录真实 MCP 预览、临时零写、MCP 保存/取消及失权回收。Wayland 下未验预览窗本地关闭取消（报告 `local_cancel=false`）。`probe.log`、`preview.log` 留原命令输出。
-- `touch-360x800.json` 与同名 PNG：Chrome 独立静态样式夹具，CDP 打开 360×800、`pointer: coarse` 后量 13 个可见目标的 CSS 矩形；这是桌面浏览器的触控媒体查询检查，不等于 Android 原生坐标或 TalkBack 验收。
+- `touch-360x800.json` 与同名 PNG：Chrome 独立静态样式夹具，CDP 打开 360×800、`pointer: coarse` 后量 15 个可见目标的 CSS 矩形，包含阅读器添加标签和设置开关的完整点击区域；这是桌面浏览器的触控媒体查询检查，不等于 Android 原生坐标或 TalkBack 验收。
+- 独立评审首轮发现 `.tag-add` 和设置 `.switch` 低于 48×48 CSS px；修复后两者在 `touch-360x800.json` 中均为 48×48，原生组件/设置/预览矩阵已使用重建的 `theme_ui` 重跑。Android 原生验证仍留后续任务。
 - `theme-settings.json` 与 `settings-*.png`：共享设置编辑器在真实 WebKitGTK 上完成 23 项检查，覆盖系统模式、预览零写、保存/丢弃、历史恢复、CAS 冲突、Aa 共享字段和正文锚点。
 - `cargo test --workspace`、`cargo build --workspace`、`cargo clippy --workspace --all-targets` 及 60 个 JS 测试在本批通过；`theme_ui` 要显式用 `--features snapshot-probe` 构建。证据文件里的 `binary_sha256` 应与重建产物核对。运行矩阵没有替代 Android APK 设备验收。
 - 后续 `theme-mcp`、设置、构建和完整测试结果须附命令、退出码、二进制哈希；旧轮次报告仅作背景，不当成本轮通过。

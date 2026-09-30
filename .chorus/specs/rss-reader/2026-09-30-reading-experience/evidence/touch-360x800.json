@@ -54,6 +54,12 @@
       "visible": true
     },
     {
+      "selector": "#reader .tag-add",
+      "width": 48,
+      "height": 48,
+      "visible": true
+    },
+    {
       "selector": "#fixture-star",
       "width": 52.234375,
       "height": 48,
@@ -75,6 +81,12 @@
       "selector": "#settings-nav-list button",
       "width": 318,
       "height": 69.1875,
+      "visible": true
+    },
+    {
+      "selector": "#pane-subscriptions .switch",
+      "width": 48,
+      "height": 48,
       "visible": true
     },
     {

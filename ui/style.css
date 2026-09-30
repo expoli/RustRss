@@ -1354,6 +1354,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   .reader { padding: 14px 18px 40px; }
   .reader-actions { display: flex; flex-wrap: wrap; gap: 6px; }
   .reader-actions button { padding: 9px 12px; min-height: 48px; }
+  .reader-head .tag-bar .tag-add { min-width: 48px; min-height: 48px; }
 
   /* ---- 触控目标 ---- */
   .toolbar button { padding: 8px 12px; min-height: 48px; white-space: nowrap; }
@@ -1480,6 +1481,8 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   .setting-block h4 { font-size: 14px; margin-bottom: 12px; }
   .setting-item { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 16px 0; }
   .setting-item:has(.switch) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .setting-item .switch { width: 48px; height: 48px; }
+  .setting-item .switch span { inset: 12px 3px; }
   .setting-item input:not([type=checkbox]), .setting-item select,
   .setting-item .setting-dropdown { width: 100%; min-height: 48px; font-size: 16px; }
   .setting-item small, .android-hint { overflow-wrap: anywhere; }

@@ -74,12 +74,15 @@ try {
     };
     const rows = ['#m-nav .m-nav-btn', '#m-seg-articles button', '#btn-list-sort', '#btn-list-bulk', '#btn-refresh', '#entries li', '#entries .row-tag-btn'].map(rect);
     document.body.dataset.mpage = 'reader';
-    document.querySelector('#reader').innerHTML = '<div class="reader-actions"><button id="fixture-star">Star</button><button id="fixture-later">Later</button><button id="fixture-more">More</button></div>';
-    rows.push(rect('#m-reader-back'), rect('#fixture-star'), rect('#fixture-later'), rect('#fixture-more'));
+    document.querySelector('#reader').innerHTML = '<div class="reader-head"><div class="meta"><span class="tag-bar"><button class="tag-add">+ Tag</button></span></div></div><div class="reader-actions"><button id="fixture-star">Star</button><button id="fixture-later">Later</button><button id="fixture-more">More</button></div>';
+    rows.push(rect('#m-reader-back'), rect('#reader .tag-add'), rect('#fixture-star'), rect('#fixture-later'), rect('#fixture-more'));
     document.body.dataset.mpage = 'settings';
     const overlay = document.querySelector('#settings-overlay');
     document.querySelector('main').append(overlay); overlay.classList.remove('hidden');
     rows.push(rect('#settings-nav-list button'));
+    document.querySelector('.settings-dialog').dataset.screen = 'detail';
+    document.querySelector('#pane-subscriptions').classList.remove('hidden');
+    rows.push(rect('#pane-subscriptions .switch'));
     overlay.classList.add('hidden');
     document.body.dataset.mpage = 'articles';
     const menu = document.createElement('div'); menu.className = 'ctx-menu'; menu.innerHTML = '<button>Action</button>'; document.body.append(menu);
