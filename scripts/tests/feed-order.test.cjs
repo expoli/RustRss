@@ -17,7 +17,8 @@ test('feed reorder rejects self, foreign groups and stale IDs before IPC',async(
 test('unsubscribe cancellation cannot delete and confirmation sends exact feed ID',async()=>{
  let confirmed=false;const calls=[];
  const c=vm.createContext({confirmDialog:async()=>confirmed,t:k=>k,invoke:async(cmd,args)=>calls.push({cmd,args}),
- state:{view:{kind:'all'}},refreshCounts:async()=>{},loadEntries:async()=>{},setStatus:()=>{},log:()=>{}});
+ state:{view:{kind:'all'}},refreshCounts:async()=>{},loadEntries:async()=>{},setStatus:()=>{},log:()=>{},
+ captureRemovalFocus:()=>({}),restoreRemovalFocus:()=>{}});
  vm.runInContext(extract('unsubscribeFeed'),c);
  await vm.runInContext("unsubscribeFeed({id:7,title:'fixture'})",c);assert.equal(calls.length,0);
  confirmed=true;await vm.runInContext("unsubscribeFeed({id:7,title:'fixture'})",c);
@@ -27,7 +28,8 @@ test('folder deletion explains rehomed feeds and cancellation performs no write'
  let confirmed=false;const calls=[];let body='';
  const c=vm.createContext({state:{feeds:[{id:1,folder_id:7},{id:2,folder_id:7}],view:{kind:'all'}},
   confirmDialog:async options=>{body=options.body;return confirmed},t:(key,args)=>key==='confirm.deleteFolderBody'?`${args.name}:${args.count}`:key,
-  invoke:async(cmd,args)=>calls.push({cmd,args}),refreshCounts:async()=>{},setStatus:()=>{},log:()=>{}});
+  invoke:async(cmd,args)=>calls.push({cmd,args}),refreshCounts:async()=>{},setStatus:()=>{},log:()=>{},
+  captureRemovalFocus:()=>({}),restoreRemovalFocus:()=>{}});
  vm.runInContext(extract('deleteFolder'),c);
  await vm.runInContext("deleteFolder({id:7,name:'Fixture'})",c);
  assert.equal(body,'Fixture:2');assert.equal(calls.length,0);

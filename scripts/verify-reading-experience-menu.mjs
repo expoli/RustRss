@@ -77,6 +77,15 @@ const checks = [];
 function record(name, value) { checks.push({ name, ...value }); }
 async function feed(id) { return (await js(`window.__TAURI__.core.invoke('list_feeds')`)).find(row => row.id === id); }
 async function tags() { return js(`window.__TAURI__.core.invoke('list_tags',{recentFirst:false})`); }
+async function deletionFocus(listId, removedKey) {
+  return js(`(() => { const n=document.activeElement, row=n?.closest('li[data-key]'); return {
+    active: n?.outerHTML.slice(0, 180), rowKey: row?.dataset.key || null,
+    inList: row?.parentElement?.id === ${JSON.stringify(listId)},
+    heading: n?.id === ${JSON.stringify(listId === 'feeds' ? 'feeds-heading' : 'tags-head')} || n?.id === 'list-title',
+    visible: !!n?.getClientRects().length,
+    removed: !!document.querySelector(${JSON.stringify(`#${listId} li[data-key="${removedKey}"]`)})
+  }; })()`);
+}
 let server;
 try {
   await until(`document.querySelectorAll('#feeds li[data-feed-id]').length === 3`);
@@ -179,13 +188,18 @@ try {
   await action('删除');
   assert(await js(`!document.querySelector('#generic-confirm-overlay').classList.contains('hidden')`));
   shot('04-folder-delete-impact');
-  await click('#generic-confirm-cancel');
+  await native('#generic-confirm-cancel');
   assert((await feed(2)).folder_id === 1);
+  assert(await js(`document.activeElement === document.querySelector('#feeds li[data-folder-id="1"] .row-more')`));
+  record('folder-delete-cancel-focus', { trigger: 'folder:1', restored: true });
   await native('#feeds li[data-folder-id="1"] .row-more');
   await action('删除');
-  await click('#generic-confirm-ok');
+  await native('#generic-confirm-ok');
   await until(`window.__TAURI__.core.invoke('list_feeds').then(rows=>rows.find(r=>r.id===2).folder_id===null)`);
-  record('folder-delete-preserves-feeds', { remainingFeedId: (await feed(2)).id, folderId: (await feed(2)).folder_id });
+  await until(`document.activeElement?.closest('li[data-key]')?.dataset.key !== 'h:1' && document.querySelector('#generic-confirm-overlay').classList.contains('hidden')`);
+  const folderFocus = await deletionFocus('feeds', 'h:1');
+  assert(!folderFocus.removed && folderFocus.visible && (folderFocus.inList || folderFocus.heading), JSON.stringify(folderFocus));
+  record('folder-delete-preserves-feeds', { remainingFeedId: (await feed(2)).id, folderId: (await feed(2)).folder_id, focus: folderFocus });
 
   await click('#btn-new-folder');
   assert(await js(`!!document.querySelector('.prompt-overlay input')`));
@@ -225,13 +239,17 @@ try {
   await native('#feeds li[data-feed-id="3"] .row-more');
   await action('取消订阅');
   assert(await js(`document.querySelector('#generic-confirm-body').textContent.includes('全部条目')`));
-  await click('#generic-confirm-cancel');
+  await native('#generic-confirm-cancel');
   assert(await feed(3));
+  assert(await js(`document.activeElement === document.querySelector('#feeds li[data-feed-id="3"] .row-more')`));
+  record('unsubscribe-cancel-focus', { trigger: 'feed:3', restored: true });
   await native('#feeds li[data-feed-id="3"] .row-more');
   await action('取消订阅');
-  await click('#generic-confirm-ok');
+  await native('#generic-confirm-ok');
   await until(`window.__TAURI__.core.invoke('list_feeds').then(rows=>!rows.some(r=>r.id===3))`);
-  record('unsubscribe-cancel-confirm', { removedFeedId: 3, preservedFeedId: (await feed(2)).id });
+  const feedFocus = await deletionFocus('feeds', 'f:3');
+  assert(!feedFocus.removed && feedFocus.visible && (feedFocus.inList || feedFocus.heading), JSON.stringify(feedFocus));
+  record('unsubscribe-cancel-confirm', { removedFeedId: 3, preservedFeedId: (await feed(2)).id, focus: feedFocus });
 
   await native('#tags li[data-tag-id="2"] .row-more');
   await action('置顶');
@@ -250,13 +268,17 @@ try {
   await native('#tags li[data-tag-id="3"] .row-more');
   await action('删除');
   assert(await js(`!document.querySelector('#generic-confirm-overlay').classList.contains('hidden')`));
-  await click('#generic-confirm-cancel');
+  await native('#generic-confirm-cancel');
   assert((await tags()).some(row => row.id === 3));
+  assert(await js(`document.activeElement === document.querySelector('#tags li[data-tag-id="3"] .row-more')`));
+  record('tag-delete-cancel-focus', { trigger: 'tag:3', restored: true });
   await native('#tags li[data-tag-id="3"] .row-more');
   await action('删除');
-  await click('#generic-confirm-ok');
+  await native('#generic-confirm-ok');
   await until(`window.__TAURI__.core.invoke('list_tags',{recentFirst:false}).then(rows=>!rows.some(r=>r.id===3))`);
-  record('tag-delete-cancel-confirm', { deletedId: 3 });
+  const tagFocus = await deletionFocus('tags', 't:3');
+  assert(!tagFocus.removed && tagFocus.visible && (tagFocus.inList || tagFocus.heading), JSON.stringify(tagFocus));
+  record('tag-delete-cancel-confirm', { deletedId: 3, focus: tagFocus });
 
   await native('[data-mpage-btn="articles"]');
   await click('#m-seg-articles [data-mview="all"]');
@@ -267,6 +289,8 @@ try {
   assert(await js(`!document.querySelector('#tag-picker-overlay').classList.contains('hidden')`));
   await js(`(() => {const n=document.querySelector('#tag-picker-input');n.value='设计';n.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   assert(await js(`!!document.querySelector('#tag-picker-list li[data-tag-id="1"]')`));
+  await click('#tag-picker-list li[data-tag-id="1"]');
+  await until(`document.querySelector('#reader-tags').textContent.includes('Tag A')`);
   await click('#tag-picker-list li[data-tag-id="1"]');
   await until(`!document.querySelector('#reader-tags').textContent.includes('Tag A')`);
   await click('#tag-picker-list li[data-tag-id="1"]');
@@ -293,10 +317,15 @@ try {
   await click('#m-reader-back');
   await native('[data-mpage-btn="subscriptions"]');
 
+  const rsshubHits = [];
   server = createServer((request, response) => {
     if (request.url === '/site') {
       response.writeHead(200, { 'Content-Type': 'text/html' });
       response.end('<link rel="alternate" type="application/rss+xml" href="/one.xml"><link rel="alternate" type="application/rss+xml" href="/two.xml">');
+    } else if (request.url === '/t2/menu-fixture') {
+      rsshubHits.push(request.url);
+      response.writeHead(200, { 'Content-Type': 'application/rss+xml' });
+      response.end('<?xml version="1.0"?><rss version="2.0"><channel><title>T2 RSSHub fixture</title><link>http://example.invalid/</link><description>Local RSSHub mirror fixture</description><item><title>RSSHub local article</title><guid>rsshub-t2-1</guid><description>Body</description></item></channel></rss>');
     } else if (request.url?.endsWith('.xml')) {
       response.writeHead(200, { 'Content-Type': 'application/rss+xml' });
       response.end(`<?xml version="1.0"?><rss version="2.0"><channel><title>${request.url}</title><link>http://example.invalid/</link><description>Fixture</description><item><title>T2 local article</title><guid>${request.url}</guid><description>Body</description></item></channel></rss>`);
@@ -318,9 +347,19 @@ try {
   await until(`window.__TAURI__.core.invoke('list_feeds').then(rows=>rows.find(r=>r.id===${added.id}).last_status==='ok')`);
   assert.equal((await feed(added.id)).url, added.url);
   record('refresh-feed-stable-id', { id: added.id, url: added.url, status: (await feed(added.id)).last_status });
+  const mirror = `http://10.0.2.2:${server.address().port}`;
+  assert.equal(await js(`window.__TAURI__.core.invoke('set_rsshub_mirror',{mirror:${JSON.stringify(mirror)}})`), mirror);
   await click('#add-rsshub');
   assert.equal(await js(`document.querySelector('#add-url').value`), 'rsshub://');
-  record('rsshub-entry', { input: 'rsshub://' });
+  const rsshubUrl = 'rsshub://t2/menu-fixture';
+  await js(`document.querySelector('#add-url').value=${JSON.stringify(rsshubUrl)}`);
+  await native('#add-ok');
+  await until(`window.__TAURI__.core.invoke('list_feeds').then(rows=>rows.some(r=>r.url==='rsshub://t2/menu-fixture'&&r.last_status==='ok'))`);
+  const rsshubFeed = (await js(`window.__TAURI__.core.invoke('list_feeds')`)).find(row => row.url === rsshubUrl);
+  assert(rsshubHits.includes('/t2/menu-fixture'));
+  assert.equal(rsshubFeed.title, 'T2 RSSHub fixture');
+  record('rsshub-full-address-add-result', { input: rsshubUrl, mirror, requestedPaths: rsshubHits, feedId: rsshubFeed.id, storedUrl: rsshubFeed.url, title: rsshubFeed.title, status: rsshubFeed.last_status });
+  await click('#add-rsshub');
   await native('#add-url');
   await until(`visualViewport.height < 700`);
   const ime = await js(`(() => {const v=visualViewport,r=document.querySelector('#add-url').getBoundingClientRect();return {visual:[v.width,v.height],input:[r.top,r.bottom],visible:r.bottom<=v.height,overflow:document.documentElement.scrollWidth>v.width+1};})()`);

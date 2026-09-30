@@ -2093,6 +2093,7 @@ function dropTagFromMemory(tagId) {
  * 确认后才真删。删除只清 `entry_tags` 关联，**文章保留**。
  */
 async function deleteTag(tag) {
+  const removalFocus = captureRemovalFocus('tags', 'tags-head');
   let preview;
   try {
     preview = await invoke('delete_tag', { tagId: tag.id, dryRun: true });
@@ -2117,6 +2118,7 @@ async function deleteTag(tag) {
     if (wasCurrentView) await setView(VIEWS.find((v) => v.kind === 'unread'));
     else await loadEntries({ reader: false });
     await afterTagMetaChange();
+    restoreRemovalFocus(removalFocus);
     setStatus(t('tags.deleted', { name: tag.name, n: report.affected_entries }));
     log(
       `tagDelete: done id=${tag.id} name=${tag.name} affected=${report.affected_entries} ` +
@@ -3068,6 +3070,7 @@ function setFeedRefreshInterval(feedId, value) {
 /// 复用 confirm-sheet 样式（小尺寸变体），与 AI 确认弹窗同一套视觉。
 function confirmDialog({ title, body, okLabel, cancelLabel, danger = true }) {
   return new Promise((resolve) => {
+    const returnFocus = document.activeElement;
     const overlay = el('generic-confirm-overlay');
     el('generic-confirm-title').textContent = title;
     el('generic-confirm-body').textContent = body || '';
@@ -3080,6 +3083,7 @@ function confirmDialog({ title, body, okLabel, cancelLabel, danger = true }) {
       overlay.classList.add('hidden');
       ok.onclick = cancel.onclick = overlay.onclick = null;
       document.removeEventListener('keydown', onKey);
+      if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
       resolve(v);
     };
     ok.onclick = () => done(true);
@@ -3092,8 +3096,26 @@ function confirmDialog({ title, body, okLabel, cancelLabel, danger = true }) {
   });
 }
 
+// A confirmed deletion removes the menu trigger. Keep its old list position so
+// focus can land on the next surviving row (or the preceding row at list end).
+function captureRemovalFocus(listId, headingId) {
+  const list = el(listId);
+  const row = document.activeElement?.closest('li');
+  return { listId, headingId, index: row?.parentElement === list ? [...list.children].indexOf(row) : 0 };
+}
+
+function restoreRemovalFocus({ listId, headingId, index }) {
+  const list = el(listId);
+  const row = list.children[Math.min(index, list.children.length - 1)];
+  const visible = list.getClientRects().length && getComputedStyle(list).visibility !== 'hidden';
+  const target = (visible && row?.querySelector('.row-select, .name, .folder-arrow')) ||
+    (visible ? el(headingId) : el('list-title'));
+  target?.focus({ preventScroll: true });
+}
+
 /// 取消订阅：破坏性操作（条目级联删除，不可恢复），必须过确认弹窗。
 async function unsubscribeFeed(feed) {
+  const removalFocus = captureRemovalFocus('feeds', 'feeds-heading');
   const ok = await confirmDialog({
     title: t('confirm.unsubscribeTitle'),
     body: t('confirm.unsubscribeBody', { name: feed.title }),
@@ -3112,6 +3134,7 @@ async function unsubscribeFeed(feed) {
       // 静默模式：侧栏计数 + 列表重建，正文与滚动保持原位。
       await loadEntries({ reader: false });
     }
+    restoreRemovalFocus(removalFocus);
     setStatus(t('status.unsubscribed', { name: feed.title }));
     log(`feed removed: ${feed.id} ${feed.title}`);
   } catch (err) {
@@ -3400,6 +3423,7 @@ async function renameFolder(folder) {
 }
 
 async function deleteFolder(folder) {
+  const removalFocus = captureRemovalFocus('feeds', 'feeds-heading');
   const count = state.feeds.filter((feed) => feed.folder_id === folder.id).length;
   const ok = await confirmDialog({
     title: t('confirm.deleteFolderTitle'),
@@ -3411,6 +3435,7 @@ async function deleteFolder(folder) {
     await invoke('delete_folder', { folderId: folder.id });
     await refreshCounts();
     if (state.view.kind === 'folder' && state.view.folderId === folder.id) await setView({ kind: 'all' });
+    restoreRemovalFocus(removalFocus);
     log(`folder deleted: ${folder.name}`);
   } catch (err) {
     setStatus(err.message, true);

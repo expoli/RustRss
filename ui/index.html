@@ -73,7 +73,7 @@
     <aside class="sidebar">
       <nav id="views" class="views"></nav>
       <div class="section-title">
-        <span data-i18n="sidebar.feeds"></span>
+        <span id="feeds-heading" role="heading" aria-level="2" tabindex="-1" data-i18n="sidebar.feeds"></span>
         <span id="feeds-meta" class="dim"></span>
         <button id="btn-new-folder" data-icon="plus" data-i18n-title="folder.newTitle" data-i18n-aria-label="folder.newTitle"></button>
       </div>
@@ -112,7 +112,7 @@
           <button type="button" data-mview="starred" data-i18n="list.starred"></button>
           <button type="button" data-mview="later" data-i18n="list.later"></button>
         </div>
-        <span id="list-title"></span>
+        <span id="list-title" role="heading" aria-level="2" tabindex="-1"></span>
         <span class="list-head-right">
           <span id="list-count" class="dim"></span>
           <!-- 排序与过滤入口：图标按钮弹 ctx-menu（三档 + 分隔 + 隐藏已读）-->

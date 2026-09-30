@@ -27,7 +27,7 @@
 | M03.status | 刷新状态 | 固定状态栏 → 稳定状态位 | 双端 | 不跳布局；触发和失败 | T3 | 待验 |
 | M04.url | URL 或网站发现 | 添加订阅输入 → 订阅页明确添加 | 双端 | 候选发现；输入测试 URL | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M04.candidate | 候选源选择 | 发现结果 → 输入页选择 | 双端 | 选择目标源后新增 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M04.rsshub | RSSHub 入口 | 添加订阅 → 输入页 | 双端 | 原 URL 规则；输入 rsshub 地址 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
+| M04.rsshub | RSSHub 入口 | 添加订阅 → 输入页 | 双端 | 输入完整 `rsshub://t2/menu-fixture`；本地镜像命中并回读源 URL/ID/成功状态 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M04.result | 添加反馈 | 原状态位 → 稳定反馈位 | 双端 | 成功/失败，输入保留 | T2/T5 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M05.select | 选择源、未读数与错误 | 侧栏行 → 可见行与状态 | 双端 | 选中/错误/计数；切换源 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M05.move-up | 源上移 | 右键 → 更多/右键整理组 | 双端 | 排序落库；执行并重启 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
@@ -36,7 +36,7 @@
 | M05.edit | 编辑源 | 右键 → 更多/右键 | 双端 | 进入原表单；取消/保存 | T2/T5 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M05.interval | 源刷新间隔 | 级联菜单 → 面板内选择页/桌面级联 | 双端 | 当前值、覆盖优先；切换并回读 | T2/T6 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M05.folder | 移动源至文件夹/未分组 | 级联菜单 → 面板内选择页/桌面级联 | 双端 | 当前值、对象 ID；移动并回读 | T2/T6 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M05.unsubscribe | 取消订阅 | 右键 → 更多危险组 | 双端 | 显示影响、取消无写、确认级联 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
+| M05.unsubscribe | 取消订阅 | 右键 → 更多危险组 | 双端 | 显示影响、取消无写且焦点回触发项；确认级联且焦点回存活行/标题 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M06.name | 源自定义名称 | 编辑对话框 → 对象编辑页 | 双端 | 保存/取消并回读 | T2/T5 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M06.folder | 编辑源文件夹 | 编辑对话框 → 对象编辑页 | 双端 | 未分组也可选；回读 | T2/T5 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M06.interval | 编辑源刷新间隔 | 编辑对话框 → 对象编辑页 | 双端 | 继承/覆盖；回读 | T2/T5 | 通过：[T2 证据](evidence/t2-menu/record.md) |
@@ -45,14 +45,14 @@
 | M07.aggregate | 文件夹聚合列表 | 侧栏选择 → 文件夹行选择 | 双端 | 作用域计数；打开 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M07.collapse | 折叠/展开文件夹 | 侧栏箭头 → 可见行控制 | 双端 | 子源显隐，状态保留 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M07.rename | 重命名文件夹 | 右键 → 行更多/右键 | 双端 | 保存/取消并回读 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M07.delete | 删除文件夹 | 右键 → 更多危险组 | 双端 | 说明源保留；取消/确认查库 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
+| M07.delete | 删除文件夹 | 右键 → 更多危险组 | 双端 | 说明源保留；取消/确认查库并检查焦点去向 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M08.view | 标签视图、颜色、未读数 | 标签侧栏 → 可见标签行 | 双端 | 筛选、计数、颜色；打开 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M08.collapse | 折叠标签区 | 标签标题 → 可见控制 | 双端 | 切换并重启 | T2 | 通过：[T2 设备与重启证据](evidence/t2-menu/record.md) |
 | M08.rename | 重命名标签 | 右键 → 行更多/右键 | 双端 | 保存/取消并回读 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M08.color | 标签颜色/默认色 | 右键 → 面板内选择页/桌面级联 | 双端 | 当前值、恢复默认；回读 | T2/T6 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M08.pin | 置顶/取消置顶 | 右键 → 行更多/右键 | 双端 | 顺序变化；切换并回读 | T2 | 通过：[T2 设备与重启证据](evidence/t2-menu/record.md) |
 | M08.sort | 标签上移/下移、拖拽 | 拖拽/右键 → 更多排序/桌面拖拽 | 双端 | 无触屏拖拽依赖；移动并回读 | T2/T6 | 待验（T2 手机更多菜单上移/下移已通过；既有桌面拖拽的最终组合复核归 T6；[T2 证据](evidence/t2-menu/record.md)） |
-| M08.delete | 删除标签 | 右键 → 更多危险组 | 双端 | 影响数量与确认；取消/确认 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
+| M08.delete | 删除标签 | 右键 → 更多危险组 | 双端 | 影响数量与确认；取消/确认及焦点去向 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M09.search | 搜索标签 | 标签选择器/t → 阅读更多/选择器 | 双端 | 键入中英；结果筛选 | T2/T4 | 通过：[T2 中英搜索与选择证据](evidence/t2-menu/record.md) |
 | M09.create | 新建标签 | 标签选择器 → 阅读更多/选择器 | 双端 | 新建并附加；回读 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M09.attach | 附加标签 | 标签选择器 → 阅读更多/选择器 | 双端 | 文章标签关系；回读 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md) |

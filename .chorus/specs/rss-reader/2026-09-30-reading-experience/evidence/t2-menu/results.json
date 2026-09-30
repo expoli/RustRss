@@ -127,9 +127,22 @@
       ]
     },
     {
+      "name": "folder-delete-cancel-focus",
+      "trigger": "folder:1",
+      "restored": true
+    },
+    {
       "name": "folder-delete-preserves-feeds",
       "remainingFeedId": 2,
-      "folderId": null
+      "folderId": null,
+      "focus": {
+        "active": "<button type=\"button\" class=\"folder-arrow\" aria-expanded=\"true\" aria-label=\"折叠分组\">▾</button>",
+        "rowKey": "h:2",
+        "inList": true,
+        "heading": false,
+        "visible": true,
+        "removed": false
+      }
     },
     {
       "name": "folder-create-rename",
@@ -145,9 +158,22 @@
       "interval": 30
     },
     {
+      "name": "unsubscribe-cancel-focus",
+      "trigger": "feed:3",
+      "restored": true
+    },
+    {
       "name": "unsubscribe-cancel-confirm",
       "removedFeedId": 3,
-      "preservedFeedId": 2
+      "preservedFeedId": 2,
+      "focus": {
+        "active": "<button type=\"button\" class=\"row-select\"><span class=\"name\">中文阅读 · 日常观察</span><span class=\"dot\" hidden=\"\">●</span><span class=\"count\">5</span></button>",
+        "rowKey": "f:1",
+        "inList": true,
+        "heading": false,
+        "visible": true,
+        "removed": false
+      }
     },
     {
       "name": "tag-pin-rename",
@@ -157,7 +183,7 @@
         "color": null,
         "pinned": true,
         "sort_order": 2,
-        "last_used_at": 0,
+        "last_used_at": null,
         "unread": 0
       }
     },
@@ -167,8 +193,21 @@
       "pinned": false
     },
     {
+      "name": "tag-delete-cancel-focus",
+      "trigger": "tag:3",
+      "restored": true
+    },
+    {
       "name": "tag-delete-cancel-confirm",
-      "deletedId": 3
+      "deletedId": 3,
+      "focus": {
+        "active": "<button type=\"button\" class=\"row-select\"><span class=\"tag-dot\"></span><span class=\"name\">Tag A · 设计与阅读</span><span class=\"count\">0</span></button>",
+        "rowKey": "t:1",
+        "inList": true,
+        "heading": false,
+        "visible": true,
+        "removed": false
+      }
     },
     {
       "name": "article-tag-picker-chinese-search-select",
@@ -190,17 +229,25 @@
     },
     {
       "name": "url-discovery-candidate-add",
-      "url": "http://10.0.2.2:42145/two.xml"
+      "url": "http://10.0.2.2:41059/two.xml"
     },
     {
       "name": "refresh-feed-stable-id",
       "id": 3,
-      "url": "http://10.0.2.2:42145/two.xml",
+      "url": "http://10.0.2.2:41059/two.xml",
       "status": "ok"
     },
     {
-      "name": "rsshub-entry",
-      "input": "rsshub://"
+      "name": "rsshub-full-address-add-result",
+      "input": "rsshub://t2/menu-fixture",
+      "mirror": "http://10.0.2.2:41059",
+      "requestedPaths": [
+        "/t2/menu-fixture"
+      ],
+      "feedId": 4,
+      "storedUrl": "rsshub://t2/menu-fixture",
+      "title": "T2 RSSHub fixture",
+      "status": "ok"
     },
     {
       "name": "native-ime-safe-area",
