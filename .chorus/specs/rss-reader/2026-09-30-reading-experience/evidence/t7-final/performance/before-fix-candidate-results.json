@@ -1,0 +1,954 @@
+{
+  "initialRows": 200,
+  "finalRows": 200,
+  "warmupId": "68",
+  "samples": [
+    {
+      "id": "2",
+      "ms": 10,
+      "readerTitle": "003 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "136",
+      "ms": 5,
+      "readerTitle": "005 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "70",
+      "ms": 7,
+      "readerTitle": "007 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "4",
+      "ms": 5,
+      "readerTitle": "009 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "138",
+      "ms": 5,
+      "readerTitle": "011 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "72",
+      "ms": 8,
+      "readerTitle": "013 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "6",
+      "ms": 6,
+      "readerTitle": "015 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "140",
+      "ms": 6,
+      "readerTitle": "017 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "74",
+      "ms": 9,
+      "readerTitle": "019 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "8",
+      "ms": 6,
+      "readerTitle": "021 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "142",
+      "ms": 7,
+      "readerTitle": "023 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "76",
+      "ms": 7,
+      "readerTitle": "025 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "10",
+      "ms": 6,
+      "readerTitle": "027 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "144",
+      "ms": 6,
+      "readerTitle": "029 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "78",
+      "ms": 12,
+      "readerTitle": "031 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "12",
+      "ms": 7,
+      "readerTitle": "033 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "146",
+      "ms": 6,
+      "readerTitle": "035 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "80",
+      "ms": 6,
+      "readerTitle": "037 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "14",
+      "ms": 6,
+      "readerTitle": "039 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "148",
+      "ms": 6,
+      "readerTitle": "041 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    }
+  ],
+  "listMutations": [
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    }
+  ],
+  "identity": true,
+  "p95Ms": 10,
+  "medianMs": 6,
+  "zeroWrites": {
+    "observedRoots": [
+      "views",
+      "feeds",
+      "tags",
+      "list-count",
+      "db-info",
+      "feeds-meta",
+      "tags-meta",
+      "tags-arrow",
+      "tags-empty",
+      "m-feeds-empty"
+    ],
+    "countNodes": 34,
+    "writes": [
+      {
+        "target": "v:unread",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "v:starred",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "v:later",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "v:all",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "active",
+        "after": "active",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:1",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 00 · 分类与长名称",
+        "after": "更多操作：Folder 00 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:2",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 01 · 分类与长名称",
+        "after": "更多操作：Folder 01 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:3",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 02 · 分类与长名称",
+        "after": "更多操作：Folder 02 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:4",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 03 · 分类与长名称",
+        "after": "更多操作：Folder 03 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:5",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 04 · 分类与长名称",
+        "after": "更多操作：Folder 04 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:6",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 05 · 分类与长名称",
+        "after": "更多操作：Folder 05 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:7",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 06 · 分类与长名称",
+        "after": "更多操作：Folder 06 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:8",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 07 · 分类与长名称",
+        "after": "更多操作：Folder 07 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:9",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 08 · 分类与长名称",
+        "after": "更多操作：Folder 08 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:10",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 09 · 分类与长名称",
+        "after": "更多操作：Folder 09 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:11",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 10 · 分类与长名称",
+        "after": "更多操作：Folder 10 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:12",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 11 · 分类与长名称",
+        "after": "更多操作：Folder 11 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:13",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 12 · 分类与长名称",
+        "after": "更多操作：Folder 12 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:14",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 13 · 分类与长名称",
+        "after": "更多操作：Folder 13 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:15",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 14 · 分类与长名称",
+        "after": "更多操作：Folder 14 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:16",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 15 · 分类与长名称",
+        "after": "更多操作：Folder 15 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:17",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 16 · 分类与长名称",
+        "after": "更多操作：Folder 16 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:18",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 17 · 分类与长名称",
+        "after": "更多操作：Folder 17 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:19",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 18 · 分类与长名称",
+        "after": "更多操作：Folder 18 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:20",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 19 · 分类与长名称",
+        "after": "更多操作：Folder 19 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:21",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 20 · 分类与长名称",
+        "after": "更多操作：Folder 20 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:22",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 21 · 分类与长名称",
+        "after": "更多操作：Folder 21 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:23",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 22 · 分类与长名称",
+        "after": "更多操作：Folder 22 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "h:24",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Folder 23 · 分类与长名称",
+        "after": "更多操作：Folder 23 · 分类与长名称",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:2",
+        "type": "attributes",
+        "attribute": "class",
+        "before": " folder-feed",
+        "after": " folder-feed",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:2",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "https://example.invalid/en.xml\n双击刷新此源",
+        "after": "https://example.invalid/en.xml\n双击刷新此源",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:2",
+        "type": "attributes",
+        "attribute": "hidden",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:2",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：A deliberately long subscription title for wrapping and menu placement",
+        "after": "更多操作：A deliberately long subscription title for wrapping and menu placement",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:1",
+        "type": "attributes",
+        "attribute": "class",
+        "before": " folder-feed",
+        "after": " folder-feed",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:1",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "https://example.invalid/zh.xml\n双击刷新此源",
+        "after": "https://example.invalid/zh.xml\n双击刷新此源",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:1",
+        "type": "attributes",
+        "attribute": "hidden",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:1",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：中文阅读 · 日常观察",
+        "after": "更多操作：中文阅读 · 日常观察",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:3",
+        "type": "attributes",
+        "attribute": "class",
+        "before": " folder-feed",
+        "after": " folder-feed",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:3",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "https://example.invalid/mixed.xml\n双击刷新此源",
+        "after": "https://example.invalid/mixed.xml\n双击刷新此源",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:3",
+        "type": "attributes",
+        "attribute": "hidden",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:3",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：混合 / Mixed",
+        "after": "更多操作：混合 / Mixed",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:1",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:1",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Performance · blue",
+        "after": "更多操作：Performance · blue",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:1",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "Performance · blue（左键筛选 · 右键管理 · 拖拽排序）",
+        "after": "Performance · blue（左键筛选 · 右键管理 · 拖拽排序）",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:2",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:2",
+        "type": "attributes",
+        "attribute": "aria-label",
+        "before": "更多操作：Performance · plain",
+        "after": "更多操作：Performance · plain",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:2",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "Performance · plain（左键筛选 · 右键管理 · 拖拽排序）",
+        "after": "Performance · plain（左键筛选 · 右键管理 · 拖拽排序）",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "db-info",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "/tmp/rustrss-t7-perf-prefx-tags/candidate/fixture.sqlite",
+        "after": "/tmp/rustrss-t7-perf-prefx-tags/candidate/fixture.sqlite",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      }
+    ],
+    "sameValueWrites": 47,
+    "sameValues": true,
+    "nodesPreserved": true
+  },
+  "binarySha256": "977977d23c68e85c6dc8a16e67573798947da017bcce5303ebba93316126517d",
+  "fixtureSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "fixtureAfterRunSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "webkitInspectorPort": 43153,
+  "xvfbPid": 2977111
+}
