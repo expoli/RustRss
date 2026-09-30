@@ -1,0 +1,82 @@
+{
+  "display": ":120",
+  "private_root": "/tmp/rustrss-t7-linux-FF3fBp",
+  "commands": [
+    {
+      "argv": [
+        "/home/tcy/Github/RustRss/target/debug/examples/keyring_probe"
+      ],
+      "exit_code": 1,
+      "stdout": "平台: linux\n写入失败: Couldn't access platform secure storage: Secret Service: no result found\n结果: 凭据库不可用（需要 Secret Service / KWallet 之类的后端）\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gdbus",
+        "call",
+        "--session",
+        "--dest",
+        "org.freedesktop.secrets",
+        "--object-path",
+        "/org/freedesktop/secrets",
+        "--method",
+        "org.freedesktop.Secret.Service.ReadAlias",
+        "default"
+      ],
+      "exit_code": 0,
+      "stdout": "(objectpath '/',)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gdbus",
+        "call",
+        "--session",
+        "--dest",
+        "org.freedesktop.secrets",
+        "--object-path",
+        "/org/freedesktop/secrets",
+        "--method",
+        "org.freedesktop.DBus.Properties.Get",
+        "org.freedesktop.Secret.Service",
+        "Collections"
+      ],
+      "exit_code": 0,
+      "stdout": "(<@ao []>,)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "xwininfo",
+        "-root",
+        "-tree"
+      ],
+      "exit_code": 0,
+      "stdout": "\nxwininfo: Window id: 0x2cf (the root window) (has no name)\n\n  Root window id: 0x2cf (the root window) (has no name)\n  Parent window id: 0x0 (none)\n     4 children:\n     0xa00005 \"Qt Selection Owner for xdg-desktop-portal-kde\": ()  3x3+0+0  +0+0\n     0x600001 \"xdg-desktop-portal-gtk\": (\"xdg-desktop-portal-gtk\" \"Xdg-desktop-portal-gtk\")  10x10+10+10  +10+10\n     0x400005 \"Qt Selection Owner for kwalletd6\": ()  3x3+0+0  +0+0\n     0x200005 \"Qt Selection Owner for ksecretd\": ()  3x3+0+0  +0+0\n\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gdbus",
+        "call",
+        "--session",
+        "--dest",
+        "org.freedesktop.secrets",
+        "--object-path",
+        "/org/freedesktop/secrets",
+        "--method",
+        "org.freedesktop.Secret.Service.CreateCollection",
+        "{'org.freedesktop.Secret.Collection.Label': <'T7 private collection'>}",
+        "default"
+      ],
+      "exit_code": 0,
+      "stdout": "(objectpath '/', objectpath '/org/freedesktop/secrets/prompt/p0')\n",
+      "stderr": ""
+    }
+  ],
+  "result": "blocked-interactive-collection-prompt",
+  "daemons": {
+    "kwalletd6_alive": true,
+    "ksecretd_alive": true
+  }
+}

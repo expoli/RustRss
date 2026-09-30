@@ -1,0 +1,1 @@
+(<[':1.37/org/ayatana/NotificationItem/tray_icon_tray_app_main_tray']>,)

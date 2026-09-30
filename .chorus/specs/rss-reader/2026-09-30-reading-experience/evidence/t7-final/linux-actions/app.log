@@ -1,0 +1,69 @@
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+
+** (rustrss-desktop:3024174): WARNING **: 01:11:05.724: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+2026-10-01T01:11:05.733+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /tmp/rustrss-t7-linux-doCfNE/data/rustrss/logs/rustrss-20261001-011105.log
+2026-10-01T01:11:05.771+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /tmp/rustrss-t7-linux-doCfNE/fixture.sqlite
+2026-10-01T01:11:05.771+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: INFO（设置 log.level=""）
+
+(rustrss-desktop:3024174): libayatana-appindicator-WARNING **: 01:11:05.773: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+2026-10-01T01:11:05.928+08:00 INFO  ui: [ui] inline script ran
+2026-10-01T01:11:06.106+08:00 INFO  ui: [ui] app.js start
+2026-10-01T01:11:06.235+08:00 INFO  ui: [ui] i18n selftest ok (keys=569)
+2026-10-01T01:11:06.237+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-10-01T01:11:06.238+08:00 INFO  ui: [ui] menu render selftest FAILED: checked 条目未打勾
+2026-10-01T01:11:06.238+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-10-01T01:11:06.239+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-10-01T01:11:06.293+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 1 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:06.385+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 2 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:06.669+08:00 INFO  ui: [ui] renderSidebar feeds=3 5ms
+2026-10-01T01:11:06.823+08:00 INFO  ui: [ui] renderList rows=15 withTags=0 16ms
+2026-10-01T01:11:06.823+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=15 loaded=15 total=15 totalKind=unread header=15/15 exhausted=true head=1,21,12,3,23
+2026-10-01T01:11:06.824+08:00 INFO  ui: [ui] loaded feeds=3 entries=30 unread=15 starred=14 markReadOnNavigate=false refreshInterval=off refreshOnStart=false notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-10-01T01:11:06.828+08:00 INFO  ui: [ui] viewport 0x0 dpr=1
+2026-10-01T01:11:06.829+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=light bgPanel=#ffffff minContrast=3.07 ratios=3.91/3.58/3.16/3.07/5.21/5.18/4.12/4.83)
+2026-10-01T01:11:06.890+08:00 INFO  ui: [ui] tags:rows=3 collapsed=0 rects=Alpha=0,291,139,52|Beta=0,343,139,52|Gamma=0,395,139,52
+2026-10-01T01:11:06.909+08:00 INFO  ui: [ui] viewport 1240x820 dpr=1
+2026-10-01T01:11:06.929+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.929+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.929+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.930+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.930+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.930+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.930+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.930+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.931+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.931+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.931+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.931+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:06.944+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:07.146+08:00 INFO  ui: [ui] tagDrag:start id=1 name=Alpha pinned=0 order=Alpha|Beta|Gamma
+2026-10-01T01:11:08.384+08:00 INFO  ui: [ui] renderSidebar feeds=3 1ms
+2026-10-01T01:11:08.384+08:00 INFO  ui: [ui] tagReorder: order=Beta|Alpha|Gamma created=0 removed=0 persisted=pending rects=Beta=0,634,219,52|Alpha=0,686,219,52|Gamma=0,738,219,52
+2026-10-01T01:11:08.394+08:00 INFO  ui: [ui] tagReorder: order=Beta|Alpha|Gamma created=0 removed=0 persisted=ok
+2026-10-01T01:11:10.764+08:00 INFO  ui: [ui] renderSidebar feeds=3 1ms
+2026-10-01T01:11:11.621+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 1 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:11.711+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 2 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:11.901+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 1 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:12.026+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 2 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:12.214+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 1 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:12.299+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 2 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:12.453+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 1 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:12.542+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 2 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:12.692+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 1 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:12.782+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 2 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:12.899+08:00 INFO  rustrss_desktop_lib::commands: [rustrss] 日志级别已切换: INFO（设置 log.level="info"）
+2026-10-01T01:11:12.994+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 1 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:13.083+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 2 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:13.487+08:00 INFO  rustrss_desktop_lib::commands: [rustrss] 日志级别已切换: DEBUG（设置 log.level="debug"）
+2026-10-01T01:11:13.516+08:00 DEBUG rustrss_desktop_lib::commands: [rustrss] list_scope_total feed#1: 0ms n=10
+2026-10-01T01:11:13.582+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 1 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:13.670+08:00 WARN  rustrss_desktop_lib::credentials::desktop: [rustrss] 凭据库操作失败（第 2 次），换会话重试: Couldn't access platform secure storage: Secret Service: no result found
+2026-10-01T01:11:13.998+08:00 INFO  ui: [ui] renderReader id=1 sanitize=1 innerHTML-set=2 highlight=7 total=7ms
+2026-10-01T01:11:13.998+08:00 INFO  ui: [ui] readerTags id=1 n=0 chips=- rect=-
+2026-10-01T01:11:14.062+08:00 INFO  ui: [ui] open id=1 markRead=true read=true
+2026-10-01T01:11:14.063+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T01:11:14.505+08:00 INFO  ui: [ui] settings pane=general
+2026-10-01T01:11:14.527+08:00 INFO  ui: [ui] font families=279
+2026-10-01T01:11:14.665+08:00 INFO  ui: [ui] renderSidebar feeds=3 0ms
+2026-10-01T01:11:15.780+08:00 DEBUG rustrss_desktop_lib::scheduler: [rustrss] 调度: 启动首刷延迟 10s 结束，启动时刷新=false

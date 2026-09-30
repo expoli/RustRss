@@ -1,0 +1,5 @@
+qt.dbus.integration: QDBusConnection: name 'org.kde.secretservicecompat' had owner '' but we thought it was ':1.1'
+Secret Service availability changed: Available
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for 'org.kde.kwalletd'")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for 'org.kde.kwalletd'")
+Secret Service availability changed: Unavailable
