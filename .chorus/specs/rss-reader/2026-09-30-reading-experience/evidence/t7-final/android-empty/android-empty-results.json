@@ -1,0 +1,145 @@
+{
+  "device": "emulator-5584",
+  "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091",
+  "checks": [
+    {
+      "name": "disposable-empty-database",
+      "detail": {
+        "count": 0
+      }
+    },
+    {
+      "name": "empty-subscriptions-copy-action",
+      "detail": {
+        "copy": "No subscriptions yet. Enter a website or RSS URL above to start reading.",
+        "button": "Add feed",
+        "buttonHeight": 48,
+        "inputVisible": true,
+        "tabbables": [
+          "btn-add",
+          "add-url",
+          "add-ok",
+          "add-rsshub",
+          "btn-new-folder",
+          "m-empty-add-feed",
+          "nav-articles",
+          "nav-subscriptions",
+          "nav-saved",
+          "nav-settings"
+        ],
+        "role": "button",
+        "pageWidth": 412,
+        "viewportWidth": 412.19049072265625
+      }
+    },
+    {
+      "name": "empty-subscriptions-focus-order",
+      "detail": [
+        "btn-add",
+        "add-url",
+        "add-ok",
+        "add-rsshub",
+        "btn-new-folder",
+        "m-empty-add-feed",
+        "nav-articles",
+        "nav-subscriptions",
+        "nav-saved",
+        "nav-settings"
+      ]
+    },
+    {
+      "name": "empty-subscriptions-android-accessibility"
+    },
+    {
+      "name": "empty-subscriptions-add-focuses-existing-form"
+    },
+    {
+      "name": "empty-search-clear-retry-wording",
+      "detail": {
+        "message": "No matching articles. Try different keywords.",
+        "clear": "Clear search",
+        "retry": "Retry search",
+        "buttons": [
+          48,
+          48
+        ],
+        "ids": [
+          "search",
+          "btn-search-cancel",
+          "",
+          "",
+          "btn-list-bulk",
+          "btn-list-sort",
+          "search-clear",
+          "search-retry",
+          "m-nav-btn active",
+          "m-nav-btn",
+          "m-nav-btn",
+          "m-nav-btn"
+        ],
+        "query": "t5-no-results-impossible-token",
+        "scope": "Searching all articles",
+        "pageWidth": 412,
+        "viewportWidth": 412.19049072265625
+      }
+    },
+    {
+      "name": "empty-search-focus-order",
+      "detail": [
+        "search",
+        "btn-search-cancel",
+        "",
+        "",
+        "btn-list-bulk",
+        "btn-list-sort",
+        "search-clear",
+        "search-retry",
+        "m-nav-btn active",
+        "m-nav-btn",
+        "m-nav-btn",
+        "m-nav-btn"
+      ]
+    },
+    {
+      "name": "empty-search-android-accessibility"
+    },
+    {
+      "name": "empty-search-native-tab-clear-to-retry"
+    },
+    {
+      "name": "empty-search-retry-retains-query-and-layout",
+      "detail": {
+        "beforeRetry": {
+          "list": [
+            0,
+            128.11904907226562,
+            412.19049072265625,
+            648.1666870117188
+          ],
+          "viewport": [
+            412.19049072265625,
+            867.047607421875
+          ],
+          "pageWidth": 412
+        },
+        "afterRetry": {
+          "list": [
+            0,
+            128.11904907226562,
+            412.19049072265625,
+            648.1666870117188
+          ],
+          "viewport": [
+            412.19049072265625,
+            867.047607421875
+          ],
+          "pageWidth": 412
+        },
+        "queryAfter": "t5-no-results-impossible-token"
+      }
+    },
+    {
+      "name": "empty-search-clear-restores-source"
+    }
+  ]
+}

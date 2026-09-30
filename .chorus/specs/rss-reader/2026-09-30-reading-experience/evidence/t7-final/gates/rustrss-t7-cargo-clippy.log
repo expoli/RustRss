@@ -1,0 +1,12 @@
+   Compiling tauri v2.12.0
+    Checking tower-http v0.6.11
+   Compiling rustrss-desktop v0.2.1 (/home/tcy/Github/RustRss/src-tauri)
+    Checking reqwest v0.13.1
+   Compiling tauri-plugin-fs v2.5.2
+   Compiling tauri-plugin-notification v2.4.0
+   Compiling tauri-plugin-clipboard-manager v2.3.3
+   Compiling tauri-plugin-dialog v2.7.3
+    Checking rustrss-core v0.2.1 (/home/tcy/Github/RustRss/crates/rustrss-core)
+    Checking rustrss-mcp v0.2.1 (/home/tcy/Github/RustRss/crates/rustrss-mcp)
+    Checking tauri-plugin-single-instance v2.4.5
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.41s

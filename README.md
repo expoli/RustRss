@@ -33,11 +33,11 @@ Android 手机界面中，文章、订阅、收藏和设置共用完整的底部
 
 设置首页按分类显示当前值摘要；外观和阅读保留草稿预览、保存、放弃与主题历史，详情页返回会保留未保存草稿，离开设置才放弃。代理、AI 和 MCP 表单出错时，输入仍在原位，错误会关联到对应字段。桌面窄窗口仍可设置栏宽、阅读宽度与布局；Android 横屏仍只显示手机支持的操作。桌面 MCP 的危险工具开关需要确认，取消不会更改权限。Android 文档选择器在旋转或显示配置变化后仍可用于 OPML 导入导出；Tauri 核心升级至 2.12.0，设备与桌面验证记录见 [T5 设置证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t5-settings/record.md)。
 
-桌面版在至少 900 CSS px 宽的窗口保留三栏、聚焦阅读、栏宽设置和键盘/右键菜单；Pixel Tablet 模拟器上，960 CSS px 及以下使用四项底部导航，961 CSS px 起显示三栏，Android 桌面窗口控件始终隐藏。平板窄幅空订阅提示会指向“订阅”页的添加入口。Linux 原生产物的同进程订阅到 OPML 旅程、12 种预设/明暗/语言截图和断点证据见 [T6 汇合记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t6-convergence/record.md)。标题栏最小化在 XWayland 可读回；当前 KDE Wayland 上调用返回成功但没有读回最小化状态，属于仍待复核的后端限制。
+桌面版在至少 900 CSS px 宽的窗口保留三栏、聚焦阅读、栏宽设置和键盘/右键菜单；Pixel Tablet 模拟器上，960 CSS px 及以下使用四项底部导航，961 CSS px 起显示三栏，Android 桌面窗口控件始终隐藏。平板窄幅空订阅提示会指向“订阅”页的添加入口。Linux 原生产物的同进程订阅到 OPML 旅程、12 种预设/明暗/语言截图和断点证据见 [T6 汇合记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t6-convergence/record.md)。标题栏最小化在 XWayland 可读回；KDE Wayland 的 Tauri 状态回读滞后，但 T6 私有嵌套 KWin 证据已观察到可信点击后 compositor 最小化、窗口消失并可恢复。任务栏真实点击和其他桌面环境仍未测。
 
 列表、阅读动作、菜单和设置现共用本地 SVG 图标、控件间距与焦点样式；手机主要操作入口的触控框按至少 48×48 CSS px 布置。配色、字体和预览仍由现有主题设置控制，已保存的覆盖值不会因图标和布局样式更新而重置。本次视觉基线、隔离数据与验证范围见 [阅读体验 T1 证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/README.md)，手机列表与搜索的前后截图、导航和返回证据见 [T3 设备记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t3-list/record.md)。
 
-打开文章时列表行保持节点身份；重复进入同一视图时，侧栏的计数、提示和辅助文本不重复写入 DOM。200 行原生桌面性能对照与复现步骤见 [T7 性能证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t7-final/performance/record.md)。
+打开文章时列表行保持节点身份；重复进入同一视图时，侧栏的计数、提示和辅助文本不重复写入 DOM。200 行原生桌面性能对照与复现步骤见 [T7 性能证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t7-final/performance/record.md)；最终 Android APK 与 Linux 二进制的整体验证、哈希及未测范围见 [T7 集成记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t7-final/record.md)。
 
 订阅、文件夹和标签行现提供独立的“更多操作”按钮；手机以带内部选择页的底部操作面板呈现刷新间隔、移动文件夹及标签颜色，桌面保留右键级联菜单并支持方向键与 Esc。添加订阅支持网站候选源选择和 RSSHub 地址输入；删除文件夹、取消订阅和删除标签会先显示影响并要求确认。Android 模拟器、Linux WebKitGTK 键盘与 TalkBack 语义树的验证步骤及范围见 [T2 操作面板证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t2-menu/record.md)。
 

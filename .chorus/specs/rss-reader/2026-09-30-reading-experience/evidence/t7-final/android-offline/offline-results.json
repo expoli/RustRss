@@ -1,0 +1,61 @@
+{
+  "serial": "emulator-5584",
+  "avd": "RustRssT5",
+  "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091",
+  "url": "http://10.0.2.2:35449/feed.xml",
+  "feedId": 1,
+  "initialRefresh": {
+    "fetched": 1,
+    "not_modified": 0,
+    "inserted": 1,
+    "updated": 0,
+    "unchanged": 0,
+    "failures": []
+  },
+  "cached": {
+    "listCount": 1,
+    "title": "Cached Offline Article",
+    "viewport": 412.19049072265625,
+    "scrollWidth": 412
+  },
+  "failure": {
+    "fetched": 0,
+    "not_modified": 0,
+    "inserted": 0,
+    "updated": 0,
+    "unchanged": 0,
+    "failures": [
+      {
+        "code": "connection_error",
+        "feed_id": 1,
+        "url": "http://10.0.2.2:35449/feed.xml",
+        "error": "连接失败: error sending request for url (http://10.0.2.2:35449/feed.xml)"
+      }
+    ]
+  },
+  "failedFeed": {
+    "lastStatus": "connection_error",
+    "lastError": "连接失败: error sending request for url (http://10.0.2.2:35449/feed.xml)"
+  },
+  "offline": {
+    "page": "reader",
+    "title": "Cached Offline Article",
+    "body": "Readable while transport is down.",
+    "viewport": 412.19049072265625,
+    "scrollWidth": 412
+  },
+  "retry": {
+    "fetched": 1,
+    "not_modified": 0,
+    "inserted": 0,
+    "updated": 0,
+    "unchanged": 1,
+    "failures": []
+  },
+  "recoveredFeed": {
+    "lastStatus": "ok",
+    "lastError": null
+  },
+  "recoveredTitle": "Cached Offline Article",
+  "passed": true
+}

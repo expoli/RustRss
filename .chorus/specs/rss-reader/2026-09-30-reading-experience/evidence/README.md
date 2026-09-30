@@ -21,14 +21,15 @@ cargo run -p rustrss-core --example reading_experience_fixture -- /tmp/rustrss-r
 
 ## 本轮可用运行环境
 
-- 本机有 Linux WebKitGTK 和私有虚拟 KWin Wayland，可用于六套内置明暗组合的真实组件截图。当前机器没有 Xvfb。
+- 本机有 Linux WebKitGTK 和私有虚拟 KWin Wayland；T6/T7 使用解包到 `/tmp/rustrss-t4-xvfb/root/usr/bin/Xvfb` 的私有 Xvfb 运行原生 Linux 二进制，完成六套内置明暗组合及最终 12 格中英矩阵。
 - `adb devices -l` 在 2026-09-30 显示 `emulator-5554` 在线（Android 16、1080×2400、420 dpi、三键导航）；它是既有会话，所有权未确认，本任务不改装或停止它。独立 Android APK、手势/三键、IME 和系统字体检查属于 T7；T1 的 CSS 尺寸证据不冒称原生命中测试。
 - Windows/macOS 与物理 Android 设备未在本机提供，运行状态保持未验证。
 
 ## 证据索引
 
 - `t3-list/record.md`：同 30 行夹具中英/浅深、360/412 手机真机 WebView 前后截图与首标题坐标；200 行排序/计数/重试/刷新、搜索返回锚点、系统导航/横屏/大字体检查和本轮签名通用 APK 哈希。
-- `action-matrix.md`：M01–M20 逐动作迁移 ID、平台、副作用、核验与后续责任。所有行初始待验，T2–T7 按行回填。
+- [T7 最终集成记录](t7-final/record.md)：最终 APK/Linux 哈希、原生旅程、同夹具前后矩阵、手机/平板/无障碍/性能及剩余平台限制。
+- `action-matrix.md`：M01–M20 共 159 行，逐动作记录平台、副作用、证据与未测范围；T2–T7 按行回填。
 - `fixture-results.json`：30/200 行隔离库的实际条目、文件夹、状态、长标题、图与代码/表格计数；数据库留在 `/tmp`，可按上面命令重建。
 - `contrast.json`：从 core 的六个内置解析快照计算文字、焦点、按钮、边框对比度；不会改写任意用户自定义颜色。测试方法：sRGB 线性化、(Lmax+0.05)/(Lmin+0.05)。
 - `theme-ui.json` 与同目录 `theme-*.png`：重建 Linux WebKitGTK 的真实组件矩阵。本批私有虚拟 KWin Wayland 的 12 个预设/模式/语言单元各有 3 个不同场景帧；`theme-preview.json` 与 `preview-*.png` 记录真实 MCP 预览、临时零写、MCP 保存/取消及失权回收。Wayland 下未验预览窗本地关闭取消（报告 `local_cancel=false`）。`probe.log`、`preview.log` 留原命令输出。
