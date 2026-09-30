@@ -78,29 +78,29 @@
 | M12.cancel | 取消发送 | AI 确认 → 原确认 | 双端 | 零网络；取消并查日志 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；Linux 最终组合未单独复测 |
 | M12.send | 确认发送 | AI 确认 → 原确认 | 双端 | 仅确认后请求；执行 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；Linux 最终组合未单独复测 |
 | M12.remember | 不再询问 | AI 确认 → 原确认 | 双端 | 保持既有设置语义；切换 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；Linux 最终组合未单独复测 |
-| M13.mode | 系统/浅/深 | 外观设置 → 外观常用 | 双端 | 三态、系统切换无写；切换 | T1/T5 | 通过：系统/浅/深逐项保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M13.presets | 浅深 Clear/Paper/Slate | 外观设置 → 外观常用 | 双端 | 独立预设，旧 ID 不变；六格查看 | T1/T5 | 通过：浅深各三预设逐项回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M13.override.clear | 清除全部覆盖 | 外观设置 → 外观高级 | 双端 | 预设值恢复；取消/保存回读 | T1/T5 | 通过：取消零写、保存覆盖树为空；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M13.override.inherit | 单项继承 | 外观设置 → 外观高级 | 双端 | 其它覆盖不丢；保存回读 | T1/T5 | 通过：仅密度继承，摘要与颜色覆盖保留；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M13.override.color | 颜色覆盖 | 外观设置 → 外观高级 | 双端 | 仅编辑目标色；预览/保存 | T1/T5 | 通过：浅色强调色预览/保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M13.type.family | UI 字体 | 外观设置 → 外观常用/高级 | 双端 | 用户字体优先；设置并重启 | T1/T5 | Android 最终产物 UI serif 保存并冷重启，实际标题 computed font=serif；[T7 Android 外观副作用](evidence/t7-final/android-appearance-effects/appearance-effects.json) |
-| M13.type.size | UI 字号 | 外观设置 → 外观常用/高级 | 双端 | 旧值不重置；设置并重启 | T1/T5 | 通过：字号 20 保存，Activity 重建后放大截图；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M13.list.density | 列表密度 | 外观设置 → 外观常用 | 双端 | 行高变化；保存并重启 | T1/T5 | Android 最终产物 comfortable→compact 行高 167.55→147.95 px、内边距 9→5 且重启保留；[T7 Android 外观副作用](evidence/t7-final/android-appearance-effects/appearance-effects.json) |
-| M13.list.summary | 摘要行数 | 外观设置 → 外观常用 | 双端 | 摘要可关；保存并重启 | T1/T5 | 通过：摘要 0 行保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M13.list.thumbnail | 缩略图开关 | 外观设置 → 外观常用 | 双端 | 不额外抓图；保存并重启 | T1/T5 | Android 最终产物本地图片服务器：关闭后冷重启请求 0，开启后冷重启请求 1；[T7 Android 外观副作用](evidence/t7-final/android-appearance-effects/appearance-effects.json) |
-| M13.list.radius | 圆角 | 外观设置 → 外观高级 | 双端 | 旧值保留；保存并重启 | T1/T5 | 通过：圆角 6 保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
+| M13.mode | 系统/浅/深 | 外观设置 → 外观常用 | 双端 | 三态、系统切换无写；切换 | T1/T5 | 通过：系统/浅/深逐项保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 格视觉读回](evidence/t7-final/visual-after/visual-results.json) |
+| M13.presets | 浅深 Clear/Paper/Slate | 外观设置 → 外观常用 | 双端 | 独立预设，旧 ID 不变；六格查看 | T1/T5 | 通过：浅深各三预设逐项回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 格视觉读回](evidence/t7-final/visual-after/visual-results.json) |
+| M13.override.clear | 清除全部覆盖 | 外观设置 → 外观高级 | 双端 | 预设值恢复；取消/保存回读 | T1/T5 | 通过：取消零写、保存覆盖树为空；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；Linux 最终效果未单独复测 |
+| M13.override.inherit | 单项继承 | 外观设置 → 外观高级 | 双端 | 其它覆盖不丢；保存回读 | T1/T5 | 通过：仅密度继承，摘要与颜色覆盖保留；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；Linux 最终效果未单独复测 |
+| M13.override.color | 颜色覆盖 | 外观设置 → 外观高级 | 双端 | 仅编辑目标色；预览/保存 | T1/T5 | 通过：浅色强调色预览/保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 格视觉读回](evidence/t7-final/visual-after/visual-results.json) |
+| M13.type.family | UI 字体 | 外观设置 → 外观常用/高级 | 双端 | 用户字体优先；设置并重启 | T1/T5 | Android 最终产物 UI serif 保存并冷重启，实际标题 computed font=serif；[T7 Android 外观副作用](evidence/t7-final/android-appearance-effects/appearance-effects.json)；Linux 最终效果未单独复测 |
+| M13.type.size | UI 字号 | 外观设置 → 外观常用/高级 | 双端 | 旧值不重置；设置并重启 | T1/T5 | 通过：字号 20 保存，Activity 重建后放大截图；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；Linux 最终效果未单独复测 |
+| M13.list.density | 列表密度 | 外观设置 → 外观常用 | 双端 | 行高变化；保存并重启 | T1/T5 | Android 最终产物 comfortable→compact 行高 167.55→147.95 px、内边距 9→5 且重启保留；[T7 Android 外观副作用](evidence/t7-final/android-appearance-effects/appearance-effects.json)；Linux 最终效果未单独复测 |
+| M13.list.summary | 摘要行数 | 外观设置 → 外观常用 | 双端 | 摘要可关；保存并重启 | T1/T5 | 通过：摘要 0 行保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；Linux 最终效果未单独复测 |
+| M13.list.thumbnail | 缩略图开关 | 外观设置 → 外观常用 | 双端 | 不额外抓图；保存并重启 | T1/T5 | Android 最终产物本地图片服务器：关闭后冷重启请求 0，开启后冷重启请求 1；[T7 Android 外观副作用](evidence/t7-final/android-appearance-effects/appearance-effects.json)；Linux 最终效果未单独复测 |
+| M13.list.radius | 圆角 | 外观设置 → 外观高级 | 双端 | 旧值保留；保存并重启 | T1/T5 | 通过：圆角 6 保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；Linux 最终效果未单独复测 |
 | M13.preview.start | 草稿预览 | 外观设置 → 原草稿链路 | 双端 | 临时零持久化；打开 | T1/T5 | 最终产物 Android 预览零写、Linux 同进程预览零写；[T7 Android 三旅程](evidence/t7-final/android-journeys.json)、[T7 Linux 同进程 18 项](evidence/t7-final/desktop-journey/journey-results.json) |
 | M13.preview.save | 保存主题 | 外观设置 → 原草稿链路 | 双端 | CAS 修订；保存回读 | T1/T5 | 最终产物 Android/Linux 保存修订回读，Android stale CAS 拒写；[T7 Android 三旅程](evidence/t7-final/android-journeys.json)、[T7 Linux 同进程 18 项](evidence/t7-final/desktop-journey/journey-results.json)、[T7 Android 设置回归](evidence/t7-final/android-settings-followup/android-followup-results.json) |
 | M13.preview.cancel | 丢弃草稿 | 外观设置 → 原草稿链路 | 双端 | 零写、恢复原样；取消 | T1/T5 | 最终产物 Android/Linux 丢弃草稿零写；[T7 Android 三旅程](evidence/t7-final/android-journeys.json)、[T7 Linux 同进程 18 项](evidence/t7-final/desktop-journey/journey-results.json) |
-| M13.history.refresh | 刷新历史 | 外观设置 → 外观高级 | 双端 | 修订列表正确；打开 | T1/T5 | 最终 Android APK 历史列表刷新含旧修订；[T7 Android 设置回归](evidence/t7-final/android-settings-followup/android-followup-results.json) |
-| M13.history.restore | 恢复历史 | 外观设置 → 外观高级 | 双端 | 新修订、CAS；执行回读 | T1/T5 | 最终 Android APK 恢复新修订、陈旧 CAS 拒写；[T7 Android 设置回归](evidence/t7-final/android-settings-followup/android-followup-results.json) |
-| M14.type.family | 正文字体 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | Android 最终产物长文 Aa 保存 serif，正文锚点差 0px，重启 computed style 保留；[T7 Android 阅读副作用](evidence/t7-final/android-reading-effects/reading-effects.json) |
-| M14.type.size | 正文字号 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | 通过：正文字号保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json) |
-| M14.type.line | 正文行高 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | 通过：行高保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json) |
-| M14.type.paragraph | 段落间距 | 阅读设置/Aa → 阅读高级 | 双端 | 正文锚点；调节并回读 | T4/T5 | 通过：段距保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json) |
-| M14.code.family | 等宽字体 | 阅读设置 → 阅读高级 | 双端 | 代码块；调节并查看 | T4/T5 | Android 最终产物真实 code 块 computed monospace 保存及重启保留；[T7 Android 阅读副作用](evidence/t7-final/android-reading-effects/reading-effects.json) |
-| M14.code.size | 等宽字号 | 阅读设置 → 阅读高级 | 双端 | 代码块；调节并查看 | T4/T5 | Android 最终产物真实 code 块 computed 20px 保存及重启保留；[T7 Android 阅读副作用](evidence/t7-final/android-reading-effects/reading-effects.json) |
-| M14.mark-read | 导航时标记已读 | 阅读设置 → 阅读行为 | 双端 | 按原保存语义；切换并读文章 | T4/T5 | Android 最终产物可信 WebView j 导航同一文章：关闭 read=false、开启 read=true，并查 get_entry；[T7 Android 阅读副作用](evidence/t7-final/android-reading-effects/reading-effects.json) |
+| M13.history.refresh | 刷新历史 | 外观设置 → 外观高级 | 双端 | 修订列表正确；打开 | T1/T5 | 最终 Android APK 历史列表刷新含旧修订；[T7 Android 设置回归](evidence/t7-final/android-settings-followup/android-followup-results.json)；Linux 最终效果未单独复测 |
+| M13.history.restore | 恢复历史 | 外观设置 → 外观高级 | 双端 | 新修订、CAS；执行回读 | T1/T5 | 最终 Android APK 恢复新修订、陈旧 CAS 拒写；[T7 Android 设置回归](evidence/t7-final/android-settings-followup/android-followup-results.json)；Linux 最终效果未单独复测 |
+| M14.type.family | 正文字体 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | Android 最终产物长文 Aa 保存 serif，正文锚点差 0px，重启 computed style 保留；[T7 Android 阅读副作用](evidence/t7-final/android-reading-effects/reading-effects.json)；Linux 最终效果未单独复测 |
+| M14.type.size | 正文字号 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | 通过：正文字号保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json)；Linux 最终效果未单独复测 |
+| M14.type.line | 正文行高 | 阅读设置/Aa → 阅读常用 | 双端 | 正文锚点；调节并回读 | T4/T5 | 通过：行高保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json)；Linux 最终效果未单独复测 |
+| M14.type.paragraph | 段落间距 | 阅读设置/Aa → 阅读高级 | 双端 | 正文锚点；调节并回读 | T4/T5 | 通过：段距保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json)；Linux 最终效果未单独复测 |
+| M14.code.family | 等宽字体 | 阅读设置 → 阅读高级 | 双端 | 代码块；调节并查看 | T4/T5 | Android 最终产物真实 code 块 computed monospace 保存及重启保留；[T7 Android 阅读副作用](evidence/t7-final/android-reading-effects/reading-effects.json)；Linux 最终效果未单独复测 |
+| M14.code.size | 等宽字号 | 阅读设置 → 阅读高级 | 双端 | 代码块；调节并查看 | T4/T5 | Android 最终产物真实 code 块 computed 20px 保存及重启保留；[T7 Android 阅读副作用](evidence/t7-final/android-reading-effects/reading-effects.json)；Linux 最终效果未单独复测 |
+| M14.mark-read | 导航时标记已读 | 阅读设置 → 阅读行为 | 双端 | 按原保存语义；切换并读文章 | T4/T5 | Android 最终产物可信 WebView j 导航同一文章：关闭 read=false、开启 read=true，并查 get_entry；[T7 Android 阅读副作用](evidence/t7-final/android-reading-effects/reading-effects.json)；Linux 最终效果未单独复测 |
 | M14.width | 阅读宽度 | 阅读设置 → 阅读高级 | 桌面 | 布局存储；调节 | T5/T6 | Linux 最终二进制同进程 760px 保存及正文锚点保留；[T7 Linux 同进程 18 项](evidence/t7-final/desktop-journey/journey-results.json) |
 | M14.layout | 三栏/聚焦阅读 | 阅读设置 → 阅读高级 | 桌面 | 布局不丢；切换 | T5/T6 | Linux 最终二进制聚焦阅读布局保留正文节点与选中行；[T7 Linux 同进程 18 项](evidence/t7-final/desktop-journey/journey-results.json) |
 | M15.proxy | 环境/直连/自定义代理 | 订阅设置 → 连接组 | 双端 | 保持原保存/错误；切换 | T5 | 通过：自定义与直连保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
