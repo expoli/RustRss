@@ -219,4 +219,4 @@ created: 2026-09-20
 - [x] T2 订阅、文件夹、标签与文章标签操作入口接入手机底部面板和桌面键盘菜单；独立 AVD 上 37 项操作、输入法/窄屏与 TalkBack 语义树，Linux WebKitGTK 上 11 项菜单键盘检查见 [T2 证据](2026-09-30-reading-experience/evidence/t2-menu/record.md)。最终 APK 模拟器组合见 [T7 证据](2026-09-30-reading-experience/evidence/t7-final/record.md)；物理 ARM64 与 Windows/macOS 原生行为未测。
 - [x] T4 经独立验证完成：手机阅读首屏在 360 CSS px 的双行标题下首段位于可用高度 27.85%，四行中英长标题下为 35.22%；Back、Aa、星标、稍后读和更多均保留。M09–M12 Android 原生操作、AI 合成端点确认/结果/失败恢复、全文重试、离线图片替代文字、Aa 锚点、返回列表/搜索状态、TalkBack 语义树和桌面 WebKitGTK 键盘主路径见 [T4 证据](2026-09-30-reading-experience/evidence/t4-reader/record.md)。最终 APK 组合复核见 [T7 证据](2026-09-30-reading-experience/evidence/t7-final/record.md)；物理 ARM64 与 Windows/macOS 未测。
 - [x] T2–T6 操作面板、列表、阅读、设置与桌面/平板汇合均已通过各任务独立验证，逐动作状态见 [台账](2026-09-30-reading-experience/action-matrix.md)。
-- [ ] T7 用重建的 Android APK 和桌面产物完成同场景 before/after、原生触控/键盘/TalkBack、字号、断点及热路径集成验收；Windows/macOS 若不可用需明列未测项。
+- [x] T7 用重建的 Android APK 和桌面产物完成同场景 before/after、原生触控/键盘/TalkBack、字号、断点及热路径集成验收；[最终证据](2026-09-30-reading-experience/evidence/t7-final/record.md)经独立第 2 轮评审 `285d46f8` 通过，Chorus T7 已验收。Windows/macOS、实体 Android 与 Linux 私有密钥环等限制仍按证据记录待后续环境复核。
