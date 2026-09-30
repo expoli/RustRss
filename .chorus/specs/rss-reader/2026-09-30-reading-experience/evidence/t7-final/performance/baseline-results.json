@@ -1,0 +1,664 @@
+{
+  "initialRows": 200,
+  "finalRows": 200,
+  "warmupId": "68",
+  "samples": [
+    {
+      "id": "2",
+      "ms": 11,
+      "readerTitle": "003 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "136",
+      "ms": 6,
+      "readerTitle": "005 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "70",
+      "ms": 7,
+      "readerTitle": "007 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "4",
+      "ms": 5,
+      "readerTitle": "009 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "138",
+      "ms": 5,
+      "readerTitle": "011 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "72",
+      "ms": 6,
+      "readerTitle": "013 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "6",
+      "ms": 5,
+      "readerTitle": "015 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "140",
+      "ms": 6,
+      "readerTitle": "017 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "74",
+      "ms": 6,
+      "readerTitle": "019 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "8",
+      "ms": 7,
+      "readerTitle": "021 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "142",
+      "ms": 6,
+      "readerTitle": "023 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "76",
+      "ms": 6,
+      "readerTitle": "025 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "10",
+      "ms": 6,
+      "readerTitle": "027 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "144",
+      "ms": 6,
+      "readerTitle": "029 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "78",
+      "ms": 5,
+      "readerTitle": "031 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "12",
+      "ms": 12,
+      "readerTitle": "033 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "146",
+      "ms": 6,
+      "readerTitle": "035 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "80",
+      "ms": 6,
+      "readerTitle": "037 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "14",
+      "ms": 5,
+      "readerTitle": "039 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "148",
+      "ms": 6,
+      "readerTitle": "041 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    }
+  ],
+  "listMutations": [
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    }
+  ],
+  "identity": true,
+  "p95Ms": 11,
+  "medianMs": 6,
+  "zeroWrites": {
+    "observedRoots": [
+      "views",
+      "feeds",
+      "tags",
+      "list-count",
+      "db-info",
+      "feeds-meta",
+      "tags-meta",
+      "tags-arrow",
+      "tags-empty",
+      "m-feeds-empty"
+    ],
+    "countNodes": 34,
+    "writes": [
+      {
+        "target": "v:unread",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "v:starred",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "v:later",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "v:all",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "active",
+        "after": "active",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:2",
+        "type": "attributes",
+        "attribute": "class",
+        "before": " folder-feed",
+        "after": " folder-feed",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:2",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "https://example.invalid/en.xml\n双击刷新此源",
+        "after": "https://example.invalid/en.xml\n双击刷新此源",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:2",
+        "type": "attributes",
+        "attribute": "hidden",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:1",
+        "type": "attributes",
+        "attribute": "class",
+        "before": " folder-feed",
+        "after": " folder-feed",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:1",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "https://example.invalid/zh.xml\n双击刷新此源",
+        "after": "https://example.invalid/zh.xml\n双击刷新此源",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:1",
+        "type": "attributes",
+        "attribute": "hidden",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:3",
+        "type": "attributes",
+        "attribute": "class",
+        "before": " folder-feed",
+        "after": " folder-feed",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:3",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "https://example.invalid/mixed.xml\n双击刷新此源",
+        "after": "https://example.invalid/mixed.xml\n双击刷新此源",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "f:3",
+        "type": "attributes",
+        "attribute": "hidden",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:1",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:1",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "Performance · blue（左键筛选 · 右键管理 · 拖拽排序）",
+        "after": "Performance · blue（左键筛选 · 右键管理 · 拖拽排序）",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:2",
+        "type": "attributes",
+        "attribute": "class",
+        "before": "",
+        "after": "",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "t:2",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "Performance · plain（左键筛选 · 右键管理 · 拖拽排序）",
+        "after": "Performance · plain（左键筛选 · 右键管理 · 拖拽排序）",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "target": "db-info",
+        "type": "attributes",
+        "attribute": "title",
+        "before": "/tmp/rustrss-t7-perf-final/baseline/fixture.sqlite",
+        "after": "/tmp/rustrss-t7-perf-final/baseline/fixture.sqlite",
+        "sameValue": true,
+        "added": 0,
+        "removed": 0
+      }
+    ],
+    "sameValueWrites": 18,
+    "sameValues": true,
+    "nodesPreserved": true
+  },
+  "binarySha256": "6a2ed07a8479c913457aa782bb8084bc8e02a4e6994e5c5e12e3756d22408284",
+  "fixtureSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "fixtureAfterRunSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "webkitInspectorPort": 34639,
+  "xvfbPid": 2985234
+}

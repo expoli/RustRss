@@ -37,6 +37,8 @@ Android 手机界面中，文章、订阅、收藏和设置共用完整的底部
 
 列表、阅读动作、菜单和设置现共用本地 SVG 图标、控件间距与焦点样式；手机主要操作入口的触控框按至少 48×48 CSS px 布置。配色、字体和预览仍由现有主题设置控制，已保存的覆盖值不会因图标和布局样式更新而重置。本次视觉基线、隔离数据与验证范围见 [阅读体验 T1 证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/README.md)，手机列表与搜索的前后截图、导航和返回证据见 [T3 设备记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t3-list/record.md)。
 
+打开文章时列表行保持节点身份；重复进入同一视图时，侧栏的计数、提示和辅助文本不重复写入 DOM。200 行原生桌面性能对照与复现步骤见 [T7 性能证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t7-final/performance/record.md)。
+
 订阅、文件夹和标签行现提供独立的“更多操作”按钮；手机以带内部选择页的底部操作面板呈现刷新间隔、移动文件夹及标签颜色，桌面保留右键级联菜单并支持方向键与 Esc。添加订阅支持网站候选源选择和 RSSHub 地址输入；删除文件夹、取消订阅和删除标签会先显示影响并要求确认。Android 模拟器、Linux WebKitGTK 键盘与 TalkBack 语义树的验证步骤及范围见 [T2 操作面板证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t2-menu/record.md)。
 
 手机阅读页把返回、Aa、星标、稍后读和“更多”保持在首屏；“更多”承载已读、标签、链接、分享、全文和 AI 动作，打开菜单本身不会请求全文或 AI。菜单操作失败会在阅读页显示错误并保留原有阅读状态；TalkBack 浏览阅读页时会跳过被覆盖的列表。AI 发送前仍展示目标、脱敏头和正文预览，可取消或选择以后不再询问；离线图片失败时显示替代文字。Aa 保存会保持当前正文锚点。Android 原生操作、桌面键盘及 TalkBack 的实测范围和安装包哈希见 [T4 阅读器证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t4-reader/record.md)。

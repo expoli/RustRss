@@ -528,6 +528,10 @@ function setText(node, text) {
   if (node.textContent !== text) node.textContent = text;
 }
 
+function setAttr(node, name, value) {
+  if (node.getAttribute(name) !== value) node.setAttribute(name, value);
+}
+
 /** 把容器子节点归位成 desired 的顺序：错位就移动，多余的删掉 */
 function reconcileChildren(container, desired) {
   let cursor = container.firstChild;
@@ -574,7 +578,8 @@ function reconcileViews(existing) {
       li.innerHTML = window.RustRssComponents.viewContent(v.icon);
       li.onclick = () => setView({ kind: v.kind });
     }
-    li.className = state.view.kind === v.kind ? 'active' : '';
+    const className = state.view.kind === v.kind ? 'active' : '';
+    if (li.className !== className) li.className = className;
     setText(li.querySelector('.vlabel'), t(v.key));
     setText(li.querySelector('.count'), String(counts[v.kind] ?? 0));
     return li;
@@ -593,7 +598,8 @@ function feedRow(f, existing) {
     li.innerHTML = window.RustRssComponents.feedContent();
   }
   const failed = !!(f.last_status && f.last_status !== 'ok' && f.last_status !== 'not_modified');
-  li.className = `${state.view.kind === 'feed' && state.feedId === f.id ? 'active' : ''} folder-feed`;
+  const className = `${state.view.kind === 'feed' && state.feedId === f.id ? 'active' : ''} folder-feed`;
+  if (li.className !== className) li.className = className;
   const tooltip = failed
     ? t('sidebar.feedTooltipFailed', {
         status: f.last_status,
@@ -602,16 +608,18 @@ function feedRow(f, existing) {
     : t('sidebar.feedTooltipOk', { url: f.url });
   // 独立档位是「看不见的设置」：跟随全局的源不写这一行，有覆盖的源在常驻
   // tooltip 里显出来（否则只有打开右键菜单才知道这个源跟别人不一样）。
-  li.title =
+  const title =
     f.refresh_interval_minutes == null
       ? tooltip
       : `${tooltip}\n${t('sidebar.feedTooltipInterval', {
           interval: feedIntervalLabel(f.refresh_interval_minutes),
         })}`;
+  if (li.title !== title) li.title = title;
   setText(li.querySelector('.name'), f.title);
-  li.querySelector('.dot').hidden = !failed;
+  const dot = li.querySelector('.dot');
+  if (dot.hidden !== !failed) dot.hidden = !failed;
   setText(li.querySelector('.count'), String(f.unread));
-  li.querySelector('.row-more').setAttribute('aria-label', t('menu.moreFor', { name: f.title }));
+  setAttr(li.querySelector('.row-more'), 'aria-label', t('menu.moreFor', { name: f.title }));
   return li;
 }
 
@@ -651,7 +659,7 @@ function folderHead(folder, unreadSum, collapsed, existing) {
   setText(arrow, collapsed ? '▸' : '▾');
   setText(li.querySelector('.name'), folder.name);
   setText(li.querySelector('.count'), unreadSum ? String(unreadSum) : '');
-  li.querySelector('.row-more').setAttribute('aria-label', t('menu.moreFor', { name: folder.name }));
+  setAttr(li.querySelector('.row-more'), 'aria-label', t('menu.moreFor', { name: folder.name }));
   return li;
 }
 
@@ -688,7 +696,7 @@ function renderSidebar() {
   if (state.db) {
     const info = el('db-info');
     setText(info, `${state.db.entries} 篇 · ${state.db.dbPath}`);
-    info.title = state.db.dbPath;
+    if (info.title !== state.db.dbPath) info.title = state.db.dbPath;
   }
   window.__SIDEBAR_MS = +(performance.now() - __st).toFixed(1);
   log(`renderSidebar feeds=${state.feeds.length} ${window.__SIDEBAR_MS}ms`);
@@ -1763,7 +1771,9 @@ function validTagColor(color) {
 
 /** 把 core 的颜色落到节点的 CSS 变量上；无颜色则清掉变量（CSS 回退到 --fg-dim） */
 function applyTagColor(node, tag) {
-  if (validTagColor(tag.color)) node.style.setProperty('--tag-color', tag.color.toLowerCase());
+  const color = validTagColor(tag.color) ? tag.color.toLowerCase() : '';
+  if (node.style.getPropertyValue('--tag-color') === color) return;
+  if (color) node.style.setProperty('--tag-color', color);
   else node.style.removeProperty('--tag-color');
 }
 
@@ -1830,13 +1840,15 @@ function tagRow(tag, existing) {
     li.draggable = true; // 原生 drag 事件（拖拽排序的唯一入口）
     li.innerHTML = '<button type="button" class="row-select"><span class="tag-dot"></span><span class="name"></span><span class="count"></span></button><button type="button" class="row-more" aria-haspopup="menu">' + window.RustRssIcons.svg('more') + '</button>';
   }
-  li.className = state.view.kind === 'tag' && state.view.tagId === tag.id ? 'active' : '';
+  const className = state.view.kind === 'tag' && state.view.tagId === tag.id ? 'active' : '';
+  if (li.className !== className) li.className = className;
   applyTagColor(li, tag);
   setText(li.querySelector('.name'), tag.name);
   // 未读计数照出（0 也显示）：与源行同一口径，免得「有的行有数字有的没有」
   setText(li.querySelector('.count'), String(tag.unread));
-  li.querySelector('.row-more').setAttribute('aria-label', t('menu.moreFor', { name: tag.name }));
-  li.title = t('sidebar.tagRowTitle', { name: tag.name });
+  setAttr(li.querySelector('.row-more'), 'aria-label', t('menu.moreFor', { name: tag.name }));
+  const title = t('sidebar.tagRowTitle', { name: tag.name });
+  if (li.title !== title) li.title = title;
   return li;
 }
 

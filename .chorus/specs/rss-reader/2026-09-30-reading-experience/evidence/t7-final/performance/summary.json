@@ -1,0 +1,12 @@
+{
+  "baselineP95Ms": 11,
+  "candidateP95Ms": 11,
+  "candidateOverBaselinePercent": 0.0,
+  "candidateMinusBaselineMs": 0,
+  "regressionBothThresholds": false,
+  "candidateIdentityPreserved": true,
+  "candidateSameValueZeroWrites": true,
+  "fixtureSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "display": ":1",
+  "comparison": "20 warmed already-read row clicks; click to reader DOM mutation in native WebKitGTK"
+}

@@ -1,0 +1,87 @@
+2026-10-01T00:38:35.184+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /tmp/rustrss-t7-perf-final/baseline/data/rustrss/logs/rustrss-20261001-003835.log
+2026-10-01T00:38:35.239+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /tmp/rustrss-t7-perf-final/baseline/fixture.sqlite
+2026-10-01T00:38:35.243+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: INFO（设置 log.level=""）
+2026-10-01T00:38:35.370+08:00 INFO  ui: [ui] inline script ran
+2026-10-01T00:38:35.544+08:00 INFO  ui: [ui] app.js start
+2026-10-01T00:38:35.640+08:00 INFO  ui: [ui] i18n selftest ok (keys=537)
+2026-10-01T00:38:35.642+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-10-01T00:38:35.643+08:00 INFO  ui: [ui] menu render selftest ok (items=5)
+2026-10-01T00:38:35.643+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-10-01T00:38:35.644+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-10-01T00:38:35.701+08:00 INFO  ui: [ui] renderSidebar feeds=3 2ms
+2026-10-01T00:38:35.847+08:00 INFO  ui: [ui] renderList rows=100 withTags=6 22ms
+2026-10-01T00:38:35.847+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=100 loaded=100 total=100 totalKind=unread header=已加载 100 / 共 100 未读 exhausted=true head=1,135,69,3,137
+2026-10-01T00:38:35.847+08:00 INFO  ui: [ui] loaded feeds=3 entries=200 unread=100 starred=100 markReadOnNavigate=true refreshInterval=off refreshOnStart=false notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=info ai=ollama（未配模型） hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-10-01T00:38:35.851+08:00 INFO  ui: [ui] viewport 0x0 dpr=1
+2026-10-01T00:38:35.852+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=light bgPanel=#ffffff minContrast=3.07 ratios=3.91/3.58/3.16/3.07/5.21/5.18/4.12/4.83)
+2026-10-01T00:38:35.920+08:00 INFO  ui: [ui] tags:rows=2 collapsed=0 rects=Performance · blue=0,323,139,32|Performance · plain=0,355,139,32
+2026-10-01T00:38:35.947+08:00 INFO  ui: [ui] viewport 1240x820 dpr=1
+2026-10-01T00:38:35.966+08:00 INFO  ui: [ui] renderSidebar feeds=3 0ms
+2026-10-01T00:38:36.014+08:00 INFO  ui: [ui] renderList rows=200 withTags=11 25ms
+2026-10-01T00:38:36.015+08:00 INFO  ui: [ui] view=all sort=newest hideRead=0 count=200 loaded=200 total=200 totalKind=all header=已加载 200 / 共 200 篇 exhausted=false head=1,68,135,2,69
+2026-10-01T00:38:36.119+08:00 INFO  ui: [ui] renderReader id=68 sanitize=1 innerHTML-set=1 highlight=6 total=6ms
+2026-10-01T00:38:36.119+08:00 INFO  ui: [ui] readerTags id=68 n=0 chips=- rect=-
+2026-10-01T00:38:36.167+08:00 INFO  ui: [ui] open id=68 markRead=true read=true
+2026-10-01T00:38:36.177+08:00 INFO  ui: [ui] renderReader id=2 sanitize=1 innerHTML-set=1 highlight=2 total=2ms
+2026-10-01T00:38:36.177+08:00 INFO  ui: [ui] readerTags id=2 n=1 chips=Performance · blue rect=895,112,128,20
+2026-10-01T00:38:36.178+08:00 INFO  ui: [ui] open id=2 markRead=true read=true
+2026-10-01T00:38:36.207+08:00 INFO  ui: [ui] renderReader id=136 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.207+08:00 INFO  ui: [ui] readerTags id=136 n=0 chips=- rect=-
+2026-10-01T00:38:36.208+08:00 INFO  ui: [ui] open id=136 markRead=true read=true
+2026-10-01T00:38:36.239+08:00 INFO  ui: [ui] renderReader id=70 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.239+08:00 INFO  ui: [ui] readerTags id=70 n=0 chips=- rect=-
+2026-10-01T00:38:36.241+08:00 INFO  ui: [ui] open id=70 markRead=true read=true
+2026-10-01T00:38:36.270+08:00 INFO  ui: [ui] renderReader id=4 sanitize=0 innerHTML-set=0 highlight=1 total=1ms
+2026-10-01T00:38:36.271+08:00 INFO  ui: [ui] readerTags id=4 n=1 chips=Performance · blue rect=895,112,128,20
+2026-10-01T00:38:36.271+08:00 INFO  ui: [ui] open id=4 markRead=true read=true
+2026-10-01T00:38:36.301+08:00 INFO  ui: [ui] renderReader id=138 sanitize=1 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.301+08:00 INFO  ui: [ui] readerTags id=138 n=0 chips=- rect=-
+2026-10-01T00:38:36.302+08:00 INFO  ui: [ui] open id=138 markRead=true read=true
+2026-10-01T00:38:36.333+08:00 INFO  ui: [ui] renderReader id=72 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.334+08:00 INFO  ui: [ui] readerTags id=72 n=0 chips=- rect=-
+2026-10-01T00:38:36.335+08:00 INFO  ui: [ui] open id=72 markRead=true read=true
+2026-10-01T00:38:36.364+08:00 INFO  ui: [ui] renderReader id=6 sanitize=1 innerHTML-set=1 highlight=2 total=2ms
+2026-10-01T00:38:36.365+08:00 INFO  ui: [ui] readerTags id=6 n=1 chips=Performance · blue rect=895,112,128,20
+2026-10-01T00:38:36.365+08:00 INFO  ui: [ui] open id=6 markRead=true read=true
+2026-10-01T00:38:36.395+08:00 INFO  ui: [ui] renderReader id=140 sanitize=0 innerHTML-set=0 highlight=1 total=1ms
+2026-10-01T00:38:36.395+08:00 INFO  ui: [ui] readerTags id=140 n=0 chips=- rect=-
+2026-10-01T00:38:36.397+08:00 INFO  ui: [ui] open id=140 markRead=true read=true
+2026-10-01T00:38:36.426+08:00 INFO  ui: [ui] renderReader id=74 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.427+08:00 INFO  ui: [ui] readerTags id=74 n=0 chips=- rect=-
+2026-10-01T00:38:36.428+08:00 INFO  ui: [ui] open id=74 markRead=true read=true
+2026-10-01T00:38:36.459+08:00 INFO  ui: [ui] renderReader id=8 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.460+08:00 INFO  ui: [ui] readerTags id=8 n=1 chips=Performance · blue rect=895,143,128,20
+2026-10-01T00:38:36.460+08:00 INFO  ui: [ui] open id=8 markRead=true read=true
+2026-10-01T00:38:36.490+08:00 INFO  ui: [ui] renderReader id=142 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.491+08:00 INFO  ui: [ui] readerTags id=142 n=0 chips=- rect=-
+2026-10-01T00:38:36.492+08:00 INFO  ui: [ui] open id=142 markRead=true read=true
+2026-10-01T00:38:36.521+08:00 INFO  ui: [ui] renderReader id=76 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.522+08:00 INFO  ui: [ui] readerTags id=76 n=0 chips=- rect=-
+2026-10-01T00:38:36.523+08:00 INFO  ui: [ui] open id=76 markRead=true read=true
+2026-10-01T00:38:36.552+08:00 INFO  ui: [ui] renderReader id=10 sanitize=0 innerHTML-set=0 highlight=1 total=1ms
+2026-10-01T00:38:36.555+08:00 INFO  ui: [ui] readerTags id=10 n=1 chips=Performance · blue rect=895,112,128,20
+2026-10-01T00:38:36.555+08:00 INFO  ui: [ui] open id=10 markRead=true read=true
+2026-10-01T00:38:36.584+08:00 INFO  ui: [ui] renderReader id=144 sanitize=1 innerHTML-set=1 highlight=2 total=2ms
+2026-10-01T00:38:36.585+08:00 INFO  ui: [ui] readerTags id=144 n=0 chips=- rect=-
+2026-10-01T00:38:36.586+08:00 INFO  ui: [ui] open id=144 markRead=true read=true
+2026-10-01T00:38:36.615+08:00 INFO  ui: [ui] renderReader id=78 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.616+08:00 INFO  ui: [ui] readerTags id=78 n=0 chips=- rect=-
+2026-10-01T00:38:36.617+08:00 INFO  ui: [ui] open id=78 markRead=true read=true
+2026-10-01T00:38:36.651+08:00 INFO  ui: [ui] renderReader id=12 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.652+08:00 INFO  ui: [ui] readerTags id=12 n=0 chips=- rect=-
+2026-10-01T00:38:36.654+08:00 INFO  ui: [ui] open id=12 markRead=true read=true
+2026-10-01T00:38:36.684+08:00 INFO  ui: [ui] renderReader id=146 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.684+08:00 INFO  ui: [ui] readerTags id=146 n=0 chips=- rect=-
+2026-10-01T00:38:36.685+08:00 INFO  ui: [ui] open id=146 markRead=true read=true
+2026-10-01T00:38:36.715+08:00 INFO  ui: [ui] renderReader id=80 sanitize=1 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.715+08:00 INFO  ui: [ui] readerTags id=80 n=0 chips=- rect=-
+2026-10-01T00:38:36.716+08:00 INFO  ui: [ui] open id=80 markRead=true read=true
+2026-10-01T00:38:36.745+08:00 INFO  ui: [ui] renderReader id=14 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.746+08:00 INFO  ui: [ui] readerTags id=14 n=0 chips=- rect=-
+2026-10-01T00:38:36.747+08:00 INFO  ui: [ui] open id=14 markRead=true read=true
+2026-10-01T00:38:36.776+08:00 INFO  ui: [ui] renderReader id=148 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-01T00:38:36.777+08:00 INFO  ui: [ui] readerTags id=148 n=0 chips=- rect=-
+2026-10-01T00:38:36.778+08:00 INFO  ui: [ui] open id=148 markRead=true read=true
+2026-10-01T00:38:36.867+08:00 INFO  ui: [ui] renderSidebar feeds=3 1ms
+2026-10-01T00:38:36.899+08:00 INFO  ui: [ui] renderList rows=200 withTags=11 22ms
+2026-10-01T00:38:36.930+08:00 INFO  ui: [ui] view=all sort=newest hideRead=0 count=200 loaded=200 total=200 totalKind=all header=已加载 200 / 共 200 篇 exhausted=false head=1,68,135,2,69

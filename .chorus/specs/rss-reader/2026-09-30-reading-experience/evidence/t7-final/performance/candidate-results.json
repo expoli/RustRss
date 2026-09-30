@@ -1,0 +1,483 @@
+{
+  "initialRows": 200,
+  "finalRows": 200,
+  "warmupId": "68",
+  "samples": [
+    {
+      "id": "2",
+      "ms": 11,
+      "readerTitle": "003 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "136",
+      "ms": 6,
+      "readerTitle": "005 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "70",
+      "ms": 7,
+      "readerTitle": "007 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "4",
+      "ms": 6,
+      "readerTitle": "009 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "138",
+      "ms": 6,
+      "readerTitle": "011 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "72",
+      "ms": 8,
+      "readerTitle": "013 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "6",
+      "ms": 6,
+      "readerTitle": "015 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "140",
+      "ms": 6,
+      "readerTitle": "017 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "74",
+      "ms": 11,
+      "readerTitle": "019 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "8",
+      "ms": 7,
+      "readerTitle": "021 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "142",
+      "ms": 6,
+      "readerTitle": "023 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "76",
+      "ms": 6,
+      "readerTitle": "025 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "10",
+      "ms": 8,
+      "readerTitle": "027 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "144",
+      "ms": 5,
+      "readerTitle": "029 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "78",
+      "ms": 5,
+      "readerTitle": "031 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "12",
+      "ms": 6,
+      "readerTitle": "033 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "146",
+      "ms": 6,
+      "readerTitle": "035 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "80",
+      "ms": 6,
+      "readerTitle": "037 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    },
+    {
+      "id": "14",
+      "ms": 7,
+      "readerTitle": "039 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 1
+    },
+    {
+      "id": "148",
+      "ms": 5,
+      "readerTitle": "041 · Reading with clear hierarchy",
+      "rowPreserved": true,
+      "renderedRows": 200,
+      "readerRenderMs": 2
+    }
+  ],
+  "listMutations": [
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    },
+    {
+      "type": "attributes",
+      "target": "LI",
+      "added": 0,
+      "removed": 0,
+      "attribute": "class"
+    }
+  ],
+  "identity": true,
+  "p95Ms": 11,
+  "medianMs": 6,
+  "zeroWrites": {
+    "observedRoots": [
+      "views",
+      "feeds",
+      "tags",
+      "list-count",
+      "db-info",
+      "feeds-meta",
+      "tags-meta",
+      "tags-arrow",
+      "tags-empty",
+      "m-feeds-empty"
+    ],
+    "countNodes": 34,
+    "writes": [],
+    "sameValueWrites": 0,
+    "sameValues": true,
+    "nodesPreserved": true
+  },
+  "binarySha256": "39a01543f85edd7542ff7a1a2bb1fa5bd04e091bf6cbe282b3436f71623015e5",
+  "fixtureSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "fixtureAfterRunSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "webkitInspectorPort": 56393,
+  "xvfbPid": 2985234
+}
