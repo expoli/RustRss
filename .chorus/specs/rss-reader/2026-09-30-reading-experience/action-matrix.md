@@ -107,12 +107,12 @@
 | M15.proxy-url | 代理 URL | 订阅设置 → 连接组 | 双端 | 输入不丢、校验错误；填写 | T5 | 通过：非法 URL 输入保留、字段错误，数据库未写；[Android](evidence/t5-settings/android-results.json)、[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
 | M15.proxy-bypass | 代理绕过列表 | 订阅设置 → 连接组 | 双端 | 输入不丢；填写并保存 | T5 | 通过：绕过列表保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
 | M15.proxy-save | 保存代理 | 订阅设置 → 连接组 | 双端 | 保持原反馈；保存并回读 | T5 | 通过：失败零写后修正保存回读；[Android](evidence/t5-settings/android-results.json)、[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
-| M15.refresh.interval | 全局刷新间隔 | 订阅设置 → 更新组 | 双端 | 覆盖优先语义；设置并重启 | T5 | 部分：全局间隔保存回读，未独立重启核对；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
-| M15.refresh.concurrent | 刷新并发 | 订阅设置 → 更新组 | 双端 | 存储与上限；设置并重启 | T5 | 部分：并发 12 保存回读，未触发并发上限负载；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
-| M15.refresh.startup | 启动刷新 | 订阅设置 → 更新组 | 双端 | 旧默认与重启；切换 | T5 | 部分：启动刷新开关保存回读，未独立重启核对；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
-| M15.notify | 新文章通知 | 订阅设置 → 更新组 | 双端 | 平台能力；切换 | T5 | 部分：新文章通知开关保存回读，未触发系统通知；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
+| M15.refresh.interval | 全局刷新间隔 | 订阅设置 → 更新组 | 双端 | 覆盖优先语义；设置并重启 | T5 | Android 最终 APK：预置 30 分钟前抓取时间，真实 60s 调度 tick 后全局 15m 源请求 1 次、单源覆盖 120m 源 0 次；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
+| M15.refresh.concurrent | 刷新并发 | 订阅设置 → 更新组 | 双端 | 存储与上限；设置并重启 | T5 | Android 最终 APK：可信原生 Refresh all 点击，13 个本地端点最大同时请求数精确为 12；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
+| M15.refresh.startup | 启动刷新 | 订阅设置 → 更新组 | 双端 | 旧默认与重启；切换 | T5 | Android 最终 APK：冷启动关闭 13s 零请求、开启在 am start 后 11.754s 请求 1 次；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
+| M15.notify | 新文章通知 | 订阅设置 → 更新组 | 双端 | 平台能力；切换 | T5 | Android 最终 APK：后台恢复新增未读 0→1，系统通知及 shade 可见；手动刷新未读 1→2 无重复通知；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
 | M15.rsshub.save | RSSHub 实例保存 | 订阅设置 → RSSHub 组 | 双端 | 地址回读；保存 | T5 | 通过：镜像 URL 保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
-| M15.rsshub.test | RSSHub 实例测试 | 订阅设置 → RSSHub 组 | 双端 | 成功/失败反馈；测试 | T5 | 部分：合成 /version 成功与反馈已读回，失败分支未实测；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
+| M15.rsshub.test | RSSHub 实例测试 | 订阅设置 → RSSHub 组 | 双端 | 成功/失败反馈；测试 | T5 | Android 最终 APK：本地成功探针见 [设置回归](evidence/t7-final/android-settings-required/android-required-results.json)；四个路由均 503 时原生 Test connection 显示失败；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
 | M15.rsshub.migrate | RSSHub 实例迁移 | 订阅设置 → RSSHub 组 | 双端 | 原确认与范围；隔离库执行 | T5 | 通过：非冲突旧域候选预览 1、取消零写、确认归一为 rsshub:// 且 ID 不变、再次预览 0；[迁移回读](evidence/t5-settings/android-rsshub-migration.json) |
 | M16.provider | Ollama/OpenAI/Anthropic/Gemini | AI 设置 → 供应商区 | 双端 | 四供应商可选；切换 | T5 | 通过：四供应商逐个保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json) |
 | M16.model | 模型选择 | AI 设置 → 供应商区 | 双端 | 当前值；设置并回读 | T5 | 通过：四供应商合成模型逐个保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json) |
@@ -128,28 +128,28 @@
 | M17.path | 数据目录说明 | 数据设置 → 原位 | 双端 | 路径可见；打开 | T5 | 通过：Android/Linux 数据目录可见；[Android](evidence/t5-settings/android-results.json)、[Linux 原生](evidence/t5-settings/desktop-results.json) |
 | M17.opml-import | OPML 导入 | 数据设置 → 原位 | 双端 | Android SAF/MIME；导入隔离文件 | T5 | 通过：Android SAF 导入合成源 ID 2；[Android SAF](evidence/t5-settings/android-saf-results.json) |
 | M17.opml-export | OPML 导出 | 数据设置 → 原位 | 双端 | 仅订阅；导出并检查 | T5 | Linux 最终二进制同进程 GTK Save File 选择器导出 XML，含新源与文件夹；[T7 Linux 同进程 18 项](evidence/t7-final/desktop-journey/journey-results.json) |
-| M17.db-backup | 完整数据库备份 | 数据设置 → 原位 | 桌面 | 旧流程与路径；隔离库备份 | T5/T6 | 通过：Linux GTK 选目录生成 SQLite 快照、integrity_check ok；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M17.db-restore | 完整数据库恢复 | 数据设置 → 原位 | 桌面 | 旧确认与回滚；隔离库恢复 | T5/T6 | 通过：Linux 取消零暂存、确认暂存、重启恢复及 .bak 回滚；[Linux 原生](evidence/t5-settings/desktop-results.json) |
+| M17.db-backup | 完整数据库备份 | 数据设置 → 原位 | 桌面 | 旧流程与路径；隔离库备份 | T5/T6 | 通过：Linux GTK 选目录生成 SQLite 快照、integrity_check ok；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M17.db-restore | 完整数据库恢复 | 数据设置 → 原位 | 桌面 | 旧确认与回滚；隔离库恢复 | T5/T6 | 通过：Linux 取消零暂存、确认暂存、重启恢复及 .bak 回滚；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
 | M18.locale | 自动/中文/英文 | 通用设置 → 原位 | 双端 | 两套 key、切换即时；操作 | T5 | 通过：中文/英文即时切换与持久回读，浅深截图；[Android 原生副作用](evidence/t5-settings/android-required-results.json)、[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M18.about | 关于 | 通用设置 → 原位 | 双端 | 内容可读；打开 | T5 | 部分：Android 关于内容可读；Linux 最终二进制已调用源码外链 xdg-open，图形浏览器未验证；[T7 Android 设置必验](evidence/t7-final/android-settings-required/android-required-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
-| M18.agpl | AGPL | 通用设置 → 原位 | 双端 | 协议可达；打开 | T5 | 部分：Android 协议入口可见；协议外链的系统图形呈现未验证；[T5 Android](evidence/t5-settings/android-required-results.json) |
-| M18.privacy | 隐私 | 通用设置 → 原位 | 双端 | 文档可达；打开 | T5 | 部分：Android 隐私入口可见；外链系统图形呈现未验证；[T5 Android](evidence/t5-settings/android-required-results.json) |
+| M18.about | 关于 | 通用设置 → 原位 | 双端 | 内容可读；打开 | T5 | Android 最终 APK 原生关于面板内容可读，含协议、隐私与源码说明；[T7 Android 设置必验](evidence/t7-final/android-settings-required/android-required-results.json) |
+| M18.agpl | AGPL | 通用设置 → 原位 | 双端 | 协议可达；打开 | T5 | Android 最终 APK 关于面板内联 AGPL-3.0-or-later 文本可见；此项为内联内容，无独立系统外链；[T7 Android 设置必验](evidence/t7-final/android-settings-required/android-required-results.json) |
+| M18.privacy | 隐私 | 通用设置 → 原位 | 双端 | 文档可达；打开 | T5 | Android 最终 APK 关于面板内联隐私说明可见；此项为内联内容，无独立系统外链；[T7 Android 设置必验](evidence/t7-final/android-settings-required/android-required-results.json) |
 | M18.source | 源码 | 通用设置 → 原位 | 双端 | URL 正确；打开 | T5 | 部分：Android 源码入口可见；Linux 最终二进制隔离 xdg-open 收到正确 GitHub URL，图形浏览器未验证；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
 | M18.log-level | 日志级别 | 通用设置 → 原位 | 双端 | info/debug 即时生效；切换 | T5 | Linux 最终二进制 info→debug SQLite 回读，DEBUG 实际日志行仅在 debug 出现；Android 设置回读；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json)、[T7 Android 设置必验](evidence/t7-final/android-settings-required/android-required-results.json) |
 | M18.exit | 关闭/退出行为 | 通用设置 → 原位 | 桌面 | 保持平台行为；操作 | T5/T6 | Linux 最终二进制 exit 设置后窗口关闭进程退出码 0；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
 | M18.tray | 托盘行为 | 通用设置 → 原位 | 桌面 | 原切换语义；操作 | T5/T6 | Linux 最终二进制私有 SNI host 注册，close→窗口 unmap、托盘菜单恢复为 viewable；面板图标像素未测；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
 | M18.log-folder | 打开日志目录 | 通用设置 → 原位 | 桌面 | 系统打开；点击 | T5/T6 | Linux 最终二进制隔离 xdg-open 收到存在的日志目录；真实图形文件管理器未测；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
-| M19.enabled | MCP 开关 | MCP 设置 → 第七类 | 桌面 | 回环监听；切换 | T5/T6 | 通过：Linux 本地服务开关与回环监听；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.port | MCP 端口 | MCP 设置 → 第七类 | 桌面 | 端口校验/回读；设置 | T5/T6 | 通过：UI 与 Rust IPC 无效端口拒写，合法端口回读；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.status | MCP 状态 | MCP 设置 → 第七类 | 桌面 | 监听状态正确；查看 | T5/T6 | 通过：服务健康/状态回读；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.snippet | 客户端片段复制 | MCP 设置 → 第七类 | 桌面 | 复制并检查内容；点击 | T5/T6 | 通过：配置片段剪贴板读回；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.read-token | 读 token 轮换 | MCP 设置 → 第七类 | 桌面 | 旧值失效；隔离服务操作 | T5/T6 | 通过：读 token 轮换后旧值 HTTP 失效；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.write-toggle | 写工具开关 | MCP 设置 → 第七类 | 桌面 | 默认关/分权；切换 | T5/T6 | 通过：写权限开关回读；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.danger-toggle | 危险工具开关 | MCP 设置 → 第七类 | 桌面 | 默认关、确认；切换 | T5/T6 | 通过：危险权限取消零写、确认回读；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.write-token.generate | 生成写 token | MCP 设置 → 第七类 | 桌面 | 生成后工具可用；隔离服务 | T5/T6 | 通过：合成写 token 生成与权限回读；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.write-token.copy | 复制写 token | MCP 设置 → 第七类 | 桌面 | 剪贴板核验；隔离服务 | T5/T6 | 通过：写 token 剪贴板读回；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.write-token.rotate | 轮换写 token | MCP 设置 → 第七类 | 桌面 | 旧值立即失效；隔离服务 | T5/T6 | 通过：轮换后旧 token 失效；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M19.write-token.clear | 清除写 token | MCP 设置 → 第七类 | 桌面 | 写工具不可用；隔离服务 | T5/T6 | 通过：清除后写 token 不可用；[Linux 原生](evidence/t5-settings/desktop-results.json) |
+| M19.enabled | MCP 开关 | MCP 设置 → 第七类 | 桌面 | 回环监听；切换 | T5/T6 | 通过：Linux 本地服务开关与回环监听；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.port | MCP 端口 | MCP 设置 → 第七类 | 桌面 | 端口校验/回读；设置 | T5/T6 | 通过：UI 与 Rust IPC 无效端口拒写，合法端口回读；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.status | MCP 状态 | MCP 设置 → 第七类 | 桌面 | 监听状态正确；查看 | T5/T6 | 通过：服务健康/状态回读；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.snippet | 客户端片段复制 | MCP 设置 → 第七类 | 桌面 | 复制并检查内容；点击 | T5/T6 | 通过：配置片段剪贴板读回；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.read-token | 读 token 轮换 | MCP 设置 → 第七类 | 桌面 | 旧值失效；隔离服务操作 | T5/T6 | 通过：读 token 轮换后旧值 HTTP 失效；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.write-toggle | 写工具开关 | MCP 设置 → 第七类 | 桌面 | 默认关/分权；切换 | T5/T6 | 通过：写权限开关回读；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.danger-toggle | 危险工具开关 | MCP 设置 → 第七类 | 桌面 | 默认关、确认；切换 | T5/T6 | 通过：危险权限取消零写、确认回读；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.write-token.generate | 生成写 token | MCP 设置 → 第七类 | 桌面 | 生成后工具可用；隔离服务 | T5/T6 | 通过：合成写 token 生成与权限回读；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.write-token.copy | 复制写 token | MCP 设置 → 第七类 | 桌面 | 剪贴板核验；隔离服务 | T5/T6 | 通过：写 token 剪贴板读回；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.write-token.rotate | 轮换写 token | MCP 设置 → 第七类 | 桌面 | 旧值立即失效；隔离服务 | T5/T6 | 通过：轮换后旧 token 失效；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
+| M19.write-token.clear | 清除写 token | MCP 设置 → 第七类 | 桌面 | 写工具不可用；隔离服务 | T5/T6 | 通过：清除后写 token 不可用；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings/desktop-results.json) |
 | M20.window.min | 窗口最小化 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | Linux 主链通过：私有 Xvfb 承载嵌套 KWin，同一 Wayland 原生进程可信指针点击真实按钮，compositor minimized=false→true、画面消失、PID 守卫恢复 false/active=true；真实 KWin 两后端状态另证，任务栏 shell 点击未测：[T6 第三轮](evidence/t6-convergence/nested-window-results.json) |
 | M20.window.max | 窗口最大化 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 通过：真实 Wayland 最大化/还原尺寸与状态读回；[T6 原生记录](evidence/t6-convergence/record.md) |
 | M20.window.close | 窗口关闭 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 通过：真实 Wayland 标题栏关闭，进程退出码 0；[T6 原生记录](evidence/t6-convergence/record.md) |

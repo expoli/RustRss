@@ -1,0 +1,15 @@
+
+xwininfo: Window id: 0x2cf (the root window) (has no name)
+
+  Root window id: 0x2cf (the root window) (has no name)
+  Parent window id: 0x0 (none)
+     5 children:
+     0x2001bd "Select Folder": ("rustrss-desktop" "Rustrss-desktop")  1096x822+0+0  +0+0
+        1 child:
+        0x2001be (has no name): ()  1x1+-1+-1  +-1+-1
+     0x200007 "RustRss": ("rustrss-desktop" "Rustrss-desktop")  920x850+0+0  +0+0
+        1 child:
+        0x200008 (has no name): ()  1x1+-1+-1  +-1+-1
+     0x20000d (has no name): ()  1x1+-1+-1  +-1+-1
+     0x600000 (has no name): ()  1x1+0+0  +0+0
+     0x200001 "rustrss-desktop": ("rustrss-desktop" "Rustrss-desktop")  10x10+10+10  +10+10
