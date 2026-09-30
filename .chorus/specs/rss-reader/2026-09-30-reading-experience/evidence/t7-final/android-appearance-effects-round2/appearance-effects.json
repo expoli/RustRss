@@ -1,0 +1,64 @@
+{
+  "serial": "emulator-5584",
+  "avd": "RustRssT5",
+  "apkSha256": "6baf0f068c8a458ee04dee687bb312c3793c0567e2f27ab9bb29956f63053bfc",
+  "fixtureSha256": "f89616285d14315df5b9cda3efdd5ea39c75e1542280246b334d5145c274ae01",
+  "imageUrl": "http://10.0.2.2:45697/image.png",
+  "fields": {
+    "family": true,
+    "density": true,
+    "thumbnail": true
+  },
+  "baseline": {
+    "font": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+    "rowHeight": 167.54762268066406,
+    "padding": "9px",
+    "fontToken": "\"-apple-system\", \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+    "thumbnails": "true",
+    "imageVisible": true,
+    "scrollWidth": 412,
+    "viewport": 412.19049072265625
+  },
+  "saved": {
+    "revision": 1,
+    "uiFamily": [
+      "serif"
+    ],
+    "density": "compact",
+    "thumbnail": false
+  },
+  "changed": {
+    "font": "serif",
+    "rowHeight": 147.95237731933594,
+    "padding": "5px",
+    "fontToken": "serif",
+    "thumbnails": "false",
+    "imageVisible": false,
+    "scrollWidth": 412,
+    "viewport": 412.19049072265625
+  },
+  "retained": {
+    "font": "serif",
+    "rowHeight": 147.95237731933594,
+    "padding": "5px",
+    "fontToken": "serif",
+    "thumbnails": "false",
+    "imageVisible": false,
+    "scrollWidth": 412,
+    "viewport": 412.19049072265625
+  },
+  "restartRevision": 1,
+  "offRequests": 0,
+  "onRequests": 1,
+  "on": {
+    "font": "serif",
+    "rowHeight": 147.95237731933594,
+    "padding": "5px",
+    "fontToken": "serif",
+    "thumbnails": "true",
+    "imageVisible": true,
+    "scrollWidth": 412,
+    "viewport": 412.19049072265625
+  },
+  "passed": true
+}

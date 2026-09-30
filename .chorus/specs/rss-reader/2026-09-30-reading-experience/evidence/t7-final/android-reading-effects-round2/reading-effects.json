@@ -1,0 +1,66 @@
+{
+  "serial": "emulator-5584",
+  "avd": "RustRssT5",
+  "apkSha256": "6baf0f068c8a458ee04dee687bb312c3793c0567e2f27ab9bb29956f63053bfc",
+  "fixtureSha256": "cd9bdfdb6ca13802fcdffc85fb06fac5c80177c6989b8a94b596f3bb5ff5b0cf",
+  "fields": {
+    "read": true,
+    "mono": true,
+    "monoSize": true
+  },
+  "before": {
+    "scrollTop": 419.80950927734375,
+    "anchorText": "fn main() { println!(\"fixture\"); }",
+    "anchorY": -13.904762268066406,
+    "readFamily": "-apple-system, \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+    "monoFamily": "\"JetBrains Mono\", \"Cascadia Mono\", Menlo, monospace",
+    "monoSize": "13px",
+    "readerWidth": 412.19049072265625,
+    "viewport": 412.19049072265625,
+    "overflow": false
+  },
+  "after": {
+    "scrollTop": 419.80950927734375,
+    "anchorText": "fn main() { println!(\"fixture\"); }",
+    "anchorY": -13.904762268066406,
+    "readFamily": "serif",
+    "monoFamily": "monospace",
+    "monoSize": "20px",
+    "readerWidth": 412.19049072265625,
+    "viewport": 412.19049072265625,
+    "overflow": false
+  },
+  "savedRevision": 1,
+  "retained": {
+    "scrollTop": 0,
+    "anchorText": "阅读从正文开始。Reading starts here.",
+    "anchorY": 273.29168701171875,
+    "readFamily": "serif",
+    "monoFamily": "monospace",
+    "monoSize": "20px",
+    "readerWidth": 412.19049072265625,
+    "viewport": 412.19049072265625,
+    "overflow": false
+  },
+  "restartRevision": 1,
+  "keyboard": {
+    "input": "CDP Input.dispatchKeyEvent",
+    "off": {
+      "entryId": 11,
+      "readAfter": false,
+      "event": {
+        "key": "j",
+        "trusted": true
+      }
+    },
+    "on": {
+      "entryId": 11,
+      "readAfter": true,
+      "event": {
+        "key": "j",
+        "trusted": true
+      }
+    }
+  },
+  "passed": true
+}
