@@ -1,0 +1,12 @@
+_amdgpu_device_initialize: amdgpu_query_info(ACCEL_WORKING) failed (-13)
+MESA: error: amdgpu: amdgpu_device_initialize failed.
+_amdgpu_device_initialize: amdgpu_query_info(ACCEL_WORKING) failed (-13)
+MESA: error: amdgpu: amdgpu_device_initialize failed.
+_amdgpu_device_initialize: amdgpu_query_info(ACCEL_WORKING) failed (-13)
+MESA: error: amdgpu: amdgpu_device_initialize failed.
+_amdgpu_device_initialize: amdgpu_query_info(ACCEL_WORKING) failed (-13)
+MESA: error: amdgpu: amdgpu_device_initialize failed.
+_amdgpu_device_initialize: amdgpu_query_info(ACCEL_WORKING) failed (-13)
+MESA: error: amdgpu: amdgpu_device_initialize failed.
+_amdgpu_device_initialize: amdgpu_query_info(ACCEL_WORKING) failed (-13)
+MESA: error: amdgpu: amdgpu_device_initialize failed.
