@@ -1,0 +1,84 @@
+{
+  "serial": "emulator-5582",
+  "fixtureSha256": "bcee169937f14b9db3dcb11bc95d0bb6f77dbe3f8712bbff8235c90324ebd38a",
+  "checks": [
+    {
+      "name": "global-thumbnail-off-reader-offline-fallback",
+      "before": {
+        "nodePresent": true,
+        "complete": true,
+        "naturalWidth": 64,
+        "display": "block",
+        "preference": "true"
+      },
+      "off": {
+        "nodePresent": true,
+        "complete": false,
+        "naturalWidth": 0,
+        "display": "none",
+        "preference": "false"
+      },
+      "offStored": false,
+      "offlineWhenOff": {
+        "fallback": "Fixture illustration",
+        "articleImages": 0
+      },
+      "imageRequests": 1
+    },
+    {
+      "name": "global-thumbnail-on-reader-offline-fallback",
+      "onAfter": {
+        "nodePresent": true,
+        "complete": true,
+        "naturalWidth": 64,
+        "display": "block",
+        "preference": "true"
+      },
+      "onStored": true,
+      "offlineWhenOn": "Fixture illustration",
+      "imageRequests": 2,
+      "policy": "list thumbnail visibility; article external-image loading unchanged"
+    },
+    {
+      "name": "page-two-sort-scroll-reader-back",
+      "firstPage": {
+        "count": "200/400",
+        "loaded": 200,
+        "sort": "排序与过滤"
+      },
+      "pageTwo": {
+        "count": "400/400",
+        "loaded": 400
+      },
+      "targetId": "296",
+      "before": {
+        "view": "all",
+        "sort": "排序与过滤",
+        "storedSort": "oldest",
+        "count": "400/400",
+        "loaded": 400,
+        "scrollTop": 26672.380859375,
+        "topRow": "363",
+        "topOffset": -31.9761962890625,
+        "selected": "1",
+        "query": ""
+      },
+      "opened": {
+        "selected": "296",
+        "title": "085 · Reading with clear hierarchy · page 2"
+      },
+      "after": {
+        "view": "all",
+        "sort": "排序与过滤",
+        "storedSort": "oldest",
+        "count": "400/400",
+        "loaded": 400,
+        "scrollTop": 26672.380859375,
+        "topRow": "363",
+        "topOffset": -31.9761962890625,
+        "selected": "296",
+        "query": ""
+      }
+    }
+  ]
+}

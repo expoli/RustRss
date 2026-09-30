@@ -4,6 +4,7 @@ import json
 
 COUNT = Path('/tmp/rustrss-t4-ai-count.txt')
 PAGE_COUNT = Path('/tmp/rustrss-t4-page-count.txt')
+IMAGE_COUNT = Path('/tmp/rustrss-t4-image-count.txt')
 MODE = Path('/tmp/rustrss-t4-ai-mode.txt')
 PAGE_MODE = Path('/tmp/rustrss-t4-page-mode.txt')
 
@@ -32,6 +33,16 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(result)
 
     def do_GET(self):
+        if self.path == '/thumbnail.svg':
+            count = int(IMAGE_COUNT.read_text()) if IMAGE_COUNT.exists() else 0
+            IMAGE_COUNT.write_text(str(count + 1))
+            image = b'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#2056cc"/></svg>'
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/svg+xml')
+            self.send_header('Content-Length', str(len(image)))
+            self.end_headers()
+            self.wfile.write(image)
+            return
         count = int(PAGE_COUNT.read_text()) if PAGE_COUNT.exists() else 0
         PAGE_COUNT.write_text(str(count + 1))
         if self.path == '/page' or (self.path == '/missing' and PAGE_MODE.exists() and PAGE_MODE.read_text().strip() == 'recover'):
