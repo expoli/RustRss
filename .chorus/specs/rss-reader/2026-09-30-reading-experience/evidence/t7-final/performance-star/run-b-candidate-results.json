@@ -1,0 +1,1462 @@
+{
+  "initialRows": 200,
+  "finalRows": 200,
+  "warmupId": "68",
+  "samples": [
+    {
+      "id": "2",
+      "open": {
+        "id": "2",
+        "ms": 9,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "2",
+        "ms": 14,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 24
+    },
+    {
+      "id": "136",
+      "open": {
+        "id": "136",
+        "ms": 8,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "136",
+        "ms": 14,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 22
+    },
+    {
+      "id": "70",
+      "open": {
+        "id": "70",
+        "ms": 7,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "70",
+        "ms": 15,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 22
+    },
+    {
+      "id": "4",
+      "open": {
+        "id": "4",
+        "ms": 9,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "4",
+        "ms": 17,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 26
+    },
+    {
+      "id": "138",
+      "open": {
+        "id": "138",
+        "ms": 6,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "138",
+        "ms": 14,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 21
+    },
+    {
+      "id": "72",
+      "open": {
+        "id": "72",
+        "ms": 8,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "72",
+        "ms": 17,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 26
+    },
+    {
+      "id": "6",
+      "open": {
+        "id": "6",
+        "ms": 7,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "6",
+        "ms": 14,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 21
+    },
+    {
+      "id": "140",
+      "open": {
+        "id": "140",
+        "ms": 10,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "140",
+        "ms": 14,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 25
+    },
+    {
+      "id": "74",
+      "open": {
+        "id": "74",
+        "ms": 7,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "74",
+        "ms": 14,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 21
+    },
+    {
+      "id": "8",
+      "open": {
+        "id": "8",
+        "ms": 10,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "8",
+        "ms": 14,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 25
+    },
+    {
+      "id": "142",
+      "open": {
+        "id": "142",
+        "ms": 6,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "142",
+        "ms": 15,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 22
+    },
+    {
+      "id": "76",
+      "open": {
+        "id": "76",
+        "ms": 8,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "76",
+        "ms": 17,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 26
+    },
+    {
+      "id": "10",
+      "open": {
+        "id": "10",
+        "ms": 8,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "10",
+        "ms": 16,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 24
+    },
+    {
+      "id": "144",
+      "open": {
+        "id": "144",
+        "ms": 8,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "144",
+        "ms": 17,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 25
+    },
+    {
+      "id": "78",
+      "open": {
+        "id": "78",
+        "ms": 6,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "78",
+        "ms": 14,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 20
+    },
+    {
+      "id": "12",
+      "open": {
+        "id": "12",
+        "ms": 9,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "12",
+        "ms": 15,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 25
+    },
+    {
+      "id": "146",
+      "open": {
+        "id": "146",
+        "ms": 8,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "146",
+        "ms": 15,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 23
+    },
+    {
+      "id": "80",
+      "open": {
+        "id": "80",
+        "ms": 9,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "80",
+        "ms": 15,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 25
+    },
+    {
+      "id": "14",
+      "open": {
+        "id": "14",
+        "ms": 7,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "14",
+        "ms": 15,
+        "prior": true,
+        "after": false,
+        "starredCountBefore": 101,
+        "starredCountAfter": 100,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 22
+    },
+    {
+      "id": "148",
+      "open": {
+        "id": "148",
+        "ms": 9,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "star": {
+        "id": "148",
+        "ms": 14,
+        "prior": false,
+        "after": true,
+        "starredCountBefore": 100,
+        "starredCountAfter": 101,
+        "rowPreserved": true,
+        "renderedRows": 200
+      },
+      "pairMs": 24
+    }
+  ],
+  "listMutations": [
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "68",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "68",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "68",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "2",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "2",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "2",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "136",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "136",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "136",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "70",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "70",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "70",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "4",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "4",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "4",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "138",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "138",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "138",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "72",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "72",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "72",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "6",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "6",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "6",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "140",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "140",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "140",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "74",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "74",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "74",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "8",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "8",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "8",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "142",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "142",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "142",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "76",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "76",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "76",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "10",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "10",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "10",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "144",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "144",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "144",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "78",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "78",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "78",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "12",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "12",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "12",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "146",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "146",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "146",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "80",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "80",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "80",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "14",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "14",
+      "added": [],
+      "removed": [
+        "SPAN.star"
+      ],
+      "attribute": null,
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read",
+      "rowId": "14",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "open",
+      "type": "attributes",
+      "target": "LI",
+      "targetClass": "read active",
+      "rowId": "148",
+      "added": [],
+      "removed": [],
+      "attribute": "class",
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetClass": "meta",
+      "rowId": "148",
+      "added": [
+        "SPAN.star"
+      ],
+      "removed": [],
+      "attribute": null,
+      "sameValue": false
+    }
+  ],
+  "sidebarMutations": [
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "100",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    },
+    {
+      "phase": "star",
+      "type": "childList",
+      "target": "SPAN",
+      "targetId": null,
+      "targetClass": "count",
+      "owner": "starred",
+      "oldValue": null,
+      "newValue": "101",
+      "attribute": null,
+      "added": 1,
+      "removed": 1,
+      "sameValue": false
+    }
+  ],
+  "sameValueWrites": [],
+  "identity": true,
+  "expectedStarMarkerChildMutations": 21,
+  "sameValueSidebarMutations": 0,
+  "sidebarOnlyStarCountMutations": true,
+  "p95Ms": 26,
+  "openP95Ms": 10,
+  "starP95Ms": 17,
+  "medianMs": 24,
+  "zeroWrites": {
+    "observedRoots": [
+      "views",
+      "feeds",
+      "tags",
+      "list-count",
+      "db-info",
+      "feeds-meta",
+      "tags-meta",
+      "tags-arrow",
+      "tags-empty",
+      "m-feeds-empty"
+    ],
+    "countNodes": 34,
+    "writes": [],
+    "sameValueWrites": 0,
+    "sameValues": true,
+    "nodesPreserved": true
+  },
+  "binarySha256": "4150b083de72077a4eda3706f16e9515f7a19b6f7193064856e5b3683031a353",
+  "fixtureSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "fixtureAfterRunSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "webkitInspectorPort": 57747,
+  "xvfbPid": 3123581
+}

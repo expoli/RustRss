@@ -1,0 +1,48 @@
+{
+  "baselineP95Ms": 45,
+  "candidateP95Ms": 26,
+  "candidateOverBaselinePercent": -42.22,
+  "candidateMinusBaselineMs": -19,
+  "regressionBothThresholds": false,
+  "gates": {
+    "pair": {
+      "baselineP95Ms": 45,
+      "candidateP95Ms": 26,
+      "candidateMinusBaselineMs": -19,
+      "candidateOverBaselinePercent": -42.22,
+      "regressionBothThresholds": false
+    },
+    "open": {
+      "baselineP95Ms": 13,
+      "candidateP95Ms": 9,
+      "candidateMinusBaselineMs": -4,
+      "candidateOverBaselinePercent": -30.77,
+      "regressionBothThresholds": false
+    },
+    "star": {
+      "baselineP95Ms": 24,
+      "candidateP95Ms": 17,
+      "candidateMinusBaselineMs": -7,
+      "candidateOverBaselinePercent": -29.17,
+      "regressionBothThresholds": false
+    }
+  },
+  "openP95Ms": {
+    "baseline": 13,
+    "candidate": 9
+  },
+  "starP95Ms": {
+    "baseline": 24,
+    "candidate": 17
+  },
+  "candidateStarSameValueWrites": 0,
+  "candidateSameValueSidebarMutations": 0,
+  "candidateSidebarMutations": 21,
+  "candidateSidebarOnlyStarCountMutations": true,
+  "candidateExpectedStarMarkerChildMutations": 21,
+  "candidateIdentityPreserved": true,
+  "candidateSameValueZeroWrites": true,
+  "fixtureSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
+  "display": ":1",
+  "comparison": "one untimed warmup then 20 already-read open+star cycles; pair timing includes reader, star marker, reader control and starred sidebar count in native WebKitGTK"
+}
