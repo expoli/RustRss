@@ -97,6 +97,40 @@
       }
     },
     {
+      "name": "narrow-desktop-reader-layout-save-enabled",
+      "detail": null
+    },
+    {
+      "name": "narrow-desktop-reader-layout-saved",
+      "detail": {
+        "revision": 1,
+        "width": 760,
+        "layout": "focus"
+      }
+    },
+    {
+      "name": "narrow-desktop-reader-layout-effect",
+      "detail": {
+        "before": {
+          "grid": "150px 240px 530px",
+          "width": "680px",
+          "layout": "three_column"
+        },
+        "after": {
+          "grid": "150px 220px 550px",
+          "width": "760px",
+          "layout": "focus"
+        }
+      }
+    },
+    {
+      "name": "narrow-desktop-reader-layout-reopen",
+      "detail": {
+        "width": "760",
+        "layout": "focus"
+      }
+    },
+    {
       "name": "desktop-data-actions",
       "detail": {
         "import": true,
@@ -132,7 +166,7 @@
       "name": "mcp-core-rejects-invalid-without-write",
       "detail": {
         "result": "端口需要 ≥ 1024（更低的端口需要 root）",
-        "port": "45449"
+        "port": "34717"
       }
     },
     {
@@ -141,7 +175,7 @@
     },
     {
       "name": "mcp-invalid-port-no-write",
-      "detail": "45449"
+      "detail": "34717"
     },
     {
       "name": "mcp-default-write-disabled",
@@ -150,7 +184,7 @@
     {
       "name": "mcp-live-loopback",
       "detail": {
-        "url": "http://127.0.0.1:45449/mcp"
+        "url": "http://127.0.0.1:34717/mcp"
       }
     },
     {
@@ -235,14 +269,21 @@
         "integrity": "ok",
         "rollbackFiles": 1
       }
+    },
+    {
+      "name": "narrow-desktop-reader-layout-app-restart",
+      "detail": {
+        "width": 760,
+        "layout": "focus"
+      }
     }
   ],
   "limits": [
     "Xvfb lacks a window manager; title-bar and tray gestures were not exercised."
   ],
-  "backupDialogResult": "/tmp/rustrss-t5-desktop-1qndmpo1/home/backup-output/RustRss-backup-20260930-112200.sqlite",
+  "backupDialogResult": "/tmp/rustrss-t5-desktop-lkrrv6n_/home/backup-output/RustRss-backup-20260930-122825.sqlite",
   "display": ":70",
-  "desktopSha256": "db89edc2b81655164064f2e5d895db36aa4ad1fee54c1255bea14311154c813d",
-  "fixturePath": "/tmp/rustrss-t5-desktop-1qndmpo1/fixture.sqlite",
+  "desktopSha256": "b26aa17b67eb4c97da89f0fe3835495d25e429cec886365298faa496e3db7142",
+  "fixturePath": "/tmp/rustrss-t5-desktop-lkrrv6n_/fixture.sqlite",
   "passed": true
 }

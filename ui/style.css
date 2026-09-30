@@ -454,6 +454,8 @@ main {
 }
 .entries li:hover { background: var(--bg-hover); }
 .entries li.active { background: var(--bg-active); border-left-color: var(--accent); }
+.empty-search-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.empty-search-actions button { min-height: 40px; }
 
 /* 列表尾部行（哨兵）：进度 / 重试按钮 / 终止态三种形态共用一条低调的居中行。 */
 .load-sentinel {
@@ -1500,7 +1502,7 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   .toolbar button { padding: 8px 12px; min-height: 48px; white-space: nowrap; }
   .entries li { padding-block: 10px; min-height: 48px; }
   .entries li .row-tag-btn { width: 48px; height: 48px; }
-  .entries li .search-retry { min-width: 48px; min-height: 48px; margin: 8px 0; }
+.entries li .search-retry, .entries li .search-clear { min-width: 48px; min-height: 48px; }
   .views li, .feeds li, .tags li { min-height: 48px; }
   .m-seg button, #m-reader-back, #btn-list-sort, #btn-list-bulk, #btn-new-folder,
   .settings-nav li > button, .ctx-menu button { min-width: 48px; min-height: 48px; }
@@ -1565,6 +1567,8 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   .sidebar .tags { flex: none; max-height: none; overflow: visible; }
   .sidebar-foot, #tags-empty { display: none; }
   #m-feeds-empty { margin: 12px 16px 24px; line-height: 1.6; }
+  #m-feeds-empty p { margin: 0 0 12px; }
+  #m-empty-add-feed { min-height: 48px; }
   .add-row, .add-row.hidden {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;

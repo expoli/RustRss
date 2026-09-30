@@ -997,14 +997,26 @@ function renderList() {
     const li = document.createElement('li');
     li.className = 'dim';
     li.style.cursor = 'default';
-    if (state.view.kind === 'search' && paging.error) {
-      li.textContent = t('m.searchFailed', { error: paging.error });
+    if (state.view.kind === 'search') {
+      const message = document.createElement('span');
+      message.textContent = paging.error
+        ? t('m.searchFailed', { error: paging.error }) : t('list.emptySearch');
+      li.appendChild(message);
+      const actions = document.createElement('div');
+      actions.className = 'empty-search-actions';
+      const clear = document.createElement('button');
+      clear.type = 'button';
+      clear.className = 'search-clear';
+      clear.textContent = t('m.searchClear');
+      clear.onclick = () => cancelSearch().catch((err) => setStatus(err.message, true));
+      actions.appendChild(clear);
       const retry = document.createElement('button');
       retry.type = 'button';
       retry.className = 'search-retry';
       retry.textContent = t('m.searchRetry');
       retry.onclick = () => loadEntries().catch((err) => setStatus(err.message, true));
-      li.appendChild(retry);
+      actions.appendChild(retry);
+      li.appendChild(actions);
     } else {
       li.textContent = t(listEmptyKey());
     }
@@ -4659,6 +4671,7 @@ async function boot() {
     else row.classList.toggle('hidden');
     if (!row.classList.contains('hidden')) el('add-url').focus();
   };
+  el('m-empty-add-feed').onclick = () => el('btn-add').click();
   el('add-rsshub').onclick = () => {
     el('add-row').classList.remove('hidden');
     el('add-url').value = 'rsshub://';

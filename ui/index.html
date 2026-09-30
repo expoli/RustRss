@@ -80,7 +80,10 @@
         <button id="btn-new-folder" data-icon="plus" data-i18n-title="folder.newTitle" data-i18n-aria-label="folder.newTitle"></button>
       </div>
       <ul id="feeds" class="feeds"></ul>
-      <p id="m-feeds-empty" class="m-only hidden dim" data-i18n="m.feedsEmpty"></p>
+      <div id="m-feeds-empty" class="m-only hidden dim">
+        <p data-i18n="m.feedsEmpty"></p>
+        <button id="m-empty-add-feed" type="button" class="ui-button ui-button--primary" data-i18n="toolbar.addFeed"></button>
+      </div>
       <!-- 标签区：颜色圆点 + 名称 + 未读计数，置顶优先（顺序由 core 直出）；
            行可拖拽排序，右键出管理菜单（重命名/颜色/置顶/删除）。 -->
       <div id="tags-head" class="section-title tags-head" role="button" tabindex="0"

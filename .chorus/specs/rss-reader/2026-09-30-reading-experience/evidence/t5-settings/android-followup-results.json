@@ -4,8 +4,8 @@
   },
   {
     "name": "theme-revision-increments",
-    "before": 47,
-    "after": 48
+    "before": 1,
+    "after": 2
   },
   {
     "name": "theme-mode-preset-summary-readback",
@@ -16,34 +16,26 @@
     "name": "theme-history-refresh-has-prior-revision",
     "history": [
       "",
-      "47",
-      "46",
-      "45",
-      "44",
-      "43",
-      "42",
-      "41",
-      "40",
-      "39",
-      "38"
+      "1",
+      "0"
     ]
   },
   {
     "name": "theme-history-restore-new-revision",
-    "from": 48,
-    "to": 49
+    "from": 2,
+    "to": 3
   },
   {
     "name": "theme-stale-cas-does-not-write",
-    "revision": 50
+    "revision": 4
   },
   {
     "name": "theme-discard-after-cas"
   },
   {
     "name": "theme-revision-increments",
-    "before": 50,
-    "after": 51
+    "before": 4,
+    "after": 5
   },
   {
     "name": "reading-typography-readback",

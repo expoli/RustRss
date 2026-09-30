@@ -101,8 +101,8 @@
 | M14.code.family | 等宽字体 | 阅读设置 → 阅读高级 | 双端 | 代码块；调节并查看 | T4/T5 | 部分：等宽字体保存回读，未做代码块视觉对照；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
 | M14.code.size | 等宽字号 | 阅读设置 → 阅读高级 | 双端 | 代码块；调节并查看 | T4/T5 | 部分：等宽字号保存回读，未做代码块视觉对照；[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
 | M14.mark-read | 导航时标记已读 | 阅读设置 → 阅读行为 | 双端 | 按原保存语义；切换并读文章 | T4/T5 | 部分：开关保存回读，合成文章已原生打开，未独立记录打开前后 read 值；[Android 原生副作用](evidence/t5-settings/android-required-results.json)、[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
-| M14.width | 阅读宽度 | 阅读设置 → 阅读高级 | 桌面 | 布局存储；调节 | T5/T6 | 部分：Linux 窄窗控件可达，未保存布局值；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M14.layout | 三栏/聚焦阅读 | 阅读设置 → 阅读高级 | 桌面 | 布局不丢；切换 | T5/T6 | 部分：Linux 窄窗控件可达，未保存布局值；[Linux 原生](evidence/t5-settings/desktop-results.json) |
+| M14.width | 阅读宽度 | 阅读设置 → 阅读高级 | 桌面 | 布局存储；调节 | T5/T6 | 通过：920px 真窗口中保存 760px，关闭/重开设置及重启应用后回读 760px；CSS 阅读宽度 680→760px；[Linux 原生](evidence/t5-settings/desktop-results.json)、[截图](evidence/t5-settings/desktop-reader-layout-920.png) |
+| M14.layout | 三栏/聚焦阅读 | 阅读设置 → 阅读高级 | 桌面 | 布局不丢；切换 | T5/T6 | 通过：920px 真窗口中保存聚焦阅读，关闭/重开设置及重启应用后回读 focus；主网格 150/240/530→150/220/550px；[Linux 原生](evidence/t5-settings/desktop-results.json)、[截图](evidence/t5-settings/desktop-reader-layout-920.png) |
 | M15.proxy | 环境/直连/自定义代理 | 订阅设置 → 连接组 | 双端 | 保持原保存/错误；切换 | T5 | 通过：自定义与直连保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
 | M15.proxy-url | 代理 URL | 订阅设置 → 连接组 | 双端 | 输入不丢、校验错误；填写 | T5 | 通过：非法 URL 输入保留、字段错误，数据库未写；[Android](evidence/t5-settings/android-results.json)、[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
 | M15.proxy-bypass | 代理绕过列表 | 订阅设置 → 连接组 | 双端 | 输入不丢；填写并保存 | T5 | 通过：绕过列表保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
@@ -158,8 +158,8 @@
 | M20.legacy-db.refuse | 旧库拒绝 | 启动拒绝屏 → 统一反馈 | 双端 | 原库只读；隔离旧库 | T5/T6 | 通过：隔离 v13 库触发拒绝屏，库哈希不变且无 WAL；[Linux 旧库原生](evidence/t5-settings/legacy-refusal-runtime-results.json) |
 | M20.legacy-db.export | 只读导出 OPML | 启动拒绝屏 → 统一反馈 | 双端 | 原库不变；导出并检查 | T5/T6 | 通过：GTK 原生保存选择器导出 302 字节 OPML 含旧源，原库字节不变；[Linux 旧库原生](evidence/t5-settings/legacy-refusal-runtime-results.json) |
 | M20.legacy-db.quit | 退出 | 启动拒绝屏 → 统一反馈 | 双端 | 原库不变；点击 | T5/T6 | 通过：拒绝屏 Quit 退出应用，原库未写；[Linux 旧库原生](evidence/t5-settings/legacy-refusal-runtime-results.json) |
-| M20.empty.feeds | 空订阅 | 空态 → 稳定空态 | 双端 | 添加入口可见；隔离 fixture | T5 | 部分：空订阅逻辑单测通过，最终 APK 未保留原生空库截图；[静态单测](../../../../scripts/tests/empty-error-states.test.cjs) |
-| M20.empty.search | 空搜索 | 空态 → 稳定空态 | 双端 | 清除/重试可见；隔离 fixture | T5 | 部分：空搜索逻辑单测通过，最终 APK 未执行空查询；[静态单测](../../../../scripts/tests/empty-error-states.test.cjs) |
+| M20.empty.feeds | 空订阅 | 空态 → 稳定空态 | 双端 | 添加入口可见；隔离 fixture | T5 | 通过：最终 debug APK 空库截图显示添加订阅按钮；Android 无障碍树和焦点顺序含按钮，原生点击聚焦现有 URL 表单，无横向溢出；[原生检查](evidence/t5-settings/android-empty-results.json)、[截图](evidence/t5-settings/android-empty-subscriptions.png) |
+| M20.empty.search | 空搜索 | 空态 → 稳定空态 | 双端 | 清除/重试可见；隔离 fixture | T5 | 通过：最终 debug APK 无结果搜索显示清除/重试；Android 无障碍树及原生 Tab 顺序通过；重试保留查询且列表/视口几何不变，清除回来源页；[原生检查](evidence/t5-settings/android-empty-results.json)、[截图](evidence/t5-settings/android-empty-search.png) |
 | M20.offline | 离线 | 状态区 → 稳定反馈位 | 双端 | 缓存可读；断网打开 | T5 | 通过：本地源断服后刷新报 connection_error，列表及缓存正文仍可读；[Android 离线重试](evidence/t5-settings/android-offline-retry.json) |
 | M20.failure | 请求失败 | 状态区 → 稳定反馈位 | 双端 | 反馈不跳布局；模拟失败 | T5 | 通过：代理失败字段关联/布局稳定，断服源报 connection_error；[Android](evidence/t5-settings/android-results.json)、[Android 手工读回](evidence/t5-settings/android-manual-results.json)、[Android 离线重试](evidence/t5-settings/android-offline-retry.json) |
 | M20.retry | 重试 | 状态区 → 稳定反馈位 | 双端 | 输入保留；失败后重试 | T5 | 通过：源服务恢复后单源重试清除错误且缓存文章仍为一篇；[Android 离线重试](evidence/t5-settings/android-offline-retry.json) |

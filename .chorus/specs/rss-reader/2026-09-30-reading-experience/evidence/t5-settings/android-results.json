@@ -1,15 +1,15 @@
 [
   {
     "name": "android-category-appearance",
-    "summary": "Light · Slate / Slate"
+    "summary": "Follow system · Clear / Clear"
   },
   {
     "name": "android-pane-appearance",
-    "title": "Settings"
+    "title": "Appearance & themes"
   },
   {
     "name": "android-category-reading",
-    "summary": "Reading size (px): 16"
+    "summary": "Reading size (px): 14"
   },
   {
     "name": "android-pane-reading",
@@ -17,7 +17,7 @@
   },
   {
     "name": "android-category-subscriptions",
-    "summary": "Direct · Every 15 minutes"
+    "summary": "Environment proxy · Every 30 minutes"
   },
   {
     "name": "android-pane-subscriptions",
@@ -25,7 +25,7 @@
   },
   {
     "name": "android-category-ai",
-    "summary": "Ollama (local, no key) · t5-synthetic-model"
+    "summary": "Ollama (local, no key) · Model"
   },
   {
     "name": "android-pane-ai",
@@ -41,7 +41,7 @@
   },
   {
     "name": "android-category-general",
-    "summary": "English"
+    "summary": "Follow system"
   },
   {
     "name": "android-pane-general",
@@ -62,7 +62,7 @@
   },
   {
     "name": "theme-draft-no-write",
-    "revision": 46,
+    "revision": 0,
     "candidate": 17
   },
   {
@@ -73,15 +73,15 @@
   },
   {
     "name": "destination-reopen-saved-value",
-    "size": 20
+    "size": 14
   },
   {
     "name": "android-no-desktop-appearance-width"
   },
   {
     "name": "theme-save-cas-readback",
-    "from": 46,
-    "to": 47
+    "from": 0,
+    "to": 1
   },
   {
     "name": "theme-advanced-controls"

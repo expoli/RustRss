@@ -102,6 +102,32 @@ async def main():
         await probe.js('document.querySelector("#tab-reading").click();document.querySelector("#reading-editor .theme-advanced").open=true;true')
         fields = await probe.js('''(() => {const q=s=>!!document.querySelector(s)?.getClientRects().length;return {readerWidth:q('#reading-editor [data-theme-field="reader.width"]'),layout:q('#reading-editor [data-theme-field="reader.layout"]'),markRead:q('#set-mark-read')}})()''')
         check('narrow-desktop-keeps-reading-layout', all(fields.values()), fields)
+        async def theme_state():
+            await probe.js('window.__T5_THEME="pending";window.__TAURI__.core.invoke("get_ui_settings").then(v=>window.__T5_THEME=v.theme_snapshot,e=>window.__T5_THEME={error:String(e)});true')
+            await probe.until('window.__T5_THEME!=="pending"')
+            snapshot = await probe.js('window.__T5_THEME')
+            assert 'error' not in snapshot, snapshot
+            return snapshot
+        original_theme = await theme_state()
+        old_reader = original_theme['light']['reader']
+        next_width = 760 if old_reader['width'] != 760 else 800
+        next_layout = 'focus' if old_reader['layout'] != 'focus' else 'three_column'
+        before_layout = await probe.js('''({grid:getComputedStyle(document.querySelector('main')).gridTemplateColumns,width:document.documentElement.style.getPropertyValue('--reader-width'),layout:document.documentElement.dataset.readerLayout})''')
+        await probe.js(f'''(()=>{{const w=document.querySelector('#reading-editor [data-theme-field="reader.width"]'),l=document.querySelector('#reading-editor [data-theme-field="reader.layout"]');w.value={next_width};w.dispatchEvent(new Event('change',{{bubbles:true}}));l.value={json.dumps(next_layout)};l.dispatchEvent(new Event('change',{{bubbles:true}}));return true}})()''')
+        check('narrow-desktop-reader-layout-save-enabled', await probe.js('!document.querySelector("#reading-editor .theme-editor-actions button:nth-child(2)").disabled'))
+        await probe.js('document.querySelector("#reading-editor .theme-editor-actions button:nth-child(2)").click();true')
+        await probe.until('document.querySelector("#reading-editor .theme-editor-actions button:nth-child(2)").disabled')
+        saved_theme = await theme_state()
+        check('narrow-desktop-reader-layout-saved', saved_theme['config']['revision'] == original_theme['config']['revision'] + 1
+              and saved_theme['light']['reader']['width'] == next_width and saved_theme['light']['reader']['layout'] == next_layout,
+              {'revision': saved_theme['config']['revision'], 'width': saved_theme['light']['reader']['width'], 'layout': saved_theme['light']['reader']['layout']})
+        after_layout = await probe.js('''({grid:getComputedStyle(document.querySelector('main')).gridTemplateColumns,width:document.documentElement.style.getPropertyValue('--reader-width'),layout:document.documentElement.dataset.readerLayout})''')
+        check('narrow-desktop-reader-layout-effect', after_layout['width'] == f'{next_width}px' and after_layout['layout'] == next_layout
+              and after_layout['grid'] != before_layout['grid'], {'before': before_layout, 'after': after_layout})
+        await probe.js('''document.querySelector('#settings-close').click();document.querySelector('#btn-settings').click();document.querySelector('#tab-reading').click();document.querySelector('#reading-editor .theme-advanced').open=true;document.querySelector('#reading-editor [data-theme-field="reader.width"]').scrollIntoView({block:'center'});true''')
+        reopened = await probe.js('''({width:document.querySelector('#reading-editor [data-theme-field="reader.width"]').value,layout:document.querySelector('#reading-editor [data-theme-field="reader.layout"]').value})''')
+        check('narrow-desktop-reader-layout-reopen', reopened == {'width': str(next_width), 'layout': next_layout}, reopened)
+        subprocess.run(['import', '-display', display, '-window', hex(window), str(out / 'desktop-reader-layout-920.png')], env=env, check=True)
         await probe.js('document.querySelector("#tab-data").click();true')
         data = await probe.js('''(() => {const q=s=>!!document.querySelector(s)?.getClientRects().length;return {import:q('#act-import-opml'),export:q('#act-export-opml'),backup:q('#act-backup-db'),restore:q('#act-restore-db'),androidHint:q('#pane-data .m-only')}})()''')
         check('desktop-data-actions', data['import'] and data['export'] and data['backup'] and data['restore'] and not data['androidHint'], data)
@@ -302,6 +328,11 @@ async def main():
             backups = list(root.glob('fixture.sqlite.bak-*'))
             check('db-restore-applied-on-restart', restored_write == 'true' and restored_integrity == 'ok' and bool(backups) and not (root / 'pending-restore.sqlite').exists(),
                   {'integrity':restored_integrity,'rollbackFiles':len(backups)})
+            await probe.until('!!document.querySelector("#btn-settings")')
+            restarted_theme = await theme_state()
+            check('narrow-desktop-reader-layout-app-restart', restarted_theme['light']['reader']['width'] == next_width
+                  and restarted_theme['light']['reader']['layout'] == next_layout,
+                  {'width': restarted_theme['light']['reader']['width'], 'layout': restarted_theme['light']['reader']['layout']})
         results['display'] = display
         results['desktopSha256'] = hashlib.sha256(Path('target/debug/rustrss-desktop').read_bytes()).hexdigest()
         results['fixturePath'] = str(db)
