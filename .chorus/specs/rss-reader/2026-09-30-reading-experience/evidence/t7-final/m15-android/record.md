@@ -1,5 +1,7 @@
 # T7 M15: Android native refresh and notification probe
 
+**Superseded for final-source acceptance:** this run used an earlier APK. See the [final APK rerun](../m15-android-round2/record.md).
+
 Run on 2026-10-01 (Asia/Shanghai). Result: **5/5 requested rows verified on the owned Android emulator**. The immutable test APK was `tech.expoli.rustrss` 0.2.1 (versionCode 2001), SHA-256 `0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091`. The device was the separate `RustRssT7M15` Pixel Tablet AVD on `emulator-5586`: Android 16/API 36, x86_64, 2560×1600 at density 320. See [device-metadata.json](device-metadata.json).
 
 | Case | Native observation | Evidence |

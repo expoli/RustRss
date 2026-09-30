@@ -1,0 +1,806 @@
+{
+  "device": "emulator-5586",
+  "avd": "RustRssT7M15",
+  "profile": "pixel_tablet",
+  "android": "16",
+  "apkSha256": "6baf0f068c8a458ee04dee687bb312c3793c0567e2f27ab9bb29956f63053bfc",
+  "checks": [
+    {
+      "width": 768,
+      "height": 1024,
+      "physical": "Physical size: 2560x1600\nOverride size: 1536x2048",
+      "density": "Physical density: 320",
+      "css": [
+        768,
+        968
+      ],
+      "dpr": 2,
+      "coarse": true,
+      "mobile": true,
+      "page": "articles",
+      "android": "1",
+      "scrollWidth": 768,
+      "listCopy": "No subscriptions yet. Open Subscriptions to add a feed, or import OPML in Settings.",
+      "nav": {
+        "x": 0,
+        "y": 903,
+        "w": 768,
+        "h": 65,
+        "display": "flex"
+      },
+      "navButtons": 4,
+      "settingsButton": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "none"
+        },
+        {
+          "x": 0,
+          "y": 53,
+          "w": 768,
+          "h": 824,
+          "display": "flex"
+        },
+        {
+          "x": 0,
+          "y": 877,
+          "w": 768,
+          "h": 824,
+          "display": "flex"
+        }
+      ],
+      "windowButtons": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        }
+      ],
+      "mcp": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "flex"
+      },
+      "backup": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "opmlHint": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      }
+    },
+    {
+      "width": 849,
+      "height": 1024,
+      "physical": "Physical size: 2560x1600\nOverride size: 1698x2048",
+      "density": "Physical density: 320",
+      "css": [
+        849,
+        968
+      ],
+      "dpr": 2,
+      "coarse": true,
+      "mobile": true,
+      "page": "articles",
+      "android": "1",
+      "scrollWidth": 849,
+      "listCopy": "No subscriptions yet. Open Subscriptions to add a feed, or import OPML in Settings.",
+      "nav": {
+        "x": 0,
+        "y": 903,
+        "w": 849,
+        "h": 65,
+        "display": "flex"
+      },
+      "navButtons": 4,
+      "settingsButton": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "none"
+        },
+        {
+          "x": 0,
+          "y": 53,
+          "w": 849,
+          "h": 824,
+          "display": "flex"
+        },
+        {
+          "x": 0,
+          "y": 877,
+          "w": 849,
+          "h": 824,
+          "display": "flex"
+        }
+      ],
+      "windowButtons": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        }
+      ],
+      "mcp": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "flex"
+      },
+      "backup": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "opmlHint": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      }
+    },
+    {
+      "width": 850,
+      "height": 1024,
+      "physical": "Physical size: 2560x1600\nOverride size: 1700x2048",
+      "density": "Physical density: 320",
+      "css": [
+        850,
+        968
+      ],
+      "dpr": 2,
+      "coarse": true,
+      "mobile": true,
+      "page": "articles",
+      "android": "1",
+      "scrollWidth": 850,
+      "listCopy": "No subscriptions yet. Open Subscriptions to add a feed, or import OPML in Settings.",
+      "nav": {
+        "x": 0,
+        "y": 903,
+        "w": 850,
+        "h": 65,
+        "display": "flex"
+      },
+      "navButtons": 4,
+      "settingsButton": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "none"
+        },
+        {
+          "x": 0,
+          "y": 53,
+          "w": 850,
+          "h": 824,
+          "display": "flex"
+        },
+        {
+          "x": 0,
+          "y": 877,
+          "w": 850,
+          "h": 824,
+          "display": "flex"
+        }
+      ],
+      "windowButtons": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        }
+      ],
+      "mcp": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "flex"
+      },
+      "backup": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "opmlHint": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      }
+    },
+    {
+      "width": 851,
+      "height": 1024,
+      "physical": "Physical size: 2560x1600\nOverride size: 1702x2048",
+      "density": "Physical density: 320",
+      "css": [
+        851,
+        968
+      ],
+      "dpr": 2,
+      "coarse": true,
+      "mobile": true,
+      "page": "articles",
+      "android": "1",
+      "scrollWidth": 851,
+      "listCopy": "No subscriptions yet. Open Subscriptions to add a feed, or import OPML in Settings.",
+      "nav": {
+        "x": 0,
+        "y": 903,
+        "w": 851,
+        "h": 65,
+        "display": "flex"
+      },
+      "navButtons": 4,
+      "settingsButton": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "none"
+        },
+        {
+          "x": 0,
+          "y": 53,
+          "w": 851,
+          "h": 824,
+          "display": "flex"
+        },
+        {
+          "x": 0,
+          "y": 877,
+          "w": 851,
+          "h": 824,
+          "display": "flex"
+        }
+      ],
+      "windowButtons": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        }
+      ],
+      "mcp": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "flex"
+      },
+      "backup": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "opmlHint": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      }
+    },
+    {
+      "width": 959,
+      "height": 1024,
+      "physical": "Physical size: 2560x1600\nOverride size: 1918x2048",
+      "density": "Physical density: 320",
+      "css": [
+        959,
+        968
+      ],
+      "dpr": 2,
+      "coarse": true,
+      "mobile": true,
+      "page": "articles",
+      "android": "1",
+      "scrollWidth": 959,
+      "listCopy": "No subscriptions yet. Open Subscriptions to add a feed, or import OPML in Settings.",
+      "nav": {
+        "x": 0,
+        "y": 903,
+        "w": 959,
+        "h": 65,
+        "display": "flex"
+      },
+      "navButtons": 4,
+      "settingsButton": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "none"
+        },
+        {
+          "x": 0,
+          "y": 53,
+          "w": 959,
+          "h": 824,
+          "display": "flex"
+        },
+        {
+          "x": 0,
+          "y": 877,
+          "w": 959,
+          "h": 824,
+          "display": "flex"
+        }
+      ],
+      "windowButtons": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        }
+      ],
+      "mcp": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "flex"
+      },
+      "backup": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "opmlHint": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      }
+    },
+    {
+      "width": 960,
+      "height": 1024,
+      "physical": "Physical size: 2560x1600\nOverride size: 1920x2048",
+      "density": "Physical density: 320",
+      "css": [
+        960,
+        968
+      ],
+      "dpr": 2,
+      "coarse": true,
+      "mobile": true,
+      "page": "articles",
+      "android": "1",
+      "scrollWidth": 960,
+      "listCopy": "No subscriptions yet. Open Subscriptions to add a feed, or import OPML in Settings.",
+      "nav": {
+        "x": 0,
+        "y": 903,
+        "w": 960,
+        "h": 65,
+        "display": "flex"
+      },
+      "navButtons": 4,
+      "settingsButton": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "none"
+        },
+        {
+          "x": 0,
+          "y": 53,
+          "w": 960,
+          "h": 824,
+          "display": "flex"
+        },
+        {
+          "x": 0,
+          "y": 877,
+          "w": 960,
+          "h": 824,
+          "display": "flex"
+        }
+      ],
+      "windowButtons": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        }
+      ],
+      "mcp": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "flex"
+      },
+      "backup": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "opmlHint": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      }
+    },
+    {
+      "width": 961,
+      "height": 1024,
+      "physical": "Physical size: 2560x1600\nOverride size: 1922x2048",
+      "density": "Physical density: 320",
+      "css": [
+        961,
+        968
+      ],
+      "dpr": 2,
+      "coarse": true,
+      "mobile": false,
+      "android": "1",
+      "scrollWidth": 961,
+      "listCopy": "No subscriptions yet. Use Add feed above, or import OPML in Settings.",
+      "nav": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "navButtons": 0,
+      "settingsButton": {
+        "x": 845.875,
+        "y": 8,
+        "w": 103.125,
+        "h": 33.6953125,
+        "display": "flex"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 50.6953125,
+          "w": 150,
+          "h": 917.3046875,
+          "display": "flex"
+        },
+        {
+          "x": 150,
+          "y": 50.6953125,
+          "w": 240,
+          "h": 917.3046875,
+          "display": "flex"
+        },
+        {
+          "x": 390,
+          "y": 50.6953125,
+          "w": 571,
+          "h": 917.3046875,
+          "display": "flex"
+        }
+      ],
+      "windowButtons": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        }
+      ],
+      "mcp": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "inline-flex"
+      },
+      "backup": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "opmlHint": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "physical": "Physical size: 2560x1600\nOverride size: 2048x1536",
+      "density": "Physical density: 320",
+      "css": [
+        1024,
+        712
+      ],
+      "dpr": 2,
+      "coarse": true,
+      "mobile": false,
+      "android": "1",
+      "scrollWidth": 1024,
+      "listCopy": "No subscriptions yet. Use Add feed above, or import OPML in Settings.",
+      "nav": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "navButtons": 0,
+      "settingsButton": {
+        "x": 908.875,
+        "y": 8,
+        "w": 103.125,
+        "h": 33.6953125,
+        "display": "flex"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 50.6953125,
+          "w": 150,
+          "h": 661.3046875,
+          "display": "flex"
+        },
+        {
+          "x": 150,
+          "y": 50.6953125,
+          "w": 240,
+          "h": 661.3046875,
+          "display": "flex"
+        },
+        {
+          "x": 390,
+          "y": 50.6953125,
+          "w": 634,
+          "h": 661.3046875,
+          "display": "flex"
+        }
+      ],
+      "windowButtons": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "display": "inline-block"
+        }
+      ],
+      "mcp": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "inline-flex"
+      },
+      "backup": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "opmlHint": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "block"
+      },
+      "androidSettings": {
+        "mcp": false,
+        "backup": false,
+        "restore": false,
+        "opmlHint": true,
+        "opmlExport": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "device": "emulator-5586",
+  "avd": "RustRssT7M15",
+  "apkSha256": "6baf0f068c8a458ee04dee687bb312c3793c0567e2f27ab9bb29956f63053bfc",
+  "android": "16",
+  "checks": [
+    {
+      "name": "global-15-override-120-tick",
+      "elapsed": 66.07
+    },
+    {
+      "name": "ui-concurrency-12-loaded"
+    }
+  ],
+  "phases": {
+    "intervalStart": {
+      "pid": 3616,
+      "startMonotonic": 238943.568708369,
+      "startWall": 1790793437.1494243
+    },
+    "intervalInitialResumeHits": [],
+    "interval": {
+      "hits": [
+        {
+          "path": "/interval/global",
+          "phase": "interval-tick",
+          "time": 1790793508.977713,
+          "monotonic": 239015.935638328,
+          "status": 200
+        }
+      ],
+      "waitSeconds": 66.06607904299744,
+      "dbRows": "1|1790793508|\n2|1790791643|120"
+    },
+    "concurrencyFixtureSha256": "f0e2c743828f89fa87a2dcbe87c75e457dc503b206db4e26f7b3f5c8a2f97d9e",
+    "concurrencyPrimeHits": [],
+    "concurrency": {
+      "hits": [
+        {
+          "path": "/concurrency/11",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5493157,
+          "monotonic": 239023.507241197,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/7",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5495574,
+          "monotonic": 239023.507482085,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/13",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5496829,
+          "monotonic": 239023.507608695,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/2",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5498075,
+          "monotonic": 239023.5077323,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/10",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5500262,
+          "monotonic": 239023.507950916,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/5",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5501547,
+          "monotonic": 239023.50807954,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/4",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5502787,
+          "monotonic": 239023.508203125,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/1",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5503943,
+          "monotonic": 239023.508318795,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/12",
+          "phase": "concurrency-manual",
+          "time": 1790793516.550566,
+          "monotonic": 239023.508490501,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/3",
+          "phase": "concurrency-manual",
+          "time": 1790793516.552343,
+          "monotonic": 239023.51026803,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/8",
+          "phase": "concurrency-manual",
+          "time": 1790793516.5557754,
+          "monotonic": 239023.513701215,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/9",
+          "phase": "concurrency-manual",
+          "time": 1790793517.351062,
+          "monotonic": 239024.308986657,
+          "status": 200
+        },
+        {
+          "path": "/concurrency/6",
+          "phase": "concurrency-manual",
+          "time": 1790793517.3513334,
+          "monotonic": 239024.309258133,
+          "status": 200
+        }
+      ],
+      "maxActive": 11,
+      "tap": {
+        "selector": "#btn-refresh",
+        "x": 978.13671875,
+        "y": 24.84765625,
+        "w": 117.7890625,
+        "h": 33.6953125,
+        "dpr": 2,
+        "visible": true
+      },
+      "trustedTaps": [
+        {
+          "id": "btn-refresh",
+          "trusted": true
+        }
+      ]
+    }
+  },
+  "passed": false,
+  "fixtureSha256": "39b49baed805e9a54e7d1997d593e6f797422ca13d3f062c6f5579a1389a3610",
+  "serverPort": 42653,
+  "allHits": [
+    {
+      "path": "/interval/global",
+      "phase": "interval-tick",
+      "time": 1790793508.977713,
+      "monotonic": 239015.935638328,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/11",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5493157,
+      "monotonic": 239023.507241197,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/7",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5495574,
+      "monotonic": 239023.507482085,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/13",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5496829,
+      "monotonic": 239023.507608695,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/2",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5498075,
+      "monotonic": 239023.5077323,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/10",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5500262,
+      "monotonic": 239023.507950916,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/5",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5501547,
+      "monotonic": 239023.50807954,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/4",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5502787,
+      "monotonic": 239023.508203125,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/1",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5503943,
+      "monotonic": 239023.508318795,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/12",
+      "phase": "concurrency-manual",
+      "time": 1790793516.550566,
+      "monotonic": 239023.508490501,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/3",
+      "phase": "concurrency-manual",
+      "time": 1790793516.552343,
+      "monotonic": 239023.51026803,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/8",
+      "phase": "concurrency-manual",
+      "time": 1790793516.5557754,
+      "monotonic": 239023.513701215,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/9",
+      "phase": "concurrency-manual",
+      "time": 1790793517.351062,
+      "monotonic": 239024.308986657,
+      "status": 200
+    },
+    {
+      "path": "/concurrency/6",
+      "phase": "concurrency-manual",
+      "time": 1790793517.3513334,
+      "monotonic": 239024.309258133,
+      "status": 200
+    }
+  ]
+}

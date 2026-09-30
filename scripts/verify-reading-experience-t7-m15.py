@@ -68,7 +68,9 @@ class FixtureHandler(BaseHTTPRequestHandler):
                 status, body = 503, b"local synthetic RSSHub 503"
             else:
                 if self.path.startswith("/concurrency/"):
-                    time.sleep(0.8)
+                    # Keep the first requests in flight long enough for the
+                    # Android HTTP stack to expose all configured lanes.
+                    time.sleep(2.0)
                 item = ""
                 if self.path.startswith("/notify") and version:
                     item = ("<item><guid>m15-notify-%d</guid><title>M15 new article %d</title>"
@@ -264,6 +266,8 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--apk", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--expected-apk-sha256", default=
+                        "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091")
     args = parser.parse_args()
     assert os.environ.get("ANDROID_SERIAL") == SERIAL, "ANDROID_SERIAL must be emulator-5586"
     assert adb("emu", "avd", "name").splitlines()[0].strip() == "RustRssT7M15"
@@ -272,7 +276,7 @@ async def main():
     report = {"device": SERIAL, "avd": "RustRssT7M15", "apkSha256": sha256(args.apk),
               "android": adb("shell", "getprop", "ro.build.version.release"), "checks": [],
               "phases": {}, "passed": False}
-    assert report["apkSha256"] == "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091"
+    assert report["apkSha256"] == args.expected_apk_sha256
     server = ThreadingHTTPServer(("127.0.0.1", 0), FixtureHandler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     port = server.server_port
