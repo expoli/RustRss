@@ -1,10 +1,17 @@
 {
   "display": ":70",
-  "source": "XTestFakeKeyEvent on isolated Xvfb",
+  "source": "XTestFakeKeyEvent and XTestFakeButtonEvent on isolated Xvfb",
   "window": "0x200007",
   "desktopSha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
   "storedBefore": 1,
   "storedAfter": 0,
+  "refreshStatuses": [
+    "正在刷新…",
+    "刷新中 1/3 · 成功 0 · 失败 1",
+    "刷新中 2/3 · 成功 0 · 失败 2",
+    "刷新中 3/3 · 成功 0 · 失败 3",
+    "刷新完成：成功 0｜未修改 0｜新增 0｜失败 3"
+  ],
   "keyEvents": [
     {
       "key": "Tab",
@@ -65,8 +72,138 @@
     {
       "key": "Escape",
       "trusted": true
+    },
+    {
+      "key": "g",
+      "trusted": true
+    },
+    {
+      "key": "j",
+      "trusted": true
+    },
+    {
+      "key": "k",
+      "trusted": true
+    },
+    {
+      "key": "ArrowDown",
+      "trusted": true
+    },
+    {
+      "key": "ArrowUp",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "G",
+      "trusted": true
+    },
+    {
+      "key": "g",
+      "trusted": true
+    },
+    {
+      "key": "Enter",
+      "trusted": true
+    },
+    {
+      "key": "u",
+      "trusted": true
+    },
+    {
+      "key": "s",
+      "trusted": true
+    },
+    {
+      "key": "l",
+      "trusted": true
+    },
+    {
+      "key": "t",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "U",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "U",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "A",
+      "trusted": true
+    },
+    {
+      "key": "s",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "j",
+      "trusted": true
+    },
+    {
+      "key": "s",
+      "trusted": true
+    },
+    {
+      "key": "l",
+      "trusted": true
+    },
+    {
+      "key": "t",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "r",
+      "trusted": true
     }
   ],
+  "titlebarPointer": {
+    "root": [
+      1149,
+      25
+    ],
+    "target": [
+      1149,
+      25
+    ],
+    "clicks": [
+      {
+        "trusted": true,
+        "detail": 1,
+        "currentTarget": "btn-win-min"
+      }
+    ],
+    "windowManager": "none; activation only, no minimize effect asserted"
+  },
   "checks": [
     "More opens with first item focused",
     "opened entry stored as read",
@@ -87,7 +224,30 @@
     "feed row in viewport for native right-click",
     "native right-click opens anchored feed menu",
     "trusted Escape closes native right-click menu",
-    "keyboard events are trusted browser input"
+    "trusted g selects first article",
+    "trusted j moves list and reader to next article",
+    "trusted k moves to previous article",
+    "trusted ArrowDown moves list",
+    "trusted ArrowUp moves list",
+    "trusted G selects last article",
+    "trusted g returns to first article",
+    "trusted Enter opens selected article",
+    "trusted u toggles selected article read state in SQLite",
+    "trusted s toggles star in SQLite",
+    "trusted l toggles read later in SQLite",
+    "trusted t opens tag picker with input focus",
+    "trusted Escape closes tag picker without article write",
+    "trusted U toggles stored unread-only setting",
+    "trusted U restores effective unread-only=false",
+    "bulk shortcut has unread synthetic rows",
+    "trusted A marks current All view read in SQLite",
+    "typing in search suppresses star shortcut",
+    "settings modal suppresses list, reader and tag shortcuts",
+    "trusted r starts refresh feedback",
+    "list, reader, tag and modal keyboard events are trusted browser input",
+    "private Xvfb XTest pointer moved toward owned titlebar",
+    "private Xvfb pointer verified over owned titlebar button",
+    "private Xvfb native pointer activates actual minimize button"
   ],
   "passed": true
 }

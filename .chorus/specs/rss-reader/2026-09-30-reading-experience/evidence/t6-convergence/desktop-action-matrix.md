@@ -17,12 +17,12 @@
 | M02.sort.newest | 最新排序 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M02.sort.oldest | 最旧排序 | 双端 | 本轮实测 | journey-results.json · list.sort=oldest SQLite 回读 |
 | M02.sort.unread | 未读优先 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
-| M02.hide-read | 隐藏已读 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
-| M02.bulk.read | 当前作用域全标已读 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
+| M02.hide-read | 隐藏已读 | 双端 | 第二轮实测 | review-desktop-results.json · 可信 U 两次，SQLite true→false |
+| M02.bulk.read | 当前作用域全标已读 | 双端 | 第二轮实测 | review-desktop-results.json · 可信 A，All 范围 30 篇 SQLite read=1 |
 | M02.bulk.unread | 当前作用域全标未读 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M02.pagination | 续页、加载数、总数 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M02.retry | 续页重试 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
-| M03.refresh-all | 刷新全部 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
+| M03.refresh-all | 刷新全部 | 双端 | 第二轮实测开始反馈 | review-desktop-results.json · 可信 r 触发刷新中，单飞/完成结果本轮未单测 |
 | M03.refresh-feed | 单源刷新 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M03.status | 刷新状态 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M04.url | URL 或网站发现 | 双端 | 部分：直连 URL | journey-results.json · 本地 HTTP RSS 新增并抓取；网站候选发现未重测 |
@@ -59,9 +59,9 @@
 | M09.remove | 移除标签 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M09.open | 跳转标签视图 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M10.aa | Aa 阅读设置 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
-| M10.read | 已读/未读 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
-| M10.star | 星标/取消 | 双端 | 本轮实测 | journey-results.json · starred=1 |
-| M10.later | 稍后读/取消 | 双端 | 本轮实测 | journey-results.json · read_later=1 |
+| M10.read | 已读/未读 | 双端 | 第二轮实测 | review-desktop-results.json · 可信 u 后 SQLite read 翻转 |
+| M10.star | 星标/取消 | 双端 | 本轮实测 | journey-results.json · starred=1；review-desktop-results.json · 可信 s 后 SQLite 翻转 |
+| M10.later | 稍后读/取消 | 双端 | 本轮实测 | journey-results.json · read_later=1；review-desktop-results.json · 可信 l 后 SQLite 翻转 |
 | M10.open | 浏览器打开 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M10.copy | 复制链接 | 双端 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M10.share | 原生分享 | Android | 桌面不适用 | 平台限定 Android |
@@ -150,7 +150,7 @@
 | M19.write-token.copy | 复制写 token | 桌面 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M19.write-token.rotate | 轮换写 token | 桌面 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M19.write-token.clear | 清除写 token | 桌面 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
-| M20.window.min | 窗口最小化 | 桌面 | 部分：后端差异 | window-x11-results.json 成功；window-real-results.json Wayland 未确认 |
+| M20.window.min | 窗口最小化 | 桌面 | 部分：分环境验证 | review-desktop-results.json · 私有 Xvfb 指针可信点击按钮；compositor-wayland-results.json、compositor-x11-results.json · 真实 KWin 自有窗口 minimized false→true/恢复 false；window-input-limit.json · 真实 KWin 指针/任务栏同场景闭环未到达 |
 | M20.window.max | 窗口最大化 | 桌面 | 本轮实测 | window-real-results.json · 真 Wayland 最大化/还原几何 |
 | M20.window.close | 窗口关闭 | 桌面 | 本轮实测 | window-real-results.json · 真 Wayland 关闭退出码 0 |
 | M20.shortcuts | 快捷键帮助 | 桌面 | 本轮实测 | review-desktop-results.json · 原生 ?/Escape |

@@ -1,0 +1,8 @@
+
+(rustrss-desktop:2894620): dbind-WARNING **: 23:16:22.883: Couldn't connect to accessibility bus: Failed to connect to socket /run/user/1000/at-spi/bus_0: No such file or directory
+
+** (rustrss-desktop:2894620): WARNING **: 23:16:22.997: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+
+(rustrss-desktop:2894620): libayatana-appindicator-WARNING **: 23:16:23.039: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+
+** (process:2894659): WARNING **: 23:16:23.063: Can't connect to a11y bus: Could not connect: No such file or directory

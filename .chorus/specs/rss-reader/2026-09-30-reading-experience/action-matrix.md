@@ -17,12 +17,12 @@
 | M02.sort.newest | 最新排序 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
 | M02.sort.oldest | 最旧排序 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | 桌面最旧排序 SQLite 回读通过；[T6 原生记录](evidence/t6-convergence/record.md) |
 | M02.sort.unread | 未读优先 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
-| M02.hide-read | 隐藏已读 | 列表排序菜单/U → 列表更多/U | 双端 | 存储 list.hide_read；切换 | T3/T6 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
-| M02.bulk.read | 当前作用域全标已读 | 列表批量菜单/A → 列表更多/A | 双端 | 确认 scope；执行并查库 | T3/T6 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
+| M02.hide-read | 隐藏已读 | 列表排序菜单/U → 列表更多/U | 双端 | 存储 list.hide_read；切换 | T3/T6 | Android 通过；桌面可信 U 两次及 SQLite true→false 通过：[T6 第二轮](evidence/t6-convergence/review-desktop-results.json) |
+| M02.bulk.read | 当前作用域全标已读 | 列表批量菜单/A → 列表更多/A | 双端 | 确认 scope；执行并查库 | T3/T6 | Android 通过；桌面可信 A 将 All 范围 30 篇标已读并查库：[T6 第二轮](evidence/t6-convergence/review-desktop-results.json) |
 | M02.bulk.unread | 当前作用域全标未读 | 列表批量菜单 → 列表更多 | 双端 | 确认 scope；执行并查库 | T3 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
 | M02.pagination | 续页、加载数、总数 | 列表尾部/头部 → 原位 | 双端 | 30/200行，M/N 正确；续页无重复 | T3 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
 | M02.retry | 续页重试 | 失败尾行 → 原位 | 双端 | 失败后重试保留筛选 | T3 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
-| M03.refresh-all | 刷新全部 | 工具栏/r → 顶部显式刷新/r | 双端 | 单 flight；观察开始/结束/失败 | T3/T6 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
+| M03.refresh-all | 刷新全部 | 工具栏/r → 顶部显式刷新/r | 双端 | 单 flight；观察开始/结束/失败 | T3/T6 | Android 通过；桌面可信 r 触发刷新中反馈，单 flight/完成未由此测试证明：[T6 第二轮](evidence/t6-convergence/review-desktop-results.json) |
 | M03.refresh-feed | 单源刷新 | 源右键 → 源更多/右键 | 双端 | 单 flight；对象 ID 不漂移 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M03.status | 刷新状态 | 固定状态栏 → 稳定状态位 | 双端 | 不跳布局；触发和失败 | T3 | Android 通过、桌面本轮未重测，待 T7：[T3 证据](evidence/t3-list/record.md) |
 | M04.url | URL 或网站发现 | 添加订阅输入 → 订阅页明确添加 | 双端 | 候选发现；输入测试 URL | T2 | 桌面本地 HTTP RSS 直连新增与抓取通过，候选发现沿用 [T2 证据](evidence/t2-menu/record.md)；[T6 原生记录](evidence/t6-convergence/record.md) |
@@ -59,9 +59,9 @@
 | M09.remove | 移除标签 | 标签 chip → chip/更多 | 双端 | 关系删除，标签仍在 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md)、[T4 Android](evidence/t4-reader/record.md) |
 | M09.open | 跳转标签视图 | 标签 chip → 原位 | 双端 | 跳转并可返回 | T2/T4 | 通过：[T2 证据](evidence/t2-menu/record.md)、[T4 Android](evidence/t4-reader/record.md) |
 | M10.aa | Aa 阅读设置 | 阅读工具条 → 阅读页头 | 双端 | 字号/行高草稿；打开 | T4 | Android/桌面主路径通过：[T4](evidence/t4-reader/record.md)；跨端组合本轮未重测，待 T7 |
-| M10.read | 已读/未读 | 阅读工具条/u → 阅读更多/u | 双端 | 改状态；回读 | T4/T6 | Android/桌面主路径通过：[T4](evidence/t4-reader/record.md)；跨端组合本轮未重测，待 T7 |
-| M10.star | 星标/取消 | 阅读工具条/s → 阅读底部/s | 双端 | 星标独立；回读 | T4/T6 | 桌面星标独立落库通过；[T6 原生记录](evidence/t6-convergence/record.md) |
-| M10.later | 稍后读/取消 | 阅读工具条 → 阅读底部 | 双端 | 待读独立；回读 | T4 | 桌面稍后读独立落库通过；[T6 原生记录](evidence/t6-convergence/record.md) |
+| M10.read | 已读/未读 | 阅读工具条/u → 阅读更多/u | 双端 | 改状态；回读 | T4/T6 | Android 主路径通过：[T4](evidence/t4-reader/record.md)；桌面可信 u 后 SQLite 状态翻转：[T6 第二轮](evidence/t6-convergence/review-desktop-results.json) |
+| M10.star | 星标/取消 | 阅读工具条/s → 阅读底部/s | 双端 | 星标独立；回读 | T4/T6 | 桌面同进程与可信 s 后 SQLite 翻转通过；[T6 第二轮](evidence/t6-convergence/review-desktop-results.json) |
+| M10.later | 稍后读/取消 | 阅读工具条 → 阅读底部 | 双端 | 待读独立；回读 | T4 | 桌面同进程与可信 l 后 SQLite 翻转通过；[T6 第二轮](evidence/t6-convergence/review-desktop-results.json) |
 | M10.open | 浏览器打开 | 阅读工具条 → 阅读更多 | 双端 | 外链交给系统；点击 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合本轮未重测，待 T7 |
 | M10.copy | 复制链接 | 阅读工具条 → 阅读更多 | 双端 | 剪贴板含原 URL；点击 | T4 | Android 通过：[T4](evidence/t4-reader/record.md)；桌面组合本轮未重测，待 T7 |
 | M10.share | 原生分享 | 阅读工具条 → 阅读更多 | Android | 系统分享表；点击/取消 | T4 | Android 原生通过：[T4](evidence/t4-reader/record.md) |
@@ -150,7 +150,7 @@
 | M19.write-token.copy | 复制写 token | MCP 设置 → 第七类 | 桌面 | 剪贴板核验；隔离服务 | T5/T6 | 通过：写 token 剪贴板读回；[Linux 原生](evidence/t5-settings/desktop-results.json) |
 | M19.write-token.rotate | 轮换写 token | MCP 设置 → 第七类 | 桌面 | 旧值立即失效；隔离服务 | T5/T6 | 通过：轮换后旧 token 失效；[Linux 原生](evidence/t5-settings/desktop-results.json) |
 | M19.write-token.clear | 清除写 token | MCP 设置 → 第七类 | 桌面 | 写工具不可用；隔离服务 | T5/T6 | 通过：清除后写 token 不可用；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M20.window.min | 窗口最小化 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 部分：真实 XWayland 最小化状态为 true；真实/虚拟 Wayland IPC 成功但状态仍 false；恢复未确认；[T6 原生记录](evidence/t6-convergence/record.md) |
+| M20.window.min | 窗口最小化 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 部分：私有 Xvfb 指针可信点击真实按钮；真实 KWin Wayland/XWayland 自有 PID 窗口 IPC 后 compositor minimized=false→true、PID 守卫恢复 false/active=true；同一真实会话指针/任务栏闭环未证：[T6 第二轮](evidence/t6-convergence/record.md) |
 | M20.window.max | 窗口最大化 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 通过：真实 Wayland 最大化/还原尺寸与状态读回；[T6 原生记录](evidence/t6-convergence/record.md) |
 | M20.window.close | 窗口关闭 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 通过：真实 Wayland 标题栏关闭，进程退出码 0；[T6 原生记录](evidence/t6-convergence/record.md) |
 | M20.shortcuts | 快捷键帮助 | ? → 原位 | 桌面 | 列表准确；打开/关闭 | T6 | 通过：原生 ? 打开帮助、Esc 关闭；[T6 原生记录](evidence/t6-convergence/record.md) |

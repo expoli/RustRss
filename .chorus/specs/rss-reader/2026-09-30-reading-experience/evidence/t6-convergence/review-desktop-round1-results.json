@@ -1,0 +1,93 @@
+{
+  "display": ":70",
+  "source": "XTestFakeKeyEvent on isolated Xvfb",
+  "window": "0x200007",
+  "desktopSha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
+  "storedBefore": 1,
+  "storedAfter": 0,
+  "keyEvents": [
+    {
+      "key": "Tab",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "Unidentified",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "Enter",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "?",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "/",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "Tab",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "Unidentified",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    }
+  ],
+  "checks": [
+    "More opens with first item focused",
+    "opened entry stored as read",
+    "trusted Tab moves focus",
+    "trusted Shift+Tab restores first item",
+    "trusted Escape closes and restores More focus",
+    "Escape cancellation causes zero write",
+    "mark unread has keyboard focus",
+    "trusted Enter activates mark unread once",
+    "trusted ? opens shortcut help",
+    "trusted Escape closes shortcut help",
+    "trusted / focuses search",
+    "trusted Escape clears search",
+    "desktop settings opens as modal with tab focus",
+    "trusted Tab enters active settings pane",
+    "trusted Shift+Tab reverses settings focus",
+    "trusted Escape closes settings and restores trigger focus",
+    "feed row in viewport for native right-click",
+    "native right-click opens anchored feed menu",
+    "trusted Escape closes native right-click menu",
+    "keyboard events are trusted browser input"
+  ],
+  "passed": true
+}

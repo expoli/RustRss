@@ -1,0 +1,63 @@
+{
+  "binarySha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
+  "backend": "x11",
+  "session": "real KWin with isolated owned app HOME/XDG_DATA_HOME/DB",
+  "pid": 2894620,
+  "input": "direct window_minimize IPC",
+  "ipc": "ok",
+  "trustedClicks": [],
+  "before": {
+    "pid": 2894620,
+    "internalId": "{1e20cfff-692c-44ef-a681-2fd70a5f2d97}",
+    "minimized": false,
+    "active": true,
+    "skipTaskbar": false,
+    "frame": {
+      "x": 470.7142857142857,
+      "y": 300.7142857142857,
+      "width": 885.7142857142858,
+      "height": 585.7142857142858
+    }
+  },
+  "after": {
+    "pid": 2894620,
+    "internalId": "{1e20cfff-692c-44ef-a681-2fd70a5f2d97}",
+    "minimized": true,
+    "active": false,
+    "skipTaskbar": false,
+    "frame": {
+      "x": 470.7142857142857,
+      "y": 300.7142857142857,
+      "width": 885.7142857142858,
+      "height": 585.7142857142858
+    }
+  },
+  "restoreCommand": {
+    "pid": 2894620,
+    "internalId": "{1e20cfff-692c-44ef-a681-2fd70a5f2d97}",
+    "minimized": false,
+    "active": true,
+    "skipTaskbar": false,
+    "frame": {
+      "x": 470.7142857142857,
+      "y": 300.7142857142857,
+      "width": 885.7142857142858,
+      "height": 585.7142857142858
+    }
+  },
+  "restored": {
+    "pid": 2894620,
+    "internalId": "{1e20cfff-692c-44ef-a681-2fd70a5f2d97}",
+    "minimized": false,
+    "active": true,
+    "skipTaskbar": false,
+    "frame": {
+      "x": 470.7142857142857,
+      "y": 300.7142857142857,
+      "width": 885.7142857142858,
+      "height": 585.7142857142858
+    }
+  },
+  "windowMinimized": true,
+  "restoredVisible": true
+}

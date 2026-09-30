@@ -68,7 +68,7 @@ class XKeyboard:
 async def main():
     out = Path(sys.argv[1]).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    root = Path(tempfile.mkdtemp(prefix='rustrss-t4-review-desktop-'))
+    root = Path(tempfile.mkdtemp(prefix='rustrss-t6-desktop-input-'))
     runtime = root / 'runtime'
     runtime.mkdir(mode=0o700)
     (root / 'home').mkdir()
@@ -173,11 +173,127 @@ async def main():
         check(await probe.js('document.querySelector("#ctx-menu").getAttribute("role")==="menu"'), 'native right-click opens anchored feed menu')
         keyboard.key('Escape')
         check(await probe.js('!document.querySelector("#ctx-menu")'), 'trusted Escape closes native right-click menu')
+        # Native list, reader and tag shortcuts. These read UI selection and the
+        # same isolated SQLite rows rather than just observing keydown events.
+        await probe.js('document.querySelector("#views li[data-kind=all]").click();true')
+        await probe.until('document.querySelectorAll("#entries li[data-id]").length===30')
+        ids=await probe.js('[...document.querySelectorAll("#entries li[data-id]")].map(n=>Number(n.dataset.id))')
+        async def selected():
+            return await probe.js('Number(document.querySelector("#entries li.active")?.dataset.id)')
+        def flags(entry_id):
+            with sqlite3.connect(db) as conn:
+                return conn.execute('SELECT read,starred,read_later FROM entries WHERE id=?',(entry_id,)).fetchone()
+        keyboard.key('g')
+        await probe.until(f'document.querySelector("#entries li.active")?.dataset.id==="{ids[0]}"')
+        check(await selected()==ids[0],'trusted g selects first article')
+        keyboard.key('j')
+        await probe.until(f'document.querySelector("#entries li.active")?.dataset.id==="{ids[1]}"')
+        check(await selected()==ids[1] and await probe.js('!!document.querySelector("#reader .article")'),'trusted j moves list and reader to next article')
+        keyboard.key('k')
+        await probe.until(f'document.querySelector("#entries li.active")?.dataset.id==="{ids[0]}"')
+        check(await selected()==ids[0],'trusted k moves to previous article')
+        keyboard.key('Down')
+        await probe.until(f'document.querySelector("#entries li.active")?.dataset.id==="{ids[1]}"')
+        check(await selected()==ids[1],'trusted ArrowDown moves list')
+        keyboard.key('Up')
+        await probe.until(f'document.querySelector("#entries li.active")?.dataset.id==="{ids[0]}"')
+        check(await selected()==ids[0],'trusted ArrowUp moves list')
+        keyboard.key('g',shift=True)
+        await probe.until(f'document.querySelector("#entries li.active")?.dataset.id==="{ids[-1]}"')
+        check(await selected()==ids[-1],'trusted G selects last article')
+        keyboard.key('g')
+        await probe.until(f'document.querySelector("#entries li.active")?.dataset.id==="{ids[0]}"')
+        check(await selected()==ids[0],'trusted g returns to first article')
+        keyboard.key('Return')
+        check(await selected()==ids[0] and await probe.js('!!document.querySelector("#reader .article")'),'trusted Enter opens selected article')
+        selected_id=ids[0]
+        old_flags=flags(selected_id)
+        keyboard.key('u')
+        for _ in range(50):
+            if flags(selected_id)[0]!=old_flags[0]:break
+            await asyncio.sleep(.1)
+        check(flags(selected_id)[0]==1-old_flags[0],'trusted u toggles selected article read state in SQLite')
+        keyboard.key('s')
+        for _ in range(50):
+            if flags(selected_id)[1]!=old_flags[1]:break
+            await asyncio.sleep(.1)
+        check(flags(selected_id)[1]==1-old_flags[1],'trusted s toggles star in SQLite')
+        keyboard.key('l')
+        for _ in range(50):
+            if flags(selected_id)[2]!=old_flags[2]:break
+            await asyncio.sleep(.1)
+        check(flags(selected_id)[2]==1-old_flags[2],'trusted l toggles read later in SQLite')
+        keyboard.key('t')
+        await probe.until('!document.querySelector("#tag-picker-overlay").classList.contains("hidden")')
+        check(await probe.js('document.activeElement?.id==="tag-picker-input"'),'trusted t opens tag picker with input focus')
+        picker_flags=flags(selected_id)
+        keyboard.key('Escape')
+        check(await probe.js('document.querySelector("#tag-picker-overlay").classList.contains("hidden")') and flags(selected_id)==picker_flags,'trusted Escape closes tag picker without article write')
+        with sqlite3.connect(db) as conn: old_unread=conn.execute("SELECT value FROM settings WHERE key='list.hide_read'").fetchone()
+        keyboard.key('u',shift=True)
+        for _ in range(50):
+            with sqlite3.connect(db) as conn: new_unread=conn.execute("SELECT value FROM settings WHERE key='list.hide_read'").fetchone()
+            if new_unread!=old_unread:break
+            await asyncio.sleep(.1)
+        check(new_unread!=old_unread,'trusted U toggles stored unread-only setting')
+        await probe.until('document.querySelector("#btn-unread-only").getAttribute("aria-pressed")==="true"')
+        keyboard.key('u',shift=True)
+        for _ in range(50):
+            with sqlite3.connect(db) as conn: reset_unread=conn.execute("SELECT value FROM settings WHERE key='list.hide_read'").fetchone()
+            if reset_unread==old_unread:break
+            await asyncio.sleep(.1)
+        check(reset_unread==('false',),'trusted U restores effective unread-only=false')
+        await probe.until('document.querySelector("#btn-unread-only").getAttribute("aria-pressed")==="false"')
+        with sqlite3.connect(db) as conn: unread_before=conn.execute('SELECT COUNT(*) FROM entries WHERE read=0').fetchone()[0]
+        check(unread_before>0,'bulk shortcut has unread synthetic rows')
+        keyboard.key('a',shift=True)
+        for _ in range(100):
+            with sqlite3.connect(db) as conn: unread_after=conn.execute('SELECT COUNT(*) FROM entries WHERE read=0').fetchone()[0]
+            if unread_after==0:break
+            await asyncio.sleep(.1)
+        check(unread_after==0,'trusted A marks current All view read in SQLite')
+        await probe.js('document.querySelector("#search").focus();true')
+        suppress_flags=flags(selected_id)
+        keyboard.key('s')
+        check(await probe.js('document.querySelector("#search").value==="s"') and flags(selected_id)==suppress_flags,'typing in search suppresses star shortcut')
+        keyboard.key('Escape')
+        await probe.js('document.querySelector("#btn-settings").click();true')
+        await probe.until('!document.querySelector("#settings-overlay").classList.contains("hidden")')
+        modal_selection=await selected();modal_flags=flags(selected_id)
+        keyboard.key('j');keyboard.key('s');keyboard.key('l');keyboard.key('t')
+        check(await selected()==modal_selection and flags(selected_id)==modal_flags and await probe.js('document.querySelector("#tag-picker-overlay").classList.contains("hidden")'),'settings modal suppresses list, reader and tag shortcuts')
+        keyboard.key('Escape')
+        await probe.until('document.querySelector("#settings-overlay").classList.contains("hidden")')
+        await probe.js('window.__T6_REFRESH=[];new MutationObserver(()=>window.__T6_REFRESH.push(document.querySelector("#status").textContent)).observe(document.querySelector("#status"),{childList:true,subtree:true,characterData:true});true')
+        keyboard.key('r')
+        await probe.until('window.__T6_REFRESH.some(s=>s.includes("正在刷新"))')
+        refresh_statuses=await probe.js('window.__T6_REFRESH')
+        check(any('正在刷新' in s for s in refresh_statuses),'trusted r starts refresh feedback')
         events = await probe.js('window.__T4_KEYS')
-        check(all(e['trusted'] for e in events) and {'Tab', 'Escape', 'Enter'} <= {e['key'] for e in events}, 'keyboard events are trusted browser input')
-        report = {'display': display, 'source': 'XTestFakeKeyEvent on isolated Xvfb', 'window': found.group(1),
+        check(all(e['trusted'] for e in events) and {'Tab', 'Escape', 'Enter','j','k','u','s','l','t','U','A','r','g','G'} <= {e['key'] for e in events}, 'list, reader, tag and modal keyboard events are trusted browser input')
+        button=await probe.js('''(() => {const el=document.querySelector("#btn-win-min");const r=el.getBoundingClientRect();window.__T6_MIN_CLICK=[];el.addEventListener("click",e=>window.__T6_MIN_CLICK.push({trusted:e.isTrusted,detail:e.detail,currentTarget:e.currentTarget.id}),true);return {x:r.x+r.width/2,y:r.y+r.height/2,dpr:devicePixelRatio}})()''')
+        geometry=subprocess.check_output(['xwininfo','-id',found.group(1)],env=env,text=True)
+        origin_x=int(re.search(r'Absolute upper-left X:\s*(-?\d+)',geometry).group(1))
+        origin_y=int(re.search(r'Absolute upper-left Y:\s*(-?\d+)',geometry).group(1))
+        px=round(origin_x+button['x']*button['dpr']);py=round(origin_y+button['y']*button['dpr'])
+        keyboard.xtst.XTestFakeMotionEvent.argtypes=[ctypes.c_void_p,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_ulong]
+        keyboard.xtst.XTestFakeButtonEvent.argtypes=[ctypes.c_void_p,ctypes.c_uint,ctypes.c_int,ctypes.c_ulong]
+        keyboard.x11.XQueryPointer.argtypes=[ctypes.c_void_p,ctypes.c_ulong,ctypes.POINTER(ctypes.c_ulong),ctypes.POINTER(ctypes.c_ulong),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_uint)]
+        check(keyboard.xtst.XTestFakeMotionEvent(keyboard.display,-1,px,py,0),'private Xvfb XTest pointer moved toward owned titlebar')
+        keyboard.x11.XSync(keyboard.display,0)
+        root_return=ctypes.c_ulong();child_return=ctypes.c_ulong();rx=ctypes.c_int();ry=ctypes.c_int();wx=ctypes.c_int();wy=ctypes.c_int();mask=ctypes.c_uint()
+        keyboard.x11.XQueryPointer(keyboard.display,int(found.group(1),16),ctypes.byref(root_return),ctypes.byref(child_return),ctypes.byref(rx),ctypes.byref(ry),ctypes.byref(wx),ctypes.byref(wy),ctypes.byref(mask))
+        check(abs(rx.value-px)<=2 and abs(ry.value-py)<=2,'private Xvfb pointer verified over owned titlebar button')
+        assert keyboard.xtst.XTestFakeButtonEvent(keyboard.display,1,1,0)
+        assert keyboard.xtst.XTestFakeButtonEvent(keyboard.display,1,0,0)
+        keyboard.x11.XSync(keyboard.display,0)
+        await probe.until('window.__T6_MIN_CLICK.length>0')
+        titlebar_clicks=await probe.js('window.__T6_MIN_CLICK')
+        assert titlebar_clicks[-1]['trusted'] and titlebar_clicks[-1]['currentTarget']=='btn-win-min',{'clicks':titlebar_clicks,'button':button,'root':[rx.value,ry.value],'target':[px,py]}
+        check(True,'private Xvfb native pointer activates actual minimize button')
+        report = {'display': display, 'source': 'XTestFakeKeyEvent and XTestFakeButtonEvent on isolated Xvfb', 'window': found.group(1),
                   'desktopSha256': subprocess.check_output(['sha256sum', 'target/debug/rustrss-desktop'], text=True).split()[0],
-                  'storedBefore': before, 'storedAfter': after, 'keyEvents': events, 'checks': checks, 'passed': True}
+                  'storedBefore': before, 'storedAfter': after, 'refreshStatuses':refresh_statuses,'keyEvents': events, 'titlebarPointer':{'root':[rx.value,ry.value],'target':[px,py],'clicks':titlebar_clicks,'windowManager':'none; activation only, no minimize effect asserted'}, 'checks': checks, 'passed': True}
         (out / 'review-desktop-results.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
         print(json.dumps({'checks': len(checks), 'display': display}), flush=True)
     finally:

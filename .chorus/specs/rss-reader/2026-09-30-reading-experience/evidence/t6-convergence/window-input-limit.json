@@ -1,0 +1,30 @@
+{
+  "binarySha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
+  "session": "real KWin XWayland, isolated owned RustRss HOME/XDG_DATA_HOME/DB",
+  "xTestPointer": {
+    "requestedRoot": [1772, 470],
+    "observedRoot": [940, 1223],
+    "clicked": false,
+    "result": "XTestFakeMotionEvent returned success but did not move the compositor pointer; aborted before button injection"
+  },
+  "ownedWindowMove": {
+    "requestedOrigin": [-173, 1174],
+    "compositorOrigin": [0, 780],
+    "buttonRoot": [1113, 829],
+    "observedPointer": [940, 1223],
+    "clicked": false,
+    "result": "KWin constrained the owned window, leaving the button away from the stationary pointer; aborted before button injection"
+  },
+  "uinputPointer": {
+    "moves": 16,
+    "observedRoot": [940, 1223],
+    "clicked": false,
+    "result": "temporary virtual mouse did not move the KWin pointer; device was destroyed and original pointer position remained"
+  },
+  "xTestEnter": {
+    "target": "PID-matched XWayland window, focused #btn-win-min",
+    "trustedClickObserved": false,
+    "result": "XTest Return produced no titlebar click event within 10 seconds"
+  },
+  "scope": "Input-injection limitation only. compositor-wayland-results.json and compositor-x11-results.json separately show the native minimize IPC changed KWin minimized state and PID-guarded restoration succeeded."
+}
