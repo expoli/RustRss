@@ -62,6 +62,39 @@ async def main():
         config = settings['theme_snapshot']['config']
         assert config['overrides'] == overrides, config
         variants = []
+        image_hashes = set()
+        async def capture_page(page, filename):
+            state = await probe.js('''(() => {
+              const root=document.documentElement, overlay=document.querySelector('#settings-overlay');
+              const reader=document.querySelector('#reader');
+              const article=reader?.querySelector('.article');
+              const appearance=document.querySelector('#pane-appearance');
+              return {locale:root.lang, theme:root.dataset.theme, ready:document.readyState,
+                listRows:document.querySelectorAll('#entries li[data-id]').length,
+                listTitle:document.querySelector('#list-title')?.textContent?.trim(),
+                activeRow:document.querySelector('#entries li.active')?.dataset.id??null,
+                readerTitle:reader?.querySelector('h1')?.textContent?.trim()??null,
+                readerTextLength:article?.textContent?.trim().length??0,
+                settingsOpen:!!overlay&&!overlay.classList.contains('hidden'),
+                appearanceVisible:!!appearance?.getClientRects().length,
+                settingsTabs:[...document.querySelectorAll('#settings-nav-list [role=tab]')].filter(n=>n.getClientRects().length).length,
+                viewport:[innerWidth,innerHeight], scrollWidth:root.scrollWidth};
+            })()''')
+            assert state['ready']=='complete' and state['listRows']>0 and state['listTitle'], (page,state)
+            assert state['locale'].startswith('en' if locale=='en' else 'zh') and state['theme']==mode, (page,state)
+            assert state['scrollWidth']<=state['viewport'][0]+1, (page,state)
+            if page=='articles':
+                assert not state['settingsOpen'] and not state['appearanceVisible'] and state['activeRow'] is None, state
+            elif page=='reader':
+                assert not state['settingsOpen'] and state['readerTitle'] and state['readerTextLength']>100 and state['activeRow'], state
+            else:
+                assert state['settingsOpen'] and state['appearanceVisible'] and state['settingsTabs']>=6, state
+            await asyncio.sleep(.22) # WebKit layout and native window paint after CDP state change.
+            subprocess.run(['import','-display',display,'-window',window,str(out/filename)],env=env,check=True)
+            image_hash=hashlib.sha256((out/filename).read_bytes()).hexdigest()
+            assert image_hash not in image_hashes, ('stale or repeated native frame',page,filename,image_hash)
+            image_hashes.add(image_hash)
+            return {'screenshot':filename,'sha256':image_hash,'state':state}
         for locale in ('en','zh-CN'):
             await invoke('set_ui_locale', {'locale':locale})
             for mode in ('light','dark'):
@@ -74,6 +107,8 @@ async def main():
                     await probe.js('location.reload();true')
                     await asyncio.sleep(.35)
                     await probe.until('!!document.querySelector("#entries li[data-id]")')
+                    prefix=f'visual-{preset}-{mode}-{locale}'
+                    articles=await capture_page('articles',prefix+'-articles.png')
                     await probe.js("document.querySelector('#entries li[data-id]').click();true")
                     await probe.until('!!document.querySelector("#reader .article")')
                     await probe.js('document.querySelector("#btn-settings").focus();true')
@@ -84,9 +119,12 @@ async def main():
                     if mode=='light': assert css['accent']=='#1455a0', css
                     if locale=='en': assert css['locale'].startswith('en'), css
                     else: assert css['locale'].startswith('zh'), css
-                    filename=f'visual-{preset}-{mode}-{locale}.png'
-                    subprocess.run(['import','-display',display,'-window',window,str(out/filename)],env=env,check=True)
-                    variants.append({'preset':preset,'mode':mode,'locale':locale,'screenshot':filename,'css':css,'minContrast':min(c['ratio']-c['minimum'] for c in snapshot['contrast']),'revision':snapshot['config']['revision']})
+                    reader=await capture_page('reader',prefix+'-reader.png')
+                    await probe.js('document.querySelector("#btn-settings").click();true')
+                    await probe.until('!document.querySelector("#settings-overlay").classList.contains("hidden") && !!document.querySelector("#pane-appearance").getClientRects().length')
+                    settings_page=await capture_page('settings',prefix+'-settings.png')
+                    variants.append({'preset':preset,'mode':mode,'locale':locale,'screenshot':reader['screenshot'],'pages':{'articles':articles,'reader':reader,'settings':settings_page},'css':css,'minContrast':min(c['ratio']-c['minimum'] for c in snapshot['contrast']),'revision':snapshot['config']['revision']})
+        assert len(variants)==12 and len(image_hashes)==36, (len(variants),len(image_hashes))
         with sqlite3.connect(db) as conn:
             saved = json.loads(conn.execute("SELECT value FROM settings WHERE key='ui.theme_config'").fetchone()[0])
             saved_locale = conn.execute("SELECT value FROM settings WHERE key='ui.locale'").fetchone()[0]
@@ -100,9 +138,9 @@ async def main():
             except (OSError,IndexError): pass
             await asyncio.sleep(.1)
         if not baseline: assert restarted['theme']=='dark' and restarted['sidebar']=='220px' and restarted['locale'].startswith('zh'), restarted
-        report={'binarySha256':digest,'baseline':baseline,'fixtureSha256':hashlib.sha256(Path('/tmp/rustrss-t4-fixture.sqlite').read_bytes()).hexdigest(),'variants':variants,'overrides':overrides,'restart':restarted,'savedLocale':saved_locale,'passed':True}
+        report={'binarySha256':digest,'baseline':baseline,'fixtureSha256':hashlib.sha256(Path('/tmp/rustrss-t4-fixture.sqlite').read_bytes()).hexdigest(),'pageCount':36,'uniqueImageHashes':len(image_hashes),'variants':variants,'overrides':overrides,'restart':restarted,'savedLocale':saved_locale,'passed':True}
         (out/'visual-results.json').write_text(json.dumps(report,indent=2)+'\n')
-        print(json.dumps({'variants':len(variants),'binarySha256':digest}))
+        print(json.dumps({'variants':len(variants),'pages':len(image_hashes),'binarySha256':digest}))
     finally:
         if app and app.poll() is None: app.terminate(); app.wait(timeout=10)
         xvfb.terminate(); xvfb.wait(timeout=10)

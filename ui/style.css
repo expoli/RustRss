@@ -1242,7 +1242,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 }
 
 /* T4: seven settings categories and a shared appearance / Aa editor. */
-.settings-nav li { padding: 0; }
+.settings-nav li { padding: 0; flex-direction: column; align-items: stretch; gap: 0; }
 .settings-nav li > button { width: 100%; text-align: start; padding: 12px; border: 0; background: transparent; color: inherit; }
 .settings-nav li.active > button { color: var(--accent); }
 .settings-nav-summary { display: block; padding: 0 12px 10px; color: var(--fg-dim); line-height: 1.35; overflow-wrap: anywhere; }
