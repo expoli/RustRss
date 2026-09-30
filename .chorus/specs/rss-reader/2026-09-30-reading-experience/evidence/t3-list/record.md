@@ -12,7 +12,7 @@
 
 - `functional-360-threebutton-final/results.json` 与 `functional-412-gesture-final/results.json`：每套 5 项通过。四主导航以及未读 15、全部 30、星标 14、稍后读 14 的视图和计数均实际切换；搜索一击展开并显示“搜索范围：全部文章”，真实 IME 缩小 `visualViewport`。查词进入文章、系统 Back 返回保留同一行 DOM；取消后回原全部视图，500px 滚动锚点偏差 <0.4 CSS px。空搜索及隔离故障后的重试也通过。
 - `state-200-final/results.json`：6 项通过。200 行全列表、节点身份、三种排序、隐藏已读、当前视图批量已读/未读、刷新结束状态与固定底栏均在真实 SQLite 上检查。故障只拦截下一页 `list_entries` 请求，尾部显示可点的重试；恢复后终止态共 200 行且 ID 无重复。刷新在 `.invalid` 源上如实报告 3 项失败，页首 ID、状态位和底栏坐标不跳。200 行本轮 DOM 列表计时 42.9 ms（仅这台模拟器一次样本，非性能承诺）。
-- `viewport-412-gesture/results.json`、`viewport-412-font150-final/results.json`、`viewport-landscape-final/results.json` 及截图：四个主导航均在可视区域、目标至少 44 CSS px、无横向溢出。系统字体 1.5 倍时计数完整显示；横屏 WebView 915×364 CSS px 时仍使用四主导航。横屏发现原 900px 阈值会退回桌面布局，已同步调到 960px 并重建验证。`search-ime.png` 保留真实输入法覆盖场景。
+- `viewport-412-gesture-final/results.json`、`viewport-412-font150-final/results.json`、`viewport-landscape-final/results.json` 及截图：四个主导航均在可视区域、目标至少 44 CSS px、无横向溢出。系统字体 1.5 倍时计数完整显示；横屏 WebView 915×364 CSS px 时仍使用四主导航。横屏发现原 900px 阈值会退回桌面布局，已同步调到 960px 并重建验证。`search-ime.png` 保留真实输入法覆盖场景。
 - `cargo build -p rustrss-desktop`、61 个 JS 测试和 `git diff --check` 通过。主题渲染的密度、摘要行数、缩略图数据属性与节点保留由共享渲染器测试覆盖；T3 没有改变这些用户设置的存储口径。
 
 ## 复现与范围
