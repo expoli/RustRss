@@ -78,11 +78,11 @@
 | M12.cancel | 取消发送 | AI 确认 → 原确认 | 双端 | 零网络；取消并查日志 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；Linux 最终组合未单独复测 |
 | M12.send | 确认发送 | AI 确认 → 原确认 | 双端 | 仅确认后请求；执行 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；Linux 最终组合未单独复测 |
 | M12.remember | 不再询问 | AI 确认 → 原确认 | 双端 | 保持既有设置语义；切换 | T4/T5 | Android 通过：[T4](evidence/t4-reader/record.md)；Linux 最终组合未单独复测 |
-| M13.mode | 系统/浅/深 | 外观设置 → 外观常用 | 双端 | 三态、系统切换无写；切换 | T1/T5 | 通过：系统/浅/深逐项保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 格视觉读回](evidence/t7-final/visual-after/visual-results.json) |
-| M13.presets | 浅深 Clear/Paper/Slate | 外观设置 → 外观常用 | 双端 | 独立预设，旧 ID 不变；六格查看 | T1/T5 | 通过：浅深各三预设逐项回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 格视觉读回](evidence/t7-final/visual-after/visual-results.json) |
+| M13.mode | 系统/浅/深 | 外观设置 → 外观常用 | 双端 | 三态、系统切换无写；切换 | T1/T5 | 通过：系统/浅/深逐项保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 组合×3 页视觉读回](evidence/t7-final/visual-after/visual-results.json) |
+| M13.presets | 浅深 Clear/Paper/Slate | 外观设置 → 外观常用 | 双端 | 独立预设，旧 ID 不变；六格查看 | T1/T5 | 通过：浅深各三预设逐项回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 组合×3 页视觉读回](evidence/t7-final/visual-after/visual-results.json) |
 | M13.override.clear | 清除全部覆盖 | 外观设置 → 外观高级 | 双端 | 预设值恢复；取消/保存回读 | T1/T5 | 通过：取消零写、保存覆盖树为空；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；Linux 最终效果未单独复测 |
 | M13.override.inherit | 单项继承 | 外观设置 → 外观高级 | 双端 | 其它覆盖不丢；保存回读 | T1/T5 | 通过：仅密度继承，摘要与颜色覆盖保留；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；Linux 最终效果未单独复测 |
-| M13.override.color | 颜色覆盖 | 外观设置 → 外观高级 | 双端 | 仅编辑目标色；预览/保存 | T1/T5 | 通过：浅色强调色预览/保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 格视觉读回](evidence/t7-final/visual-after/visual-results.json) |
+| M13.override.color | 颜色覆盖 | 外观设置 → 外观高级 | 双端 | 仅编辑目标色；预览/保存 | T1/T5 | 通过：浅色强调色预览/保存回读；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；最终 Linux 视觉/主题读回 [T7 Linux 12 组合×3 页视觉读回](evidence/t7-final/visual-after/visual-results.json) |
 | M13.type.family | UI 字体 | 外观设置 → 外观常用/高级 | 双端 | 用户字体优先；设置并重启 | T1/T5 | Android 最终 APK UI serif 保存并冷重启，实际标题 computed font=serif；[T7 Android 外观副作用](evidence/t7-final/android-appearance-effects-round2/appearance-effects.json)；Linux 最终效果未单独复测 |
 | M13.type.size | UI 字号 | 外观设置 → 外观常用/高级 | 双端 | 旧值不重置；设置并重启 | T1/T5 | 通过：字号 20 保存，Activity 重建后放大截图；[Android 手工读回](evidence/t5-settings/android-manual-results.json)；Linux 最终效果未单独复测 |
 | M13.list.density | 列表密度 | 外观设置 → 外观常用 | 双端 | 行高变化；保存并重启 | T1/T5 | Android 最终 APK comfortable→compact 行高 167.55→147.95 px、内边距 9→5 且重启保留；[T7 Android 外观副作用](evidence/t7-final/android-appearance-effects-round2/appearance-effects.json)；Linux 最终效果未单独复测 |
@@ -107,12 +107,12 @@
 | M15.proxy-url | 代理 URL | 订阅设置 → 连接组 | 双端 | 输入不丢、校验错误；填写 | T5 | 通过：非法 URL 输入保留、字段错误，数据库未写；[Android](evidence/t5-settings/android-results.json)、[Android 手工读回](evidence/t5-settings/android-manual-results.json) |
 | M15.proxy-bypass | 代理绕过列表 | 订阅设置 → 连接组 | 双端 | 输入不丢；填写并保存 | T5 | 通过：绕过列表保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
 | M15.proxy-save | 保存代理 | 订阅设置 → 连接组 | 双端 | 保持原反馈；保存并回读 | T5 | 通过：失败零写后修正保存回读；[Android](evidence/t5-settings/android-results.json)、[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
-| M15.refresh.interval | 全局刷新间隔 | 订阅设置 → 更新组 | 双端 | 覆盖优先语义；设置并重启 | T5 | Android 最终 APK：预置 30 分钟前抓取时间，真实 60s 调度 tick 后全局 15m 源请求 1 次、单源覆盖 120m 源 0 次；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
-| M15.refresh.concurrent | 刷新并发 | 订阅设置 → 更新组 | 双端 | 存储与上限；设置并重启 | T5 | Android 最终 APK：可信原生 Refresh all 点击，13 个本地端点最大同时请求数精确为 12；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
-| M15.refresh.startup | 启动刷新 | 订阅设置 → 更新组 | 双端 | 旧默认与重启；切换 | T5 | Android 最终 APK：冷启动关闭 13s 零请求、开启在 am start 后 11.754s 请求 1 次；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
-| M15.notify | 新文章通知 | 订阅设置 → 更新组 | 双端 | 平台能力；切换 | T5 | Android 最终 APK：后台恢复新增未读 0→1，系统通知及 shade 可见；手动刷新未读 1→2 无重复通知；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
+| M15.refresh.interval | 全局刷新间隔 | 订阅设置 → 更新组 | 双端 | 覆盖优先语义；设置并重启 | T5 | Android 最终 APK：预置 30 分钟前抓取时间，真实 60s 调度 tick 后全局 15m 源请求 1 次、单源覆盖 120m 源 0 次；[T7 Android M15 原生探针](evidence/t7-final/m15-android-round2/pass-b/results.json) |
+| M15.refresh.concurrent | 刷新并发 | 订阅设置 → 更新组 | 双端 | 存储与上限；设置并重启 | T5 | Android 最终 APK：可信原生 Refresh all 点击，13 个本地端点最大同时请求数精确为 12；[T7 Android M15 原生探针](evidence/t7-final/m15-android-round2/pass-b/results.json) |
+| M15.refresh.startup | 启动刷新 | 订阅设置 → 更新组 | 双端 | 旧默认与重启；切换 | T5 | Android 最终 APK：冷启动关闭 13s 零请求、开启在 am start 后 11.898s 请求 1 次；[T7 Android M15 原生探针](evidence/t7-final/m15-android-round2/pass-b/results.json) |
+| M15.notify | 新文章通知 | 订阅设置 → 更新组 | 双端 | 平台能力；切换 | T5 | Android 最终 APK：后台恢复新增未读 0→1，系统通知及 shade 可见；手动刷新未读 1→2 无重复通知；[T7 Android M15 原生探针](evidence/t7-final/m15-android-round2/pass-b/results.json) |
 | M15.rsshub.save | RSSHub 实例保存 | 订阅设置 → RSSHub 组 | 双端 | 地址回读；保存 | T5 | 通过：镜像 URL 保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
-| M15.rsshub.test | RSSHub 实例测试 | 订阅设置 → RSSHub 组 | 双端 | 成功/失败反馈；测试 | T5 | Android 最终 APK：本地成功探针见 [设置回归](evidence/t7-final/android-settings-required-round2/android-required-results.json)；四个路由均 503 时原生 Test connection 显示失败；[T7 Android M15 原生探针](evidence/t7-final/m15-android/results.json) |
+| M15.rsshub.test | RSSHub 实例测试 | 订阅设置 → RSSHub 组 | 双端 | 成功/失败反馈；测试 | T5 | Android 最终 APK：本地成功探针见 [设置回归](evidence/t7-final/android-settings-required-round2/android-required-results.json)；四个路由均 503 时原生 Test connection 显示失败；[T7 Android M15 原生探针](evidence/t7-final/m15-android-round2/pass-b/results.json) |
 | M15.rsshub.migrate | RSSHub 实例迁移 | 订阅设置 → RSSHub 组 | 双端 | 原确认与范围；隔离库执行 | T5 | 通过：非冲突旧域候选预览 1、取消零写、确认归一为 rsshub:// 且 ID 不变、再次预览 0；[迁移回读](evidence/t5-settings/android-rsshub-migration.json) |
 | M16.provider | Ollama/OpenAI/Anthropic/Gemini | AI 设置 → 供应商区 | 双端 | 四供应商可选；切换 | T5 | 通过：四供应商逐个保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json) |
 | M16.model | 模型选择 | AI 设置 → 供应商区 | 双端 | 当前值；设置并回读 | T5 | 通过：四供应商合成模型逐个保存回读；[Android 补充](evidence/t5-settings/android-followup-results.json) |

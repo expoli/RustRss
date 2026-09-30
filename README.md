@@ -37,7 +37,7 @@ Android 手机界面中，文章、订阅、收藏和设置共用完整的底部
 
 列表、阅读动作、菜单和设置现共用本地 SVG 图标、控件间距与焦点样式；手机主要操作入口的触控框按至少 48×48 CSS px 布置。配色、字体和预览仍由现有主题设置控制，已保存的覆盖值不会因图标和布局样式更新而重置。本次视觉基线、隔离数据与验证范围见 [阅读体验 T1 证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/README.md)，手机列表与搜索的前后截图、导航和返回证据见 [T3 设备记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t3-list/record.md)。
 
-打开文章时列表行保持节点身份；重复进入同一视图时，侧栏的计数、提示和辅助文本不重复写入 DOM。200 行原生桌面性能对照与复现步骤见 [T7 性能证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t7-final/performance/record.md)；最终 Android APK 与 Linux 二进制的整体验证、哈希及未测范围见 [T7 集成记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t7-final/record.md)。
+打开文章时列表行保持节点身份；重复进入同一视图时，侧栏的计数、提示和辅助文本不重复写入 DOM。200 行原生桌面打开与星标性能对照见 [T7 性能证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t7-final/performance-star/record.md)；最终 Linux 同夹具 12 种预设/明暗/语言组合在文章、阅读和设置三页的 36 对截图，以及 Android APK 与 Linux 二进制的哈希和未测范围见 [T7 集成记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t7-final/record.md)。
 
 订阅、文件夹和标签行现提供独立的“更多操作”按钮；手机以带内部选择页的底部操作面板呈现刷新间隔、移动文件夹及标签颜色，桌面保留右键级联菜单并支持方向键与 Esc。添加订阅支持网站候选源选择和 RSSHub 地址输入；删除文件夹、取消订阅和删除标签会先显示影响并要求确认。Android 模拟器、Linux WebKitGTK 键盘与 TalkBack 语义树的验证步骤及范围见 [T2 操作面板证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t2-menu/record.md)。
 

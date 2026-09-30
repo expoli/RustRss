@@ -15,13 +15,13 @@ cargo run -p rustrss-core --example reading_experience_fixture -- /tmp/rustrss-r
 
 ## 改前图片来源
 
-- Android 2026-09-29 已签名预览包的 `signed/preview-articles.png`、`preview-reading.png`、`preview-settings.png` 位于 `.chorus/specs/android-app/2026-09-29-primary-navigation/evidence/`；详见同目录 `record.md`。它们是历史设备基线，非 T1 改后 APK 截图。测试数据和视口可能与新 fixture 不同，T7 必须再用同场景重建产物获取前后对照。
+- Android 2026-09-29 已签名预览包的 `signed/preview-articles.png`、`preview-reading.png`、`preview-settings.png` 位于 `.chorus/specs/android-app/2026-09-29-primary-navigation/evidence/`；详见同目录 `record.md`。它们是历史设备基线，非 T1 改后 APK 截图。T7 已另用同夹具重建 APK 留存前后对照，见 [T7 集成记录](t7-final/record.md)。
 - 桌面公开示意 `docs/images/app-overview.png`、`docs/images/settings.png` 为 1440×900，使用虚构数据，只能作旧布局参考。
 - `before-articles.png` / `before-settings.png` 是设置页和 System UI ANR 环境失败图，不能作为文章页面的视觉基线；`record.md` 已明确这一限制。
 
 ## 本轮可用运行环境
 
-- 本机有 Linux WebKitGTK 和私有虚拟 KWin Wayland；T6/T7 使用解包到 `/tmp/rustrss-t4-xvfb/root/usr/bin/Xvfb` 的私有 Xvfb 运行原生 Linux 二进制，完成六套内置明暗组合及最终 12 格中英矩阵。
+- 本机有 Linux WebKitGTK 和私有虚拟 KWin Wayland；T6/T7 使用解包到 `/tmp/rustrss-t4-xvfb/root/usr/bin/Xvfb` 的私有 Xvfb 运行原生 Linux 二进制。T7 最终矩阵覆盖 12 种预设/明暗/语言组合，每种各留文章、阅读、设置三页同夹具前后截图，共 36 对。
 - `adb devices -l` 在 2026-09-30 显示 `emulator-5554` 在线（Android 16、1080×2400、420 dpi、三键导航）；它是既有会话，所有权未确认，本任务不改装或停止它。独立 Android APK、手势/三键、IME 和系统字体检查属于 T7；T1 的 CSS 尺寸证据不冒称原生命中测试。
 - Windows/macOS 与物理 Android 设备未在本机提供，运行状态保持未验证。
 
