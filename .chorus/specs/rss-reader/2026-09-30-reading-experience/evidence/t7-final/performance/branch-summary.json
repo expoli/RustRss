@@ -1,8 +1,8 @@
 {
-  "baselineP95Ms": 16,
-  "candidateP95Ms": 12,
-  "candidateOverBaselinePercent": -25.0,
-  "candidateMinusBaselineMs": -4,
+  "baselineP95Ms": 11,
+  "candidateP95Ms": 11,
+  "candidateOverBaselinePercent": 0.0,
+  "candidateMinusBaselineMs": 0,
   "regressionBothThresholds": false,
   "candidateIdentityPreserved": true,
   "candidateSameValueZeroWrites": true,

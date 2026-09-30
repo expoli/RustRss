@@ -5,15 +5,15 @@
   "samples": [
     {
       "id": "2",
-      "ms": 11,
+      "ms": 12,
       "readerTitle": "003 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 2
+      "readerRenderMs": 1
     },
     {
       "id": "136",
-      "ms": 6,
+      "ms": 9,
       "readerTitle": "005 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
@@ -21,7 +21,7 @@
     },
     {
       "id": "70",
-      "ms": 7,
+      "ms": 9,
       "readerTitle": "007 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
       "rowPreserved": true,
       "renderedRows": 200,
@@ -29,11 +29,11 @@
     },
     {
       "id": "4",
-      "ms": 6,
+      "ms": 7,
       "readerTitle": "009 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 1
+      "readerRenderMs": 2
     },
     {
       "id": "138",
@@ -41,11 +41,11 @@
       "readerTitle": "011 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 2
+      "readerRenderMs": 1
     },
     {
       "id": "72",
-      "ms": 8,
+      "ms": 7,
       "readerTitle": "013 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
@@ -69,19 +69,19 @@
     },
     {
       "id": "74",
-      "ms": 11,
+      "ms": 6,
       "readerTitle": "019 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 1
+      "readerRenderMs": 2
     },
     {
       "id": "8",
-      "ms": 7,
+      "ms": 6,
       "readerTitle": "021 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 1
+      "readerRenderMs": 2
     },
     {
       "id": "142",
@@ -89,11 +89,11 @@
       "readerTitle": "023 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 1
+      "readerRenderMs": 2
     },
     {
       "id": "76",
-      "ms": 6,
+      "ms": 12,
       "readerTitle": "025 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
@@ -101,15 +101,15 @@
     },
     {
       "id": "10",
-      "ms": 8,
+      "ms": 9,
       "readerTitle": "027 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 1
+      "readerRenderMs": 2
     },
     {
       "id": "144",
-      "ms": 5,
+      "ms": 7,
       "readerTitle": "029 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
@@ -117,31 +117,31 @@
     },
     {
       "id": "78",
-      "ms": 5,
+      "ms": 10,
       "readerTitle": "031 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 1
+      "readerRenderMs": 2
     },
     {
       "id": "12",
-      "ms": 6,
+      "ms": 8,
       "readerTitle": "033 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 1
+      "readerRenderMs": 2
     },
     {
       "id": "146",
-      "ms": 6,
+      "ms": 8,
       "readerTitle": "035 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 1
+      "readerRenderMs": 3
     },
     {
       "id": "80",
-      "ms": 6,
+      "ms": 10,
       "readerTitle": "037 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
@@ -157,11 +157,11 @@
     },
     {
       "id": "148",
-      "ms": 5,
+      "ms": 8,
       "readerTitle": "041 · Reading with clear hierarchy",
       "rowPreserved": true,
       "renderedRows": 200,
-      "readerRenderMs": 2
+      "readerRenderMs": 1
     }
   ],
   "listMutations": [
@@ -454,8 +454,8 @@
     }
   ],
   "identity": true,
-  "p95Ms": 11,
-  "medianMs": 6,
+  "p95Ms": 12,
+  "medianMs": 8,
   "zeroWrites": {
     "observedRoots": [
       "views",
@@ -475,9 +475,9 @@
     "sameValues": true,
     "nodesPreserved": true
   },
-  "binarySha256": "39a01543f85edd7542ff7a1a2bb1fa5bd04e091bf6cbe282b3436f71623015e5",
+  "binarySha256": "706b42fea0d6c18918157264f8d53022ba245bb83dc624ce6f61cb151abfd59f",
   "fixtureSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
   "fixtureAfterRunSha256": "cec0856c7d16785764b7542e0f767484a91a8f118e3fc90ec859603bb2dc897b",
-  "webkitInspectorPort": 56393,
-  "xvfbPid": 2985234
+  "webkitInspectorPort": 36777,
+  "xvfbPid": 2996193
 }
