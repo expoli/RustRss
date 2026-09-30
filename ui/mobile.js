@@ -4,9 +4,9 @@
 //
 // 设计约束：app.js 是 IIFE，内部状态（state/setView）不可从外部触及——本模块因此
 // 做成**纯 DOM 适配层**：目的地/分段切换通过程序化点击侧栏既有行（同一套 setView），
-// 阅读器与弹层的状态用 MutationObserver 观察，Android 系统返回键走 History API
-// （wry 的 WryActivity 在 canGoBack() 时调用 webView.goBack()，pushState 产生的
-// 条目会以 popstate 形式回到 JS）。列表页在阅读页打开期间保持渲染（页面用覆盖层
+// 阅读器与弹层的状态用 MutationObserver 观察，Android 系统返回键走 History API。
+// Android WebView 的 canGoBack() 有时不计入 pushState 条目，因此通过 Tauri 的
+// back-button 事件显式调用 history.back()。列表页在阅读页打开期间保持渲染（页面用覆盖层
 // 盖住而非 display:none），因此过滤器、选中项与滚动位置天然原样保留。
 (function () {
   'use strict';
@@ -92,6 +92,16 @@
   function pushEntry(entry) {
     historyStack.push(entry);
     history.pushState({ rr: historyStack.length }, '');
+  }
+
+  function watchAndroidBack() {
+    if (document.body.dataset.android !== '1') return;
+    var app = window.__TAURI__?.app;
+    if (!app?.onBackButtonPress) return;
+    app.onBackButtonPress(function () {
+      if (active() && historyStack.length) history.back();
+      else app.exit();
+    });
   }
 
   window.addEventListener('popstate', function () {
@@ -386,6 +396,7 @@
     watchReader();
     watchOverlays();
     watchSettingsNavigation();
+    watchAndroidBack();
     keepInputVisible();
     watchSidebarSelection();
     initLongPress();

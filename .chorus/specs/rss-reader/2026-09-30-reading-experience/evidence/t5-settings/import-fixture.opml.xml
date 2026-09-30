@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>T5 synthetic import fixture</title></head>
+  <body>
+    <outline text="T5 Synthetic Feed" title="T5 Synthetic Feed" type="rss" xmlUrl="https://example.invalid/t5-feed.xml" htmlUrl="https://example.invalid/t5"/>
+  </body>
+</opml>

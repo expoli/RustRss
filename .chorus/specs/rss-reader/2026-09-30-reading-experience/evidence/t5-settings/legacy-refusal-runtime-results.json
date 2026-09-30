@@ -1,0 +1,47 @@
+{
+  "checked_at": "2026-09-30T11:47:41Z",
+  "checks": [
+    "refusal overlay rendered with i18n copy and both actions",
+    "legacy database byte-identical after refusal",
+    "legacy native OPML picker exported fixture without database write",
+    "legacy refusal quit exited without writing the database",
+    "rebuild produced a baseline database (marker + version 1)",
+    "rebuilt database fetched a feed successfully"
+  ],
+  "legacy": {
+    "sha256_before": "ec0b20f4a33585ff3717fa7387ee74f9894fa2d1c645a8b4668c0e1cb14be9ea",
+    "application_id": 0,
+    "user_version": 13,
+    "sha256_after": "ec0b20f4a33585ff3717fa7387ee74f9894fa2d1c645a8b4668c0e1cb14be9ea"
+  },
+  "overlay": {
+    "title": "数据库不兼容，已停止加载",
+    "body": "这个数据库来自旧版本（缺少当前版本的应用标识）。为避免误读旧数据，应用不会打开它。可以先把订阅导出为 OPML，再重建数据目录。",
+    "path": "/tmp/rustrss-legacy-refusal-bvd30_ek/rustrss.sqlite",
+    "export": "导出 OPML",
+    "quit": "退出",
+    "visible": true
+  },
+  "screenshot": ".chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t5-settings/legacy-refusal-overlay.png",
+  "export_picker_windows": "\nxwininfo: Window id: 0x2cf (the root window) (has no name)\n\n  Root window id: 0x2cf (the root window) (has no name)\n  Parent window id: 0x0 (none)\n     7 children:\n     0x200128 \"rustrss-desktop\": (\"rustrss-desktop\" \"Rustrss-desktop\")  2x2+0+0  +0+0\n        1 child:\n        0x200129 (has no name): ()  1x1+-1+-1  +-1+-1\n     0x200028 \"Save File\": (\"rustrss-desktop\" \"Rustrss-desktop\")  1096x822+0+0  +0+0\n        1 child:\n        0x200029 (has no name): ()  1x1+-1+-1  +-1+-1\n     0x200030 \"rustrss-desktop\": ()  10x10+-100+-100  +-100+-100\n     0x200007 \"RustRss\": (\"rustrss-desktop\" \"Rustrss-desktop\")  1240x820+0+0  +0+0\n        1 child:\n        0x200008 (has no name): ()  1x1+-1+-1  +-1+-1\n     0x20000d (has no name): ()  1x1+-1+-1  +-1+-1\n     0x600000 (has no name): ()  1x1+0+0  +0+0\n     0x200001 \"rustrss-desktop\": (\"rustrss-desktop\" \"Rustrss-desktop\")  10x10+10+10  +10+10\n\n",
+  "legacy_export": {
+    "bytes": 302,
+    "sha256": "de1e489d68b89f765a8cca87148b2be37b8a037917bd00bcdb7e20611e3dd606",
+    "contains_fixture_feed": true,
+    "database_unchanged": true
+  },
+  "app_log_tail": " DRI3 error: Could not get DRI3 device\nlibEGL warning: Ensure your X server supports DRI3 to get accelerated rendering\n\n** (rustrss-desktop:2699869): WARNING **: 19:47:41.433: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.\n\n** (process:2699909): WARNING **: 19:47:41.496: Can't connect to a11y bus: Could not connect: No such file or directory\n",
+  "backup": {
+    "path": "/tmp/rustrss-legacy-refusal-bvd30_ek/RustRss-backup-legacy.sqlite",
+    "sha256": "ec0b20f4a33585ff3717fa7387ee74f9894fa2d1c645a8b4668c0e1cb14be9ea",
+    "readable_pragmas": {
+      "application_id": 0,
+      "user_version": 13
+    }
+  },
+  "rebuilt": {
+    "application_id": 1381192497,
+    "user_version": 1
+  },
+  "rebuilt_entries": 1
+}

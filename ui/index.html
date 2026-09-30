@@ -190,7 +190,7 @@
       </nav>
 
       <section class="settings-body"><div class="pane hidden" id="pane-appearance" role="tabpanel" aria-labelledby="tab-appearance" data-pane="appearance"><h3 data-i18n="settings.nav.appearance"></h3><div id="appearance-editor"></div></div>
-<div class="pane hidden" id="pane-reading" role="tabpanel" aria-labelledby="tab-reading" data-pane="reading"><h3 data-i18n="settings.nav.reading"></h3><div id="reading-editor"></div><div class="setting-block" data-desktop-only>
+<div class="pane hidden" id="pane-reading" role="tabpanel" aria-labelledby="tab-reading" data-pane="reading"><h3 data-i18n="settings.nav.reading"></h3><div id="reading-editor"></div><div class="setting-block">
             <h4 data-i18n="settings.section.readBehaviour"></h4>
             <div class="setting-item">
               <div class="text">
@@ -204,9 +204,9 @@
             <h4 data-i18n="settings.proxy.title"></h4>
             <p data-i18n="settings.proxy.hint"></p>
             <div class="setting-item"><label for="set-proxy-mode" data-i18n="settings.proxy.mode"></label>
-              <select id="set-proxy-mode"><option value="environment" data-i18n="settings.proxy.environment"></option><option value="direct" data-i18n="settings.proxy.direct"></option><option value="custom" data-i18n="settings.proxy.custom"></option></select></div>
-            <div class="setting-item"><label for="set-proxy-url" data-i18n="settings.proxy.url"></label><input id="set-proxy-url" type="url" placeholder="http://127.0.0.1:8080" autocomplete="off" /></div>
-            <div class="setting-item"><label for="set-proxy-bypass" data-i18n="settings.proxy.bypass"></label><input id="set-proxy-bypass" type="text" placeholder="localhost,127.0.0.1" autocomplete="off" /></div>
+              <select id="set-proxy-mode" aria-describedby="set-proxy-status"><option value="environment" data-i18n="settings.proxy.environment"></option><option value="direct" data-i18n="settings.proxy.direct"></option><option value="custom" data-i18n="settings.proxy.custom"></option></select></div>
+            <div class="setting-item"><label for="set-proxy-url" data-i18n="settings.proxy.url"></label><input id="set-proxy-url" type="url" placeholder="http://127.0.0.1:8080" autocomplete="off" aria-describedby="set-proxy-status" /></div>
+            <div class="setting-item"><label for="set-proxy-bypass" data-i18n="settings.proxy.bypass"></label><input id="set-proxy-bypass" type="text" placeholder="localhost,127.0.0.1" autocomplete="off" aria-describedby="set-proxy-status" /></div>
             <button type="button" id="set-proxy-save" data-i18n="settings.proxy.save"></button>
             <p id="set-proxy-status" role="status" aria-live="polite"></p>
             <h4 data-i18n="settings.section.refresh"></h4>
@@ -245,13 +245,13 @@
                 <b data-i18n="settings.rsshub.mirror"></b>
                 <small data-i18n="settings.rsshub.mirrorHint"></small>
               </label>
-              <input id="set-rsshub-mirror" autocomplete="off" />
+              <input id="set-rsshub-mirror" autocomplete="off" aria-describedby="rsshub-status" />
             </div>
             <div class="setting-actions">
               <button id="btn-rsshub-save" data-i18n="settings.rsshub.save"></button>
               <button id="btn-rsshub-test" data-i18n="settings.rsshub.test"></button>
             </div>
-            <p id="rsshub-status" class="dim small">—</p>
+            <p id="rsshub-status" class="dim small" role="status" aria-live="polite">—</p>
           </div><div class="setting-block">
             <h4 data-i18n="settings.section.migration"></h4>
             <div class="setting-item">
@@ -282,7 +282,7 @@
                 <b data-i18n="settings.ai.model"></b>
                 <small data-i18n="settings.ai.modelPlaceholder"></small>
               </label>
-              <input id="ai-model" autocomplete="off" />
+              <input id="ai-model" autocomplete="off" aria-describedby="ai-status" />
             </div>
 
             <div class="setting-item">
@@ -290,7 +290,7 @@
                 <b data-i18n="settings.ai.baseUrl"></b>
                 <small data-i18n="settings.ai.baseUrlPlaceholder"></small>
               </label>
-              <input id="ai-base-url" autocomplete="off" />
+              <input id="ai-base-url" autocomplete="off" aria-describedby="ai-status" />
             </div>
 
             <!-- Android 专属指引：默认 127.0.0.1 指手机自身，Ollama 必须用设备
@@ -328,14 +328,14 @@
                 <b data-i18n="settings.ai.key"></b>
                 <small id="ai-key-hint" data-i18n="settings.ai.keyPlaceholder"></small>
               </label>
-              <input id="ai-key" type="password" autocomplete="off" />
+              <input id="ai-key" type="password" autocomplete="off" aria-describedby="ai-key-hint ai-status" />
             </div>
             <div class="setting-actions">
               <button id="ai-save" data-i18n="settings.ai.save"></button>
               <button id="ai-clear-key" data-i18n="settings.ai.clearKey"></button>
               <button id="ai-test" data-i18n="settings.ai.test"></button>
             </div>
-            <p id="ai-status" class="dim small">—</p>
+            <p id="ai-status" class="dim small" role="status" aria-live="polite">—</p>
           </div><div class="setting-block">
             <h4 data-i18n="settings.section.sending"></h4>
             <div class="setting-item">
@@ -361,7 +361,7 @@
                 <b data-i18n="settings.mcp.port"></b>
                 <small data-i18n="settings.mcp.portHint"></small>
               </div>
-              <input id="mcp-port" type="number" min="1024" max="65535" />
+              <input id="mcp-port" type="number" min="1024" max="65535" aria-describedby="mcp-status" />
             </div>
 
             <p id="mcp-status" class="dim small">—</p>

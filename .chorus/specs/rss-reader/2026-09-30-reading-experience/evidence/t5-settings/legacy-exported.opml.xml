@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>RustRss 订阅</title>
+  </head>
+  <body>
+    <outline text="旧分组" title="旧分组">
+      <outline type="rss" text="旧源" title="旧源" xmlUrl="https://legacy.invalid/feed.xml"/>
+    </outline>
+  </body>
+</opml>

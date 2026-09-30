@@ -1,0 +1,12 @@
+{
+  "device": "emulator-5584",
+  "apk_sha256": "1295b53869f9db87d66ba81eb78b38f55e8646e8c5e6da49daa02b13a236492c",
+  "fixture": {"feed_id":3,"before":"https://rsshub.app/36kr/newsflashes?limit=10","inserted_into":"task-owned synthetic SQLite fixture"},
+  "preview_candidates":1,
+  "confirmation":"Rewrite 1 feed URL(s) into rsshub:// form. Continue?",
+  "cancel_readback":"https://rsshub.app/36kr/newsflashes?limit=10",
+  "confirm_readback":"rsshub://36kr/newsflashes?limit=10",
+  "feed_id_after":3,
+  "preview_after":0,
+  "feedback":"Normalized 1 feeds"
+}

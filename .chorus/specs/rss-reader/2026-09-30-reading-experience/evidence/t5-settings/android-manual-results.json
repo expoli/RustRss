@@ -1,0 +1,154 @@
+{
+  "device": "emulator-5584",
+  "apk_sha256": "1295b53869f9db87d66ba81eb78b38f55e8646e8c5e6da49daa02b13a236492c",
+  "method": "Chrome DevTools evaluates the live Android WebView; Tauri core invoke reads persisted settings; adb sends native Back/taps and captures screen.",
+  "back_regression": {
+    "fixture": "one synthetic SQLite entry in the task-owned app data",
+    "reader": "KEYCODE_BACK returned reader to articles with the same synthetic row present",
+    "feed_menu": "KEYCODE_BACK closed feed More sheet and restored focus to .row-more",
+    "root": "fresh process opened articles; one KEYCODE_BACK exited process (PID absent on task-owned AVD)"
+  },
+  "theme": {
+    "ui_family_density_summary_thumbnail_light_color": {
+      "revision": 32,
+      "ui_family": [
+        "Noto Sans CJK SC",
+        "sans-serif"
+      ],
+      "density": "compact",
+      "summary_lines": 0,
+      "thumbnail": false,
+      "light_accent": "#2266aa"
+    },
+    "inherit_density": {
+      "revision": 33,
+      "density_override": null,
+      "summary_lines_preserved": 0,
+      "accent_preserved": "#2266aa"
+    },
+    "clear_cancel": {
+      "revision_unchanged": 33,
+      "other_overrides_preserved": true
+    },
+    "clear_save": {
+      "revision": 34,
+      "overrides": {}
+    },
+    "modes": [
+      {
+        "selected": "system",
+        "read": "system",
+        "revision": 35
+      },
+      {
+        "selected": "light",
+        "read": "light",
+        "revision": 36
+      },
+      {
+        "selected": "dark",
+        "read": "dark",
+        "revision": 37
+      }
+    ],
+    "presets": [
+      {
+        "variant": "light",
+        "preset": "clear",
+        "read": "clear",
+        "revision": 38
+      },
+      {
+        "variant": "light",
+        "preset": "paper",
+        "read": "paper",
+        "revision": 39
+      },
+      {
+        "variant": "light",
+        "preset": "slate",
+        "read": "slate",
+        "revision": 40
+      },
+      {
+        "variant": "dark",
+        "preset": "clear",
+        "read": "clear",
+        "revision": 40
+      },
+      {
+        "variant": "dark",
+        "preset": "paper",
+        "read": "paper",
+        "revision": 41
+      },
+      {
+        "variant": "dark",
+        "preset": "slate",
+        "read": "slate",
+        "revision": 42
+      }
+    ],
+    "reading_fonts": {
+      "revision": 43,
+      "read_family": [
+        "Noto Serif CJK SC",
+        "serif"
+      ],
+      "mono_family": [
+        "monospace"
+      ],
+      "mono_size": 15
+    },
+    "enlarged_ui": {
+      "revision": 44,
+      "mode": "light",
+      "ui_size": 20
+    },
+    "radius": {
+      "revision": 52,
+      "light_radius": 6
+    }
+  },
+  "ime": {
+    "system_show_ime_with_hard_keyboard": 1,
+    "dumpsys_input_shown": true,
+    "viewport_before_css_px": 867.05,
+    "viewport_with_ime_css_px": 554.29,
+    "focused_input": "ai-base-url",
+    "input_bottom_css_px": 389.6,
+    "first_back": "IME hidden; Settings detail retained"
+  },
+  "visual": {
+    "zh_light_enlarged": "android-zh-light-enlarged.png",
+    "zh_dark": "android-zh-dark-appearance.png",
+    "en_light": "android-en-light-appearance.png",
+    "en_dark": "android-en-dark-ai.png",
+    "system_font_scale_enlarged": 1.3,
+    "system_font_scale_restored": 1.0,
+    "horizontal_overflow": false
+  },
+  "proxy_failure_geometry": {
+    "settings_body_height_before_after_css_px": [
+      737.52,
+      737.52
+    ],
+    "viewport_before_after_css_px": [
+      [
+        412.19,
+        867.05
+      ],
+      [
+        412.19,
+        867.05
+      ]
+    ],
+    "document_scroll_width_before_after_css_px": [
+      412,
+      412
+    ],
+    "input_retained": "bad-url",
+    "aria_invalid": true,
+    "local_status_border_delta_css_px": 2
+  }
+}

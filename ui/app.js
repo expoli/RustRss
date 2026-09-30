@@ -4187,6 +4187,11 @@ function fillAiForm() {
   el('set-ai-confirm').checked = !!ai.confirm_before_send;
 }
 
+function markSettingField(id, invalid) {
+  const field = el(id);
+  if (field) field.setAttribute('aria-invalid', String(invalid));
+}
+
 function fillMcpForm() {
   const mcp = state.mcp;
   if (!mcp) return;
@@ -4243,7 +4248,36 @@ function mobileSettings() {
   return window.matchMedia('(max-width: 960px) and (pointer: coarse)').matches;
 }
 
+function refreshSettingsSummaries() {
+  const config = state.settings?.theme_snapshot?.config;
+  const readSize = state.settings?.theme_snapshot?.light?.typography?.read_size;
+  const proxy = state.settings?.proxy?.mode || 'environment';
+  const summaries = {
+    appearance: config ? `${t('settings.theme' + config.mode[0].toUpperCase() + config.mode.slice(1))} · ${t('settings.preset.' + config.light_preset)} / ${t('settings.preset.' + config.dark_preset)}` : '',
+    reading: readSize ? `${t('theme.field.typography.read_size')}: ${readSize}` : '',
+    subscriptions: `${t('settings.proxy.' + proxy)} · ${settingDropdownLabel(SETTING_DROPDOWNS.find(d => d.id === 'set-refresh-interval'))}`,
+    ai: state.ai ? `${t('settings.ai.provider' + state.ai.provider[0].toUpperCase() + state.ai.provider.slice(1))} · ${state.ai.model || t('settings.ai.model')}` : '',
+    mcp: state.mcp ? `${t('settings.mcp.enabled')}: ${t(state.mcp.enabled ? 'common.yes' : 'common.no')}` : '',
+    data: t('settings.opmlTitle'),
+    general: settingDropdownLabel(SETTING_DROPDOWNS.find(d => d.id === 'set-language')),
+  };
+  for (const [name, value] of Object.entries(summaries)) {
+    const tab = el('tab-' + name);
+    if (!tab) continue;
+    let summary = el('settings-summary-' + name);
+    if (!summary) {
+      summary = document.createElement('small');
+      summary.id = 'settings-summary-' + name;
+      summary.className = 'settings-nav-summary';
+      tab.parentElement.append(summary);
+      tab.setAttribute('aria-describedby', summary.id);
+    }
+    summary.textContent = value;
+  }
+}
+
 function showSettingsHome() {
+  refreshSettingsSummaries();
   document.querySelector('.settings-dialog').dataset.screen = 'home';
   el('m-settings-title').textContent = t('settings.title');
   for (const tab of el('settings-nav-list').querySelectorAll('[data-pane]')) tab.tabIndex = 0;
@@ -4258,6 +4292,7 @@ let settingsReturnFocus;
 function mountThemeEditor(id, kind, preserveReaderAnchor = false) {
   return window.RustRssThemeSettings.createEditor(el(id), { kind,
     mobile: mobileSettings(),
+    android: document.body.dataset.android === '1',
     getSnapshot: () => state.settings.theme_snapshot, invoke, t, fontNames: () => state.fontFamilies,
     apply: settings => {
       const reader = preserveReaderAnchor ? el('reader') : null;
@@ -4481,6 +4516,10 @@ function openSettings() {
   el('set-proxy-url').value = proxy.url;
   el('set-proxy-bypass').value = proxy.no_proxy;
   el('set-proxy-url').disabled = el('set-proxy-bypass').disabled = proxy.mode !== 'custom';
+  el('set-proxy-status').textContent = '';
+  el('rsshub-status').textContent = '—';
+  for (const id of ['set-proxy-mode', 'set-proxy-url', 'set-proxy-bypass', 'set-rsshub-mirror',
+    'ai-model', 'ai-base-url', 'ai-key', 'mcp-port']) markSettingField(id, false);
   el('set-refresh-on-start').checked = !!state.settings.refresh_on_start;
   el('set-notify-new-articles').checked = !!state.settings.notify_new_articles;
   el('set-rsshub-mirror').value = state.settings.rsshub_mirror || '';
@@ -4490,6 +4529,7 @@ function openSettings() {
   el('general-db-path').textContent = dbPath;
   fillAiForm();
   fillMcpForm();
+  refreshSettingsSummaries();
   showPane(currentPane);
   el('settings-overlay').classList.remove('hidden');
   el('settings-overlay').setAttribute('role', mobileSettings() ? 'region' : 'dialog');
@@ -4659,12 +4699,17 @@ async function boot() {
         maxOutputTokens: Number.isFinite(maxTokensRaw) ? maxTokensRaw : null,
       });
       fillAiForm();
+      for (const id of ['ai-model', 'ai-base-url', 'ai-key']) markSettingField(id, false);
       el('ai-status').textContent = state.ai.has_key
         ? t('settings.ai.savedWithKey')
         : t('settings.ai.savedNoKey');
       log(`ai saved provider=${state.ai.provider} model=${state.ai.model} has_key=${state.ai.has_key}`);
     } catch (e) {
       el('ai-status').textContent = t('settings.ai.saveFailed', { error: e.message });
+      const problem = String(e.message).toLowerCase();
+      const field = /key|credential|secret/i.test(problem) ? 'ai-key'
+        : /url|endpoint|host/i.test(problem) ? 'ai-base-url' : 'ai-model';
+      markSettingField(field, true);
       log(`ai save failed: ${e.message}`);
     }
   };
@@ -4727,7 +4772,8 @@ async function boot() {
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
     }
     if (!e.target.closest('#settings-nav-list')) return;
-    const tabs = [...el('settings-nav-list').querySelectorAll('[data-pane]')];
+    const tabs = [...el('settings-nav-list').querySelectorAll('[data-pane]')]
+      .filter(tab => tab.getClientRects().length);
     let i = tabs.indexOf(document.activeElement);
     if (e.key === 'ArrowDown') i = (i + 1) % tabs.length;
     else if (e.key === 'ArrowUp') i = (i + tabs.length - 1) % tabs.length;
@@ -4753,9 +4799,11 @@ async function boot() {
     try {
       const mirror = await invoke('set_rsshub_mirror', { mirror: el('set-rsshub-mirror').value });
       state.settings.rsshub_mirror = mirror;
+      markSettingField('set-rsshub-mirror', false);
       el('rsshub-status').textContent = t('settings.rsshub.saved', { url: mirror });
       log(`rsshub mirror=${mirror}`);
     } catch (err) {
+      markSettingField('set-rsshub-mirror', true);
       el('rsshub-status').textContent = err.message;
     }
   };
@@ -4765,7 +4813,9 @@ async function boot() {
       el('rsshub-status').textContent = await invoke('test_rsshub_mirror', {
         mirror: el('set-rsshub-mirror').value,
       });
+      markSettingField('set-rsshub-mirror', false);
     } catch (err) {
+      markSettingField('set-rsshub-mirror', true);
       el('rsshub-status').textContent = err.message;
     }
   };
@@ -4822,8 +4872,10 @@ async function boot() {
       const config = { mode, url: mode === 'custom' ? el('set-proxy-url').value.trim() : '',
         no_proxy: mode === 'custom' ? el('set-proxy-bypass').value.trim() : '' };
       acceptSettings(await invoke('set_proxy_config', { config }));
+      for (const id of ['set-proxy-mode', 'set-proxy-url', 'set-proxy-bypass']) markSettingField(id, false);
       el('set-proxy-status').textContent = t('settings.proxy.saved');
     } catch (error) {
+      markSettingField(el('set-proxy-mode').value === 'custom' ? 'set-proxy-url' : 'set-proxy-mode', true);
       el('set-proxy-status').textContent = t(error.message.includes('proxy_credentials_not_supported')
         ? 'settings.proxy.credentials' : 'settings.proxy.invalid');
     } finally { button.disabled = false; }
@@ -4971,11 +5023,18 @@ async function boot() {
 
   el('mcp-port').addEventListener('change', async (e) => {
     const port = Number(e.target.value);
+    if (!e.target.checkValidity() || !Number.isInteger(port)) {
+      markSettingField('mcp-port', true);
+      el('mcp-status').textContent = t('settings.mcp.invalidPort');
+      return;
+    }
     try {
       state.mcp = await invoke('set_mcp_port', { port });
+      markSettingField('mcp-port', false);
       fillMcpForm();
       log(`mcp port=${state.mcp.port} running=${state.mcp.running}`);
     } catch (err) {
+      markSettingField('mcp-port', true);
       el('mcp-status').textContent = t('settings.mcp.failed', { error: err.message });
       log(`mcp port failed: ${err.message}`);
     }
@@ -5032,6 +5091,17 @@ async function boot() {
   });
 
   el('set-mcp-dangerous-enabled').addEventListener('change', async (e) => {
+    if (e.target.checked) {
+      const approved = await confirmDialog({
+        title: t('settings.mcp.dangerousConfirmTitle'),
+        body: t('settings.mcp.dangerousConfirmBody'),
+        okLabel: t('settings.mcp.dangerousConfirmEnable'),
+      });
+      if (!approved) {
+        e.target.checked = false;
+        return;
+      }
+    }
     try {
       state.mcp = await invoke('set_mcp_dangerous_enabled', { enabled: e.target.checked });
       fillMcpForm();

@@ -1,0 +1,55 @@
+{
+  "device": "RustRssT5 / emulator-5584",
+  "artifact": "src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk",
+  "apkSha256": "07b9f83195aacbf0cc914362eff8bd94999c3257b7be70e012689b22b3862c48",
+  "activityRecreation": {
+    "trigger": "adb shell wm density 400; process PID remained 7703 while MainActivity and WebView recreated; adb shell wm density reset afterward",
+    "action": "Export OPML opened com.google.android.documentsui ACTION_CREATE_DOCUMENT and saved 299 bytes",
+    "exportSha256": "b17278c998cc3e422f9d76bf400268c4223fd84ac9d8a1de8e0a80eb121ef962",
+    "evidence": "exported-after-recreation.opml.xml"
+  },
+  "finalApkRoundtrip": {
+    "importAction": "ACTION_OPEN_DOCUMENT selected t5-final-import.opml.xml through DocumentsUI",
+    "importReadback": {
+      "feedId": 2,
+      "url": "https://example.invalid/t5-final-feed.xml",
+      "title": "T5 Final APK Feed",
+      "siteUrl": "https://example.invalid/t5-final"
+    },
+    "exportAction": "ACTION_CREATE_DOCUMENT saved rustrss.opml (3).xml in isolated AVD Downloads",
+    "exportBytes": 470,
+    "exportSha256": "18041cfd94a0e09bdbc8e0a4679a67b22752cc2066a24dfce5aafc9f0fbcc906",
+    "exportedUrls": [
+      "https://example.invalid/t5-final-feed.xml",
+      "https://example.invalid/t5-feed.xml"
+    ],
+    "evidence": [
+      "import-final-fixture.opml.xml",
+      "exported-final-apk.opml.xml"
+    ]
+  },
+  "preUpgradeDiagnostic": "On Tauri 2.11.6, picker failed after Activity recreation with unregistered ActivityResultLauncher; cold app restart made picker work. See record.md for upstream fix reference.",
+  "backFixFinalApkRoundtrip": {
+    "apkSha256": "1295b53869f9db87d66ba81eb78b38f55e8646e8c5e6da49daa02b13a236492c",
+    "exportAction": "ACTION_CREATE_DOCUMENT through native DocumentsUI after genuine landscape rotation; saved rustrss.opml (4).xml in task-owned AVD Downloads",
+    "exportBytes": 768,
+    "exportSha256": "01791be115add1ba1b1a8620a32344a19bbeb751639e2f9183cdfb8cba4b0f23",
+    "exportedUrls": [
+      "https://example.invalid/t5-final-feed.xml",
+      "rsshub://36kr/newsflashes?limit=10",
+      "http://10.0.2.2:18081/rss.xml",
+      "https://example.invalid/t5-feed.xml"
+    ],
+    "importAction": "ACTION_OPEN_DOCUMENT selected t5-backfix-import.opml.xml in DocumentsUI",
+    "importReadback": {
+      "feedId": 5,
+      "url": "https://example.invalid/t5-backfix-feed.xml",
+      "title": "T5 Back Fix Feed",
+      "siteUrl": "https://example.invalid/t5-backfix"
+    },
+    "evidence": [
+      "exported-backfix-final.opml.xml",
+      "import-backfix-final.opml.xml"
+    ]
+  }
+}

@@ -1,0 +1,102 @@
+[
+  {
+    "name": "theme-preview-does-not-persist"
+  },
+  {
+    "name": "theme-revision-increments",
+    "before": 47,
+    "after": 48
+  },
+  {
+    "name": "theme-mode-preset-summary-readback",
+    "mode": "dark",
+    "preset": "paper"
+  },
+  {
+    "name": "theme-history-refresh-has-prior-revision",
+    "history": [
+      "",
+      "47",
+      "46",
+      "45",
+      "44",
+      "43",
+      "42",
+      "41",
+      "40",
+      "39",
+      "38"
+    ]
+  },
+  {
+    "name": "theme-history-restore-new-revision",
+    "from": 48,
+    "to": 49
+  },
+  {
+    "name": "theme-stale-cas-does-not-write",
+    "revision": 50
+  },
+  {
+    "name": "theme-discard-after-cas"
+  },
+  {
+    "name": "theme-revision-increments",
+    "before": 50,
+    "after": 51
+  },
+  {
+    "name": "reading-typography-readback",
+    "size": 18
+  },
+  {
+    "name": "ai-provider-save-ollama",
+    "provider": "ollama",
+    "model": "synthetic-t5-ollama"
+  },
+  {
+    "name": "ai-provider-save-openai",
+    "provider": "openai",
+    "model": "synthetic-t5-openai"
+  },
+  {
+    "name": "ai-provider-save-anthropic",
+    "provider": "anthropic",
+    "model": "synthetic-t5-anthropic"
+  },
+  {
+    "name": "ai-provider-save-gemini",
+    "provider": "gemini",
+    "model": "synthetic-t5-gemini"
+  },
+  {
+    "name": "android-keystore-key-state",
+    "source": {
+      "kind": "keyring"
+    }
+  },
+  {
+    "name": "android-keystore-key-clear"
+  },
+  {
+    "name": "rsshub-mirror-save"
+  },
+  {
+    "name": "rsshub-migration-control-reachable"
+  },
+  {
+    "name": "android-saf-actions-reachable"
+  },
+  {
+    "name": "resized-android-capabilities",
+    "width": 610,
+    "orientation": "portrait-secondary",
+    "android": "1",
+    "mcp": false,
+    "backup": false,
+    "hint": true
+  },
+  {
+    "name": "artifact"
+  }
+]

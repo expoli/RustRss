@@ -50,7 +50,7 @@
       },
     };
   }
-  function createEditor(host, { kind, getSnapshot, invoke, apply, t, fontNames = () => [], readOnly = false, mobile = false }) {
+  function createEditor(host, { kind, getSnapshot, invoke, apply, t, fontNames = () => [], readOnly = false, mobile = false, android = false }) {
     const session = draftSession(getSnapshot(), (expectedRevision, patch) => invoke('validate_ui_theme', { expectedRevision, patch }));
     let busy = false, disposed = false, previewMode = 'light', renderer, controls = [];
     const node = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
@@ -144,25 +144,29 @@
         }
         form.append(group);
       }
-      form.append(button(t('theme.clearOverrides'), () => { session.set('overrides', null); validate(); save.disabled = false; cancel.disabled = false; }));
     }
-    const advanced = mobile ? node('details', '', 'theme-advanced') : null;
-    if (advanced) advanced.append(node('summary', t('m.advancedTypography')));
+    const advanced = node('details', '', 'theme-advanced');
+    advanced.append(node('summary', t('m.advancedTypography')));
+    if (kind === 'appearance') {
+      advanced.append(button(t('theme.clearOverrides'), () => {
+        session.set('overrides', null); validate(); save.disabled = false; cancel.disabled = false;
+      }));
+    }
     const desktopFields = ['chrome.sidebar_width', 'chrome.list_width', 'reader.width', 'reader.layout'];
     const advancedFields = ['typography.ui_family', 'typography.ui_size', 'chrome.radius',
       'typography.read_family', 'typography.mono_family', 'typography.mono_size'];
     fields.filter(f => f[1] === kind).forEach(f => {
-      if (mobile && desktopFields.includes(f[0])) return;
-      control(f, advanced && advancedFields.includes(f[0]) ? advanced : form);
+      if (android && desktopFields.includes(f[0])) return;
+      control(f, advancedFields.includes(f[0]) || desktopFields.includes(f[0]) ? advanced : form);
     });
-    if (advanced) form.append(advanced);
     if (kind === 'appearance') {
       for (const variant of ['light', 'dark']) {
         const details = node('details'); details.append(node('summary', t('theme.' + variant + 'Colors')));
         for (const color of Object.keys(global.RustRssTheme.colorVars)) control(['colors.' + variant + '.' + color, kind, 'color'], details);
-        form.append(details);
+        advanced.append(details);
       }
     }
+    form.append(advanced);
     if (kind === 'appearance' && !readOnly) {
       const history = node('select'); history.setAttribute('aria-label', t('theme.history')); history.dataset.themeHistory = '';
       const restore = button(t('theme.restore'), async () => {

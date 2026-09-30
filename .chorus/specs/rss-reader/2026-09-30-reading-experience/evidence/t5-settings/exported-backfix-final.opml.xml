@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>RustRss 订阅</title>
+  </head>
+  <body>
+    <outline type="rss" text="T5 Final APK Feed" title="T5 Final APK Feed" xmlUrl="https://example.invalid/t5-final-feed.xml" htmlUrl="https://example.invalid/t5-final"/>
+    <outline type="rss" text="T5 Legacy RSSHub Fixture" title="T5 Legacy RSSHub Fixture" xmlUrl="rsshub://36kr/newsflashes?limit=10"/>
+    <outline type="rss" text="T5 Offline Fixture" title="T5 Offline Fixture" xmlUrl="http://10.0.2.2:18081/rss.xml" htmlUrl="https://example.invalid/t5-offline"/>
+    <outline type="rss" text="T5 Synthetic Feed" title="T5 Synthetic Feed" xmlUrl="https://example.invalid/t5-feed.xml" htmlUrl="https://example.invalid/t5"/>
+  </body>
+</opml>

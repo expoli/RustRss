@@ -1,0 +1,8 @@
+{
+  "device":"emulator-5584",
+  "apk_sha256":"1295b53869f9db87d66ba81eb78b38f55e8646e8c5e6da49daa02b13a236492c",
+  "fixture":"Local HTTP server 10.0.2.2:18081, synthetic RSS feed and one article; server stopped and restarted during the probe",
+  "online":{"feed_id":4,"entry_id":2,"fetched":1,"inserted":1,"last_status":"ok"},
+  "offline":{"refresh_failures":[{"code":"connection_error","feed_id":4}],"feed_last_status":"connection_error","feed_error_visible_in_core":true,"list_count":1,"reader_title":"Cached Offline Article","reader_body":"Readable while transport is down."},
+  "retry":{"not_modified":1,"failures":[],"feed_last_status":"not_modified","feed_error_cleared":true,"entry_count":1}
+}

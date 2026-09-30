@@ -3377,6 +3377,7 @@ pub async fn set_mcp_enabled(app: tauri::AppHandle, state: State<'_, AppState>, 
 
 #[tauri::command]
 pub async fn set_mcp_port(app: tauri::AppHandle, state: State<'_, AppState>, port: u16) -> R<McpSettingsView> {
+    rustrss_mcp::config::validate_port(port)?;
     let enabled = state.with_store(|s| {
         s.set_setting(crate::mcp_server::K_PORT, &port.to_string())
             .map_err(err)?;

@@ -60,13 +60,14 @@ test('IPC preserves structured discovery code while retaining legacy string erro
 });
 
 async function saveProxy(mode, failure) {
- const fields = Object.fromEntries(['set-proxy-save','set-proxy-mode','set-proxy-url','set-proxy-bypass','set-proxy-status'].map(id=>[id,{value:''}]));
+ const fields = Object.fromEntries(['set-proxy-save','set-proxy-mode','set-proxy-url','set-proxy-bypass','set-proxy-status'].map(id=>[id,{value:'',attributes:{},setAttribute(name,value){this.attributes[name]=value;}}]));
  fields['set-proxy-mode'].value=mode;
  fields['set-proxy-url'].value=' http://127.0.0.1:8080 ';
  fields['set-proxy-bypass'].value=' localhost ';
  let sent, accepted=false;
  const c=vm.createContext({el:id=>fields[id],t:key=>key,acceptSettings:()=>{accepted=true;},
    invoke:async(command,args)=>{sent={command,args};if(failure)throw Error(failure);return {};}});
+ vm.runInContext(extract('markSettingField'),c);
  const marker="el('set-proxy-save').addEventListener('click', async () => {";
  const start=source.indexOf(marker);assert.notEqual(start,-1);
  const end=source.indexOf("\n  });",start);
@@ -87,4 +88,6 @@ test('proxy rejection leaves accepted settings alone and releases the save butto
  const r=await saveProxy('custom','proxy_credentials_not_supported');
  assert.equal(r.accepted,false);assert.equal(r.fields['set-proxy-save'].disabled,false);
  assert.equal(r.fields['set-proxy-status'].textContent,'settings.proxy.credentials');
+ assert.equal(r.fields['set-proxy-url'].attributes['aria-invalid'],'true');
+ assert.equal(r.fields['set-proxy-url'].value,' http://127.0.0.1:8080 ');
 });

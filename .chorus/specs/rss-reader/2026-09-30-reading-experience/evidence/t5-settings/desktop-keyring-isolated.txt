@@ -1,0 +1,6 @@
+Final Linux binary: db89edc2b81655164064f2e5d895db36aa4ad1fee54c1255bea14311154c813d
+Test owned by T5: isolated HOME, XDG_CONFIG_HOME, XDG_DATA_HOME, XDG_RUNTIME_DIR, private dbus-run-session and Xvfb; did not connect to the user's session bus or wallet.
+1. Existing keyring_probe under private bus without service: Secret Service name unavailable.
+2. Explicit /usr/bin/ksecretd under private bus, org.freedesktop.secrets registered: keyring_probe synthetic write returned "Secret Service: no result found".
+3. Repeated with task-owned Xvfb DISPLAY=:87 and QT_QPA_PLATFORM=xcb: same "no result found".
+No synthetic credential was stored. Desktop keyring save/relaunch/clear remains unverified in this isolated environment.

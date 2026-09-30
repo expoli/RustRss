@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>T5 final APK import fixture</title></head>
+  <body>
+    <outline text="T5 Final APK Feed" title="T5 Final APK Feed" type="rss" xmlUrl="https://example.invalid/t5-final-feed.xml" htmlUrl="https://example.invalid/t5-final"/>
+  </body>
+</opml>

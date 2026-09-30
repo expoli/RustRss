@@ -1,0 +1,123 @@
+[
+  {
+    "name": "android-category-appearance",
+    "summary": "Light · Slate / Slate"
+  },
+  {
+    "name": "android-pane-appearance",
+    "title": "Settings"
+  },
+  {
+    "name": "android-category-reading",
+    "summary": "Reading size (px): 16"
+  },
+  {
+    "name": "android-pane-reading",
+    "title": "Reading"
+  },
+  {
+    "name": "android-category-subscriptions",
+    "summary": "Direct · Every 15 minutes"
+  },
+  {
+    "name": "android-pane-subscriptions",
+    "title": "Subscriptions & updates"
+  },
+  {
+    "name": "android-category-ai",
+    "summary": "Ollama (local, no key) · t5-synthetic-model"
+  },
+  {
+    "name": "android-pane-ai",
+    "title": "AI"
+  },
+  {
+    "name": "android-category-data",
+    "summary": "OPML import / export"
+  },
+  {
+    "name": "android-pane-data",
+    "title": "Data & backups"
+  },
+  {
+    "name": "android-category-general",
+    "summary": "English"
+  },
+  {
+    "name": "android-pane-general",
+    "title": "General"
+  },
+  {
+    "name": "android-mcp-hidden"
+  },
+  {
+    "name": "android-mark-read-reachable"
+  },
+  {
+    "name": "android-no-desktop-reading-layout"
+  },
+  {
+    "name": "android-opml-subscriptions-only",
+    "hint": "Use OPML to back up subscriptions. Articles, reading state and AI settings are not included."
+  },
+  {
+    "name": "theme-draft-no-write",
+    "revision": 46,
+    "candidate": 17
+  },
+  {
+    "name": "detail-back-retains-draft"
+  },
+  {
+    "name": "destination-discard-no-write"
+  },
+  {
+    "name": "destination-reopen-saved-value",
+    "size": 20
+  },
+  {
+    "name": "android-no-desktop-appearance-width"
+  },
+  {
+    "name": "theme-save-cas-readback",
+    "from": 46,
+    "to": 47
+  },
+  {
+    "name": "theme-advanced-controls"
+  },
+  {
+    "name": "theme-history-actions"
+  },
+  {
+    "name": "proxy-failure-retains-input-and-links-error",
+    "status": "Use a proxy address without a username or password."
+  },
+  {
+    "name": "proxy-failure-no-write"
+  },
+  {
+    "name": "proxy-save-readback"
+  },
+  {
+    "name": "four-ai-providers",
+    "aiOptions": [
+      "ollama",
+      "openai",
+      "anthropic",
+      "gemini"
+    ]
+  },
+  {
+    "name": "ai-settings-save-readback"
+  },
+  {
+    "name": "ai-advanced-and-key-controls"
+  },
+  {
+    "name": "general-locale-about-log"
+  },
+  {
+    "name": "artifact"
+  }
+]

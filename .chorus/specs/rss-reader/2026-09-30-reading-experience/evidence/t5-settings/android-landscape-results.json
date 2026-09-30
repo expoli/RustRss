@@ -1,0 +1,16 @@
+{
+  "system": "Viewport INTERNAL: displayId=0, uniqueId=local:4619827259835644672, port=0, orientation=1, logicalFrame=[0, 0, 2400, 1080], physicalFrame=[0, 0, 2400, 1080], deviceSize=[2400, 1080], isActive=[1]",
+  "ui": {
+    "orientation": "landscape-primary",
+    "width": 915,
+    "height": 364,
+    "android": "1",
+    "mcp": false,
+    "backup": false,
+    "restore": false,
+    "tray": false,
+    "hint": true,
+    "opmlImport": true,
+    "opmlExport": true
+  }
+}

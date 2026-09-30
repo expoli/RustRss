@@ -9,15 +9,16 @@
 4. 「备份 → 重建」路径：把旧库另存为备份（含 SHA256 与可读性校验）、再启动 → 应用建出**新基线库**
    （`application_id` 魔数 + `user_version=1`），能加订阅并成功刷新一次本地 feed。
 
-⚠ 如实记录的边界：退出面板上的「导出 OPML」会打开**原生保存对话框**（GTK），无 WM 的 Xvfb
-里驱动不了它 —— 本探针只断言按钮存在与命令已注册；导出行为本身由 core 测试覆盖
-（`tests/opml.rs::export_read_only_rescues_feeds_from_a_legacy_database`：只读、零写入、无 WAL 边车）。
+退出面板上的「导出 OPML」由隔离 Xvfb 中的 GTK 原生保存对话框完成；导出后核对
+文件内容和旧库哈希，再点击「退出」。测试始终在 TemporaryDirectory 中运行。
 """
 import asyncio
+import ctypes
 import hashlib
 import importlib.util
 import json
 import os
+import shutil
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import socket
@@ -118,7 +119,8 @@ async def run_app(env_base, db_path, root, script, expect_overlay):
         env['DISPLAY'] = ':' + pipe.readline().strip()
     log_path = root / f'desktop-{script}.log'
     with log_path.open('w') as log:
-        app = subprocess.Popen(['target/debug/rustrss-desktop'], env=env, stdout=log, stderr=log,
+        app = subprocess.Popen([str(REPO / 'target/debug/rustrss-desktop')], cwd=root,
+                               env=env, stdout=log, stderr=log,
                                start_new_session=True)
     probe = native_probe.Probe({'root': str(root), 'inspector_port': inspector_port})
     return app, xvfb, probe, log_path, env
@@ -195,6 +197,59 @@ async def main():
             assert before_pragmas == after_pragmas, '拒绝不得改 PRAGMA'
             assert not (root / 'rustrss.sqlite-wal').exists(), '拒绝不得建 WAL 边车'
             report['checks'].append('legacy database byte-identical after refusal')
+            await probe.js("document.getElementById('startup-refusal-export').click();true")
+            await asyncio.sleep(.6)
+            report['export_picker_windows'] = subprocess.check_output(
+                ['xwininfo', '-root', '-tree'], env=env, text=True)[-1800:]
+            if OUT_DIR:
+                import re
+                picker = re.search(r'(0x[0-9a-f]+) "Save File"', report['export_picker_windows'])
+                if picker:
+                    subprocess.run(['import', '-display', env['DISPLAY'], '-window', picker.group(1),
+                                    str(OUT_DIR / 'legacy-export-picker.png')], check=True, timeout=30)
+            assert '"Save File"' in report['export_picker_windows'], '旧库导出应弹原生保存对话框'
+            x11 = ctypes.CDLL('libX11.so.6')
+            xtst = ctypes.CDLL('libXtst.so.6')
+            x11.XOpenDisplay.restype = ctypes.c_void_p
+            x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
+            x11.XSync.argtypes = [ctypes.c_void_p, ctypes.c_int]
+            xtst.XTestFakeMotionEvent.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_ulong]
+            xtst.XTestFakeButtonEvent.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_int, ctypes.c_ulong]
+            display_handle = x11.XOpenDisplay(env['DISPLAY'].encode())
+            assert display_handle, 'Xvfb display unavailable for native picker'
+            xtst.XTestFakeMotionEvent(display_handle, -1, 1045, 799, 0)
+            xtst.XTestFakeButtonEvent(display_handle, 1, 1, 0)
+            x11.XSync(display_handle, 0)
+            await asyncio.sleep(.05)
+            xtst.XTestFakeButtonEvent(display_handle, 1, 0, 0)
+            x11.XSync(display_handle, 0)
+            exported = root / 'RustRss-subscriptions.opml'
+            for _ in range(50):
+                if exported.exists():
+                    break
+                await asyncio.sleep(.1)
+            assert exported.exists(), '旧库 OPML 文件应写入隔离临时目录'
+            xml = exported.read_text()
+            assert '旧源' in xml and 'https://legacy.invalid/feed.xml' in xml, xml
+            assert sha256(db_path) == before_hash and not (root / 'rustrss.sqlite-wal').exists()
+            report['legacy_export'] = {'bytes': exported.stat().st_size,
+                                       'sha256': sha256(exported), 'contains_fixture_feed': True,
+                                       'database_unchanged': True}
+            if OUT_DIR:
+                shutil.copy2(exported, OUT_DIR / 'legacy-exported.opml.xml')
+            report['checks'].append('legacy native OPML picker exported fixture without database write')
+            try:
+                await probe.js("document.getElementById('startup-refusal-quit').click();true")
+            except Exception:
+                # The WebKit inspector socket may close before answering when quit succeeds.
+                pass
+            for _ in range(50):
+                if app.poll() is not None:
+                    break
+                await asyncio.sleep(.1)
+            assert app.poll() is not None, '拒绝屏退出按钮应退出应用'
+            assert sha256(db_path) == before_hash, '退出后旧库仍不得改写'
+            report['checks'].append('legacy refusal quit exited without writing the database')
             report['app_log_tail'] = log_path.read_text()[-400:]
         finally:
             stop(app)

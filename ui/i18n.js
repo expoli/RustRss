@@ -348,6 +348,7 @@ const DICTS = {
     'settings.backupDb': '备份数据库…',
     'settings.restoreDb': '从备份恢复…',
     'settings.mcp.portHint': '需 ≥ 1024；改端口会重启服务',
+    'settings.mcp.invalidPort': '请输入 1024 到 65535 之间的端口。',
     'settings.mcp.snippetTitle': '一键客户端配置',
     'settings.mcp.snippetHint': '包含 token，粘贴后请自行保管',
     'settings.about.tagline': '本地优先的 RSS 阅读器：订阅与已读状态在本机，AI 用你自己的 key',
@@ -519,6 +520,9 @@ const DICTS = {
     'settings.mcp.dangerousEnabled': '允许危险工具',
     'settings.mcp.dangerousEnabledHint':
       '默认关闭。退订、删分组这类不可逆操作只在这个开关打开、且调用带 confirm 时才执行（可先用 dry_run 预览）。',
+    'settings.mcp.dangerousConfirmTitle': '启用危险工具？',
+    'settings.mcp.dangerousConfirmBody': '启用后，持有写 token 的客户端可以取消订阅或删除文件夹。',
+    'settings.mcp.dangerousConfirmEnable': '启用',
     'settings.mcp.writeToken': '写 token',
     'settings.mcp.writeTokenHint':
       '读 token 只能看；写 token 才能改。它不随客户端配置片段分发，请单独复制给需要写权限的 agent。',
@@ -946,6 +950,7 @@ const DICTS = {
     'settings.backupDb': 'Back up…',
     'settings.restoreDb': 'Restore from backup…',
     'settings.mcp.portHint': 'Must be 1024 or higher; changing it restarts the server',
+    'settings.mcp.invalidPort': 'Enter a port from 1024 to 65535.',
     'settings.mcp.snippetTitle': 'One-click client config',
     'settings.mcp.snippetHint': 'It contains the token, so keep it somewhere safe',
     'settings.about.tagline': 'A local-first RSS reader: subscriptions and read state stay on this machine, AI uses your own key',
@@ -1118,6 +1123,9 @@ const DICTS = {
     'settings.mcp.dangerousEnabled': 'Allow dangerous tools',
     'settings.mcp.dangerousEnabledHint':
       'Off by default. Irreversible actions (unsubscribe, deleting a folder) only run when this is on and the call carries confirm; use dry_run to preview first.',
+    'settings.mcp.dangerousConfirmTitle': 'Enable dangerous tools?',
+    'settings.mcp.dangerousConfirmBody': 'Clients with the write token can then unsubscribe feeds or delete folders.',
+    'settings.mcp.dangerousConfirmEnable': 'Enable',
     'settings.mcp.writeToken': 'Write token',
     'settings.mcp.writeTokenHint':
       'The read token can only read; the write token is what allows changes. It is not part of the client config snippet - copy it separately to agents that need write access.',

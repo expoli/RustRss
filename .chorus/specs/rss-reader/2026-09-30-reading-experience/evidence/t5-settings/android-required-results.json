@@ -1,0 +1,76 @@
+[
+  {
+    "name": "android-back-detail-home-source",
+    "route": [
+      "detail",
+      "home",
+      "articles"
+    ]
+  },
+  {
+    "name": "proxy-custom-bypass-readback",
+    "mode": "custom",
+    "url": "http://127.0.0.1:8899",
+    "no_proxy": "localhost,127.0.0.1"
+  },
+  {
+    "name": "refresh-interval-concurrency-start-notify-readback",
+    "interval": 15,
+    "concurrency": 12,
+    "startup": true,
+    "notify": true
+  },
+  {
+    "name": "rsshub-native-test-success"
+  },
+  {
+    "name": "rsshub-zero-candidate-feedback"
+  },
+  {
+    "name": "ai-endpoint-language-max-readback",
+    "provider": "ollama",
+    "baseUrl": "http://10.0.2.2:35175",
+    "target": "fr",
+    "max": 1024
+  },
+  {
+    "name": "ai-reasoning-confirm-readback",
+    "reasoning": "high",
+    "confirmRestored": true
+  },
+  {
+    "name": "ai-native-test-success",
+    "response": "Connection works. Model replied: 可用"
+  },
+  {
+    "name": "reading-mark-read-save-readback"
+  },
+  {
+    "name": "locale-zh-native-readback"
+  },
+  {
+    "name": "locale-en-native-readback"
+  },
+  {
+    "name": "about-license-privacy-source-native",
+    "license": true,
+    "privacy": true,
+    "source": true
+  },
+  {
+    "name": "log-level-debug-info-readback"
+  },
+  {
+    "name": "artifact",
+    "endpointRequests": [
+      {
+        "method": "GET",
+        "path": "/version"
+      },
+      {
+        "method": "POST",
+        "path": "/api/generate"
+      }
+    ]
+  }
+]

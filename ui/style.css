@@ -1243,6 +1243,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 .settings-nav li { padding: 0; }
 .settings-nav li > button { width: 100%; text-align: start; padding: 12px; border: 0; background: transparent; color: inherit; }
 .settings-nav li.active > button { color: var(--accent); }
+.settings-nav-summary { display: block; padding: 0 12px 10px; color: var(--fg-dim); line-height: 1.35; overflow-wrap: anywhere; }
 .theme-editor-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .theme-field { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .theme-field label { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
@@ -1254,6 +1255,8 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 .theme-presets button[aria-pressed=true] { outline: 2px solid var(--accent); outline-offset: 1px; }
 .theme-editor-actions { display: flex; gap: 8px; position: sticky; bottom: -34px; padding: 12px 0; background: var(--bg-panel); z-index: 1; }
 .theme-editor-status { min-height: 3em; overflow-wrap: anywhere; margin: 8px 0; }
+.setting-block [role="status"], #mcp-status, #mcp-write-token { min-height: 2.5em; overflow-wrap: anywhere; }
+.setting-item [aria-invalid="true"], .theme-field [aria-invalid="true"] { border-color: var(--danger, #b84242); outline: 2px solid var(--danger, #b84242); outline-offset: 1px; }
 .theme-sample { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 12px 0; overflow-wrap: anywhere; }
 .theme-sample p { font-family: var(--font-read); font-size: var(--font-read-size); line-height: var(--font-read-line); margin-bottom: var(--paragraph-gap); }
 .theme-sample code { font-family: var(--font-mono); font-size: var(--font-mono-size); background: var(--code-bg); color: var(--code-fg); }
@@ -1343,12 +1346,13 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
    列表页保持渲染不被 display:none，返回时过滤器/选中/滚动位置原样保留。 */
 
 #m-nav, #m-reader-back, .m-seg, #m-status, .m-only { display: none; }
-.m-setting-advanced > summary { display: none; }
+.m-setting-advanced { border: 1px solid var(--line); border-radius: var(--radius); padding: 0 12px; margin-top: 16px; }
+.m-setting-advanced > summary { display: list-item; padding: 12px 0; font-weight: 600; cursor: pointer; }
+/* Platform capabilities do not change when a device rotates or a window narrows. */
+body[data-android="1"] [data-desktop-only] { display: none !important; }
+body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
 
 @media (max-width: 960px) and (pointer: coarse) {
-  /* 桌面专属控件（窗口三键/MCP/托盘关闭行为/日志目录）不在移动端出现 */
-  [data-desktop-only] { display: none !important; }
-
   /* 主区、状态和导航共享一套 flex 高度；不猜测字体/系统缩放后的底栏高度。
      Android 根视图已避让系统栏和 IME，网页不再重复扣安全区。 */
   body { min-width: 0; }
@@ -1612,6 +1616,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
     min-height: 64px; padding: 16px 8px; font-size: 16px; white-space: normal;
   }
   .settings-nav li > button::after { content: '›'; font-size: 24px; color: var(--fg-dim); }
+  .settings-nav-summary { padding: 0 8px 14px; font-size: 13px; }
   .settings-nav li.active { background: transparent; }
   .settings-nav li.active > button { color: var(--fg); }
   .settings-dialog[data-screen="home"] .settings-body,
@@ -1646,7 +1651,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   .theme-editor-fields summary, .theme-preview-details summary { min-height: 48px; padding: 14px 0; font-weight: 600; }
   .theme-editor-actions { position: sticky; bottom: -16px; flex-wrap: wrap; padding: 12px 0; }
   .theme-editor-actions button { min-height: 48px; flex: 1 1 auto; padding: 10px 12px; }
-  .theme-editor-status { min-height: 0; font-size: 13px; }
+  .theme-editor-status { min-height: 3em; font-size: 13px; }
   .theme-presets button { min-height: 48px; }
   .settings-body code { overflow-wrap: anywhere; }
 }

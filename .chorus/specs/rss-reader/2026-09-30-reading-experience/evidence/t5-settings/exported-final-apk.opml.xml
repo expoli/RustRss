@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>RustRss 订阅</title>
+  </head>
+  <body>
+    <outline type="rss" text="T5 Final APK Feed" title="T5 Final APK Feed" xmlUrl="https://example.invalid/t5-final-feed.xml" htmlUrl="https://example.invalid/t5-final"/>
+    <outline type="rss" text="T5 Synthetic Feed" title="T5 Synthetic Feed" xmlUrl="https://example.invalid/t5-feed.xml" htmlUrl="https://example.invalid/t5"/>
+  </body>
+</opml>
