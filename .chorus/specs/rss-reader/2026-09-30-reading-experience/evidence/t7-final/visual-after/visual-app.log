@@ -1,10 +1,10 @@
 
-(rustrss-desktop:2973716): dbind-WARNING **: 00:31:01.528: Couldn't connect to accessibility bus: Failed to connect to socket /run/user/1000/at-spi/bus_0: No such file or directory
+(rustrss-desktop:2998097): dbind-WARNING **: 00:49:21.932: Couldn't connect to accessibility bus: Failed to connect to socket /run/user/1000/at-spi/bus_0: No such file or directory
 libEGL warning: DRI3 error: Could not get DRI3 device
 libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
 
-** (rustrss-desktop:2973716): WARNING **: 00:31:01.639: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+** (rustrss-desktop:2998097): WARNING **: 00:49:22.047: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
 
-(rustrss-desktop:2973716): libayatana-appindicator-WARNING **: 00:31:01.689: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+(rustrss-desktop:2998097): libayatana-appindicator-WARNING **: 00:49:22.092: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
 
-** (process:2973750): WARNING **: 00:31:01.712: Can't connect to a11y bus: Could not connect: No such file or directory
+** (process:2998148): WARNING **: 00:49:22.116: Can't connect to a11y bus: Could not connect: No such file or directory

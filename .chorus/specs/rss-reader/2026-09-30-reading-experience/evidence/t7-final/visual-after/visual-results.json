@@ -1,6 +1,7 @@
 {
-  "binarySha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
-  "fixture": "isolated synthetic 30-row T4 copy",
+  "binarySha256": "706b42fea0d6c18918157264f8d53022ba245bb83dc624ce6f61cb151abfd59f",
+  "baseline": false,
+  "fixtureSha256": "03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91",
   "variants": [
     {
       "preset": "clear",

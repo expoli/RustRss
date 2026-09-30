@@ -1,9 +1,9 @@
 {
   "serial": "emulator-5584",
   "avd": "RustRssT5",
-  "pid": "14611",
+  "pid": "16423",
   "android": "16",
-  "apkSha256": "fb7836a6bd2cc313bff06aefcd5bf57d15e49d2c92e1e0895edecb9b31aeeb2b",
+  "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091",
   "fixtureSha256": "8d379695416512af1489d464cffcd86b305406908747c64f5a22fa0792130506",
   "physicalSize": "Physical size: 1080x2400",
   "density": "Physical density: 420",

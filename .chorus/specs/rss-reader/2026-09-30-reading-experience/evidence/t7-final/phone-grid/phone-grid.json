@@ -1,0 +1,1435 @@
+{
+  "serial": "emulator-5584",
+  "avd": "RustRssT5",
+  "android": "16",
+  "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091",
+  "original": {
+    "size": "Physical size: 1080x2400",
+    "density": "Physical density: 420",
+    "rotation": "1",
+    "auto": "1",
+    "font": "1.0",
+    "nav": "2"
+  },
+  "results": [
+    {
+      "name": "360-gesture-portrait",
+      "size": "945x2100",
+      "nav": "gestural",
+      "rotation": 0,
+      "actualRotation": "0",
+      "actualNav": "2",
+      "physical": "Physical size: 1080x2400\nOverride size: 945x2100",
+      "density": "Physical density: 420",
+      "screen": {
+        "attached": true,
+        "empty": false,
+        "height": 1974,
+        "never_attached": false,
+        "screenX": 0,
+        "screenY": 63,
+        "visible": true,
+        "width": 945
+      },
+      "pid": "17897",
+      "list": {
+        "page": "articles",
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "window": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "nav": [
+          {
+            "name": "文章",
+            "x": 6,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 91.5,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "订阅",
+            "x": 93.5,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 179,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "收藏",
+            "x": 181,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 266.5,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "设置",
+            "x": 268.5,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 354,
+            "bottom": 748,
+            "visible": true
+          }
+        ],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 167.52381896972656,
+          "w": 323.4285888671875,
+          "h": 23.797618865966797,
+          "right": 338.0952558517456,
+          "bottom": 191.32143783569336,
+          "visible": true
+        },
+        "firstParagraph": null,
+        "readerBack": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa"
+          },
+          {
+            "id": "#act-star"
+          },
+          {
+            "id": "#act-later"
+          },
+          {
+            "id": "#act-more"
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "reader": {
+        "page": "reader",
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "window": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "nav": [],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 114.76190948486328,
+          "w": 323.4285888671875,
+          "h": 23.797618865966797,
+          "right": 338.0952558517456,
+          "bottom": 138.55952835083008,
+          "visible": true
+        },
+        "firstParagraph": {
+          "x": 18,
+          "y": 187.50595092773438,
+          "w": 324,
+          "h": 21.696428298950195,
+          "right": 342,
+          "bottom": 209.20237922668457,
+          "visible": true
+        },
+        "readerBack": {
+          "x": 10,
+          "y": 8,
+          "w": 48,
+          "h": 48,
+          "right": 58,
+          "bottom": 56,
+          "visible": true
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa",
+            "x": 128.48809814453125,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 176.48809814453125,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-star",
+            "x": 182.48809814453125,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 230.48809814453125,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-later",
+            "x": 236.48809814453125,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 284.48809814453125,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-more",
+            "x": 290.48809814453125,
+            "y": 8,
+            "w": 51.511905670166016,
+            "h": 48,
+            "right": 342.00000381469727,
+            "bottom": 56,
+            "visible": true
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "titleTap": {
+        "x": 176.38096141815186,
+        "y": 179.42262840270996,
+        "w": 323.4285888671875,
+        "h": 23.797618865966797,
+        "hit": true,
+        "dpr": 2.625
+      },
+      "afterTitleTap": {
+        "page": "reader",
+        "active": "<body data-android=\"1\" data-mpage=\"reader\" data-list-kind=\"unread\">\n  <!-- 库不兼容（旧开发库/外来文件）时的降级界面：只读导出 OPML + 退出。\n       文案走 ui/i18n.js 的双语 key（data-i18n），与其余界面同",
+        "first": {
+          "x": 14.666666984558105,
+          "y": 114.76190948486328,
+          "width": 323.4285888671875,
+          "height": 23.797618865966797,
+          "top": 114.76190948486328,
+          "right": 338.0952558517456,
+          "bottom": 138.55952835083008,
+          "left": 14.666666984558105
+        }
+      },
+      "afterBack": {
+        "page": "articles",
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "window": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "nav": [
+          {
+            "name": "文章",
+            "x": 6,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 91.5,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "订阅",
+            "x": 93.5,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 179,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "收藏",
+            "x": 181,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 266.5,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "设置",
+            "x": 268.5,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 354,
+            "bottom": 748,
+            "visible": true
+          }
+        ],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 167.52381896972656,
+          "w": 323.4285888671875,
+          "h": 23.797618865966797,
+          "right": 338.0952558517456,
+          "bottom": 191.32143783569336,
+          "visible": true
+        },
+        "firstParagraph": {
+          "x": 18,
+          "y": 848.7440795898438,
+          "w": 314.0952453613281,
+          "h": 21.696428298950195,
+          "right": 332.0952453613281,
+          "bottom": 870.440507888794,
+          "visible": true
+        },
+        "readerBack": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa",
+            "x": 118.58333587646484,
+            "y": 669.2380981445312,
+            "w": 48,
+            "h": 48,
+            "right": 166.58333587646484,
+            "bottom": 717.2380981445312,
+            "visible": true
+          },
+          {
+            "id": "#act-star",
+            "x": 172.58334350585938,
+            "y": 669.2380981445312,
+            "w": 48,
+            "h": 48,
+            "right": 220.58334350585938,
+            "bottom": 717.2380981445312,
+            "visible": true
+          },
+          {
+            "id": "#act-later",
+            "x": 226.58334350585938,
+            "y": 669.2380981445312,
+            "w": 48,
+            "h": 48,
+            "right": 274.5833435058594,
+            "bottom": 717.2380981445312,
+            "visible": true
+          },
+          {
+            "id": "#act-more",
+            "x": 280.5833435058594,
+            "y": 669.2380981445312,
+            "w": 51.511905670166016,
+            "h": 48,
+            "right": 332.0952491760254,
+            "bottom": 717.2380981445312,
+            "visible": true
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "firstTitleFraction": 0.2227710358639981,
+      "firstParagraphFraction": 0.2493430198507106
+    },
+    {
+      "name": "412-threebutton-portrait",
+      "size": "1080x2400",
+      "nav": "threebutton",
+      "rotation": 0,
+      "actualRotation": "0",
+      "actualNav": "0",
+      "physical": "Physical size: 1080x2400",
+      "density": "Physical density: 420",
+      "screen": {
+        "attached": true,
+        "empty": false,
+        "height": 2211,
+        "never_attached": false,
+        "screenX": 0,
+        "screenY": 63,
+        "visible": true,
+        "width": 1080
+      },
+      "pid": "18125",
+      "list": {
+        "page": "articles",
+        "viewport": {
+          "w": 412.19049072265625,
+          "h": 843.047607421875
+        },
+        "window": {
+          "w": 412,
+          "h": 843
+        },
+        "dpr": 2.625,
+        "scrollWidth": 412,
+        "nav": [
+          {
+            "name": "文章",
+            "x": 6,
+            "y": 783.047607421875,
+            "w": 98.54762268066406,
+            "h": 56,
+            "right": 104.54762268066406,
+            "bottom": 839.047607421875,
+            "visible": true
+          },
+          {
+            "name": "订阅",
+            "x": 106.54762268066406,
+            "y": 783.047607421875,
+            "w": 98.54762268066406,
+            "h": 56,
+            "right": 205.09524536132812,
+            "bottom": 839.047607421875,
+            "visible": true
+          },
+          {
+            "name": "收藏",
+            "x": 207.09524536132812,
+            "y": 783.047607421875,
+            "w": 98.54762268066406,
+            "h": 56,
+            "right": 305.6428680419922,
+            "bottom": 839.047607421875,
+            "visible": true
+          },
+          {
+            "name": "设置",
+            "x": 307.6428527832031,
+            "y": 783.047607421875,
+            "w": 98.54762268066406,
+            "h": 56,
+            "right": 406.1904754638672,
+            "bottom": 839.047607421875,
+            "visible": true
+          }
+        ],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 167.52381896972656,
+          "w": 375.6190490722656,
+          "h": 23.797618865966797,
+          "right": 390.28571605682373,
+          "bottom": 191.32143783569336,
+          "visible": true
+        },
+        "firstParagraph": null,
+        "readerBack": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa"
+          },
+          {
+            "id": "#act-star"
+          },
+          {
+            "id": "#act-later"
+          },
+          {
+            "id": "#act-more"
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "reader": {
+        "page": "reader",
+        "viewport": {
+          "w": 412.19049072265625,
+          "h": 843.047607421875
+        },
+        "window": {
+          "w": 412,
+          "h": 843
+        },
+        "dpr": 2.625,
+        "scrollWidth": 412,
+        "nav": [],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 114.76190948486328,
+          "w": 375.6190490722656,
+          "h": 23.797618865966797,
+          "right": 390.28571605682373,
+          "bottom": 138.55952835083008,
+          "visible": true
+        },
+        "firstParagraph": {
+          "x": 18,
+          "y": 197.4107208251953,
+          "w": 376.19049072265625,
+          "h": 21.696428298950195,
+          "right": 394.19049072265625,
+          "bottom": 219.1071491241455,
+          "visible": true
+        },
+        "readerBack": {
+          "x": 10,
+          "y": 8,
+          "w": 48,
+          "h": 48,
+          "right": 58,
+          "bottom": 56,
+          "visible": true
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa",
+            "x": 180.67857360839844,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 228.67857360839844,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-star",
+            "x": 234.67857360839844,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 282.67857360839844,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-later",
+            "x": 288.6785888671875,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 336.6785888671875,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-more",
+            "x": 342.6785888671875,
+            "y": 8,
+            "w": 51.511905670166016,
+            "h": 48,
+            "right": 394.1904945373535,
+            "bottom": 56,
+            "visible": true
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "titleTap": {
+        "x": 202.47619152069092,
+        "y": 179.42262840270996,
+        "w": 375.6190490722656,
+        "h": 23.797618865966797,
+        "hit": true,
+        "dpr": 2.625
+      },
+      "afterTitleTap": {
+        "page": "reader",
+        "active": "<body data-android=\"1\" data-mpage=\"reader\" data-list-kind=\"unread\">\n  <!-- 库不兼容（旧开发库/外来文件）时的降级界面：只读导出 OPML + 退出。\n       文案走 ui/i18n.js 的双语 key（data-i18n），与其余界面同",
+        "first": {
+          "x": 14.666666984558105,
+          "y": 114.76190948486328,
+          "width": 375.6190490722656,
+          "height": 23.797618865966797,
+          "top": 114.76190948486328,
+          "right": 390.28571605682373,
+          "bottom": 138.55952835083008,
+          "left": 14.666666984558105
+        }
+      },
+      "afterBack": {
+        "page": "articles",
+        "viewport": {
+          "w": 412.19049072265625,
+          "h": 843.047607421875
+        },
+        "window": {
+          "w": 412,
+          "h": 843
+        },
+        "dpr": 2.625,
+        "scrollWidth": 412,
+        "nav": [
+          {
+            "name": "文章",
+            "x": 6,
+            "y": 783.047607421875,
+            "w": 98.54762268066406,
+            "h": 56,
+            "right": 104.54762268066406,
+            "bottom": 839.047607421875,
+            "visible": true
+          },
+          {
+            "name": "订阅",
+            "x": 106.54762268066406,
+            "y": 783.047607421875,
+            "w": 98.54762268066406,
+            "h": 56,
+            "right": 205.09524536132812,
+            "bottom": 839.047607421875,
+            "visible": true
+          },
+          {
+            "name": "收藏",
+            "x": 207.09524536132812,
+            "y": 783.047607421875,
+            "w": 98.54762268066406,
+            "h": 56,
+            "right": 305.6428680419922,
+            "bottom": 839.047607421875,
+            "visible": true
+          },
+          {
+            "name": "设置",
+            "x": 307.6428527832031,
+            "y": 783.047607421875,
+            "w": 98.54762268066406,
+            "h": 56,
+            "right": 406.1904754638672,
+            "bottom": 839.047607421875,
+            "visible": true
+          }
+        ],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 167.52381896972656,
+          "w": 375.6190490722656,
+          "h": 23.797618865966797,
+          "right": 390.28571605682373,
+          "bottom": 191.32143783569336,
+          "visible": true
+        },
+        "firstParagraph": {
+          "x": 18,
+          "y": 949.6964721679688,
+          "w": 366.2857360839844,
+          "h": 21.696428298950195,
+          "right": 384.2857360839844,
+          "bottom": 971.392900466919,
+          "visible": true
+        },
+        "readerBack": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa",
+            "x": 170.77381896972656,
+            "y": 760.2857055664062,
+            "w": 48,
+            "h": 48,
+            "right": 218.77381896972656,
+            "bottom": 808.2857055664062,
+            "visible": true
+          },
+          {
+            "id": "#act-star",
+            "x": 224.77381896972656,
+            "y": 760.2857055664062,
+            "w": 48,
+            "h": 48,
+            "right": 272.77381896972656,
+            "bottom": 808.2857055664062,
+            "visible": true
+          },
+          {
+            "id": "#act-later",
+            "x": 278.7738037109375,
+            "y": 760.2857055664062,
+            "w": 48,
+            "h": 48,
+            "right": 326.7738037109375,
+            "bottom": 808.2857055664062,
+            "visible": true
+          },
+          {
+            "id": "#act-more",
+            "x": 332.7738037109375,
+            "y": 760.2857055664062,
+            "w": 51.511905670166016,
+            "h": 48,
+            "right": 384.2857093811035,
+            "bottom": 808.2857055664062,
+            "visible": true
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "firstTitleFraction": 0.19871216938985375,
+      "firstParagraphFraction": 0.23416319444746103
+    },
+    {
+      "name": "360-gesture-landscape",
+      "size": "945x2100",
+      "nav": "gestural",
+      "rotation": 1,
+      "actualRotation": "1",
+      "actualNav": "2",
+      "physical": "Physical size: 1080x2400\nOverride size: 945x2100",
+      "density": "Physical density: 420",
+      "screen": {
+        "attached": true,
+        "empty": true,
+        "never_attached": false,
+        "screenX": 0,
+        "screenY": 0,
+        "visible": true
+      },
+      "pid": "18349",
+      "list": {
+        "page": "articles",
+        "viewport": {
+          "w": 800,
+          "h": 312
+        },
+        "window": {
+          "w": 800,
+          "h": 312
+        },
+        "dpr": 2.625,
+        "scrollWidth": 800,
+        "nav": [
+          {
+            "name": "文章",
+            "x": 6,
+            "y": 252,
+            "w": 195.5,
+            "h": 56,
+            "right": 201.5,
+            "bottom": 308,
+            "visible": true
+          },
+          {
+            "name": "订阅",
+            "x": 203.5,
+            "y": 252,
+            "w": 195.5,
+            "h": 56,
+            "right": 399,
+            "bottom": 308,
+            "visible": true
+          },
+          {
+            "name": "收藏",
+            "x": 401,
+            "y": 252,
+            "w": 195.5,
+            "h": 56,
+            "right": 596.5,
+            "bottom": 308,
+            "visible": true
+          },
+          {
+            "name": "设置",
+            "x": 598.5,
+            "y": 252,
+            "w": 195.5,
+            "h": 56,
+            "right": 794,
+            "bottom": 308,
+            "visible": true
+          }
+        ],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 167.52381896972656,
+          "w": 763.4285888671875,
+          "h": 23.797618865966797,
+          "right": 778.0952558517456,
+          "bottom": 191.32143783569336,
+          "visible": true
+        },
+        "firstParagraph": null,
+        "readerBack": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa"
+          },
+          {
+            "id": "#act-star"
+          },
+          {
+            "id": "#act-later"
+          },
+          {
+            "id": "#act-more"
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "reader": {
+        "page": "reader",
+        "viewport": {
+          "w": 800,
+          "h": 312
+        },
+        "window": {
+          "w": 800,
+          "h": 312
+        },
+        "dpr": 2.625,
+        "scrollWidth": 800,
+        "nav": [],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 113.23809814453125,
+          "w": 763.4285888671875,
+          "h": 23.797618865966797,
+          "right": 778.0952558517456,
+          "bottom": 137.03571701049805,
+          "visible": true
+        },
+        "firstParagraph": {
+          "x": 18,
+          "y": 187.50595092773438,
+          "w": 680,
+          "h": 21.696428298950195,
+          "right": 698,
+          "bottom": 209.20237922668457,
+          "visible": true
+        },
+        "readerBack": {
+          "x": 10,
+          "y": 8,
+          "w": 48,
+          "h": 48,
+          "right": 58,
+          "bottom": 56,
+          "visible": true
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa",
+            "x": 484.48809814453125,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 532.4880981445312,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-star",
+            "x": 538.4880981445312,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 586.4880981445312,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-later",
+            "x": 592.4880981445312,
+            "y": 8,
+            "w": 48,
+            "h": 48,
+            "right": 640.4880981445312,
+            "bottom": 56,
+            "visible": true
+          },
+          {
+            "id": "#act-more",
+            "x": 646.4880981445312,
+            "y": 8,
+            "w": 51.511905670166016,
+            "h": 48,
+            "right": 698.0000038146973,
+            "bottom": 56,
+            "visible": true
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "titleTap": {
+        "x": 396.38096141815186,
+        "y": 156.1845302581787,
+        "w": 763.4285888671875,
+        "h": 23.797618865966797,
+        "hit": true,
+        "dpr": 2.625
+      },
+      "afterTitleTap": {
+        "page": "reader",
+        "active": "<body data-android=\"1\" data-mpage=\"reader\" data-list-kind=\"unread\">\n  <!-- 库不兼容（旧开发库/外来文件）时的降级界面：只读导出 OPML + 退出。\n       文案走 ui/i18n.js 的双语 key（data-i18n），与其余界面同",
+        "first": {
+          "x": 14.666666984558105,
+          "y": 113.23809814453125,
+          "width": 763.4285888671875,
+          "height": 23.797618865966797,
+          "top": 113.23809814453125,
+          "right": 778.0952558517456,
+          "bottom": 137.03571701049805,
+          "left": 14.666666984558105
+        }
+      },
+      "afterBack": {
+        "page": "articles",
+        "viewport": {
+          "w": 800,
+          "h": 312
+        },
+        "window": {
+          "w": 800,
+          "h": 312
+        },
+        "dpr": 2.625,
+        "scrollWidth": 800,
+        "nav": [
+          {
+            "name": "文章",
+            "x": 6,
+            "y": 243.61904907226562,
+            "w": 195.5,
+            "h": 56,
+            "right": 201.5,
+            "bottom": 299.6190490722656,
+            "visible": true
+          },
+          {
+            "name": "订阅",
+            "x": 203.5,
+            "y": 243.61904907226562,
+            "w": 195.5,
+            "h": 56,
+            "right": 399,
+            "bottom": 299.6190490722656,
+            "visible": true
+          },
+          {
+            "name": "收藏",
+            "x": 401,
+            "y": 243.61904907226562,
+            "w": 195.5,
+            "h": 56,
+            "right": 596.5,
+            "bottom": 299.6190490722656,
+            "visible": true
+          },
+          {
+            "name": "设置",
+            "x": 598.5,
+            "y": 243.61904907226562,
+            "w": 195.5,
+            "h": 56,
+            "right": 794,
+            "bottom": 299.6190490722656,
+            "visible": true
+          }
+        ],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 157.61904907226562,
+          "w": 763.4285888671875,
+          "h": 23.797618865966797,
+          "right": 778.0952558517456,
+          "bottom": 181.41666793823242,
+          "visible": true
+        },
+        "firstParagraph": {
+          "x": 18,
+          "y": 400.36309814453125,
+          "w": 680,
+          "h": 21.696428298950195,
+          "right": 698,
+          "bottom": 422.05952644348145,
+          "visible": true
+        },
+        "readerBack": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa",
+            "x": 484.48809814453125,
+            "y": 220.85714721679688,
+            "w": 48,
+            "h": 48,
+            "right": 532.4880981445312,
+            "bottom": 268.8571472167969,
+            "visible": true
+          },
+          {
+            "id": "#act-star",
+            "x": 538.4880981445312,
+            "y": 220.85714721679688,
+            "w": 48,
+            "h": 48,
+            "right": 586.4880981445312,
+            "bottom": 268.8571472167969,
+            "visible": true
+          },
+          {
+            "id": "#act-later",
+            "x": 592.4880981445312,
+            "y": 220.85714721679688,
+            "w": 48,
+            "h": 48,
+            "right": 640.4880981445312,
+            "bottom": 268.8571472167969,
+            "visible": true
+          },
+          {
+            "id": "#act-more",
+            "x": 646.4880981445312,
+            "y": 220.85714721679688,
+            "w": 51.511905670166016,
+            "h": 48,
+            "right": 698.0000038146973,
+            "bottom": 268.8571472167969,
+            "visible": true
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "firstTitleFraction": 0.536935317210662,
+      "firstParagraphFraction": 0.6009806119478666
+    },
+    {
+      "name": "360-gesture-ime-back",
+      "before": {
+        "page": "articles",
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "window": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "nav": [
+          {
+            "name": "文章",
+            "x": 6,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 91.5,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "订阅",
+            "x": 93.5,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 179,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "收藏",
+            "x": 181,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 266.5,
+            "bottom": 748,
+            "visible": true
+          },
+          {
+            "name": "设置",
+            "x": 268.5,
+            "y": 692,
+            "w": 85.5,
+            "h": 56,
+            "right": 354,
+            "bottom": 748,
+            "visible": true
+          }
+        ],
+        "firstTitle": {
+          "x": 14.666666984558105,
+          "y": 167.52381896972656,
+          "w": 323.4285888671875,
+          "h": 71.39286041259766,
+          "right": 338.0952558517456,
+          "bottom": 238.91667938232422,
+          "visible": true
+        },
+        "firstParagraph": null,
+        "readerBack": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "readerActions": [
+          {
+            "id": "#act-aa"
+          },
+          {
+            "id": "#act-star"
+          },
+          {
+            "id": "#act-later"
+          },
+          {
+            "id": "#act-more"
+          }
+        ],
+        "settings": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "mcp": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        },
+        "windowMin": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false
+        }
+      },
+      "ime": {
+        "viewport": {
+          "w": 360,
+          "h": 477.3333435058594
+        },
+        "active": "search",
+        "scrollWidth": 360,
+        "nav": [
+          {
+            "y": 417.3333435058594,
+            "bottom": 473.3333435058594,
+            "w": 85.5,
+            "h": 56
+          },
+          {
+            "y": 417.3333435058594,
+            "bottom": 473.3333435058594,
+            "w": 85.5,
+            "h": 56
+          },
+          {
+            "y": 417.3333435058594,
+            "bottom": 473.3333435058594,
+            "w": 85.5,
+            "h": 56
+          },
+          {
+            "y": 417.3333435058594,
+            "bottom": 473.3333435058594,
+            "w": 85.5,
+            "h": 56
+          }
+        ]
+      },
+      "afterImeBack": {
+        "h": 752,
+        "active": "search",
+        "page": "articles"
+      }
+    }
+  ],
+  "passed": true
+}

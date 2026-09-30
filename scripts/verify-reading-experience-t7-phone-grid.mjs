@@ -45,16 +45,22 @@ async function scenario(name,size,nav,rotation){
     assert.equal(list.nav.length,4);
     assert(list.nav.every(n=>n.w>=48&&n.h>=48&&n.x>=0&&n.right<=list.viewport.w+1&&n.bottom<=list.viewport.h+1),JSON.stringify(list.nav));
     assert(!list.windowMin.visible&&!list.mcp.visible);
-    await p.tap('#entries li[data-id] .title');await p.until(`document.body.dataset.mpage==='reader'`);
+    const titleTap=await p.tap('#entries li[data-id] .title');
+    const afterTitleTap=await p.js(`({page:document.body.dataset.mpage,active:document.activeElement?.outerHTML?.slice(0,160),first:document.querySelector('#entries li[data-id] .title')?.getBoundingClientRect().toJSON()})`);
+    await p.until(`document.body.dataset.mpage==='reader'`);
     const reader=await p.js(geometry());shot(`${name}-reader`);
     assert(reader.scrollWidth<=reader.viewport.w+1,JSON.stringify(reader));
     assert(reader.readerBack?.visible&&reader.readerBack.w>=48&&reader.readerBack.h>=48);
     assert(reader.readerActions.every(n=>n.visible&&n.w>=48&&n.h>=48&&n.right<=reader.viewport.w+1),JSON.stringify(reader.readerActions));
+    if(name==='360-gesture-portrait'){
+      assert(list.firstTitle.y/list.viewport.h<=.25,JSON.stringify(list.firstTitle));
+      assert(reader.firstParagraph.y/reader.viewport.h<=.4,JSON.stringify(reader.firstParagraph));
+    }
     adb('shell','input','keyevent','KEYCODE_BACK');await p.until(`document.body.dataset.mpage==='articles'`);
     const afterBack=await p.js(geometry());
     const orientation=say('shell','dumpsys','window').match(/mRotation=(\d+)/)?.[1]||null;
     const actualNav=say('shell','settings','get','secure','navigation_mode');
-    const result={name,size,nav,rotation,actualRotation:orientation,actualNav,physical:say('shell','wm','size'),density:say('shell','wm','density'),screen:JSON.parse(p.target.description),pid:p.pid,list,reader,afterBack};
+    const result={name,size,nav,rotation,actualRotation:orientation,actualNav,physical:say('shell','wm','size'),density:say('shell','wm','density'),screen:JSON.parse(p.target.description),pid:p.pid,list,reader,titleTap,afterTitleTap,afterBack,firstTitleFraction:list.firstTitle.y/list.viewport.h,firstParagraphFraction:reader.firstParagraph.y/reader.viewport.h};
     results.push(result);
     if(rotation===1) assert.equal(orientation,'1',JSON.stringify(result));
     if(nav==='threebutton') assert.equal(actualNav,'0');else assert.equal(actualNav,'2');
