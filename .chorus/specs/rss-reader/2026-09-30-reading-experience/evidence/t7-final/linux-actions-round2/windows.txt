@@ -1,0 +1,37 @@
+
+xwininfo: Window id: 0x2cf (the root window) (has no name)
+
+  Root window id: 0x2cf (the root window) (has no name)
+  Parent window id: 0x0 (none)
+     28 children:
+     0x1c00008 "RustRss": ("rustrss-desktop" "Rustrss-desktop")  1240x820+0+0  +0+0
+        1 child:
+        0x1c00009 (has no name): ()  1x1+-1+-1  +-1+-1
+     0x1c0000e (has no name): ()  1x1+-1+-1  +-1+-1
+     0x20005e "plasmashell": ("plasmashell" "plasmashell")  572x412+1028+534  +1028+534
+     0x1a00015 (has no name): ()  1x1+0+0  +0+0
+     0x20005c "Clipboard Popup": ("plasmashell" "plasmashell")  160x160+0+0  +0+0
+     0x1a00014 "Welcome Center": ()  1x1+0+0  +0+0
+     0x1a00012 "Welcome Center": ("plasma-welcome" "plasma-welcome")  648x576+0+0  +0+0
+     0x2400005 "Qt Selection Owner for kdeconnectd": ()  3x3+0+0  +0+0
+     0x20005a "plasmashell": ("plasmashell" "plasmashell")  444x444+1156+502  +1156+502
+     0x200058 "plasmashell": ("plasmashell" "plasmashell")  160x160+0+0  +0+0
+     0x1a00005 "Qt Selection Owner for plasma-welcome": ()  3x3+0+0  +0+0
+     0x200046 "plasmashell": ("plasmashell" "plasmashell")  663x525+0+421  +0+421
+     0x2000000 (has no name): ()  1x1+0+0  +0+0
+     0x1c00001 "rustrss-desktop": ("rustrss-desktop" "Rustrss-desktop")  10x10+10+10  +10+10
+     0x20002e "plasmashell": ("plasmashell" "plasmashell")  1600x54+0+946  +0+946
+     0x1800005 "Qt Selection Owner for kded6": ()  3x3+0+0  +0+0
+     0x1400006 (has no name): ()  1x1+0+0  +0+0
+     0x1400005 "Qt Selection Owner for kscreen_backend_launcher": ()  3x3+0+0  +0+0
+     0x200019 (has no name): ()  1x1+0+0  +0+0
+     0x200017 "plasmashell": ("plasmashell" "plasmashell")  160x160+0+0  +0+0
+     0x200015 "plasmashell": ()  1x1+0+0  +0+0
+     0x200013 "Desktop @ QRect(0,0 1600x1000) ": ("plasmashell" "plasmashell")  1600x1000+0+0  +0+0
+     0x1200005 "Qt Selection Owner for ksecretd": ()  3x3+0+0  +0+0
+     0xc00004 "Qt Selection Owner for kglobalaccel5": ()  3x3+0+0  +0+0
+     0xa00005 "Qt Selection Owner for kactivitymanagerd": ()  3x3+0+0  +0+0
+     0x800005 "Qt Selection Owner for xdg-desktop-portal-kde": ()  3x3+0+0  +0+0
+     0x400001 "xdg-desktop-portal-gtk": ("xdg-desktop-portal-gtk" "Xdg-desktop-portal-gtk")  10x10+10+10  +10+10
+     0x200005 "Qt Selection Owner for plasmashell": ()  3x3+0+0  +0+0
+

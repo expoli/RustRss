@@ -1,0 +1,707 @@
+{
+  "source_head": "c9f6158b0b7bf4e51d23ccf5e19dcaa0caa6240b",
+  "binary_source_head": "90f4275",
+  "binary_sha256": "4150b083de72077a4eda3706f16e9515f7a19b6f7193064856e5b3683031a353",
+  "fixture_sha256": "1020c5841cede0d82f4a6295b0d36b093f14da4be52459ec204b3cd64a0bfbbb",
+  "display": ":100",
+  "private_root": "/tmp/rustrss-t7-linux-r2-qwi49c",
+  "checks": [
+    {
+      "id": "M08.sort.tag-native-drag",
+      "status": "pass",
+      "data": {
+        "before": [
+          [
+            1,
+            "Alpha",
+            0,
+            1
+          ],
+          [
+            2,
+            "Beta",
+            0,
+            2
+          ],
+          [
+            3,
+            "Gamma",
+            0,
+            3
+          ]
+        ],
+        "after": [
+          [
+            2,
+            "Beta",
+            0,
+            0
+          ],
+          [
+            1,
+            "Alpha",
+            0,
+            1
+          ],
+          [
+            3,
+            "Gamma",
+            0,
+            2
+          ]
+        ],
+        "events": [
+          {
+            "name": "dragstart",
+            "trusted": true,
+            "target": "1",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": "dragging"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "dragging drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "dragging drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "dragging drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "dragging drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "dragging drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-after"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "drop-after"
+          },
+          {
+            "name": "drop",
+            "trusted": true,
+            "target": "2",
+            "prevented": true,
+            "dropEffect": "none",
+            "classes": ""
+          },
+          {
+            "name": "dragend",
+            "trusted": true,
+            "target": "1",
+            "prevented": false,
+            "dropEffect": "move",
+            "classes": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "M08.sort.folder-applicability",
+      "status": "pass",
+      "data": {
+        "folder": [
+          {
+            "id": "1",
+            "draggable": false
+          },
+          {
+            "id": "2",
+            "draggable": false
+          }
+        ],
+        "feed": [
+          {
+            "id": "2",
+            "draggable": true
+          },
+          {
+            "id": "1",
+            "draggable": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "M08.sort.feed-native-drag",
+      "status": "pass",
+      "data": {
+        "before": [
+          [
+            1,
+            null,
+            null
+          ],
+          [
+            2,
+            null,
+            null
+          ],
+          [
+            3,
+            null,
+            null
+          ]
+        ],
+        "after": [
+          [
+            1,
+            null,
+            1
+          ],
+          [
+            2,
+            null,
+            0
+          ],
+          [
+            3,
+            null,
+            2
+          ]
+        ],
+        "points": [
+          {
+            "id": "2",
+            "x": 40,
+            "y": 469.90625,
+            "h": 52
+          },
+          {
+            "id": "1",
+            "x": 40,
+            "y": 521.90625,
+            "h": 52
+          }
+        ],
+        "events": [
+          {
+            "name": "dragstart",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "none",
+            "classes": " folder-feed"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "dragover",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "move",
+            "classes": "folder-feed drop-before"
+          },
+          {
+            "name": "drop",
+            "trusted": true,
+            "target": "1",
+            "prevented": true,
+            "dropEffect": "none",
+            "classes": "folder-feed"
+          },
+          {
+            "name": "dragend",
+            "trusted": true,
+            "target": "2",
+            "prevented": false,
+            "dropEffect": "move",
+            "classes": " folder-feed"
+          }
+        ]
+      }
+    },
+    {
+      "id": "M18.tray-registration",
+      "status": "pass",
+      "data": {
+        "names": [
+          "org.kde.StatusNotifierHost-3152978",
+          "org.kde.StatusNotifierWatcher"
+        ],
+        "plasmashell_alive": true,
+        "watcher_at_launch": true,
+        "registered_items": "(<[':1.45/org/ayatana/NotificationItem/tray_icon_tray_app_main_tray']>,)\n",
+        "error": ""
+      }
+    },
+    {
+      "id": "M16.key-status-save-clear",
+      "status": "blocked",
+      "data": {
+        "private_bus": true,
+        "initial": {
+          "ok": true,
+          "value": {
+            "provider": "ollama",
+            "model": "",
+            "base_url": "",
+            "translate_target": "中文",
+            "has_key": false,
+            "key_source": {
+              "kind": "unavailable",
+              "error": "Couldn't access platform secure storage: Secret Service: no result found"
+            },
+            "default_base_url": "http://127.0.0.1:11434",
+            "confirm_before_send": true,
+            "max_output_tokens": 4096,
+            "reasoning_effort": ""
+          }
+        },
+        "save": {
+          "ok": false,
+          "error": "写入凭据库失败：Couldn't access platform secure storage: Secret Service: no result found"
+        },
+        "status": {
+          "ok": true,
+          "value": {
+            "provider": "openai",
+            "model": "gpt-test",
+            "base_url": "http://127.0.0.1:1/v1",
+            "translate_target": "zh-CN",
+            "has_key": false,
+            "key_source": {
+              "kind": "unavailable",
+              "error": "Couldn't access platform secure storage: Secret Service: no result found"
+            },
+            "default_base_url": "https://api.openai.com/v1",
+            "confirm_before_send": true,
+            "max_output_tokens": 256,
+            "reasoning_effort": ""
+          }
+        },
+        "clear": {
+          "ok": false,
+          "error": "清除凭据失败：Couldn't access platform secure storage: Secret Service: no result found"
+        },
+        "cleared": {
+          "ok": true,
+          "value": {
+            "provider": "openai",
+            "model": "gpt-test",
+            "base_url": "http://127.0.0.1:1/v1",
+            "translate_target": "zh-CN",
+            "has_key": false,
+            "key_source": {
+              "kind": "unavailable",
+              "error": "Couldn't access platform secure storage: Secret Service: no result found"
+            },
+            "default_base_url": "https://api.openai.com/v1",
+            "confirm_before_send": true,
+            "max_output_tokens": 256,
+            "reasoning_effort": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "M16.key-not-in-sqlite",
+      "status": "pass",
+      "data": {
+        "matching_setting_rows": 0
+      }
+    },
+    {
+      "id": "M18.log-level-lines",
+      "status": "pass",
+      "data": {
+        "info_scope": {
+          "ok": true,
+          "value": 10
+        },
+        "debug_scope": {
+          "ok": true,
+          "value": 10
+        },
+        "info_debug_lines": [],
+        "debug_debug_lines": [
+          "2026-10-01T02:44:11.140+08:00 DEBUG rustrss_desktop_lib::commands: [rustrss] list_scope_total feed#1: 0ms n=10"
+        ]
+      }
+    },
+    {
+      "id": "M16.test-failure",
+      "status": "pass",
+      "data": {
+        "info_result": {
+          "ok": false,
+          "error": "读取凭据库失败：Couldn't access platform secure storage: Secret Service: no result found"
+        },
+        "debug_result": {
+          "ok": false,
+          "error": "读取凭据库失败：Couldn't access platform secure storage: Secret Service: no result found"
+        }
+      }
+    },
+    {
+      "id": "M18.log-level-store",
+      "status": "pass",
+      "data": {
+        "row": [
+          "debug"
+        ]
+      }
+    },
+    {
+      "id": "M18.external-and-log-folder",
+      "status": "pass",
+      "data": {
+        "entry_id": 1,
+        "launches": [
+          {
+            "argv": [
+              "http://10.0.2.2:18080/missing"
+            ],
+            "display": ":100",
+            "home": "/tmp/rustrss-t7-linux-r2-qwi49c/home"
+          },
+          {
+            "argv": [
+              "https://github.com/expoli/RustRss"
+            ],
+            "display": ":100",
+            "home": "/tmp/rustrss-t7-linux-r2-qwi49c/home"
+          },
+          {
+            "argv": [
+              "/tmp/rustrss-t7-linux-r2-qwi49c/data/rustrss/logs"
+            ],
+            "display": ":100",
+            "home": "/tmp/rustrss-t7-linux-r2-qwi49c/home"
+          }
+        ],
+        "logs_dir_exists": true,
+        "logs_call": {
+          "ok": true,
+          "value": null
+        },
+        "invalid_scheme": {
+          "ok": false,
+          "error": "只允许打开 http/https 链接，收到: file:///tmp/forbidden"
+        }
+      }
+    },
+    {
+      "id": "M18.tray-hide-restore",
+      "status": "pass",
+      "data": {
+        "item": ":1.45/org/ayatana/NotificationItem/tray_icon_tray_app_main_tray",
+        "menu": "/org/ayatana/NotificationItem/tray_icon_tray_app_main_tray/Menu",
+        "layout": "(uint32 2, (0, {'children-display': <'submenu'>}, [<(2, {'label': <'Show/Hide Window'>}, @av [])>, <(3, {'label': <'Quit'>}, @av [])>]))\n",
+        "setting": "tray",
+        "close": {
+          "ok": true,
+          "value": null
+        },
+        "process_after_hide": null,
+        "hidden": "IsUnMapped",
+        "toggle_returncode": 0,
+        "toggle_stdout": "",
+        "toggle_stderr": "",
+        "restored": "IsViewable"
+      }
+    },
+    {
+      "id": "M18.exit",
+      "status": "pass",
+      "data": {
+        "setting": "exit",
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "M16.test-local-failure",
+      "status": "pass",
+      "data": {
+        "key_source": {
+          "kind": "env",
+          "name": "RUSTSS_AI_KEY"
+        },
+        "result": {
+          "ok": false,
+          "error": "网络请求失败: error sending request for url (http://127.0.0.1:1/v1/chat/completions)"
+        },
+        "endpoint": "http://127.0.0.1:1/v1"
+      }
+    }
+  ],
+  "blocked": [
+    "M16.key-status-save-clear"
+  ],
+  "limits": [
+    "Xvfb has no window manager; plasmashell provides a private StatusNotifier host, but desktop panel gesture/visual appearance is outside this probe.",
+    "xdg-open is an isolated capture executable: launch argv and directory existence are verified, not a graphical browser/file manager."
+  ],
+  "status_notifier_watcher_at_launch": true,
+  "close_inspector_error": "ConnectionClosedError(None, None, None)",
+  "passed": false
+}

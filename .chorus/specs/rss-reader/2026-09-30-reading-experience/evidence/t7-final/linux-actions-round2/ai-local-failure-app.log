@@ -1,0 +1,38 @@
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+
+** (rustrss-desktop:3154424): WARNING **: 02:44:14.162: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+2026-10-01T02:44:14.171+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /tmp/rustrss-t7-linux-r2-qwi49c/data/rustrss/logs/rustrss-20261001-024414.log
+2026-10-01T02:44:14.204+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /tmp/rustrss-t7-linux-r2-qwi49c/fixture.sqlite
+2026-10-01T02:44:14.204+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: DEBUG（设置 log.level="debug"）
+
+(rustrss-desktop:3154424): libayatana-appindicator-WARNING **: 02:44:14.205: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+2026-10-01T02:44:14.319+08:00 INFO  ui: [ui] inline script ran
+2026-10-01T02:44:14.457+08:00 INFO  ui: [ui] app.js start
+2026-10-01T02:44:14.509+08:00 INFO  ui: [ui] i18n selftest ok (keys=569)
+2026-10-01T02:44:14.510+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-10-01T02:44:14.511+08:00 INFO  ui: [ui] menu render selftest FAILED: checked 条目未打勾
+2026-10-01T02:44:14.512+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-10-01T02:44:14.512+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-10-01T02:44:14.657+08:00 INFO  ui: [ui] renderSidebar feeds=3 3ms
+2026-10-01T02:44:14.776+08:00 INFO  ui: [ui] renderList rows=14 withTags=0 13ms
+2026-10-01T02:44:14.776+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=14 loaded=14 total=14 totalKind=unread header=14/14 exhausted=true head=21,12,3,23,14
+2026-10-01T02:44:14.776+08:00 INFO  ui: [ui] loaded feeds=3 entries=30 unread=14 starred=14 markReadOnNavigate=false refreshInterval=off refreshOnStart=false notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=14px line=1.55 logLevel=debug ai=openai/gpt-test hasKey=true mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-10-01T02:44:14.780+08:00 INFO  ui: [ui] viewport 0x0 dpr=1
+2026-10-01T02:44:14.780+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=light bgPanel=#ffffff minContrast=3.07 ratios=3.91/3.58/3.16/3.07/5.21/5.18/4.12/4.83)
+2026-10-01T02:44:14.831+08:00 INFO  ui: [ui] tags:rows=3 collapsed=0 rects=Beta=0,291,139,52|Alpha=0,343,139,52|Gamma=0,395,139,52
+2026-10-01T02:44:14.854+08:00 INFO  ui: [ui] viewport 1240x820 dpr=1
+2026-10-01T02:44:14.867+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.868+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.868+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.868+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.868+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.868+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.868+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.868+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.869+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.869+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.869+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.869+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.879+08:00 INFO  ui: [ui] js error: undefined @ undefined:undefined
+2026-10-01T02:44:14.892+08:00 DEBUG rustrss_desktop_lib::commands: [rustrss] AI 连通性测试: 失败 耗时=0ms

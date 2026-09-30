@@ -1,0 +1,13 @@
+qt.dbus.integration: QDBusConnection: name 'org.kde.kglobalaccel' had owner '' but we thought it was ':1.19'
+kde.plasmashell: Did not find a valid screen to place a new panel. QDBusError("org.freedesktop.DBus.Error.ServiceUnknown", "The name org.kde.KWin was not provided by any .service files")
+kde.plasmashell: requesting unexisting screen geometry -1
+kf.package: Could not find required file "mainscript" for package "/usr/share/plasma/plasmoids/org.kde.plasma.icontasks/" should be QList("ui/main.qml")
+kde.plasmashell: Activity added twice "39a67531-70ae-4aa5-8bb4-18a25908baf3"
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Connection already associated with an application ID")
+kpipewire_logging: error: "Failed to connect to PipeWire" 0
+received error while creating the stream "Failed to connect to PipeWire" Media monitor will not work.
+org.kde.plasma.libtaskmanager: Failed to determine whether virtual desktop navigation wrapping is enabled:  "The name org.kde.KWin was not provided by any .service files"
+kpipewire_logging: error: "Failed to connect to PipeWire" 0
+received error while creating the stream "Failed to connect to PipeWire" Media monitor will not work.
+kpipewire_logging: error: "Failed to connect to PipeWire" 0
+received error while creating the stream "Failed to connect to PipeWire" Media monitor will not work.

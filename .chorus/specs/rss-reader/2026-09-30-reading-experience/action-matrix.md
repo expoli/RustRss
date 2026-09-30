@@ -51,7 +51,7 @@
 | M08.rename | 重命名标签 | 右键 → 行更多/右键 | 双端 | 保存/取消并回读 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M08.color | 标签颜色/默认色 | 右键 → 面板内选择页/桌面级联 | 双端 | 当前值、恢复默认；回读 | T2/T6 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M08.pin | 置顶/取消置顶 | 右键 → 行更多/右键 | 双端 | 顺序变化；切换并回读 | T2 | 通过：[T2 设备与重启证据](evidence/t2-menu/record.md) |
-| M08.sort | 标签上移/下移、拖拽 | 拖拽/右键 → 更多排序/桌面拖拽 | 双端 | 无触屏拖拽依赖；移动并回读 | T2/T6 | 手机菜单排序沿用 [T2](evidence/t2-menu/record.md)；Linux 最终产物可信指针拖拽标签/源并回读排序；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
+| M08.sort | 标签上移/下移、拖拽 | 拖拽/右键 → 更多排序/桌面拖拽 | 双端 | 无触屏拖拽依赖；移动并回读 | T2/T6 | 手机菜单排序沿用 [T2](evidence/t2-menu/record.md)；Linux 最终产物可信指针拖拽标签/源并回读排序；[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
 | M08.delete | 删除标签 | 右键 → 更多危险组 | 双端 | 影响数量与确认；取消/确认及焦点去向 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M09.search | 搜索标签 | 标签选择器/t → 阅读更多/选择器 | 双端 | 键入中英；结果筛选 | T2/T4 | 通过：[T2 中英搜索与选择证据](evidence/t2-menu/record.md)、[T4 Android](evidence/t4-reader/record.md) |
 | M09.create | 新建标签 | 标签选择器 → 阅读更多/选择器 | 双端 | 新建并附加；回读 | T2/T4 | Linux 最终产物新建标签落库；[T7 Linux 同进程 18 项](evidence/t7-final/desktop-journey-round2/journey-results.json) |
@@ -120,10 +120,10 @@
 | M16.language | 目标语言 | AI 设置 → 供应商区 | 双端 | 设置并回读 | T5 | 通过：目标语言保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
 | M16.max-tokens | 最大 tokens | AI 设置 → 高级区 | 双端 | 真实值可见可编辑；保存 | T5 | 通过：1024 保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
 | M16.reasoning | reasoning effort | AI 设置 → 高级区 | 双端 | 真实值可见可编辑；保存 | T5 | 通过：high 保存回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
-| M16.key-status | 密钥状态 | AI 设置 → 密钥区 | 双端 | 不显明文；查看/重启 | T5 | 部分：Android 最终 APK Keystore 状态回读；Linux 私有 Secret Service 在 CreateCollection 需交互解锁，写入被拒；[T7 Android 设置回归](evidence/t7-final/android-settings-followup-round2/android-followup-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
-| M16.key-save | 保存密钥 | AI 设置 → 密钥区 | 双端 | 安全存储；保存/重启 | T5 | 部分：Android 最终 APK 合成密钥保存回读；Linux 私有 Secret Service 在 CreateCollection 需交互解锁，未通过；[T7 Android 设置回归](evidence/t7-final/android-settings-followup-round2/android-followup-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
-| M16.key-clear | 清除密钥 | AI 设置 → 密钥区 | 双端 | 清除后不可用；执行/重启 | T5 | 部分：Android 最终 APK Keystore 清除回读；Linux 私有 Secret Service 在 CreateCollection 需交互解锁，未通过；[T7 Android 设置回归](evidence/t7-final/android-settings-followup-round2/android-followup-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
-| M16.test | 测试连接 | AI 设置 → 供应商区 | 双端 | 成功/失败反馈；点击 | T5 | Android 最终 APK 本地成功；Linux 最终二进制隔离失败端点返回明确网络错误；[T7 Android 设置必验](evidence/t7-final/android-settings-required-round2/android-required-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
+| M16.key-status | 密钥状态 | AI 设置 → 密钥区 | 双端 | 不显明文；查看/重启 | T5 | 部分：Android 最终 APK Keystore 状态回读；Linux 私有 Secret Service 在 CreateCollection 需交互解锁，写入被拒；[T7 Android 设置回归](evidence/t7-final/android-settings-followup-round2/android-followup-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
+| M16.key-save | 保存密钥 | AI 设置 → 密钥区 | 双端 | 安全存储；保存/重启 | T5 | 部分：Android 最终 APK 合成密钥保存回读；Linux 私有 Secret Service 在 CreateCollection 需交互解锁，未通过；[T7 Android 设置回归](evidence/t7-final/android-settings-followup-round2/android-followup-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
+| M16.key-clear | 清除密钥 | AI 设置 → 密钥区 | 双端 | 清除后不可用；执行/重启 | T5 | 部分：Android 最终 APK Keystore 清除回读；Linux 私有 Secret Service 在 CreateCollection 需交互解锁，未通过；[T7 Android 设置回归](evidence/t7-final/android-settings-followup-round2/android-followup-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
+| M16.test | 测试连接 | AI 设置 → 供应商区 | 双端 | 成功/失败反馈；点击 | T5 | Android 最终 APK 本地成功；Linux 最终二进制隔离失败端点返回明确网络错误；[T7 Android 设置必验](evidence/t7-final/android-settings-required-round2/android-required-results.json)、[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
 | M16.confirm | 发送确认开关 | AI 设置 → 高级区 | 双端 | 不改变默认；切换 | T5 | 通过：确认开关保存并恢复回读；[Android 原生副作用](evidence/t5-settings/android-required-results.json) |
 | M17.path | 数据目录说明 | 数据设置 → 原位 | 双端 | 路径可见；打开 | T5 | 通过：Android/Linux 数据目录可见；[Android](evidence/t5-settings/android-results.json)、[Linux 原生](evidence/t5-settings/desktop-results.json) |
 | M17.opml-import | OPML 导入 | 数据设置 → 原位 | 双端 | Android SAF/MIME；导入隔离文件 | T5 | 通过：Android SAF 导入合成源 ID 2；[Android SAF](evidence/t5-settings/android-saf-results.json) |
@@ -134,11 +134,11 @@
 | M18.about | 关于 | 通用设置 → 原位 | 双端 | 内容可读；打开 | T5 | Android 最终 APK 原生关于面板内容可读，含协议、隐私与源码说明；[T7 Android 设置必验](evidence/t7-final/android-settings-required-round2/android-required-results.json) |
 | M18.agpl | AGPL | 通用设置 → 原位 | 双端 | 协议可达；打开 | T5 | Android 最终 APK 关于面板内联 AGPL-3.0-or-later 文本可见；此项为内联内容，无独立系统外链；[T7 Android 设置必验](evidence/t7-final/android-settings-required-round2/android-required-results.json) |
 | M18.privacy | 隐私 | 通用设置 → 原位 | 双端 | 文档可达；打开 | T5 | Android 最终 APK 关于面板内联隐私说明可见；此项为内联内容，无独立系统外链；[T7 Android 设置必验](evidence/t7-final/android-settings-required-round2/android-required-results.json) |
-| M18.source | 源码 | 通用设置 → 原位 | 双端 | URL 正确；打开 | T5 | 部分：Android 源码入口可见；Linux 最终二进制隔离 xdg-open 收到正确 GitHub URL，图形浏览器未验证；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
-| M18.log-level | 日志级别 | 通用设置 → 原位 | 双端 | info/debug 即时生效；切换 | T5 | Linux 最终二进制 info→debug SQLite 回读，DEBUG 实际日志行仅在 debug 出现；Android 设置回读；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json)、[T7 Android 设置必验](evidence/t7-final/android-settings-required-round2/android-required-results.json) |
-| M18.exit | 关闭/退出行为 | 通用设置 → 原位 | 桌面 | 保持平台行为；操作 | T5/T6 | Linux 最终二进制 exit 设置后窗口关闭进程退出码 0；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
-| M18.tray | 托盘行为 | 通用设置 → 原位 | 桌面 | 原切换语义；操作 | T5/T6 | Linux 最终二进制私有 SNI host 注册，close→窗口 unmap、托盘菜单恢复为 viewable；面板图标像素未测；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
-| M18.log-folder | 打开日志目录 | 通用设置 → 原位 | 桌面 | 系统打开；点击 | T5/T6 | Linux 最终二进制隔离 xdg-open 收到存在的日志目录；真实图形文件管理器未测；[T7 Linux 操作](evidence/t7-final/linux-actions/results.json) |
+| M18.source | 源码 | 通用设置 → 原位 | 双端 | URL 正确；打开 | T5 | 部分：Android 源码入口可见；Linux 最终二进制隔离 xdg-open 收到正确 GitHub URL，图形浏览器未验证；[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
+| M18.log-level | 日志级别 | 通用设置 → 原位 | 双端 | info/debug 即时生效；切换 | T5 | Linux 最终二进制 info→debug SQLite 回读，DEBUG 实际日志行仅在 debug 出现；Android 设置回读；[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json)、[T7 Android 设置必验](evidence/t7-final/android-settings-required-round2/android-required-results.json) |
+| M18.exit | 关闭/退出行为 | 通用设置 → 原位 | 桌面 | 保持平台行为；操作 | T5/T6 | Linux 最终二进制 exit 设置后窗口关闭进程退出码 0；[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
+| M18.tray | 托盘行为 | 通用设置 → 原位 | 桌面 | 原切换语义；操作 | T5/T6 | Linux 最终二进制私有 SNI host 注册，close→窗口 unmap、托盘菜单恢复为 viewable；面板图标像素未测；[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
+| M18.log-folder | 打开日志目录 | 通用设置 → 原位 | 桌面 | 系统打开；点击 | T5/T6 | Linux 最终二进制隔离 xdg-open 收到存在的日志目录；真实图形文件管理器未测；[T7 Linux 操作](evidence/t7-final/linux-actions-round2/results.json) |
 | M19.enabled | MCP 开关 | MCP 设置 → 第七类 | 桌面 | 回环监听；切换 | T5/T6 | 通过：Linux 本地服务开关与回环监听；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings-round2/desktop-results.json) |
 | M19.port | MCP 端口 | MCP 设置 → 第七类 | 桌面 | 端口校验/回读；设置 | T5/T6 | 通过：UI 与 Rust IPC 无效端口拒写，合法端口回读；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings-round2/desktop-results.json) |
 | M19.status | MCP 状态 | MCP 设置 → 第七类 | 桌面 | 监听状态正确；查看 | T5/T6 | 通过：服务健康/状态回读；[Linux 原生](evidence/t5-settings/desktop-results.json)；最终二进制复核 [T7 Linux 设置 49 项](evidence/t7-final/desktop-settings-round2/desktop-results.json) |
