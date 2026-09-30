@@ -83,7 +83,7 @@ try {
   const externalMode = saved.theme_snapshot.config.mode === 'dark' ? 'light' : 'dark';
   await core('update_ui_theme', { expectedRevision: staleBase, patch: { mode: externalMode } });
   await click('#appearance-editor .theme-editor-actions button:first-child');
-  await until(`document.querySelector('#appearance-editor .theme-editor-status').textContent.includes('changed') || document.querySelector('#appearance-editor .theme-editor-status').textContent.includes('冲突') || document.querySelector('#appearance-editor .theme-editor-status').textContent.includes('failed')`);
+  await until(`/changed|修改|冲突|失败|failed|conflict/i.test(document.querySelector('#appearance-editor .theme-editor-status').textContent)`);
   const afterConflict = await setting();
   check('theme-stale-cas-does-not-write', afterConflict.theme_snapshot.config.revision === staleBase + 1 && afterConflict.theme_snapshot.config.mode === externalMode, { revision: afterConflict.theme_snapshot.config.revision });
   await click('#appearance-editor .theme-editor-actions button:last-child');

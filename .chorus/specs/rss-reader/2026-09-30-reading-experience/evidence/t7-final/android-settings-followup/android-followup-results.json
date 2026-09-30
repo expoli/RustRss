@@ -1,0 +1,94 @@
+[
+  {
+    "name": "theme-preview-does-not-persist"
+  },
+  {
+    "name": "theme-revision-increments",
+    "before": 0,
+    "after": 1
+  },
+  {
+    "name": "theme-mode-preset-summary-readback",
+    "mode": "dark",
+    "preset": "paper"
+  },
+  {
+    "name": "theme-history-refresh-has-prior-revision",
+    "history": [
+      "",
+      "0"
+    ]
+  },
+  {
+    "name": "theme-history-restore-new-revision",
+    "from": 1,
+    "to": 2
+  },
+  {
+    "name": "theme-stale-cas-does-not-write",
+    "revision": 3
+  },
+  {
+    "name": "theme-discard-after-cas"
+  },
+  {
+    "name": "theme-revision-increments",
+    "before": 3,
+    "after": 4
+  },
+  {
+    "name": "reading-typography-readback",
+    "size": 18
+  },
+  {
+    "name": "ai-provider-save-ollama",
+    "provider": "ollama",
+    "model": "synthetic-t5-ollama"
+  },
+  {
+    "name": "ai-provider-save-openai",
+    "provider": "openai",
+    "model": "synthetic-t5-openai"
+  },
+  {
+    "name": "ai-provider-save-anthropic",
+    "provider": "anthropic",
+    "model": "synthetic-t5-anthropic"
+  },
+  {
+    "name": "ai-provider-save-gemini",
+    "provider": "gemini",
+    "model": "synthetic-t5-gemini"
+  },
+  {
+    "name": "android-keystore-key-state",
+    "source": {
+      "kind": "keyring"
+    }
+  },
+  {
+    "name": "android-keystore-key-clear"
+  },
+  {
+    "name": "rsshub-mirror-save"
+  },
+  {
+    "name": "rsshub-migration-control-reachable"
+  },
+  {
+    "name": "android-saf-actions-reachable"
+  },
+  {
+    "name": "resized-android-capabilities",
+    "width": 610,
+    "orientation": "portrait-secondary",
+    "android": "1",
+    "mcp": false,
+    "backup": false,
+    "hint": true
+  },
+  {
+    "name": "artifact",
+    "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091"
+  }
+]
