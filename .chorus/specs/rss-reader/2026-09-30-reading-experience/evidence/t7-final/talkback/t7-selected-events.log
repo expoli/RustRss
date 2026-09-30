@@ -1,0 +1,21 @@
+--------- beginning of main
+10-01 01:16:08.232 20847 20847 I T4A11Y  : type=TYPE_VIEW_FOCUSED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:08.293 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=全部未读 desc=null a11yFocus=false state=On selected=false checked=true checkable=true
+10-01 01:16:08.295 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=null id=null text=全部未读 desc=null a11yFocus=false state=On selected=false checked=true checkable=true
+10-01 01:16:08.297 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false
+10-01 01:16:08.298 20847 20847 I T4A11Y  : type=TYPE_VIEW_CLICKED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false
+10-01 01:16:08.441 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=全部未读 desc=null a11yFocus=false state=On selected=false checked=true checkable=true
+10-01 01:16:08.458 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false
+10-01 01:16:14.270 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=com.android.systemui id=com.android.systemui:id/mobile_combo text=null desc=T-Mobile, three bars. a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.410 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.411 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text= desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.412 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.413 20847 20847 I T4A11Y  : type=TYPE_VIEW_CLICKED package=tech.expoli.rustrss id=null text=收藏 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false
+10-01 01:16:23.510 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.513 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.618 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=entries text= desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.622 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=list-count text=已加载 14 / 共 14 篇 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.624 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=list-count text=已加载 14 / 共 14 篇 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.626 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=reader text= desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:23.717 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=list-count text=已加载 14 / 共 14 篇 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 01:16:44.270 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=com.android.systemui id=com.android.systemui:id/mobile_combo text=null desc=T-Mobile, two bars. a11yFocus=false state=null selected=false checked=false checkable=false

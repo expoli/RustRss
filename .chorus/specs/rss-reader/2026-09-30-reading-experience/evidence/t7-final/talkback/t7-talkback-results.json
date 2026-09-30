@@ -1,0 +1,74 @@
+{
+  "serial": "emulator-5584",
+  "keyboard": "/dev/input/event1",
+  "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091",
+  "fixtureSha256": "03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91",
+  "source": "physical /dev/input/event1 Alt+Right, Alt+Enter and Alt+Backspace with TalkBack bound",
+  "services": [
+    "TalkBack",
+    "T4 Focus Logger"
+  ],
+  "listInert": true,
+  "toolbarFocus": [
+    "null",
+    "m-reader-back",
+    "reader",
+    "null",
+    "null",
+    "null",
+    "null",
+    "act-aa",
+    "act-star",
+    "act-later",
+    "act-more"
+  ],
+  "menuFirstFocus": "10-01 01:01:48.888 18756 18756 I T4A11Y  : type=TYPE_VIEW_ACCESSIBILITY_FOCUSED package=tech.expoli.rustrss id=null text=标为未读 desc=null a11yFocus=true",
+  "menuItems": [
+    {
+      "label": "标为未读",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "管理标签",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "浏览器打开",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "复制链接",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "分享",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "获取全文",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "AI 摘要",
+      "role": "menuitem",
+      "checked": null
+    },
+    {
+      "label": "AI 翻译",
+      "role": "menuitem",
+      "checked": null
+    }
+  ],
+  "readBefore": true,
+  "readAfterAction": false,
+  "closeFocus": "act-more",
+  "backCancelledWrite": true,
+  "speechCapture": "not available on emulator",
+  "passed": true
+}

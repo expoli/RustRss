@@ -1,0 +1,10 @@
+{
+  "apkSha256": "0e011c2fa340c0a8c33b90e5d83a89696d35cd78705350fdca14a9b585043091",
+  "helperApkSha256": "436ea15ff161ddd7f36b77dcfbeb0a62389c0bc9e10da0b87d378fd3e142c367",
+  "nativeSource": "AccessibilityNodeInfo.getStateDescription() in T7 FocusLogger",
+  "articlesCurrent": "10-01 01:16:08.297 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false",
+  "articlesAfterSaved": "10-01 01:16:23.412 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=null selected=false checked=false checkable=false",
+  "savedCurrent": "10-01 01:16:23.413 20847 20847 I T4A11Y  : type=TYPE_VIEW_CLICKED package=tech.expoli.rustrss id=null text=收藏 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false",
+  "selectedFlagNote": "isSelected=false on nav buttons, but stateDescription conveys current page; TalkBack speech output unavailable",
+  "passed": true
+}

@@ -1,0 +1,206 @@
+{
+  "binarySha256": "706b42fea0d6c18918157264f8d53022ba245bb83dc624ce6f61cb151abfd59f",
+  "fixtureSha256": "03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91",
+  "gtkScale": "2",
+  "checks": [
+    {
+      "physicalWidth": 2560,
+      "width": 1280,
+      "height": 850,
+      "dpr": 2,
+      "scrollWidth": 1280,
+      "coarse": false,
+      "mobile": false,
+      "nav": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 50.6875,
+          "w": 220,
+          "h": 799.3125,
+          "display": "flex"
+        },
+        {
+          "x": 220,
+          "y": 50.6875,
+          "w": 340,
+          "h": 799.3125,
+          "display": "flex"
+        },
+        {
+          "x": 560,
+          "y": 50.6875,
+          "w": 720,
+          "h": 799.3125,
+          "display": "flex"
+        }
+      ],
+      "toolbar": [
+        {
+          "x": 844,
+          "y": 8.34375,
+          "w": 108,
+          "h": 33,
+          "display": "flex"
+        },
+        {
+          "x": 962,
+          "y": 8.34375,
+          "w": 108,
+          "h": 33,
+          "display": "flex"
+        },
+        {
+          "x": 1080,
+          "y": 8.34375,
+          "w": 80,
+          "h": 33,
+          "display": "flex"
+        },
+        {
+          "x": 1174,
+          "y": 11.84375,
+          "w": 30,
+          "h": 26,
+          "display": "block"
+        },
+        {
+          "x": 1206,
+          "y": 11.84375,
+          "w": 30,
+          "h": 26,
+          "display": "block"
+        },
+        {
+          "x": 1238,
+          "y": 11.84375,
+          "w": 30,
+          "h": 26,
+          "display": "block"
+        }
+      ],
+      "grid": "220px 340px 720px",
+      "firstTitle": {
+        "x": 235,
+        "y": 163.6875,
+        "w": 302,
+        "h": 63,
+        "display": "block"
+      },
+      "settings": {
+        "x": 120,
+        "y": 65,
+        "w": 1040,
+        "h": 720,
+        "role": "dialog",
+        "mcp": true
+      }
+    },
+    {
+      "physicalWidth": 2880,
+      "width": 1440,
+      "height": 850,
+      "dpr": 2,
+      "scrollWidth": 1440,
+      "coarse": false,
+      "mobile": false,
+      "nav": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none"
+      },
+      "columns": [
+        {
+          "x": 0,
+          "y": 50.6875,
+          "w": 220,
+          "h": 799.3125,
+          "display": "flex"
+        },
+        {
+          "x": 220,
+          "y": 50.6875,
+          "w": 340,
+          "h": 799.3125,
+          "display": "flex"
+        },
+        {
+          "x": 560,
+          "y": 50.6875,
+          "w": 880,
+          "h": 799.3125,
+          "display": "flex"
+        }
+      ],
+      "toolbar": [
+        {
+          "x": 1004,
+          "y": 8.34375,
+          "w": 108,
+          "h": 33,
+          "display": "flex"
+        },
+        {
+          "x": 1122,
+          "y": 8.34375,
+          "w": 108,
+          "h": 33,
+          "display": "flex"
+        },
+        {
+          "x": 1240,
+          "y": 8.34375,
+          "w": 80,
+          "h": 33,
+          "display": "flex"
+        },
+        {
+          "x": 1334,
+          "y": 11.84375,
+          "w": 30,
+          "h": 26,
+          "display": "block"
+        },
+        {
+          "x": 1366,
+          "y": 11.84375,
+          "w": 30,
+          "h": 26,
+          "display": "block"
+        },
+        {
+          "x": 1398,
+          "y": 11.84375,
+          "w": 30,
+          "h": 26,
+          "display": "block"
+        }
+      ],
+      "grid": "220px 340px 880px",
+      "firstTitle": {
+        "x": 235,
+        "y": 163.6875,
+        "w": 302,
+        "h": 63,
+        "display": "block"
+      },
+      "settings": {
+        "x": 200,
+        "y": 65,
+        "w": 1040,
+        "h": 720,
+        "role": "dialog",
+        "mcp": true
+      }
+    }
+  ],
+  "passed": true
+}
