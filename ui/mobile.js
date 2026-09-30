@@ -23,6 +23,8 @@
   // 我们自己调用 history.back() 消费已关闭弹层的条目时置位，避免 popstate 把它
   // 当成一次用户返回再处理。
   var consuming = false;
+  var menuBackFromHistory = false;
+  var pendingMenuAction = null;
   // 长按已触发时抑制随后的 click（长按菜单打开后松手不应再走到导航/打开文章）。
   var longPressFired = false;
 
@@ -30,6 +32,7 @@
   function bodyPage() { return document.body.dataset.mpage || null; }
 
   function setPage(name) {
+    if (name !== bodyPage()) window.RustRssMenu?.close();
     document.body.dataset.mpage = name;
     syncNav();
     syncSegments();
@@ -89,18 +92,57 @@
   }
 
   window.addEventListener('popstate', function () {
-    if (consuming) { consuming = false; return; }
+    if (consuming) {
+      consuming = false;
+      if (pendingMenuAction) {
+        const action = pendingMenuAction;
+        pendingMenuAction = null;
+        action();
+      }
+      return;
+    }
     if (!active()) { historyStack = []; return; }
     var entry = historyStack.pop();
     if (!entry) return; // 外来导航（理论不会有）：忽略
     if (entry.t === 'reader') {
       setPage(entry.returnPage);
+    } else if (entry.t === 'menu-page') {
+      menuBackFromHistory = true;
+      window.RustRssMenu?.back();
+      menuBackFromHistory = false;
+    } else if (entry.t === 'menu') {
+      window.RustRssMenu?.close();
     } else if (entry.t === 'ovl') {
       var closer = el(entry.id) && el(entry.id).querySelector(entry.closeSel);
       if (closer) closer.click();
     } else if (entry.t === 'settings-pane') {
       el('m-settings-back').click();
     }
+  });
+
+  window.addEventListener('rustrss-menu-open', function () {
+    if (active()) pushEntry({ t: 'menu' });
+  });
+  window.addEventListener('rustrss-menu-page', function () {
+    if (active()) pushEntry({ t: 'menu-page' });
+  });
+  window.addEventListener('rustrss-menu-back', function () {
+    if (!active() || menuBackFromHistory) return;
+    if (historyStack.at(-1)?.t === 'menu-page') {
+      historyStack.pop(); consuming = true; history.back();
+    }
+  });
+  window.addEventListener('rustrss-menu-close', function () {
+    longPressFired = false;
+    if (!active()) return;
+    const index = historyStack.findLastIndex(function (entry) { return entry.t === 'menu'; });
+    if (index < 0) return;
+    const count = historyStack.length - index;
+    historyStack.splice(index);
+    consuming = true; history.go(-count);
+  });
+  window.addEventListener('rustrss-menu-action', function (event) {
+    pendingMenuAction = event.detail;
   });
 
   // 阅读器：renderReader 会整体替换 #reader 内容，观察「正文头部出现」这一刻。
@@ -225,6 +267,7 @@
       var tag = ev.target.closest('#tags li[data-tag-id]');
       var view = ev.target.closest('#views li[data-kind]');
       var arrow = ev.target.closest('.folder-arrow');
+      if (ev.target.closest('.row-more')) return;
       if ((feed || tag || view) && !arrow) setPage('articles');
       else if (head && !arrow) setPage('articles'); // 文件夹头（非折叠箭头）= 过滤到该文件夹
     }, true);
@@ -247,6 +290,7 @@
     document.addEventListener('pointerdown', function (ev) {
       if (!active() || ev.pointerType !== 'touch') return;
       var row = ev.target.closest('#feeds li, #tags li');
+      if (ev.target.closest('.row-more')) return;
       if (!row) return;
       target = row;
       start = { x: ev.clientX, y: ev.clientY };
@@ -274,6 +318,9 @@
     document.addEventListener('click', function (ev) {
       if (!longPressFired) return;
       longPressFired = false;
+      // A WebView may omit the release click after a long press. In that case
+      // the next click can be an intentional action inside the new sheet.
+      if (ev.target.closest('#ctx-menu')) return;
       ev.stopPropagation();
       ev.preventDefault();
     }, true);

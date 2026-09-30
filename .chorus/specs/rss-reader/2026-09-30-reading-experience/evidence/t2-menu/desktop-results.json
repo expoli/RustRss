@@ -1,0 +1,18 @@
+{
+  "window": "Linux WebKitGTK in virtual KWin Wayland",
+  "input": "DOM KeyboardEvent via WebKit Inspector",
+  "checks": [
+    "desktop menu opens from explicit row button",
+    "first menu item receives focus",
+    "ArrowDown moves focus",
+    "interval parent reachable by keyboard",
+    "ArrowRight opens submenu and focuses its first item",
+    "submenu exposes current value",
+    "ArrowLeft returns to parent",
+    "Escape closes menu and restores trigger focus",
+    "tag touch sort action is also on desktop menu",
+    "folder danger action is on desktop menu",
+    "open and close caused no feed write"
+  ],
+  "passed": true
+}

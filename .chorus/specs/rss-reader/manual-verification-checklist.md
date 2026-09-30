@@ -1315,3 +1315,7 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] 独立重建 Android APK 后的手势/三键原生命中、TalkBack、IME、系统字体以及 Windows/macOS 运行待 T7 核验。历史 ANR 图不作为页面 before 证据。
 
 证据：[T1 目录](2026-09-30-reading-experience/evidence/README.md)、[逐动作台账](2026-09-30-reading-experience/action-matrix.md)。
+
+## 2026-09-30 阅读体验 T2 操作面板
+
+任务 `17a5a3e7-c1b6-447f-a880-cdf44e2a37b4`：源、文件夹与标签显式更多入口、手机内部选择页、桌面级联菜单与键盘、危险确认。隔离 Android API 36 x86_64 模拟器 37 项运行检查、启用 TalkBack 后的原生无障碍树、Linux 虚拟 KWin Wayland/WebKitGTK 11 项菜单键盘检查、通用 ARM64+x86_64 签名 APK 哈希与复现步骤见 [T2 证据](2026-09-30-reading-experience/evidence/t2-menu/record.md)。`node --test scripts/tests/*.test.cjs` 61/61、`cargo test --workspace` 全通过；物理手机、语音输出、Windows/macOS 和原生实体键盘注入未在本轮声称通过。

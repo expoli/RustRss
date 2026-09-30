@@ -1,0 +1,5 @@
+document.querySelector('[data-mpage-btn="subscriptions"]').click() {"result":{"type":"undefined"}}
+document.querySelector('#feeds li[data-feed-id="2"] .row-more').click() {"result":{"type":"undefined"}}
+[...document.querySelectorAll('.ctx-sheet-list button')].find(b=>b.textContent.includes('刷新间隔')).click() {"result":{"type":"undefined"}}
+JSON.stringify({selected:[...document.querySelectorAll('.ctx-sheet-list [aria-checked="true"]')].map(x=>x.textContent),inert:document.querySelector('main').inert}) {"result":{"type":"string","value":"{\"selected\":[\"每 30 分钟\"],\"inert\":true}"}}
+{"selected":["每 30 分钟"],"inert":true}

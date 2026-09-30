@@ -13,6 +13,6 @@
   }
   function article(body) { return `<div class="article">${body}</div>`; }
   function viewContent(icon) { return `<span class="icon">${global.RustRssIcons.svg(icon)}</span><span class="vlabel"></span><span class="count"></span>`; }
-  function feedContent() { return '<span class="name"></span><span class="dot" hidden>●</span><span class="count"></span>'; }
+  function feedContent() { return '<button type="button" class="row-select"><span class="name"></span><span class="dot" hidden>●</span><span class="count"></span></button><button type="button" class="row-more" aria-haspopup="menu">' + global.RustRssIcons.svg('more') + '</button>'; }
   global.RustRssComponents = { entryContent, thumbnailImage, readerHead, article, viewContent, feedContent };
 })(typeof window === 'undefined' ? globalThis : window);

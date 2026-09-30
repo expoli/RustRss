@@ -1,0 +1,16 @@
+{
+  "serial": "emulator-5582",
+  "pid": "11736",
+  "collapsedAfterRestart": true,
+  "expandedAfterRestart": true,
+  "feedId": 2,
+  "feedName": "T2 edited feed",
+  "interval": 30,
+  "unpinnedTagId": 2,
+  "tagIds": [
+    1,
+    2,
+    3
+  ],
+  "passed": true
+}

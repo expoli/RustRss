@@ -589,7 +589,6 @@ function feedRow(f, existing) {
     li = document.createElement('li');
     li.dataset.key = key;
     li.dataset.feedId = String(f.id);
-    bindSidebarKeyboard(li);
     li.draggable = true;
     li.innerHTML = window.RustRssComponents.feedContent();
   }
@@ -612,6 +611,7 @@ function feedRow(f, existing) {
   setText(li.querySelector('.name'), f.title);
   li.querySelector('.dot').hidden = !failed;
   setText(li.querySelector('.count'), String(f.unread));
+  li.querySelector('.row-more').setAttribute('aria-label', t('menu.moreFor', { name: f.title }));
   return li;
 }
 
@@ -639,7 +639,7 @@ function folderHead(folder, unreadSum, collapsed, existing) {
     li.dataset.key = key;
     li.dataset.folderId = String(folder.id);
     li.className = 'folder-head';
-    li.innerHTML = '<button type="button" class="folder-arrow"></button><button type="button" class="name"></button><span class="count"></span>';
+    li.innerHTML = '<button type="button" class="folder-arrow"></button><button type="button" class="name"></button><span class="count"></span><button type="button" class="row-more" aria-haspopup="menu">' + window.RustRssIcons.svg('more') + '</button>';
   }
   const active = state.view.kind === 'folder' && state.view.folderId === folder.id;
   li.classList.toggle('active', active);
@@ -651,6 +651,7 @@ function folderHead(folder, unreadSum, collapsed, existing) {
   setText(arrow, collapsed ? '▸' : '▾');
   setText(li.querySelector('.name'), folder.name);
   setText(li.querySelector('.count'), unreadSum ? String(unreadSum) : '');
+  li.querySelector('.row-more').setAttribute('aria-label', t('menu.moreFor', { name: folder.name }));
   return li;
 }
 
@@ -747,6 +748,14 @@ function initSidebarEvents() {
   feeds.addEventListener('click', (ev) => {
     const li = ev.target.closest('li');
     if (!li) return;
+    if (ev.target.closest('.row-more')) {
+      ev.stopPropagation();
+      const folder = li.dataset.folderId && (state.folders || []).find((row) => row.id === Number(li.dataset.folderId));
+      const feed = li.dataset.feedId && state.feeds.find((row) => row.id === Number(li.dataset.feedId));
+      if (folder) openFolderMenu(ev, folder);
+      else if (feed) openFeedMenu(ev, feed);
+      return;
+    }
     if (li.classList.contains('folder-head')) {
       const folderId = Number(li.dataset.folderId);
       if (ev.target.closest('.folder-arrow')) toggleFolderCollapse(folderId);
@@ -1193,6 +1202,7 @@ function renderReader(entry) {
       <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
       <button id="act-star">${window.RustRssIcons.svg('star')}<span class="action-label">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</span></button>
       <button id="act-later" class="${entry.read_later ? 'later-active' : ''}">${window.RustRssIcons.svg('later')}<span class="action-label">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</span></button>
+      <button id="act-tags" aria-haspopup="dialog">${t('menu.articleTags')}</button>
       ${entry.url ? `<button id="act-open">${t('reader.openInBrowser')}</button><button id="act-copy">${t('reader.copyLink')}</button><button id="act-share">${t('reader.share')}</button>` : ''}
       ${entry.needs_fulltext ? `<button id="act-fulltext" title="${t('reader.fetchFulltextTitle')}">${t('reader.fetchFulltext')}</button>` : ''}
       <button id="act-summarize" title="${t('reader.summarizeTitle')}">${t('reader.summarize')}</button>
@@ -1234,6 +1244,7 @@ function renderReader(entry) {
   el('act-read').onclick = () => toggleRead();
   el('act-star').onclick = () => toggleStar();
   el('act-later').onclick = () => toggleReadLater();
+  el('act-tags').onclick = () => openTagPicker(entry.id);
   el('act-summarize').onclick = () => runAi('summarize');
   el('act-translate').onclick = () => runAi('translate');
   el('ai-regenerate').onclick = () => runAi(currentAiTask, { refresh: true });
@@ -1771,13 +1782,14 @@ function tagRow(tag, existing) {
     li.dataset.key = key;
     li.dataset.tagId = String(tag.id);
     li.draggable = true; // 原生 drag 事件（拖拽排序的唯一入口）
-    li.innerHTML = '<span class="tag-dot"></span><span class="name"></span><span class="count"></span>';
+    li.innerHTML = '<button type="button" class="row-select"><span class="tag-dot"></span><span class="name"></span><span class="count"></span></button><button type="button" class="row-more" aria-haspopup="menu">' + window.RustRssIcons.svg('more') + '</button>';
   }
   li.className = state.view.kind === 'tag' && state.view.tagId === tag.id ? 'active' : '';
   applyTagColor(li, tag);
   setText(li.querySelector('.name'), tag.name);
   // 未读计数照出（0 也显示）：与源行同一口径，免得「有的行有数字有的没有」
   setText(li.querySelector('.count'), String(tag.unread));
+  li.querySelector('.row-more').setAttribute('aria-label', t('menu.moreFor', { name: tag.name }));
   li.title = t('sidebar.tagRowTitle', { name: tag.name });
   return li;
 }
@@ -1911,6 +1923,7 @@ function initTagSectionEvents() {
     if (!li) return;
     const tag = tagFromRow(li);
     if (!tag) return;
+    if (ev.target.closest('.row-more')) { ev.stopPropagation(); openTagMenu(ev, tag); return; }
     setView({ kind: 'tag', tagId: tag.id, tagName: tag.name }).catch((e) => setStatus(e.message, true));
   });
 
@@ -1984,6 +1997,8 @@ function initTagSectionEvents() {
  * 颜色名，子菜单列 8 个预设色 + 「默认」，当前项打勾。删除与其它项用分隔线隔开。
  */
 function openTagMenu(ev, tag) {
+  const tags = state.sidebarTags || [];
+  const index = tags.findIndex((row) => row.id === tag.id);
   openContextMenu(ev, [
     { label: t('menu.rename'), action: () => renameTag(tag) },
     {
@@ -2006,9 +2021,11 @@ function openTagMenu(ev, tag) {
       label: tag.pinned ? t('menu.tagUnpin') : t('menu.tagPin'),
       action: () => toggleTagPinned(tag),
     },
+    ...(index > 0 && tags[index - 1].pinned === tag.pinned ? [{ label: t('menu.tagUp'), action: () => persistTagOrder(nextTagOrder(tag.id, tags[index - 1].id, true)) }] : []),
+    ...(index >= 0 && index < tags.length - 1 && tags[index + 1].pinned === tag.pinned ? [{ label: t('menu.tagDown'), action: () => persistTagOrder(nextTagOrder(tag.id, tags[index + 1].id, false)) }] : []),
     { separator: true },
     { label: t('menu.delete'), danger: true, action: () => deleteTag(tag) },
-  ]);
+  ], null, tag.name);
 }
 
 /** 标签元信息变更后的统一收口：侧栏口径与选择器口径各重建一次（数量少，开销可忽略） */
@@ -2568,9 +2585,116 @@ function toggleFolderCollapse(folderId) {
   renderSidebar();
 }
 
-function closeContextMenu() {
+let contextMenuTrigger = null;
+let touchMenuPage = null;
+let contextMenuCancel = null;
+let touchMenuInert = [];
+function touchMenuActive() { return !!touchMenuPage; }
+function syncTouchMenuViewport() {
+  const overlay = el('ctx-menu');
+  if (!overlay?.classList.contains('ctx-sheet-overlay')) return;
+  const vv = window.visualViewport;
+  if (!vv) return;
+  Object.assign(overlay.style, {
+    left: `${vv.offsetLeft}px`, top: `${vv.offsetTop}px`,
+    width: `${vv.width}px`, height: `${vv.height}px`,
+  });
+}
+window.visualViewport?.addEventListener('resize', syncTouchMenuViewport);
+window.visualViewport?.addEventListener('scroll', syncTouchMenuViewport);
+function closeContextMenu(acted = false) {
+  const hadMenu = !!el('ctx-menu');
   hideSubmenu();
+  const wasTouch = touchMenuActive();
+  touchMenuPage = null;
   el('ctx-menu')?.remove();
+  for (const [node, inert] of touchMenuInert) node.inert = inert;
+  touchMenuInert = [];
+  if (wasTouch) {
+    window.dispatchEvent(new Event('rustrss-menu-close'));
+  }
+  if (hadMenu && contextMenuTrigger?.isConnected) contextMenuTrigger.focus();
+  if (!acted) contextMenuCancel?.();
+  contextMenuCancel = null;
+  contextMenuTrigger = null;
+}
+
+function renderTouchMenu(items, title, parent = null) {
+  const overlay = el('ctx-menu');
+  if (!overlay) return;
+  touchMenuPage = { items, title, parent };
+  const panel = overlay.querySelector('.ctx-sheet');
+  panel.replaceChildren();
+  const head = document.createElement('div');
+  head.className = 'ctx-sheet-head';
+  if (parent) {
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'ctx-sheet-back';
+    back.setAttribute('aria-label', t('menu.back'));
+    back.innerHTML = window.RustRssIcons.svg('back');
+    back.onclick = () => touchMenuBack();
+    head.append(back);
+  }
+  const heading = document.createElement('h2');
+  heading.id = 'ctx-sheet-title';
+  heading.textContent = title;
+  head.append(heading);
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'ctx-sheet-close';
+  close.setAttribute('aria-label', t('menu.close'));
+  close.innerHTML = window.RustRssIcons.svg('close');
+  close.onclick = () => closeContextMenu();
+  head.append(close);
+  panel.append(head);
+  const list = document.createElement('div');
+  list.className = 'ctx-sheet-list';
+  list.setAttribute('role', 'menu');
+  for (const item of items) {
+    if (item.separator) { const sep = document.createElement('div'); sep.className = 'ctx-sep'; list.append(sep); continue; }
+    if (item.header) { const h = document.createElement('div'); h.className = 'ctx-head'; h.textContent = item.label; list.append(h); continue; }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = item.danger ? 'danger' : '';
+    button.setAttribute('role', item.checked === undefined ? 'menuitem' : 'menuitemradio');
+    button.textContent = item.label;
+    if (item.checked !== undefined) {
+      button.setAttribute('aria-checked', String(item.checked));
+      if (item.checked) button.insertAdjacentHTML('beforeend', window.RustRssIcons.svg('check'));
+    }
+    if (item.submenu) {
+      button.classList.add('has-submenu');
+      button.insertAdjacentHTML('beforeend', '<span aria-hidden="true">›</span>');
+      button.onclick = (event) => {
+        event.stopPropagation();
+        renderTouchMenu(item.submenu(), item.label, touchMenuPage);
+        window.dispatchEvent(new Event('rustrss-menu-page'));
+      };
+    } else {
+      button.onclick = (event) => { event.stopPropagation(); executeMenuAction(item.action); };
+    }
+    list.append(button);
+  }
+  panel.append(list);
+  (parent ? head.querySelector('.ctx-sheet-back') : list.querySelector('button'))?.focus();
+}
+
+function touchMenuBack() {
+  if (!touchMenuPage) return false;
+  if (touchMenuPage.parent) {
+    const page = touchMenuPage.parent;
+    renderTouchMenu(page.items, page.title, page.parent);
+    window.dispatchEvent(new Event('rustrss-menu-back'));
+  } else closeContextMenu();
+  return true;
+}
+window.RustRssMenu = { back: touchMenuBack, close: closeContextMenu, isOpen: touchMenuActive };
+function executeMenuAction(action) {
+  const touch = touchMenuActive();
+  closeContextMenu(true);
+  if (touch) window.dispatchEvent(new CustomEvent('rustrss-menu-action', { detail: action }));
+  else action();
 }
 
 /// 子菜单：同一时刻至多一个。收起走延时——父项与子菜单之间隔着 2px 缝隙，指针
@@ -2615,6 +2739,7 @@ function openSubmenu(btn, item) {
   document.body.appendChild(sub);
   const rect = placeSubmenu(sub, btn);
   ctxSubmenu = { el: sub, parent: btn, timer: 0 };
+  sub.querySelector('button')?.focus();
   // 定位诊断：右边缘翻转 / 底部钳位 / 内部滚动 / 是否出界都靠这一行机械核对，
   // 不必盯屏幕（headless 冒烟同样读它）
   log(
@@ -2667,6 +2792,8 @@ function renderMenuItems(menu, items) {
     }
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.setAttribute('role', item.checked === undefined ? 'menuitem' : 'menuitemradio');
+    if (item.checked !== undefined) btn.setAttribute('aria-checked', String(item.checked));
     btn.classList.add('ui-button', item.danger ? 'ui-button--danger' : 'ui-button--text');
     if (item.danger) btn.classList.add('danger');
     if (item.checked !== undefined) {
@@ -2689,23 +2816,66 @@ function renderMenuItems(menu, items) {
     }
     if (item.submenu) {
       btn.classList.add('has-submenu');
+      btn.menuItem = item;
       bindSubmenuParent(btn, item);
     } else {
-      btn.onclick = () => {
-        closeContextMenu();
-        item.action();
-      };
+      btn.onclick = () => executeMenuAction(item.action);
     }
     menu.appendChild(btn);
   }
+  menu.setAttribute('role', 'menu');
+  menu.addEventListener('keydown', (ev) => {
+    const buttons = [...menu.querySelectorAll(':scope > button')];
+    const index = buttons.indexOf(document.activeElement);
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault(); ev.stopPropagation();
+      buttons[(index + (ev.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+    } else if (ev.key === 'ArrowRight' && document.activeElement?.classList.contains('has-submenu')) {
+      ev.preventDefault(); ev.stopPropagation();
+      if (ctxSubmenu?.parent !== document.activeElement) openSubmenu(document.activeElement, document.activeElement.menuItem);
+      else ctxSubmenu.el.querySelector('button')?.focus();
+    } else if (ev.key === 'ArrowLeft' && menu.classList.contains('ctx-submenu')) {
+      ev.preventDefault(); ev.stopPropagation(); const parent = ctxSubmenu?.parent; hideSubmenu(); parent?.focus();
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault(); ev.stopPropagation(); closeContextMenu();
+    }
+  });
 }
 
 /// 通用右键菜单：items = [{label, danger?, action} | {separator: true} | {header: true, label}
 ///                          | {label, submenu: () => items}]
 /// 容器用 `.ctx-menu` class 而非 `#ctx-menu` id：子菜单需要同一套样式却挂在 body 上
 /// （不是父菜单的子节点），id 只有一个，样式必须走 class。
-function openContextMenu(ev, items, anchor) {
+function openContextMenu(ev, items, anchor, objectTitle) {
+  // Android WebView can emit its own contextmenu after our 550 ms long-press
+  // event. Keep the first sheet/history entry; reopening it would pop that entry.
+  if (touchMenuActive() && ev.type === 'contextmenu') return;
   closeContextMenu();
+  contextMenuTrigger = ev.target?.closest?.('button, li') || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  if (objectTitle && window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches) {
+    const overlay = document.createElement('div');
+    overlay.id = 'ctx-menu';
+    overlay.className = 'ctx-sheet-overlay';
+    overlay.innerHTML = '<div class="ctx-sheet" role="dialog" aria-modal="true" aria-labelledby="ctx-sheet-title"></div>';
+    overlay.addEventListener('click', (event) => { if (event.target === overlay) closeContextMenu(); });
+    overlay.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); touchMenuBack(); }
+      if (event.key !== 'Tab') return;
+      const buttons = [...overlay.querySelectorAll('button')];
+      const index = buttons.indexOf(document.activeElement);
+      if (event.shiftKey && index === 0) { event.preventDefault(); buttons.at(-1)?.focus(); }
+      else if (!event.shiftKey && index === buttons.length - 1) { event.preventDefault(); buttons[0]?.focus(); }
+    });
+    document.body.append(overlay);
+    touchMenuInert = [...document.body.children]
+      .filter((node) => node !== overlay)
+      .map((node) => [node, node.inert]);
+    for (const [node] of touchMenuInert) node.inert = true;
+    syncTouchMenuViewport();
+    renderTouchMenu(items, objectTitle);
+    window.dispatchEvent(new Event('rustrss-menu-open'));
+    return;
+  }
   const menu = document.createElement('div');
   menu.id = 'ctx-menu';
   menu.className = 'ctx-menu';
@@ -2722,6 +2892,7 @@ function openContextMenu(ev, items, anchor) {
   } else {
     placeMenu(menu, ev.clientX, ev.clientY);
   }
+  menu.querySelector('button')?.focus();
 }
 
 /// 菜单定位三步：优先贴锚点向下展开，高度压缩到可用空间（菜单内部滚动，
@@ -2826,10 +2997,12 @@ function openFeedMenu(ev, feed) {
   const index = siblings.findIndex(f => f.id === feed.id);
   if (index > 0) items.push({ label: t('menu.feedUp'), action: () => moveFeed(feed.id, siblings[index - 1].id, true) });
   if (index >= 0 && index < siblings.length - 1) items.push({ label: t('menu.feedDown'), action: () => moveFeed(feed.id, siblings[index + 1].id, false) });
+  items.push({ header: true, label: t('menu.readUpdate') });
   // 立即刷新置顶：原先只能双击源标题触发（可发现性差，实测用户不知道）；
   // 与移动/刷新间隔组用分隔线隔开
   items.push({ label: t('menu.refreshNow'), action: () => refreshOne(feed.id) });
   items.push({ separator: true });
+  items.push({ header: true, label: t('menu.organize') });
   // 编辑：标题/文件夹/间隔三件套的收敛入口（与下面的快捷项同一落库路径）
   items.push({ label: t('menu.editFeed'), action: () => openFeedEditDialog(feed) });
   // 刷新间隔：父项直出当前档位（FeedRow 的 refresh_interval_minutes），子菜单 6 档打勾。
@@ -2868,12 +3041,13 @@ function openFeedMenu(ev, feed) {
   });
   // 取消订阅：破坏性（条目级联删），与上面的管理项分隔开，红色危险样式
   items.push({ separator: true });
+  items.push({ header: true, label: t('menu.dangerGroup') });
   items.push({
     label: t('menu.unsubscribe'),
     danger: true,
     action: () => unsubscribeFeed(feed),
   });
-  openContextMenu(ev, items);
+  openContextMenu(ev, items, null, feed.title);
 }
 
 /// 保存单源刷新间隔覆盖；返回的行已带最新 refresh_interval_minutes，但侧栏勾选态/
@@ -2950,7 +3124,7 @@ function openFolderMenu(ev, folder) {
   openContextMenu(ev, [
     { label: t('menu.rename'), action: () => renameFolder(folder) },
     { label: t('menu.delete'), danger: true, action: () => deleteFolder(folder) },
-  ]);
+  ], null, folder.name);
 }
 
 async function reassignFeed(feedId, folderId) {
@@ -3226,6 +3400,13 @@ async function renameFolder(folder) {
 }
 
 async function deleteFolder(folder) {
+  const count = state.feeds.filter((feed) => feed.folder_id === folder.id).length;
+  const ok = await confirmDialog({
+    title: t('confirm.deleteFolderTitle'),
+    body: t('confirm.deleteFolderBody', { name: folder.name, count }),
+    okLabel: t('confirm.deleteFolderOk'),
+  });
+  if (!ok) return;
   try {
     await invoke('delete_folder', { folderId: folder.id });
     await refreshCounts();
@@ -3513,11 +3694,22 @@ async function doAddFeed() {
     return;
   }
 
+  let feedUrl = found.feed_url;
+  if (found.alternatives.length) {
+    feedUrl = await new Promise((resolve) => {
+      openContextMenu({ target: btn, clientX: 0, clientY: 0 },
+        [found.feed_url, ...found.alternatives].map((url) => ({ label: url, action: () => resolve(url) })),
+        btn, t('feedDiscover.choose'));
+      contextMenuCancel = () => resolve(null);
+    });
+    if (!feedUrl) { btn.disabled = false; return; }
+  }
+
   // 第二步：订阅 + 首次抓取，沿用原有路径（订阅地址是发现出来的那个）
   try {
-    const id = await invoke('add_feed', { url: found.feed_url });
+    const id = await invoke('add_feed', { url: feedUrl });
     setStatus(t('status.adding'));
-    log(`add_feed id=${id} url=${found.feed_url}`);
+    log(`add_feed id=${id} url=${feedUrl}`);
     const r = await invoke('refresh_feed', { feedId: id, concurrency: 1 });
     if (r.failures.length) {
       setStatus(t('status.addedFetchFailed', { error: fetchFailureMessage(r.failures[0].code, r.failures[0].error) }), true);
@@ -4178,7 +4370,7 @@ async function boot() {
   // （菜单在同一事件里被创建又被删除，表现成「下拉点了没反应」——语言/主题/刷新
   // 间隔/字体四个自绘下拉全中招）；「再点同一个下拉 = 关闭」由 toggleSettingDropdown 管。
   document.addEventListener('click', (e) => {
-    if (el('ctx-menu') && !e.target.closest('.ctx-menu') && !e.target.closest('.setting-dropdown')) {
+    if (el('ctx-menu') && !e.target.closest('.ctx-menu, .ctx-sheet-overlay') && !e.target.closest('.setting-dropdown')) {
       closeContextMenu();
     }
   });
@@ -4276,6 +4468,12 @@ async function boot() {
     if (mobileSettings()) row.classList.remove('hidden');
     else row.classList.toggle('hidden');
     if (!row.classList.contains('hidden')) el('add-url').focus();
+  };
+  el('add-rsshub').onclick = () => {
+    el('add-row').classList.remove('hidden');
+    el('add-url').value = 'rsshub://';
+    el('add-url').focus();
+    el('add-url').setSelectionRange(el('add-url').value.length, el('add-url').value.length);
   };
   el('btn-settings').onclick = openSettings;
   // 订阅源编辑弹窗：取消/保存 + 两个自绘下拉 + 回车即存（与其它弹窗的键盘习惯一致）
@@ -4781,6 +4979,9 @@ function onGlobalKeydown(e) {
     if (state.view.kind === 'search' || state.view.kind === 'tag') setView({ kind: 'unread' });
     return;
   }
+  // Menu owns navigation and activation keys while open. The reading-list shortcuts
+  // would otherwise move/open an article after the menu has handled the same key.
+  if (el('ctx-menu')) return;
   if (inField || e.ctrlKey || e.metaKey || e.altKey) return;
   // 选择器开着时全局键一律不生效（它自己的捕获阶段监听已消化 ↑↓/Enter/Esc；
   // 这里兜底的是「焦点被鼠标点到列表行上」之后按 j/k/u/s/l/t 的情况）

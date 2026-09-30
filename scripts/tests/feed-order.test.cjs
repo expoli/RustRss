@@ -23,3 +23,14 @@ test('unsubscribe cancellation cannot delete and confirmation sends exact feed I
  confirmed=true;await vm.runInContext("unsubscribeFeed({id:7,title:'fixture'})",c);
  assert.equal(calls.length,1);assert.equal(calls[0].cmd,'remove_feed');assert.equal(calls[0].args.feedId,7);
 });
+test('folder deletion explains rehomed feeds and cancellation performs no write',async()=>{
+ let confirmed=false;const calls=[];let body='';
+ const c=vm.createContext({state:{feeds:[{id:1,folder_id:7},{id:2,folder_id:7}],view:{kind:'all'}},
+  confirmDialog:async options=>{body=options.body;return confirmed},t:(key,args)=>key==='confirm.deleteFolderBody'?`${args.name}:${args.count}`:key,
+  invoke:async(cmd,args)=>calls.push({cmd,args}),refreshCounts:async()=>{},setStatus:()=>{},log:()=>{}});
+ vm.runInContext(extract('deleteFolder'),c);
+ await vm.runInContext("deleteFolder({id:7,name:'Fixture'})",c);
+ assert.equal(body,'Fixture:2');assert.equal(calls.length,0);
+ confirmed=true;await vm.runInContext("deleteFolder({id:7,name:'Fixture'})",c);
+ assert.equal(calls.length,1);assert.equal(calls[0].cmd,'delete_folder');assert.equal(calls[0].args.folderId,7);
+});

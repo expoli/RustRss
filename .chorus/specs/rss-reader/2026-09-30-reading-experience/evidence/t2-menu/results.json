@@ -1,0 +1,269 @@
+{
+  "serial": "emulator-5582",
+  "apk": "debug-x86_64",
+  "checks": [
+    {
+      "name": "native-row-more-and-sheet",
+      "screen": [
+        412.19049072265625,
+        867.047607421875
+      ],
+      "sheet": [
+        0,
+        0,
+        412.19049072265625,
+        867.047607421875
+      ],
+      "rows": [
+        {
+          "name": "在组内下移",
+          "role": "menuitem",
+          "h": 48
+        },
+        {
+          "name": "立即刷新",
+          "role": "menuitem",
+          "h": 48
+        },
+        {
+          "name": "编辑",
+          "role": "menuitem",
+          "h": 48
+        },
+        {
+          "name": "刷新间隔 · 跟随全局（关闭）›",
+          "role": "menuitem",
+          "h": 48
+        },
+        {
+          "name": "移动到 · 未分组›",
+          "role": "menuitem",
+          "h": 48
+        },
+        {
+          "name": "取消订阅",
+          "role": "menuitem",
+          "h": 48
+        }
+      ]
+    },
+    {
+      "name": "native-back-subpage-close-no-write-focus",
+      "passed": true
+    },
+    {
+      "name": "native-long-press-still-opens-row-menu",
+      "title": "A deliberately long subscription title for wrapping and menu placement",
+      "historyEntry": 1
+    },
+    {
+      "name": "native-long-press-back-closes-menu",
+      "passed": true
+    },
+    {
+      "name": "feed-row-select",
+      "title": "A deliberately long subscription title for wrapping and menu placement"
+    },
+    {
+      "name": "folder-aggregate-select",
+      "title": "Folder 00 · 分类与长名称"
+    },
+    {
+      "name": "tag-view-select",
+      "title": "标签：Tag A · 设计与阅读"
+    },
+    {
+      "name": "interval-action-after-history",
+      "interval": 15
+    },
+    {
+      "name": "feed-touch-up-down",
+      "ids": [
+        2,
+        3
+      ]
+    },
+    {
+      "name": "folder-options-internal-scroll",
+      "items": 25,
+      "scroll": true,
+      "visibleHeight": 794,
+      "totalHeight": 1220
+    },
+    {
+      "name": "move-target-stable",
+      "folderId": 1
+    },
+    {
+      "name": "folder-collapse-expand",
+      "passed": true
+    },
+    {
+      "name": "tags-collapse-expand",
+      "passed": true
+    },
+    {
+      "name": "tag-color",
+      "color": "#e5484d"
+    },
+    {
+      "name": "tag-default-color",
+      "color": null
+    },
+    {
+      "name": "tag-touch-sort",
+      "ids": [
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "name": "tag-touch-sort-reverse",
+      "ids": [
+        3,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "folder-delete-preserves-feeds",
+      "remainingFeedId": 2,
+      "folderId": null
+    },
+    {
+      "name": "folder-create-rename",
+      "id": 25
+    },
+    {
+      "name": "feed-edit-cancel-save-readonly-url",
+      "title": "T2 edited feed"
+    },
+    {
+      "name": "feed-edit-folder-interval",
+      "folderId": 25,
+      "interval": 30
+    },
+    {
+      "name": "unsubscribe-cancel-confirm",
+      "removedFeedId": 3,
+      "preservedFeedId": 2
+    },
+    {
+      "name": "tag-pin-rename",
+      "tag": {
+        "id": 2,
+        "name": "T2 tag",
+        "color": null,
+        "pinned": true,
+        "sort_order": 2,
+        "last_used_at": 0,
+        "unread": 0
+      }
+    },
+    {
+      "name": "tag-unpin",
+      "tagId": 2,
+      "pinned": false
+    },
+    {
+      "name": "tag-delete-cancel-confirm",
+      "deletedId": 3
+    },
+    {
+      "name": "article-tag-picker-chinese-search-select",
+      "query": "设计",
+      "tagId": 1
+    },
+    {
+      "name": "article-tag-picker-search-results",
+      "query": "T2",
+      "tagId": 3
+    },
+    {
+      "name": "article-tag-chip-opens-view",
+      "tagId": 3
+    },
+    {
+      "name": "article-tag-picker-create-attach-remove",
+      "tagId": 3
+    },
+    {
+      "name": "url-discovery-candidate-add",
+      "url": "http://10.0.2.2:42145/two.xml"
+    },
+    {
+      "name": "refresh-feed-stable-id",
+      "id": 3,
+      "url": "http://10.0.2.2:42145/two.xml",
+      "status": "ok"
+    },
+    {
+      "name": "rsshub-entry",
+      "input": "rsshub://"
+    },
+    {
+      "name": "native-ime-safe-area",
+      "visual": [
+        412.19049072265625,
+        554.2857055664062
+      ],
+      "input": [
+        110.45833587646484,
+        158.45833587646484
+      ],
+      "visible": true,
+      "overflow": false
+    },
+    {
+      "name": "add-failure-retains-input",
+      "input": "not-a-url"
+    },
+    {
+      "name": "webview-width-360",
+      "visual": [
+        360,
+        800
+      ],
+      "sheet": [
+        0,
+        0,
+        360,
+        800
+      ],
+      "header": [
+        0,
+        337.452392578125,
+        360,
+        402.2143020629883
+      ],
+      "scroll": false,
+      "overflow": false
+    },
+    {
+      "name": "webview-width-412",
+      "visual": [
+        412.19049072265625,
+        800
+      ],
+      "sheet": [
+        0,
+        0,
+        412.19049072265625,
+        800
+      ],
+      "header": [
+        0,
+        337.452392578125,
+        412.19049072265625,
+        402.2143020629883
+      ],
+      "scroll": false,
+      "overflow": false
+    },
+    {
+      "name": "tags-collapse-before-restart",
+      "collapsed": true
+    }
+  ]
+}

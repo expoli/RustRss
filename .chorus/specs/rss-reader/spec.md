@@ -214,5 +214,6 @@ created: 2026-09-20
 批准契约来自 Chorus Proposal `b5585be7-a1d3-4311-8c1b-ce458ad649d6`，OpenSpec slug `refine-rustrss-reading-experience`。原规划文档在 Chorus 工作区；产品实施与验收记录在本仓库。[动作台账](2026-09-30-reading-experience/action-matrix.md)将 M01–M20 拆成 159 项，后续任务逐项回填。
 
 - [x] T1 共享静态 SVG 图标、间距/五类控件样式与本地化可访问名称已接入列表、阅读、菜单和设置；原主题配置结构及保存覆盖不变。六套预设/明暗真组件矩阵、60 项对比度、设置草稿/历史/CAS 与 MCP 预览检查见 [T1 证据](2026-09-30-reading-experience/evidence/README.md)。360×800 粗指针 CSS 夹具检查 13 个主要目标≥48×48；Android 原生命中仍待测。
+- [x] T2 订阅、文件夹、标签与文章标签操作入口接入手机底部面板和桌面键盘菜单；独立 AVD 上 37 项操作、输入法/窄屏与 TalkBack 语义树，Linux WebKitGTK 上 11 项菜单键盘检查见 [T2 证据](2026-09-30-reading-experience/evidence/t2-menu/record.md)。物理 ARM64 与 Windows/macOS 原生行为留待 T7。
 - [ ] T2–T6 完成操作面板、列表、阅读、设置与桌面/平板汇合，并逐动作回填台账。
 - [ ] T7 用重建的 Android APK 和桌面产物完成同场景 before/after、原生触控/键盘/TalkBack、字号、断点及热路径集成验收；Windows/macOS 若不可用需明列未测项。
