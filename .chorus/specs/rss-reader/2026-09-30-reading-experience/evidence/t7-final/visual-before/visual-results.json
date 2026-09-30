@@ -2,12 +2,82 @@
   "binarySha256": "6a2ed07a8479c913457aa782bb8084bc8e02a4e6994e5c5e12e3756d22408284",
   "baseline": true,
   "fixtureSha256": "03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91",
+  "pageCount": 36,
+  "uniqueImageHashes": 36,
   "variants": [
     {
       "preset": "clear",
       "mode": "light",
       "locale": "en",
-      "screenshot": "visual-clear-light-en.png",
+      "screenshot": "visual-clear-light-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-clear-light-en-articles.png",
+          "sha256": "630cee1a9e7bb8fd8503604c998b418b74ac68392fb83dcaf6612766f041f256",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 15,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-clear-light-en-reader.png",
+          "sha256": "8193c6c2896154dd2b605bfa4363d62a786a3d88a223bcf437d4aad04ebb8316",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 15,
+            "listTitle": "All unread",
+            "activeRow": "1",
+            "readerTitle": "000 \u00b7 \u4e00\u7bc7\u7528\u4e8e\u6d4b\u8bd5\u957f\u6807\u9898\u6362\u884c\u7684\u6587\u7ae0\uff1a\u9605\u8bfb\u5e03\u5c40\u5728\u4e2d\u6587\u548c English words \u6df7\u6392\u65f6\u5fc5\u987b\u5b8c\u6574\u4fdd\u7559\u6807\u9898\u4e0e\u64cd\u4f5c\u5165\u53e3",
+            "readerTextLength": 6086,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-clear-light-en-settings.png",
+          "sha256": "c3aa9fd9f7d3622f2d654177be7d70918b76dd22b5c790031a64bca96ea69582",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 15,
+            "listTitle": "All unread",
+            "activeRow": "1",
+            "readerTitle": "000 \u00b7 \u4e00\u7bc7\u7528\u4e8e\u6d4b\u8bd5\u957f\u6807\u9898\u6362\u884c\u7684\u6587\u7ae0\uff1a\u9605\u8bfb\u5e03\u5c40\u5728\u4e2d\u6587\u548c English words \u6df7\u6392\u65f6\u5fc5\u987b\u5b8c\u6574\u4fdd\u7559\u6807\u9898\u4e0e\u64cd\u4f5c\u5165\u53e3",
+            "readerTextLength": 6086,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "en",
         "theme": "light",
@@ -35,7 +105,75 @@
       "preset": "paper",
       "mode": "light",
       "locale": "en",
-      "screenshot": "visual-paper-light-en.png",
+      "screenshot": "visual-paper-light-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-paper-light-en-articles.png",
+          "sha256": "3858e689ffd8afebc2b9dda3d57caaf15ae75d8b162e38757103ae03c299c1cc",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 14,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-paper-light-en-reader.png",
+          "sha256": "99e8697be53fdff142d6c4ac183dda0d3e708144855199ddcdf1ac67276de583",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 14,
+            "listTitle": "All unread",
+            "activeRow": "21",
+            "readerTitle": "002 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 311,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-paper-light-en-settings.png",
+          "sha256": "146c423884161ae4111c4fb87985d769d6d56be66d1fffab469357f3059aae09",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 14,
+            "listTitle": "All unread",
+            "activeRow": "21",
+            "readerTitle": "002 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 311,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "en",
         "theme": "light",
@@ -63,7 +201,75 @@
       "preset": "slate",
       "mode": "light",
       "locale": "en",
-      "screenshot": "visual-slate-light-en.png",
+      "screenshot": "visual-slate-light-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-slate-light-en-articles.png",
+          "sha256": "b37e4f64b04687deed1a98286fd69c0130ec345e0b1fe83f987a9d8b1ee58975",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 13,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-slate-light-en-reader.png",
+          "sha256": "7486c72754ae6b96f1cea6f852f8e8a46ee46b531fb1b4db00adb16c916b72d7",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 13,
+            "listTitle": "All unread",
+            "activeRow": "12",
+            "readerTitle": "004 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 311,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-slate-light-en-settings.png",
+          "sha256": "f6b037378a06a01d1aa4e7aafc0c807a0f5cf2efe601ca6473345f98616c4aec",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 13,
+            "listTitle": "All unread",
+            "activeRow": "12",
+            "readerTitle": "004 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 311,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "en",
         "theme": "light",
@@ -91,7 +297,75 @@
       "preset": "clear",
       "mode": "dark",
       "locale": "en",
-      "screenshot": "visual-clear-dark-en.png",
+      "screenshot": "visual-clear-dark-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-clear-dark-en-articles.png",
+          "sha256": "9fd3640075782f7c22fabaa0c37d703874324370a50c686ecf4950527f3c6a94",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 12,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-clear-dark-en-reader.png",
+          "sha256": "a75653200583713e388270eab28c122a591a389fd9f865117f46bcdcf7795907",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 12,
+            "listTitle": "All unread",
+            "activeRow": "3",
+            "readerTitle": "006 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 311,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-clear-dark-en-settings.png",
+          "sha256": "f09fd7e12869f7bb6d767373bcaa829b1f8048ae01b51d928bf0fb8055a6c841",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 12,
+            "listTitle": "All unread",
+            "activeRow": "3",
+            "readerTitle": "006 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 311,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "en",
         "theme": "dark",
@@ -119,7 +393,75 @@
       "preset": "paper",
       "mode": "dark",
       "locale": "en",
-      "screenshot": "visual-paper-dark-en.png",
+      "screenshot": "visual-paper-dark-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-paper-dark-en-articles.png",
+          "sha256": "e5b49c523cd8b03199f279c6d4b7dcdf80ca732212aba1f07449a175230f1e70",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 11,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-paper-dark-en-reader.png",
+          "sha256": "fb36dea6d72256e8471c84ed8ac0f10dedf7a7c8494ce4d7aec3c48fa544b551",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 11,
+            "listTitle": "All unread",
+            "activeRow": "23",
+            "readerTitle": "008 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 311,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-paper-dark-en-settings.png",
+          "sha256": "c8e49878871bb500823d4ddaed3dd2e1d2ad9612746d91d11fee4dd456af71cc",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 11,
+            "listTitle": "All unread",
+            "activeRow": "23",
+            "readerTitle": "008 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 311,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "en",
         "theme": "dark",
@@ -147,7 +489,75 @@
       "preset": "slate",
       "mode": "dark",
       "locale": "en",
-      "screenshot": "visual-slate-dark-en.png",
+      "screenshot": "visual-slate-dark-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-slate-dark-en-articles.png",
+          "sha256": "b9a3946cdf4394fd393a024306c05d6e1ed0319eb87e6f9240da364af9781aca",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 10,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-slate-dark-en-reader.png",
+          "sha256": "66cf5183ec8d088d38fdaf33d31d8abd299c2f5aff8b45371bd833c0a1cd17ae",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 10,
+            "listTitle": "All unread",
+            "activeRow": "14",
+            "readerTitle": "010 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-slate-dark-en-settings.png",
+          "sha256": "1c1f8c47cbe540a4297f3125c2eefdc7985a727d5e0b13ef18f6d0a75c7eb11b",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 10,
+            "listTitle": "All unread",
+            "activeRow": "14",
+            "readerTitle": "010 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "en",
         "theme": "dark",
@@ -175,7 +585,75 @@
       "preset": "clear",
       "mode": "light",
       "locale": "zh-CN",
-      "screenshot": "visual-clear-light-zh-CN.png",
+      "screenshot": "visual-clear-light-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-clear-light-zh-CN-articles.png",
+          "sha256": "eb9c57776a82be43d00ebaa355b17c60a98cc97040da9e16d1599e628e7f5062",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 9,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-clear-light-zh-CN-reader.png",
+          "sha256": "7dcf462d4de286122c544f37771b26dd9f19bd1f3350de2f71a8c4d1959d5be0",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 9,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "5",
+            "readerTitle": "012 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-clear-light-zh-CN-settings.png",
+          "sha256": "fbf32e7ec1fffa45e4ded20854b9d8d9c8daf10f2518714c95247c4baa1caabc",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 9,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "5",
+            "readerTitle": "012 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "zh-CN",
         "theme": "light",
@@ -203,7 +681,75 @@
       "preset": "paper",
       "mode": "light",
       "locale": "zh-CN",
-      "screenshot": "visual-paper-light-zh-CN.png",
+      "screenshot": "visual-paper-light-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-paper-light-zh-CN-articles.png",
+          "sha256": "11c31e13d60edda02690a00c62bbbad9b921700e32eb32e9470627af0ff7bbbb",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 8,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-paper-light-zh-CN-reader.png",
+          "sha256": "ee19d374cede9e895e1288fd99f486ce8cc6a3ff1aad1c848ac455047681f35f",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 8,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "25",
+            "readerTitle": "014 \u00b7 \u4e00\u7bc7\u7528\u4e8e\u6d4b\u8bd5\u957f\u6807\u9898\u6362\u884c\u7684\u6587\u7ae0\uff1a\u9605\u8bfb\u5e03\u5c40\u5728\u4e2d\u6587\u548c English words \u6df7\u6392\u65f6\u5fc5\u987b\u5b8c\u6574\u4fdd\u7559\u6807\u9898\u4e0e\u64cd\u4f5c\u5165\u53e3",
+            "readerTextLength": 312,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-paper-light-zh-CN-settings.png",
+          "sha256": "e6bf1395a57f9d10fe1272e7cc58469a2c59061364b20e9422c37ecbe35de369",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 8,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "25",
+            "readerTitle": "014 \u00b7 \u4e00\u7bc7\u7528\u4e8e\u6d4b\u8bd5\u957f\u6807\u9898\u6362\u884c\u7684\u6587\u7ae0\uff1a\u9605\u8bfb\u5e03\u5c40\u5728\u4e2d\u6587\u548c English words \u6df7\u6392\u65f6\u5fc5\u987b\u5b8c\u6574\u4fdd\u7559\u6807\u9898\u4e0e\u64cd\u4f5c\u5165\u53e3",
+            "readerTextLength": 312,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "zh-CN",
         "theme": "light",
@@ -231,7 +777,75 @@
       "preset": "slate",
       "mode": "light",
       "locale": "zh-CN",
-      "screenshot": "visual-slate-light-zh-CN.png",
+      "screenshot": "visual-slate-light-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-slate-light-zh-CN-articles.png",
+          "sha256": "b781735061dacc645dee733b4eae9122cdce7d9aed1f186ef2430fd02cf14f96",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 7,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-slate-light-zh-CN-reader.png",
+          "sha256": "2ba6f3f1f17378f7e6a50a15587ba8060a6ebd0b5b8816e9c9b913a175c7406a",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 7,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "16",
+            "readerTitle": "016 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-slate-light-zh-CN-settings.png",
+          "sha256": "c52623753dd693a8f490175cf2af3669ecc21c2e78f3400b6890f88ba22a8293",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 7,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "16",
+            "readerTitle": "016 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "zh-CN",
         "theme": "light",
@@ -259,7 +873,75 @@
       "preset": "clear",
       "mode": "dark",
       "locale": "zh-CN",
-      "screenshot": "visual-clear-dark-zh-CN.png",
+      "screenshot": "visual-clear-dark-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-clear-dark-zh-CN-articles.png",
+          "sha256": "b7cff2addb7c8b248e23d49928716a328877fcfc37bf1941aac8ddd8c4771f0e",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 6,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-clear-dark-zh-CN-reader.png",
+          "sha256": "f0fd5d8b4af101b8d4b712a66681b8d30b20644982947bf1b29c52444ecd2f2a",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 6,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "7",
+            "readerTitle": "018 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-clear-dark-zh-CN-settings.png",
+          "sha256": "6f8ca7b3aa5bde1f7ec6e4995331bd981af7ca9cfe22db1870cd4629ba0373dc",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 6,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "7",
+            "readerTitle": "018 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "zh-CN",
         "theme": "dark",
@@ -287,7 +969,75 @@
       "preset": "paper",
       "mode": "dark",
       "locale": "zh-CN",
-      "screenshot": "visual-paper-dark-zh-CN.png",
+      "screenshot": "visual-paper-dark-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-paper-dark-zh-CN-articles.png",
+          "sha256": "58e004d78b46d390fce38a6cd58cd7ef27b06085cbf016e75dfbe1f07111599f",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 5,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-paper-dark-zh-CN-reader.png",
+          "sha256": "e62b0bfcd4a0295f141d1e236b9c33c316eb146f14a400156b285ea40a84fece",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 5,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "27",
+            "readerTitle": "020 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-paper-dark-zh-CN-settings.png",
+          "sha256": "915f9f278a935526165e719f1b02092d5c0b3aed224e581c737ef52330139fc1",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 5,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "27",
+            "readerTitle": "020 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "zh-CN",
         "theme": "dark",
@@ -315,7 +1065,75 @@
       "preset": "slate",
       "mode": "dark",
       "locale": "zh-CN",
-      "screenshot": "visual-slate-dark-zh-CN.png",
+      "screenshot": "visual-slate-dark-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-slate-dark-zh-CN-articles.png",
+          "sha256": "47d507768a63e9faeda0d088f81e065fae7b7650695337e5ab6e2d8c6bdb2e87",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 4,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-slate-dark-zh-CN-reader.png",
+          "sha256": "741e505e9b2ff0c54b7900ce29e3e308fd23ca37d2ba9e1282756973892bb2d3",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 4,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "18",
+            "readerTitle": "022 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-slate-dark-zh-CN-settings.png",
+          "sha256": "d0efee58fb8f2179d920d6a3a6b4eb598888d1f09b13e91f41d06fff3c98ca09",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 4,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "18",
+            "readerTitle": "022 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 312,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
       "css": {
         "locale": "zh-CN",
         "theme": "dark",

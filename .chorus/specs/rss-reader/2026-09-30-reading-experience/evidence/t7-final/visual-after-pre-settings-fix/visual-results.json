@@ -1,0 +1,1189 @@
+{
+  "binarySha256": "706b42fea0d6c18918157264f8d53022ba245bb83dc624ce6f61cb151abfd59f",
+  "baseline": false,
+  "fixtureSha256": "03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91",
+  "pageCount": 36,
+  "uniqueImageHashes": 36,
+  "variants": [
+    {
+      "preset": "clear",
+      "mode": "light",
+      "locale": "en",
+      "screenshot": "visual-clear-light-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-clear-light-en-articles.png",
+          "sha256": "f1c67a33a6734ed15deaf3421faedc7fb3c1678eeeaffc4b4be3a894a0928014",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 15,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-clear-light-en-reader.png",
+          "sha256": "d4f441fa3dc94ecfc4a59d1c111629c81b292188d33c5e30c100371fe38d61d9",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 15,
+            "listTitle": "All unread",
+            "activeRow": "1",
+            "readerTitle": "000 \u00b7 \u4e00\u7bc7\u7528\u4e8e\u6d4b\u8bd5\u957f\u6807\u9898\u6362\u884c\u7684\u6587\u7ae0\uff1a\u9605\u8bfb\u5e03\u5c40\u5728\u4e2d\u6587\u548c English words \u6df7\u6392\u65f6\u5fc5\u987b\u5b8c\u6574\u4fdd\u7559\u6807\u9898\u4e0e\u64cd\u4f5c\u5165\u53e3",
+            "readerTextLength": 6106,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-clear-light-en-settings.png",
+          "sha256": "08131c0888dba5d878d9ce7200bcb91f0d62129865f11a723ac1be6c3dd49b8b",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 15,
+            "listTitle": "All unread",
+            "activeRow": "1",
+            "readerTitle": "000 \u00b7 \u4e00\u7bc7\u7528\u4e8e\u6d4b\u8bd5\u957f\u6807\u9898\u6362\u884c\u7684\u6587\u7ae0\uff1a\u9605\u8bfb\u5e03\u5c40\u5728\u4e2d\u6587\u548c English words \u6df7\u6392\u65f6\u5fc5\u987b\u5b8c\u6574\u4fdd\u7559\u6807\u9898\u4e0e\u64cd\u4f5c\u5165\u53e3",
+            "readerTextLength": 6106,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "en",
+        "theme": "light",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#1455a0",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1007.515625,
+          "y": 8.390625,
+          "w": 112.484375,
+          "h": 36
+        }
+      },
+      "minContrast": 1.030922394785149,
+      "revision": 1
+    },
+    {
+      "preset": "paper",
+      "mode": "light",
+      "locale": "en",
+      "screenshot": "visual-paper-light-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-paper-light-en-articles.png",
+          "sha256": "3a7a86cca13a81680b5336b36598ec20fac1d04c8a1a3e2a9f9306348df7f475",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 14,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-paper-light-en-reader.png",
+          "sha256": "7d4a74f41aec7b8092919c7600deeb0899d90409ce4bed49fff73b4906c61000",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 14,
+            "listTitle": "All unread",
+            "activeRow": "21",
+            "readerTitle": "002 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 331,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-paper-light-en-settings.png",
+          "sha256": "a6c4af50c0658e4c876449ac8ff986115d62e933a9f93abadd9862b4378af960",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 14,
+            "listTitle": "All unread",
+            "activeRow": "21",
+            "readerTitle": "002 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 331,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "en",
+        "theme": "light",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#1455a0",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1007.515625,
+          "y": 8.390625,
+          "w": 112.484375,
+          "h": 36
+        }
+      },
+      "minContrast": 1.4205386396825386,
+      "revision": 2
+    },
+    {
+      "preset": "slate",
+      "mode": "light",
+      "locale": "en",
+      "screenshot": "visual-slate-light-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-slate-light-en-articles.png",
+          "sha256": "c01b1de61c92f208ed7994472773616f23ace1fd91eec5bd70cbbe313b5af32d",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 13,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-slate-light-en-reader.png",
+          "sha256": "44a877ed350dee1233c77c3b38663f66bfc5f8d18855da6cc16d2f26676354e1",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 13,
+            "listTitle": "All unread",
+            "activeRow": "12",
+            "readerTitle": "004 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 331,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-slate-light-en-settings.png",
+          "sha256": "22e9e606cb9398c386f603e76717e4b3a50037925ea6e84176c31ac439e34668",
+          "state": {
+            "locale": "en",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 13,
+            "listTitle": "All unread",
+            "activeRow": "12",
+            "readerTitle": "004 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 331,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "en",
+        "theme": "light",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#1455a0",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1007.515625,
+          "y": 8.390625,
+          "w": 112.484375,
+          "h": 36
+        }
+      },
+      "minContrast": 1.4408534763311307,
+      "revision": 3
+    },
+    {
+      "preset": "clear",
+      "mode": "dark",
+      "locale": "en",
+      "screenshot": "visual-clear-dark-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-clear-dark-en-articles.png",
+          "sha256": "77afd99ad244b9c74848f7d4de607e3a7507dfb8901ae37a705cb24a654fc8dc",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 12,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-clear-dark-en-reader.png",
+          "sha256": "2921413cc9bc80924912cb400e4e8c698b3e445f49d2fe876518ef898a634370",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 12,
+            "listTitle": "All unread",
+            "activeRow": "3",
+            "readerTitle": "006 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 331,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-clear-dark-en-settings.png",
+          "sha256": "f226c610eb8b61740800ccdb9e6b6315ac0c5278b3bb08671c26b8723403ba22",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 12,
+            "listTitle": "All unread",
+            "activeRow": "3",
+            "readerTitle": "006 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 331,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "en",
+        "theme": "dark",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#7ab4ff",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1007.515625,
+          "y": 8.390625,
+          "w": 112.484375,
+          "h": 36
+        }
+      },
+      "minContrast": 1.030922394785149,
+      "revision": 4
+    },
+    {
+      "preset": "paper",
+      "mode": "dark",
+      "locale": "en",
+      "screenshot": "visual-paper-dark-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-paper-dark-en-articles.png",
+          "sha256": "5b5c806d81d8477c5399ae9f46172e101618c4a14b23232190315a0972c7b6a3",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 11,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-paper-dark-en-reader.png",
+          "sha256": "78ee8788d4a53012ee8a34f35eae427f0eabec137f6fc4361c11558e9af5a16a",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 11,
+            "listTitle": "All unread",
+            "activeRow": "23",
+            "readerTitle": "008 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 331,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-paper-dark-en-settings.png",
+          "sha256": "e4b11cbd62387da1755960c3303e8c2d41dcc0e44926064cf54df37e386f5501",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 11,
+            "listTitle": "All unread",
+            "activeRow": "23",
+            "readerTitle": "008 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 331,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "en",
+        "theme": "dark",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#e4b379",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1007.515625,
+          "y": 8.390625,
+          "w": 112.484375,
+          "h": 36
+        }
+      },
+      "minContrast": 1.4205386396825386,
+      "revision": 5
+    },
+    {
+      "preset": "slate",
+      "mode": "dark",
+      "locale": "en",
+      "screenshot": "visual-slate-dark-en-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-slate-dark-en-articles.png",
+          "sha256": "84a92de86fc998987af645c364772c869e4125abb9f458e0769ddbece0c2c6d9",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 10,
+            "listTitle": "All unread",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-slate-dark-en-reader.png",
+          "sha256": "5e9546dfbfaf70cf08226efd8d2f584e153f90f9412b507154c43b0ed663e924",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 10,
+            "listTitle": "All unread",
+            "activeRow": "14",
+            "readerTitle": "010 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-slate-dark-en-settings.png",
+          "sha256": "10d45b3fe5afe57a21ca0ea9f3d72804b0057a69d2b0e8e30169a9e1fd0cb1a4",
+          "state": {
+            "locale": "en",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 10,
+            "listTitle": "All unread",
+            "activeRow": "14",
+            "readerTitle": "010 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "en",
+        "theme": "dark",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#a5cfca",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1007.515625,
+          "y": 8.390625,
+          "w": 112.484375,
+          "h": 36
+        }
+      },
+      "minContrast": 1.4408534763311307,
+      "revision": 6
+    },
+    {
+      "preset": "clear",
+      "mode": "light",
+      "locale": "zh-CN",
+      "screenshot": "visual-clear-light-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-clear-light-zh-CN-articles.png",
+          "sha256": "5fe49dca6d9638c82eb3a2c7a54c3d6c8e0c5fe3fcff42e2af85a57a923caa1e",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 9,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-clear-light-zh-CN-reader.png",
+          "sha256": "d67050ab90ced77814ac99a1228c9e1dcf8bee9b5e8204bcf8b79ecf2b677643",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 9,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "5",
+            "readerTitle": "012 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-clear-light-zh-CN-settings.png",
+          "sha256": "db4efc37b8d1088f0227bbbd46cf6719b100332ff752ac1dc9c34b58806d9639",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 9,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "5",
+            "readerTitle": "012 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "zh-CN",
+        "theme": "light",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#1455a0",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1036,
+          "y": 8.390625,
+          "w": 84,
+          "h": 36
+        }
+      },
+      "minContrast": 1.030922394785149,
+      "revision": 7
+    },
+    {
+      "preset": "paper",
+      "mode": "light",
+      "locale": "zh-CN",
+      "screenshot": "visual-paper-light-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-paper-light-zh-CN-articles.png",
+          "sha256": "497b6d9f469b1beddf3276987426a0f261dff041b661ae6faf733e0e5473e973",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 8,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-paper-light-zh-CN-reader.png",
+          "sha256": "0527d53d09696d9f88000c537b7f39a05e687a93858bce4a038113086cae9342",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 8,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "25",
+            "readerTitle": "014 \u00b7 \u4e00\u7bc7\u7528\u4e8e\u6d4b\u8bd5\u957f\u6807\u9898\u6362\u884c\u7684\u6587\u7ae0\uff1a\u9605\u8bfb\u5e03\u5c40\u5728\u4e2d\u6587\u548c English words \u6df7\u6392\u65f6\u5fc5\u987b\u5b8c\u6574\u4fdd\u7559\u6807\u9898\u4e0e\u64cd\u4f5c\u5165\u53e3",
+            "readerTextLength": 332,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-paper-light-zh-CN-settings.png",
+          "sha256": "e0ae5dab0812958983481ac752c306ed340a0d37268cb188a4b7eb95f5a23672",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 8,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "25",
+            "readerTitle": "014 \u00b7 \u4e00\u7bc7\u7528\u4e8e\u6d4b\u8bd5\u957f\u6807\u9898\u6362\u884c\u7684\u6587\u7ae0\uff1a\u9605\u8bfb\u5e03\u5c40\u5728\u4e2d\u6587\u548c English words \u6df7\u6392\u65f6\u5fc5\u987b\u5b8c\u6574\u4fdd\u7559\u6807\u9898\u4e0e\u64cd\u4f5c\u5165\u53e3",
+            "readerTextLength": 332,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "zh-CN",
+        "theme": "light",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#1455a0",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1036,
+          "y": 8.390625,
+          "w": 84,
+          "h": 36
+        }
+      },
+      "minContrast": 1.4205386396825386,
+      "revision": 8
+    },
+    {
+      "preset": "slate",
+      "mode": "light",
+      "locale": "zh-CN",
+      "screenshot": "visual-slate-light-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-slate-light-zh-CN-articles.png",
+          "sha256": "c85175819e74b0a34bb072e561261da5301c8b59614a57dbcc5b40c32d3a3598",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 7,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-slate-light-zh-CN-reader.png",
+          "sha256": "9e98cf3ccca1341384a21d8fbc1d81d0d70365ac85f1caefa24af2494279e3b2",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 7,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "16",
+            "readerTitle": "016 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-slate-light-zh-CN-settings.png",
+          "sha256": "ed0398c1a8c92f5dc6587e35e804ccb5becaeb0428f498a083dfec1b973d93b0",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "light",
+            "ready": "complete",
+            "listRows": 7,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "16",
+            "readerTitle": "016 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "zh-CN",
+        "theme": "light",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#1455a0",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1036,
+          "y": 8.390625,
+          "w": 84,
+          "h": 36
+        }
+      },
+      "minContrast": 1.4408534763311307,
+      "revision": 9
+    },
+    {
+      "preset": "clear",
+      "mode": "dark",
+      "locale": "zh-CN",
+      "screenshot": "visual-clear-dark-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-clear-dark-zh-CN-articles.png",
+          "sha256": "671dc278ed7328177276236f52c645324366b82cdb81707469f96339ba4795b7",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 6,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-clear-dark-zh-CN-reader.png",
+          "sha256": "949d8e6052f957209d25ba17bc223a6ad93095602c686739b6300de165f78754",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 6,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "7",
+            "readerTitle": "018 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-clear-dark-zh-CN-settings.png",
+          "sha256": "48a26b1ba3d3338d71157523668fcccac14af7f497a9b7865262d93847584dad",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 6,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "7",
+            "readerTitle": "018 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "zh-CN",
+        "theme": "dark",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#7ab4ff",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1036,
+          "y": 8.390625,
+          "w": 84,
+          "h": 36
+        }
+      },
+      "minContrast": 1.030922394785149,
+      "revision": 10
+    },
+    {
+      "preset": "paper",
+      "mode": "dark",
+      "locale": "zh-CN",
+      "screenshot": "visual-paper-dark-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-paper-dark-zh-CN-articles.png",
+          "sha256": "28bfc4cc0956bdab59deecced92d74f1855cd71eee793fc8639a8feebaf01fa8",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 5,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-paper-dark-zh-CN-reader.png",
+          "sha256": "74c6968b6c791a47574890cc2d5e891a23870a75261f78f86c5a063384843d21",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 5,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "27",
+            "readerTitle": "020 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-paper-dark-zh-CN-settings.png",
+          "sha256": "293230d8828a581ccf1cdd15181f883f441988fad7dd2a8c2e848f971022f9bc",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 5,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "27",
+            "readerTitle": "020 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "zh-CN",
+        "theme": "dark",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#e4b379",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1036,
+          "y": 8.390625,
+          "w": 84,
+          "h": 36
+        }
+      },
+      "minContrast": 1.4205386396825386,
+      "revision": 11
+    },
+    {
+      "preset": "slate",
+      "mode": "dark",
+      "locale": "zh-CN",
+      "screenshot": "visual-slate-dark-zh-CN-reader.png",
+      "pages": {
+        "articles": {
+          "screenshot": "visual-slate-dark-zh-CN-articles.png",
+          "sha256": "8464e7ee60bca19d6cc478e970086eac8f1cfed86ab6a3c02001357bc373a816",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 4,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": null,
+            "readerTitle": null,
+            "readerTextLength": 0,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "reader": {
+          "screenshot": "visual-slate-dark-zh-CN-reader.png",
+          "sha256": "b2423df6679964055a6e3012c99c61d18f00e48eee88fe330c4bb7b945f5771c",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 4,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "18",
+            "readerTitle": "022 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": false,
+            "appearanceVisible": false,
+            "settingsTabs": 0,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        },
+        "settings": {
+          "screenshot": "visual-slate-dark-zh-CN-settings.png",
+          "sha256": "766c557f269e4595e133c9d561b6de837004a54db42fb5b292c4ed251a37edfc",
+          "state": {
+            "locale": "zh-CN",
+            "theme": "dark",
+            "ready": "complete",
+            "listRows": 4,
+            "listTitle": "\u5168\u90e8\u672a\u8bfb",
+            "activeRow": "18",
+            "readerTitle": "022 \u00b7 \u5b89\u9759\u5730\u9605\u8bfb\uff1a\u5b57\u9636\u4e0e\u7559\u767d",
+            "readerTextLength": 332,
+            "settingsOpen": true,
+            "appearanceVisible": true,
+            "settingsTabs": 7,
+            "viewport": [
+              1240,
+              820
+            ],
+            "scrollWidth": 1240
+          }
+        }
+      },
+      "css": {
+        "locale": "zh-CN",
+        "theme": "dark",
+        "sidebar": "220px",
+        "list": "320px",
+        "fontSize": "16px",
+        "rowPadding": "5px",
+        "accent": "#a5cfca",
+        "bodyScrollWidth": 1240,
+        "innerWidth": 1240,
+        "navWidth": 0,
+        "focused": "btn-settings",
+        "focusRule": "solid",
+        "buttonRect": {
+          "x": 1036,
+          "y": 8.390625,
+          "w": 84,
+          "h": 36
+        }
+      },
+      "minContrast": 1.4408534763311307,
+      "revision": 12
+    }
+  ],
+  "overrides": {
+    "typography": {
+      "ui_family": [
+        "Noto Sans CJK SC",
+        "sans-serif"
+      ],
+      "ui_size": 16
+    },
+    "list": {
+      "density": "compact"
+    },
+    "chrome": {
+      "sidebar_width": 220,
+      "list_width": 320
+    },
+    "colors": {
+      "light": {
+        "accent": "#1455a0"
+      }
+    }
+  },
+  "restart": {
+    "theme": "dark",
+    "sidebar": "220px",
+    "locale": "zh-CN"
+  },
+  "savedLocale": "zh-CN",
+  "passed": true
+}

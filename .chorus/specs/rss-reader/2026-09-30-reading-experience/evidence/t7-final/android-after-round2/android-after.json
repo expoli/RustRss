@@ -1,0 +1,43 @@
+{
+  "commit": "90f4275",
+  "label": "after",
+  "serial": "emulator-5584",
+  "avd": "RustRssT5",
+  "apkSha256": "6baf0f068c8a458ee04dee687bb312c3793c0567e2f27ab9bb29956f63053bfc",
+  "fixtureSha256": "03911253c9ff26ac7f1eb0d8790e0e9dc6c301b7f6455248d04dfeeb40eddd91",
+  "physicalSize": "Physical size: 1080x2400",
+  "density": "Physical density: 420",
+  "list": {
+    "page": "articles",
+    "css": [
+      412.19049072265625,
+      867.047607421875
+    ],
+    "dpr": 2.625,
+    "scrollWidth": 412,
+    "firstTitle": "000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口"
+  },
+  "reader": {
+    "page": "reader",
+    "css": [
+      412.19049072265625,
+      867.047607421875
+    ],
+    "dpr": 2.625,
+    "scrollWidth": 412,
+    "firstTitle": "000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+    "firstReaderParagraph": "阅读从正文开始。Reading starts here."
+  },
+  "settings": {
+    "page": "settings",
+    "css": [
+      412.19049072265625,
+      867.047607421875
+    ],
+    "dpr": 2.625,
+    "scrollWidth": 412,
+    "firstTitle": "000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+    "firstReaderParagraph": "阅读从正文开始。Reading starts here."
+  },
+  "passed": true
+}

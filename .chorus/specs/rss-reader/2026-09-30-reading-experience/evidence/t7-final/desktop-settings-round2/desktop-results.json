@@ -1,0 +1,289 @@
+{
+  "checks": [
+    {
+      "name": "narrow-desktop-viewport",
+      "detail": 920
+    },
+    {
+      "name": "desktop-category-appearance",
+      "detail": {
+        "visible": true,
+        "summary": "Light · Clear / Clear"
+      }
+    },
+    {
+      "name": "desktop-pane-appearance",
+      "detail": null
+    },
+    {
+      "name": "desktop-category-reading",
+      "detail": {
+        "visible": true,
+        "summary": "Reading size (px): 14"
+      }
+    },
+    {
+      "name": "desktop-pane-reading",
+      "detail": null
+    },
+    {
+      "name": "desktop-category-subscriptions",
+      "detail": {
+        "visible": true,
+        "summary": "Environment proxy · Off"
+      }
+    },
+    {
+      "name": "desktop-pane-subscriptions",
+      "detail": null
+    },
+    {
+      "name": "desktop-category-ai",
+      "detail": {
+        "visible": true,
+        "summary": "Ollama (local, no key) · Model"
+      }
+    },
+    {
+      "name": "desktop-pane-ai",
+      "detail": null
+    },
+    {
+      "name": "desktop-category-mcp",
+      "detail": {
+        "visible": true,
+        "summary": "Enable the MCP HTTP server: no"
+      }
+    },
+    {
+      "name": "desktop-pane-mcp",
+      "detail": null
+    },
+    {
+      "name": "desktop-category-data",
+      "detail": {
+        "visible": true,
+        "summary": "OPML import / export"
+      }
+    },
+    {
+      "name": "desktop-pane-data",
+      "detail": null
+    },
+    {
+      "name": "desktop-category-general",
+      "detail": {
+        "visible": true,
+        "summary": "English"
+      }
+    },
+    {
+      "name": "desktop-pane-general",
+      "detail": null
+    },
+    {
+      "name": "narrow-desktop-keeps-column-widths",
+      "detail": {
+        "sidebar": true,
+        "list": true
+      }
+    },
+    {
+      "name": "narrow-desktop-keeps-reading-layout",
+      "detail": {
+        "readerWidth": true,
+        "layout": true,
+        "markRead": true
+      }
+    },
+    {
+      "name": "narrow-desktop-reader-layout-save-enabled",
+      "detail": null
+    },
+    {
+      "name": "narrow-desktop-reader-layout-saved",
+      "detail": {
+        "revision": 1,
+        "width": 760,
+        "layout": "focus"
+      }
+    },
+    {
+      "name": "narrow-desktop-reader-layout-effect",
+      "detail": {
+        "before": {
+          "grid": "150px 240px 530px",
+          "width": "680px",
+          "layout": "three_column"
+        },
+        "after": {
+          "grid": "150px 220px 550px",
+          "width": "760px",
+          "layout": "focus"
+        }
+      }
+    },
+    {
+      "name": "narrow-desktop-reader-layout-reopen",
+      "detail": {
+        "width": "760",
+        "layout": "focus"
+      }
+    },
+    {
+      "name": "desktop-data-actions",
+      "detail": {
+        "import": true,
+        "export": true,
+        "backup": true,
+        "restore": true,
+        "androidHint": false
+      }
+    },
+    {
+      "name": "desktop-general-actions",
+      "detail": {
+        "locale": true,
+        "close": true,
+        "logs": true,
+        "level": true
+      }
+    },
+    {
+      "name": "desktop-mcp-actions",
+      "detail": {
+        "enabled": true,
+        "port": true,
+        "status": true,
+        "snippet": true,
+        "rotate": true,
+        "write": true,
+        "danger": true,
+        "generate": true
+      }
+    },
+    {
+      "name": "mcp-core-rejects-invalid-without-write",
+      "detail": {
+        "result": "端口需要 ≥ 1024（更低的端口需要 root）",
+        "port": "37601"
+      }
+    },
+    {
+      "name": "mcp-port-error-linked",
+      "detail": null
+    },
+    {
+      "name": "mcp-invalid-port-no-write",
+      "detail": "37601"
+    },
+    {
+      "name": "mcp-default-write-disabled",
+      "detail": null
+    },
+    {
+      "name": "mcp-live-loopback",
+      "detail": {
+        "url": "http://127.0.0.1:37601/mcp"
+      }
+    },
+    {
+      "name": "mcp-health",
+      "detail": null
+    },
+    {
+      "name": "mcp-read-token-auth",
+      "detail": null
+    },
+    {
+      "name": "mcp-snippet-clipboard",
+      "detail": null
+    },
+    {
+      "name": "mcp-read-token-rotation",
+      "detail": null
+    },
+    {
+      "name": "mcp-write-token-generate",
+      "detail": null
+    },
+    {
+      "name": "mcp-write-token-clipboard",
+      "detail": null
+    },
+    {
+      "name": "mcp-write-toggle",
+      "detail": null
+    },
+    {
+      "name": "mcp-danger-cancel-no-write",
+      "detail": null
+    },
+    {
+      "name": "mcp-danger-confirm-write",
+      "detail": null
+    },
+    {
+      "name": "mcp-write-token-rotate",
+      "detail": null
+    },
+    {
+      "name": "mcp-write-token-clear",
+      "detail": null
+    },
+    {
+      "name": "mcp-service-stop",
+      "detail": null
+    },
+    {
+      "name": "db-backup-native-snapshot",
+      "detail": {
+        "integrity": "ok",
+        "articles": 30,
+        "bytes": 200704
+      }
+    },
+    {
+      "name": "db-restore-marker-after-backup",
+      "detail": null
+    },
+    {
+      "name": "db-restore-cancel-no-stage",
+      "detail": null
+    },
+    {
+      "name": "db-restore-confirm-reopened",
+      "detail": null
+    },
+    {
+      "name": "db-restore-staged",
+      "detail": null
+    },
+    {
+      "name": "desktop-settings-close",
+      "detail": null
+    },
+    {
+      "name": "db-restore-applied-on-restart",
+      "detail": {
+        "integrity": "ok",
+        "rollbackFiles": 1
+      }
+    },
+    {
+      "name": "narrow-desktop-reader-layout-app-restart",
+      "detail": {
+        "width": 760,
+        "layout": "focus"
+      }
+    }
+  ],
+  "limits": [
+    "Xvfb lacks a window manager; title-bar and tray gestures were not exercised."
+  ],
+  "backupDialogResult": "/tmp/rustrss-t5-desktop-vogchuyb/home/backup-output/RustRss-backup-20260930-183359.sqlite",
+  "display": ":70",
+  "desktopSha256": "4150b083de72077a4eda3706f16e9515f7a19b6f7193064856e5b3683031a353",
+  "fixturePath": "/tmp/rustrss-t5-desktop-vogchuyb/fixture.sqlite",
+  "passed": true
+}

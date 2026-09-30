@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>RustRss 订阅</title>
+  </head>
+  <body>
+    <outline text="T6 Reading Group" title="T6 Reading Group">
+      <outline type="rss" text="T6 Local Reading" title="T6 Local Reading" xmlUrl="http://127.0.0.1:38613/feed.xml" htmlUrl="http://127.0.0.1/"/>
+    </outline>
+    <outline type="rss" text="A deliberately long subscription title for wrapping and menu placement" title="A deliberately long subscription title for wrapping and menu placement" xmlUrl="https://example.invalid/en.xml"/>
+    <outline type="rss" text="中文阅读 · 日常观察" title="中文阅读 · 日常观察" xmlUrl="https://example.invalid/zh.xml"/>
+    <outline type="rss" text="混合 / Mixed" title="混合 / Mixed" xmlUrl="https://example.invalid/mixed.xml"/>
+  </body>
+</opml>

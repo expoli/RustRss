@@ -1,0 +1,82 @@
+{
+  "serial": "emulator-5584",
+  "avd": "RustRssT5",
+  "pid": "25891",
+  "android": "16",
+  "apkSha256": "6baf0f068c8a458ee04dee687bb312c3793c0567e2f27ab9bb29956f63053bfc",
+  "fixtureSha256": "8d379695416512af1489d464cffcd86b305406908747c64f5a22fa0792130506",
+  "physicalSize": "Physical size: 1080x2400",
+  "density": "Physical density: 420",
+  "screenY": 63,
+  "checks": [
+    {
+      "name": "filter-read-star-later-back-saved",
+      "detail": {
+        "initial": {
+          "page": "articles",
+          "view": "unread",
+          "css": [
+            412.19049072265625,
+            867.047607421875
+          ],
+          "dpr": 2.625,
+          "scrollWidth": 412,
+          "active": ""
+        },
+        "reader": {
+          "page": "reader",
+          "view": "all",
+          "searchOpen": "false",
+          "css": [
+            412.19049072265625,
+            867.047607421875
+          ],
+          "dpr": 2.625,
+          "scrollWidth": 412,
+          "active": ""
+        },
+        "returned": {
+          "page": "articles",
+          "view": "all",
+          "searchOpen": "false",
+          "css": [
+            412.19049072265625,
+            867.047607421875
+          ],
+          "dpr": 2.625,
+          "scrollWidth": 412,
+          "active": "act-later"
+        },
+        "entryId": 1,
+        "read": true,
+        "starred": true,
+        "readLater": true,
+        "savedListHasArticle": true
+      }
+    },
+    {
+      "name": "subscription-more-move-folder",
+      "detail": {
+        "feedId": 2,
+        "folderBefore": null,
+        "folderAfter": 1,
+        "stableId": true,
+        "menuTitle": "A deliberately long subscription title for wrapping and menu placement"
+      }
+    },
+    {
+      "name": "settings-font-draft-preview-save-cancel",
+      "detail": {
+        "oldSize": 14,
+        "newSize": 17,
+        "revisionBefore": 0,
+        "draftRevision": 0,
+        "previewRevision": 0,
+        "savedRevision": 1,
+        "cancelRevision": 1,
+        "savedSize": 17
+      }
+    }
+  ],
+  "passed": true
+}

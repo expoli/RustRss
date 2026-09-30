@@ -1,0 +1,332 @@
+{
+  "serial": "emulator-5584",
+  "avd": "RustRssT5",
+  "apkSha256": "6baf0f068c8a458ee04dee687bb312c3793c0567e2f27ab9bb29956f63053bfc",
+  "original": {
+    "font": "1.0",
+    "size": "Physical size: 1080x2400"
+  },
+  "checks": [
+    {
+      "scale": "1.0",
+      "system": "1.0",
+      "configuration": "mGlobalConfiguration={1.0 310mcc260mnc [en_US] ldltr sw360dp w360dp h800dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 945, 2100) mAppBounds=Rect(0, 0 - 945, 2100) mMaxBounds=Rect(0, 0 - 945, 2100) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0}",
+      "pid": "28105",
+      "list": {
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "bodyFont": "14px",
+        "title": {
+          "x": 14.666666984558105,
+          "y": 167.52381896972656,
+          "w": 323.4285888671875,
+          "h": 58.78571701049805,
+          "right": 338.0952558517456,
+          "bottom": 226.3095359802246,
+          "visible": true,
+          "font": "14px"
+        },
+        "paragraph": null,
+        "back": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false,
+          "font": "14px"
+        },
+        "nav": [
+          {
+            "w": 85.5,
+            "h": 56,
+            "x": 6,
+            "right": 91.5,
+            "bottom": 748
+          },
+          {
+            "w": 85.5,
+            "h": 56,
+            "x": 93.5,
+            "right": 179,
+            "bottom": 748
+          },
+          {
+            "w": 85.5,
+            "h": 56,
+            "x": 181,
+            "right": 266.5,
+            "bottom": 748
+          },
+          {
+            "w": 85.5,
+            "h": 56,
+            "x": 268.5,
+            "right": 354,
+            "bottom": 748
+          }
+        ]
+      },
+      "reader": {
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "bodyFont": "14px",
+        "title": {
+          "x": 14.666666984558105,
+          "y": 114.76190948486328,
+          "w": 323.4285888671875,
+          "h": 58.78571701049805,
+          "right": 338.0952558517456,
+          "bottom": 173.54762649536133,
+          "visible": true,
+          "font": "14px"
+        },
+        "paragraph": {
+          "x": 18,
+          "y": 273.29168701171875,
+          "w": 314.0952453613281,
+          "h": 21.696428298950195,
+          "right": 332.0952453613281,
+          "bottom": 294.98811531066895,
+          "visible": true,
+          "font": "14px"
+        },
+        "back": {
+          "x": 10,
+          "y": 8,
+          "w": 48,
+          "h": 48,
+          "right": 58,
+          "bottom": 56,
+          "visible": true,
+          "font": "0px"
+        },
+        "nav": []
+      }
+    },
+    {
+      "scale": "1.3",
+      "system": "1.3",
+      "configuration": "mGlobalConfiguration={1.3 310mcc260mnc [en_US] ldltr sw360dp w360dp h800dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 945, 2100) mAppBounds=Rect(0, 0 - 945, 2100) mMaxBounds=Rect(0, 0 - 945, 2100) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0}",
+      "pid": "28281",
+      "list": {
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "bodyFont": "18.2px",
+        "title": {
+          "x": 14.666666984558105,
+          "y": 167.52381896972656,
+          "w": 323.4285888671875,
+          "h": 25.48214340209961,
+          "right": 338.0952558517456,
+          "bottom": 193.00596237182617,
+          "visible": true,
+          "font": "18.2px"
+        },
+        "paragraph": null,
+        "back": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false,
+          "font": "18.2px"
+        },
+        "nav": [
+          {
+            "w": 85.5,
+            "h": 63.779762268066406,
+            "x": 6,
+            "right": 91.5,
+            "bottom": 748.0000381469727
+          },
+          {
+            "w": 85.5,
+            "h": 63.779762268066406,
+            "x": 93.5,
+            "right": 179,
+            "bottom": 748.0000381469727
+          },
+          {
+            "w": 85.5,
+            "h": 63.779762268066406,
+            "x": 181,
+            "right": 266.5,
+            "bottom": 748.0000381469727
+          },
+          {
+            "w": 85.5,
+            "h": 63.779762268066406,
+            "x": 268.5,
+            "right": 354,
+            "bottom": 748.0000381469727
+          }
+        ]
+      },
+      "reader": {
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "bodyFont": "18.2px",
+        "title": {
+          "x": 14.666666984558105,
+          "y": 114.76190948486328,
+          "w": 323.4285888671875,
+          "h": 25.48214340209961,
+          "right": 338.0952558517456,
+          "bottom": 140.2440528869629,
+          "visible": true,
+          "font": "18.2px"
+        },
+        "paragraph": {
+          "x": 18,
+          "y": 239.3095245361328,
+          "w": 314.0952453613281,
+          "h": 28.20833396911621,
+          "right": 332.0952453613281,
+          "bottom": 267.517858505249,
+          "visible": true,
+          "font": "18.2px"
+        },
+        "back": {
+          "x": 10,
+          "y": 8,
+          "w": 48,
+          "h": 48,
+          "right": 58,
+          "bottom": 56,
+          "visible": true,
+          "font": "0px"
+        },
+        "nav": []
+      }
+    },
+    {
+      "scale": "2.0",
+      "system": "2.0",
+      "configuration": "mGlobalConfiguration={2.0 310mcc260mnc [en_US] ldltr sw360dp w360dp h800dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 945, 2100) mAppBounds=Rect(0, 0 - 945, 2100) mMaxBounds=Rect(0, 0 - 945, 2100) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0}",
+      "pid": "28448",
+      "list": {
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "bodyFont": "28px",
+        "title": {
+          "x": 14.666666984558105,
+          "y": 176.44642639160156,
+          "w": 323.4285888671875,
+          "h": 78.39286041259766,
+          "right": 338.0952558517456,
+          "bottom": 254.83928680419922,
+          "visible": true,
+          "font": "28px"
+        },
+        "paragraph": null,
+        "back": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "right": 0,
+          "bottom": 0,
+          "visible": false,
+          "font": "28px"
+        },
+        "nav": [
+          {
+            "w": 85.5,
+            "h": 87.5952377319336,
+            "x": 6,
+            "right": 91.5,
+            "bottom": 748.0000228881836
+          },
+          {
+            "w": 85.5,
+            "h": 87.5952377319336,
+            "x": 93.5,
+            "right": 179,
+            "bottom": 748.0000228881836
+          },
+          {
+            "w": 85.5,
+            "h": 87.5952377319336,
+            "x": 181,
+            "right": 266.5,
+            "bottom": 748.0000228881836
+          },
+          {
+            "w": 85.5,
+            "h": 87.5952377319336,
+            "x": 268.5,
+            "right": 354,
+            "bottom": 748.0000228881836
+          }
+        ]
+      },
+      "reader": {
+        "viewport": {
+          "w": 360,
+          "h": 752
+        },
+        "dpr": 2.625,
+        "scrollWidth": 360,
+        "bodyFont": "28px",
+        "title": {
+          "x": 14.666666984558105,
+          "y": 114.76190948486328,
+          "w": 323.4285888671875,
+          "h": 78.39286041259766,
+          "right": 338.0952558517456,
+          "bottom": 193.15476989746094,
+          "visible": true,
+          "font": "28px"
+        },
+        "paragraph": {
+          "x": 18,
+          "y": 382.6190490722656,
+          "w": 314.0952453613281,
+          "h": 86.79762268066406,
+          "right": 332.0952453613281,
+          "bottom": 469.4166717529297,
+          "visible": true,
+          "font": "28px"
+        },
+        "back": {
+          "x": 10,
+          "y": 8,
+          "w": 48,
+          "h": 48,
+          "right": 58,
+          "bottom": 56,
+          "visible": true,
+          "font": "0px"
+        },
+        "nav": []
+      }
+    }
+  ],
+  "webviewSystemFontScaling": 2,
+  "systemFontApplied": true,
+  "passed": true
+}

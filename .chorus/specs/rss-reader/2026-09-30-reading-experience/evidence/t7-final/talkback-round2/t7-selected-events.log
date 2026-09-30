@@ -1,0 +1,47 @@
+--------- beginning of main
+10-01 02:38:55.843 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:55.880 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=com.google.android.apps.nexuslauncher id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:38:55.880 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:55.880 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:56.026 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=com.google.android.apps.nexuslauncher id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:38:56.043 20847 20847 I T4A11Y  : type=TYPE_WINDOW_STATE_CHANGED package=com.google.android.apps.nexuslauncher id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:38:56.105 20847 20847 I T4A11Y  : type=TYPE_WINDOW_STATE_CHANGED package=com.google.android.apps.nexuslauncher id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:38:56.105 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:56.105 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:56.106 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=com.google.android.apps.nexuslauncher id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:56.106 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:56.106 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:56.647 20847 20847 I T4A11Y  : type=TYPE_WINDOW_STATE_CHANGED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:57.042 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:38:57.082 20847 20847 I T4A11Y  : type=TYPE_WINDOW_STATE_CHANGED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:38:57.723 20847 20847 I T4A11Y  : type=TYPE_WINDOW_STATE_CHANGED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:38:57.723 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:38:57.723 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:39:00.748 20847 20847 I T4A11Y  : CONNECTED
+10-01 02:39:00.748 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:39:00.748 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:39:02.378 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:02.379 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=btn-search-toggle text=搜索文章 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:02.380 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=btn-refresh text=刷新全部 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:02.380 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=全部未读 desc=null a11yFocus=false state=Off selected=false checked=false checkable=true
+10-01 02:39:02.380 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=null id=null text=全部未读 desc=null a11yFocus=false state=Off selected=false checked=false checkable=true
+10-01 02:39:02.381 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=null id=null text=全部 desc=null a11yFocus=false state=Off selected=false checked=false checkable=true
+10-01 02:39:02.477 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.471 20847 20847 I T4A11Y  : type=TYPE_VIEW_FOCUSED package=tech.expoli.rustrss id=null text=null desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.479 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=全部未读 desc=null a11yFocus=false state=On selected=false checked=true checkable=true
+10-01 02:39:07.481 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=null id=null text=全部未读 desc=null a11yFocus=false state=On selected=false checked=true checkable=true
+10-01 02:39:07.482 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false
+10-01 02:39:07.484 20847 20847 I T4A11Y  : type=TYPE_VIEW_CLICKED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false
+10-01 02:39:07.547 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.551 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text= desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.633 20847 20847 I T4A11Y  : type=TYPE_VIEW_CLICKED package=tech.expoli.rustrss id=null text=收藏 desc=null a11yFocus=false state=current page selected=false checked=false checkable=false
+10-01 02:39:07.644 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=文章 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.646 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=null text=RustRss desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.755 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=list-count text=已加载 14 / 共 14 篇 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.758 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=list-count text=已加载 14 / 共 14 篇 desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.775 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=entries text= desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:07.779 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=tech.expoli.rustrss id=reader text= desc=null a11yFocus=false state=null selected=false checked=false checkable=false
+10-01 02:39:13.960 20847 20847 I T4A11Y  : CONNECTED
+10-01 02:39:13.960 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:39:13.960 20847 20847 I T4A11Y  : type=TYPE_WINDOWS_CHANGED package=null id=null text=null desc=null a11yFocus=null state=null selected=null checked=null checkable=null
+10-01 02:39:24.165 20847 20847 I T4A11Y  : type=TYPE_WINDOW_CONTENT_CHANGED package=com.android.systemui id=com.android.systemui:id/mobile_combo text=null desc=T-Mobile, signal full. a11yFocus=false state=null selected=false checked=false checkable=false
