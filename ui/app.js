@@ -358,10 +358,10 @@ const state = {
 };
 
 const VIEWS = [
-  { kind: 'unread', key: 'list.unread', icon: '●' },
-  { kind: 'starred', key: 'list.starred', icon: '★' },
-  { kind: 'later', key: 'list.later', icon: '⏱' },
-  { kind: 'all', key: 'list.all', icon: '≡' },
+  { kind: 'unread', key: 'list.unread', icon: 'unread' },
+  { kind: 'starred', key: 'list.starred', icon: 'star' },
+  { kind: 'later', key: 'list.later', icon: 'later' },
+  { kind: 'all', key: 'list.all', icon: 'all' },
 ];
 
 // ---------------------------------------------------------------- 正文清洗
@@ -1191,8 +1191,8 @@ function renderReader(entry) {
     <div class="reader-actions">
       <button id="act-aa" aria-haspopup="dialog" title="${t('theme.reading')}">Aa</button>
       <button id="act-read">${entry.read ? t('reader.markUnread') : t('reader.markRead')}</button>
-      <button id="act-star">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</button>
-      <button id="act-later" class="${entry.read_later ? 'later-active' : ''}">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</button>
+      <button id="act-star">${window.RustRssIcons.svg('star')}<span class="action-label">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</span></button>
+      <button id="act-later" class="${entry.read_later ? 'later-active' : ''}">${window.RustRssIcons.svg('later')}<span class="action-label">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</span></button>
       ${entry.url ? `<button id="act-open">${t('reader.openInBrowser')}</button><button id="act-copy">${t('reader.copyLink')}</button><button id="act-share">${t('reader.share')}</button>` : ''}
       ${entry.needs_fulltext ? `<button id="act-fulltext" title="${t('reader.fetchFulltextTitle')}">${t('reader.fetchFulltext')}</button>` : ''}
       <button id="act-summarize" title="${t('reader.summarizeTitle')}">${t('reader.summarize')}</button>
@@ -2667,11 +2667,12 @@ function renderMenuItems(menu, items) {
     }
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.classList.add('ui-button', item.danger ? 'ui-button--danger' : 'ui-button--text');
     if (item.danger) btn.classList.add('danger');
     if (item.checked !== undefined) {
       const mark = document.createElement('span');
       mark.className = 'mark';
-      mark.textContent = item.checked ? '✓' : '';
+      if (item.checked) mark.innerHTML = window.RustRssIcons.svg('check');
       const label = document.createElement('span');
       label.className = 'label';
       label.textContent = item.label;
@@ -3302,7 +3303,7 @@ async function toggleStar() {
   // 阅读区只改按钮文案，正文 DOM 不动（同 toggleRead）
   if (state.readerEntry && state.readerEntry.id === row.id) {
     const starBtn = el('act-star');
-    if (starBtn) starBtn.textContent = starred ? t('reader.removeStar') : t('reader.addStar');
+    if (starBtn) setText(starBtn.querySelector('.action-label'), starred ? t('reader.removeStar') : t('reader.addStar'));
   }
   // 星标视图里取消星标 → 该行不再属于本视图：定向移除该行（先前是 renderList 整表重建）
   if (state.view.kind === 'starred' && !starred) dropRowFromList(row.id);
@@ -3326,7 +3327,7 @@ async function toggleReadLater(id = state.selectedId) {
   if (state.readerEntry && state.readerEntry.id === row.id) {
     const laterBtn = el('act-later');
     if (laterBtn) {
-      laterBtn.textContent = readLater ? t('reader.removeLater') : t('reader.markLater');
+      setText(laterBtn.querySelector('.action-label'), readLater ? t('reader.removeLater') : t('reader.markLater'));
       laterBtn.classList.toggle('later-active', readLater);
     }
   }

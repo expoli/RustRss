@@ -45,6 +45,7 @@ pub fn register(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wr
             "/theme.js" => ("text/javascript",include_bytes!("../../ui/theme.js").to_vec()),
             "/theme-sync.js" => ("text/javascript",include_bytes!("../../ui/theme-sync.js").to_vec()),
             "/components.js" => ("text/javascript",include_bytes!("../../ui/components.js").to_vec()),
+            "/icons.js" => ("text/javascript",include_bytes!("../../ui/icons.js").to_vec()),
             "/i18n.js" => ("text/javascript",include_bytes!("../../ui/i18n.js").to_vec()),
             "/style.css" => ("text/css",include_bytes!("../../ui/style.css").to_vec()),
             "/vendor/highlight.min.js" => ("text/javascript",include_bytes!("../../ui/vendor/highlight.min.js").to_vec()),

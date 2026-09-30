@@ -1,0 +1,22 @@
+{
+  "baseline_commit": "bc680d5155b7c6afcee355fe6aa9bc74ef456031",
+  "working_tree_commit_at_verification": "bc680d5155b7c6afcee355fe6aa9bc74ef456031",
+  "product_binary_sha256": "0cd3506570af26b082b2419de3455f31ccb841ec3c99eab0cf30852cb212f813",
+  "component_binary_sha256": "e34d03b5ca80f8a0460597b94d7e28f6015591f69212a17acf0343d0dc26efe6",
+  "commands": {
+    "cargo test --workspace": "passed",
+    "cargo build --workspace": "passed",
+    "cargo build -p rustrss-desktop --example theme_ui --features snapshot-probe": "passed",
+    "cargo clippy --workspace --all-targets": "passed without new warnings",
+    "node --test scripts/tests/*.test.cjs": "60 passed",
+    "node scripts/verify-reading-experience-touch.mjs ...": "13 targets passed",
+    "dbus-run-session -- /usr/bin/python3 scripts/verify-reading-experience-virtual.py ...": "39 UI captures / 47 checks; 23 settings checks; 24 preview captures"
+  },
+  "known_limits": [
+    "Android APK not rebuilt or installed in this task",
+    "Existing emulator-5554 not modified",
+    "Windows/macOS and physical Android not tested",
+    "CSS browser touch emulation is not native Android hit testing",
+    "Wayland local preview window close-cancel not exercised"
+  ]
+}

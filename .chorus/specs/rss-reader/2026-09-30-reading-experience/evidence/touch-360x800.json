@@ -1,0 +1,88 @@
+{
+  "viewport": [
+    360,
+    800
+  ],
+  "pointerCoarse": true,
+  "rows": [
+    {
+      "selector": "#m-nav .m-nav-btn",
+      "width": 85.5,
+      "height": 56,
+      "visible": true
+    },
+    {
+      "selector": "#m-seg-articles button",
+      "width": 86,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#btn-list-sort",
+      "width": 48,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#btn-list-bulk",
+      "width": 48,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#btn-refresh",
+      "width": 102,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#entries li",
+      "width": 360,
+      "height": 111.28125,
+      "visible": true
+    },
+    {
+      "selector": "#entries .row-tag-btn",
+      "width": 48,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#m-reader-back",
+      "width": 106,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#fixture-star",
+      "width": 52.234375,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#fixture-later",
+      "width": 59.53125,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#fixture-more",
+      "width": 58.890625,
+      "height": 48,
+      "visible": true
+    },
+    {
+      "selector": "#settings-nav-list button",
+      "width": 318,
+      "height": 69.1875,
+      "visible": true
+    },
+    {
+      "selector": ".ctx-menu button",
+      "width": 150,
+      "height": 48,
+      "visible": true
+    }
+  ],
+  "failures": []
+}

@@ -1,0 +1,37 @@
+{
+  "baseline_commit": "bc680d5155b7c6afcee355fe6aa9bc74ef456031",
+  "fixtures": [
+    {
+      "requested": 30,
+      "metrics": {
+        "entries": 30,
+        "folders": 24,
+        "feeds": 3,
+        "with_image": 15,
+        "unread": 15,
+        "starred": 14,
+        "read_later": 14,
+        "long_titles": 5,
+        "code_and_table": 30
+      },
+      "database_sha256": "ce6a472b6afd2ec9f23dc652ffd5c3f205249c484829bfc1ad309315320e7078",
+      "local_temp_path": "/tmp/rustrss-reading-t1-30.sqlite"
+    },
+    {
+      "requested": 200,
+      "metrics": {
+        "entries": 200,
+        "folders": 24,
+        "feeds": 3,
+        "with_image": 100,
+        "unread": 100,
+        "starred": 100,
+        "read_later": 100,
+        "long_titles": 29,
+        "code_and_table": 200
+      },
+      "database_sha256": "4eb026978d27e4f2bd1d01340b798ef7f3b045c40ed51186f2583fc97cbf2343",
+      "local_temp_path": "/tmp/rustrss-reading-t1-200.sqlite"
+    }
+  ]
+}

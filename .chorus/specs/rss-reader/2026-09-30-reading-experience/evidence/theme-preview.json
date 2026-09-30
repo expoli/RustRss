@@ -1,0 +1,425 @@
+{
+  "output": "/tmp/rustrss-theme-preview-_cnkk6xw",
+  "captures": [
+    {
+      "label": "clear-light-overview",
+      "bytes": 89657,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 1566.182062,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-light-article",
+      "bytes": 148575,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 110.30084,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-light-settings",
+      "bytes": 94887,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 168.19647400000002,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-dark-overview",
+      "bytes": 89238,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 86.571467,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-dark-article",
+      "bytes": 147910,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 111.372918,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "clear-dark-settings",
+      "bytes": 92190,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 109.344302,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-light-overview",
+      "bytes": 89479,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 122.057676,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-light-article",
+      "bytes": 139398,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 106.608953,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-light-settings",
+      "bytes": 93713,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 112.14062700000001,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-dark-overview",
+      "bytes": 89023,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 99.52109100000001,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-dark-article",
+      "bytes": 138785,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 104.28280199999999,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "paper-dark-settings",
+      "bytes": 90267,
+      "revision": 2,
+      "hash": "bd6bff77924de1f2d814fa546fda0bd304a175a1e9c24a0d77c4b087770b76b2",
+      "capture_ms": 106.542547,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-light-overview",
+      "bytes": 93363,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 107.38002900000001,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-light-article",
+      "bytes": 141869,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 105.37746200000001,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-light-settings",
+      "bytes": 95845,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 110.44693799999999,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-dark-overview",
+      "bytes": 92793,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 89.395635,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-dark-article",
+      "bytes": 141052,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 107.752577,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "slate-dark-settings",
+      "bytes": 92923,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 106.321397,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "recapture",
+      "bytes": 93362,
+      "revision": 3,
+      "hash": "f876dcb4592419504e693f3d4b76d21ffa0feb153ac5ef10e51cf1aaecfdbcd0",
+      "capture_ms": 88.96967599999999,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "reopen-0",
+      "bytes": 148573,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 1541.1850089999998,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "reopen-1",
+      "bytes": 148574,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 1549.5163440000001,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "reopen-2",
+      "bytes": 148573,
+      "revision": 1,
+      "hash": "8bd201a72b9edf2ca5a9b4ab16d052111174eac769726bf987e820672eac17ac",
+      "capture_ms": 1530.9453259999998,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "stdio-paper",
+      "bytes": 139399,
+      "revision": 1,
+      "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+      "capture_ms": 1588.1594639999998,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    },
+    {
+      "label": "revoke",
+      "bytes": 139398,
+      "revision": 1,
+      "hash": "4a1f342f29d115f9a06c2b2bfdad0e1c54e8bc6e9b7fcf0c57de826bc4ca743f",
+      "capture_ms": 681.826917,
+      "logical_size": [
+        960,
+        640
+      ],
+      "pixel_size": [
+        960,
+        640
+      ],
+      "scale_factor": 1.0,
+      "display_backend": "GdkWaylandDisplay"
+    }
+  ],
+  "temporary_no_write": true,
+  "stdio_bridge_file": true,
+  "saved_revision": 1,
+  "idempotent_save": true,
+  "display": "wayland",
+  "requested_scale": null,
+  "local_cancel": false,
+  "revocation_reaped": true,
+  "article_renders_before_after": [
+    0,
+    0
+  ]
+}

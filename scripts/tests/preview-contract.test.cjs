@@ -98,6 +98,10 @@ test('negative control: deleted IDs in every UI file are rejected',()=>{
  }
 });
 test('fixed preview protocol serves scripts and stylesheets in shared markup',()=>assertResourceContract(html,adapter));
+test('native component fixture serves the shared icon script',()=>{
+ const fixture=fs.readFileSync('src-tauri/examples/theme_ui.rs','utf8');
+ assertResourceContract(html,fixture);
+});
 test('resource scanning tolerates attribute order, quote style and extra attributes',()=>{
  const markup=`<script defer type='module' src="app.js"></script>
   <script\n src='theme.js' defer type="text/javascript"></script>

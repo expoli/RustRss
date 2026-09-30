@@ -59,13 +59,13 @@
     <span class="brand" data-tauri-drag-region data-i18n="app.name">RustRss</span>
     <input id="search" type="search" data-i18n-placeholder="search.placeholder" autocomplete="off" />
     <div class="grow"></div>
-    <button id="btn-refresh" data-i18n="toolbar.refresh" data-i18n-title="toolbar.refreshTitle"></button>
-    <button id="btn-add" data-i18n="toolbar.addFeed" data-i18n-title="toolbar.addFeedTitle"></button>
-    <button id="btn-settings" data-i18n="toolbar.settings" data-i18n-title="toolbar.settingsTitle"></button>
+    <button id="btn-refresh" class="ui-button" data-icon="refresh" data-i18n="toolbar.refresh" data-i18n-title="toolbar.refreshTitle"></button>
+    <button id="btn-add" class="ui-button" data-icon="plus" data-i18n="toolbar.addFeed" data-i18n-title="toolbar.addFeedTitle"></button>
+    <button id="btn-settings" class="ui-button ui-button--secondary" data-icon="settings" data-i18n="toolbar.settings" data-i18n-title="toolbar.settingsTitle"></button>
     <div class="win-controls" data-desktop-only>
-      <button id="btn-win-min" data-i18n-title="win.minimize" aria-label="minimize">─</button>
-      <button id="btn-win-max" data-i18n-title="win.maximize" aria-label="maximize">□</button>
-      <button id="btn-win-close" data-i18n-title="win.close" aria-label="close">✕</button>
+      <button id="btn-win-min" data-icon="minimize" data-i18n-title="win.minimize" data-i18n-aria-label="win.minimize"></button>
+      <button id="btn-win-max" data-icon="maximize" data-i18n-title="win.maximize" data-i18n-aria-label="win.maximize"></button>
+      <button id="btn-win-close" data-icon="close" data-i18n-title="win.close" data-i18n-aria-label="win.close"></button>
     </div>
   </header>
 
@@ -75,7 +75,7 @@
       <div class="section-title">
         <span data-i18n="sidebar.feeds"></span>
         <span id="feeds-meta" class="dim"></span>
-        <button id="btn-new-folder" data-i18n-title="folder.newTitle" aria-label="new folder">＋</button>
+        <button id="btn-new-folder" data-icon="plus" data-i18n-title="folder.newTitle" data-i18n-aria-label="folder.newTitle"></button>
       </div>
       <ul id="feeds" class="feeds"></ul>
       <p id="m-feeds-empty" class="m-only hidden dim" data-i18n="m.feedsEmpty"></p>
@@ -92,7 +92,7 @@
       <div id="add-row" class="add-row hidden">
         <label class="m-only" for="add-url" data-i18n="m.feedUrl"></label>
         <input id="add-url" type="url" inputmode="url" enterkeyhint="go" data-i18n-placeholder="sidebar.addPlaceholder" autocomplete="off" autocapitalize="none" spellcheck="false" />
-        <button id="add-ok" data-i18n="sidebar.add"></button>
+        <button id="add-ok" class="ui-button ui-button--primary" data-i18n="sidebar.add"></button>
       </div>
       <div class="sidebar-foot">
         <span id="db-info" class="dim"></span>
@@ -115,11 +115,11 @@
         <span class="list-head-right">
           <span id="list-count" class="dim"></span>
           <!-- 排序与过滤入口：图标按钮弹 ctx-menu（三档 + 分隔 + 隐藏已读）-->
-          <button id="btn-list-bulk" data-i18n-title="settings.bulkTitle" aria-label="✓">✓</button>
-          <button id="btn-list-sort" data-i18n-title="list.sortTitle" aria-label="sort">⇅</button>
+          <button id="btn-list-bulk" data-icon="check" data-i18n-title="settings.bulkTitle" data-i18n-aria-label="settings.bulkTitle"></button>
+          <button id="btn-list-sort" class="ui-button ui-button--icon" data-icon="sort" data-i18n-title="list.sortTitle" data-i18n-aria-label="list.sortTitle"></button>
           <!-- 常驻「只看未读」：与排序菜单里的「隐藏已读」同一设置（list.hide_read），
                只是把入口提到显眼处（用户实测找不到菜单里的那项）；快捷键 U -->
-          <button id="btn-unread-only" data-i18n="list.unreadOnly" data-i18n-title="list.unreadOnlyTitle" aria-label="unread only" aria-pressed="false"></button>
+          <button id="btn-unread-only" data-i18n="list.unreadOnly" data-i18n-title="list.unreadOnlyTitle" data-i18n-aria-label="list.unreadOnly" aria-pressed="false"></button>
         </span>
       </div>
       <ul id="entries" class="entries" tabindex="-1"></ul>
@@ -128,7 +128,7 @@
     <section class="right-col">
       <!-- 窄屏全屏阅读器的返回键：只在手机宽度且阅读页激活时显示；
            点击走 history.back()（与 Android 系统返回同一机制），由 mobile.js 恢复原页面。 -->
-      <button id="m-reader-back" type="button" data-i18n="m.back" data-i18n-title="m.back"></button>
+      <button id="m-reader-back" type="button" class="ui-button" data-icon="back" data-i18n="m.back" data-i18n-title="m.back"></button>
       <article id="reader" class="reader">
         <div class="reader-empty">
           <p data-i18n="reader.empty"></p>
@@ -147,16 +147,16 @@
        桌面宽度整条隐藏；阅读页为沉浸式全屏，也隐藏（返回走 m-reader-back / 系统返回）。 -->
   <nav id="m-nav" aria-label="Primary">
     <button type="button" class="m-nav-btn" data-mpage-btn="articles">
-      <span class="m-ico" aria-hidden="true">▤</span><span class="m-label" data-i18n="m.nav.articles"></span>
+      <span class="m-ico" aria-hidden="true" data-icon="articles"></span><span class="m-label" data-i18n="m.nav.articles"></span>
     </button>
     <button type="button" class="m-nav-btn" data-mpage-btn="subscriptions">
-      <span class="m-ico" aria-hidden="true">☰</span><span class="m-label" data-i18n="m.nav.subscriptions"></span>
+      <span class="m-ico" aria-hidden="true" data-icon="subscriptions"></span><span class="m-label" data-i18n="m.nav.subscriptions"></span>
     </button>
     <button type="button" class="m-nav-btn" data-mpage-btn="saved">
-      <span class="m-ico" aria-hidden="true">★</span><span class="m-label" data-i18n="m.nav.saved"></span>
+      <span class="m-ico" aria-hidden="true" data-icon="star"></span><span class="m-label" data-i18n="m.nav.saved"></span>
     </button>
     <button type="button" class="m-nav-btn" data-mpage-btn="settings">
-      <span class="m-ico" aria-hidden="true">⚙</span><span class="m-label" data-i18n="m.nav.settings"></span>
+      <span class="m-ico" aria-hidden="true" data-icon="settings"></span><span class="m-label" data-i18n="m.nav.settings"></span>
     </button>
   </nav>
 
@@ -179,7 +179,7 @@
       </header>
       <nav class="settings-nav">
         <div class="settings-nav-title" data-i18n="settings.title"></div>
-        <ul id="settings-nav-list" role="tablist" aria-orientation="vertical"><li role="presentation"><button type="button" role="tab" id="tab-appearance" data-pane="appearance" aria-controls="pane-appearance" aria-selected="false" tabindex="-1" data-i18n="settings.nav.appearance"></button></li><li role="presentation"><button type="button" role="tab" id="tab-reading" data-pane="reading" aria-controls="pane-reading" aria-selected="false" tabindex="-1" data-i18n="settings.nav.reading"></button></li><li role="presentation"><button type="button" role="tab" id="tab-subscriptions" data-pane="subscriptions" aria-controls="pane-subscriptions" aria-selected="false" tabindex="-1" data-i18n="settings.nav.subscriptions"></button></li><li role="presentation"><button type="button" role="tab" id="tab-ai" data-pane="ai" aria-controls="pane-ai" aria-selected="false" tabindex="-1" data-i18n="settings.nav.ai"></button></li><li role="presentation" data-desktop-only><button type="button" role="tab" id="tab-mcp" data-pane="mcp" aria-controls="pane-mcp" aria-selected="false" tabindex="-1" data-i18n="settings.nav.mcp"></button></li><li role="presentation"><button type="button" role="tab" id="tab-data" data-pane="data" aria-controls="pane-data" aria-selected="false" tabindex="-1" data-i18n="settings.nav.data"></button></li><li role="presentation"><button type="button" role="tab" id="tab-general" data-pane="general" aria-controls="pane-general" aria-selected="false" tabindex="-1" data-i18n="settings.nav.general"></button></li></ul>
+        <ul id="settings-nav-list" role="tablist" aria-orientation="vertical"><li role="presentation"><button type="button" role="tab" id="tab-appearance" data-pane="appearance" data-icon="appearance" aria-controls="pane-appearance" aria-selected="false" tabindex="-1" data-i18n="settings.nav.appearance"></button></li><li role="presentation"><button type="button" role="tab" id="tab-reading" data-pane="reading" data-icon="reading" aria-controls="pane-reading" aria-selected="false" tabindex="-1" data-i18n="settings.nav.reading"></button></li><li role="presentation"><button type="button" role="tab" id="tab-subscriptions" data-pane="subscriptions" data-icon="subscriptions" aria-controls="pane-subscriptions" aria-selected="false" tabindex="-1" data-i18n="settings.nav.subscriptions"></button></li><li role="presentation"><button type="button" role="tab" id="tab-ai" data-pane="ai" data-icon="ai" aria-controls="pane-ai" aria-selected="false" tabindex="-1" data-i18n="settings.nav.ai"></button></li><li role="presentation" data-desktop-only><button type="button" role="tab" id="tab-mcp" data-pane="mcp" data-icon="link" aria-controls="pane-mcp" aria-selected="false" tabindex="-1" data-i18n="settings.nav.mcp"></button></li><li role="presentation"><button type="button" role="tab" id="tab-data" data-pane="data" data-icon="data" aria-controls="pane-data" aria-selected="false" tabindex="-1" data-i18n="settings.nav.data"></button></li><li role="presentation"><button type="button" role="tab" id="tab-general" data-pane="general" data-icon="settings" aria-controls="pane-general" aria-selected="false" tabindex="-1" data-i18n="settings.nav.general"></button></li></ul>
         <div class="settings-nav-foot">
           <span id="settings-db-path" class="dim" title=""></span>
         </div>
@@ -624,6 +624,7 @@
 
   <script src="vendor/highlight.min.js"></script>
   <script src="i18n.js"></script>
+  <script src="icons.js"></script>
   <script src="components.js"></script>
   <script src="theme.js"></script>
   <script src="theme-sync.js"></script>

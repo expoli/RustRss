@@ -136,6 +136,8 @@ fn main() {
                     "text/javascript",
                     include_bytes!("../../ui/components.js").to_vec(),
                 ),
+                "/icons.js" => ("text/javascript", include_bytes!("../../ui/icons.js").to_vec()),
+                "/mobile.js" => ("text/javascript", include_bytes!("../../ui/mobile.js").to_vec()),
                 "/i18n.js" => (
                     "text/javascript",
                     include_bytes!("../../ui/i18n.js").to_vec(),

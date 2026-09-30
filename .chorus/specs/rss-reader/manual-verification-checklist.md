@@ -1304,3 +1304,14 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] 实体 ARM64、其它 Android API/厂商输入法、Android 系统字体缩放及 Windows/macOS 原生运行待验。
 
 证据：[底栏与返回记录](../android-app/2026-09-29-primary-navigation/evidence/record.md)。
+
+## 43. 阅读体验改版 T1 共享视觉基线（2026-09-30）
+
+- [x] 159 个稳定动作迁移 ID 覆盖 M01–M20，旧/新入口、平台、副作用、核验、责任与证据列齐备；后续动作仍待 T2–T7 实施并逐行回填。
+- [x] 30/200 行隔离数据各含三源、24 文件夹、中英长标题、图/无图、三独立阅读标记与代码/表格；`fixture-results.json` 记录实际计数。
+- [x] 六套内置预设/明暗组合的 60 组颜色对比度检查通过；重建的虚拟 KWin Wayland 真组件 39 帧、47 检查，每个预设/明暗/语言单元的三场景各有独立帧。设置编辑器 23 检查和 MCP 预览 24 帧通过；相同主题设置源与原有持久化/CAS 契约保留。
+- [x] 360×800 粗指针浏览器 CSS 夹具的 13 个主要目标均至少 48×48 CSS px；发现旧移动规则覆盖为 44px 后修正，数据见 `touch-360x800.json`。这只验证 CSS 矩形。
+- [x] `cargo test --workspace`、`cargo build --workspace`、`cargo clippy --workspace --all-targets`、60 个 JS 测试通过；页面脚本资源契约覆盖原生主题夹具。
+- [ ] 独立重建 Android APK 后的手势/三键原生命中、TalkBack、IME、系统字体以及 Windows/macOS 运行待 T7 核验。历史 ANR 图不作为页面 before 证据。
+
+证据：[T1 目录](2026-09-30-reading-experience/evidence/README.md)、[逐动作台账](2026-09-30-reading-experience/action-matrix.md)。

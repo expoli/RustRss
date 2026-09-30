@@ -59,7 +59,7 @@
     I18N.applyStaticI18n();
     el('views').innerHTML = '';
     // ui/app.js VIEWS: kind, i18n key, icon. Counts are zero because this is the empty matrix.
-    for (const [icon, key] of [['●', 'list.unread'], ['★', 'list.starred'], ['⏱', 'list.later'], ['≡', 'list.all']]) {
+    for (const [icon, key] of [['unread', 'list.unread'], ['star', 'list.starred'], ['later', 'list.later'], ['all', 'list.all']]) {
       const li = document.createElement('li');
       li.innerHTML = RustRssComponents.viewContent(icon);
       li.querySelector('.vlabel').textContent = I18N.t(key);

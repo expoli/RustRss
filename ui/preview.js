@@ -4,7 +4,7 @@
   const el=id=>document.getElementById(id);
     const renderer = RustRssTheme.createRenderer(document.documentElement,{reader:el('reader'),list:el('entries')});
     const components = RustRssComponents;
-    for (const [icon,label,count] of [['●','Unread · 未读',30],['★','Starred · 星标',3],['⚑','Read later · 稍后读',5]]) {
+    for (const [icon,label,count] of [['unread','Unread · 未读',30],['star','Starred · 星标',3],['later','Read later · 稍后读',5]]) {
       const li=document.createElement('li');li.innerHTML=components.viewContent(icon);
       li.querySelector('.vlabel').textContent=label;li.querySelector('.count').textContent=count;
       el('views').append(li);

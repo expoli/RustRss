@@ -1,0 +1,4 @@
+evidence: /home/tcy/Github/RustRss/.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/theme-ui.json
+{"output": "/tmp/rustrss-theme-ui-m9hnlhlx", "captures": 39, "checks": 47, "pixel_checks": 12}
+/home/tcy/Github/RustRss/scripts/verify-theme-ui.py:70: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+  hits = sum(1 for pixel in image.getdata() if pixel == expected)

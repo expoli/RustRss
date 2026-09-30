@@ -1,0 +1,739 @@
+{
+  "captures": [
+    {
+      "background": "#f7f8fa",
+      "bytes": 137513,
+      "file": "clear-light-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-light-zh-CN-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 234556,
+      "file": "clear-light-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-light-zh-CN-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 133108,
+      "file": "clear-light-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-light-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#ffffff"
+    },
+    {
+      "background": "#14161a",
+      "bytes": 137184,
+      "file": "clear-dark-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-dark-zh-CN-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#14161a",
+      "bytes": 233377,
+      "file": "clear-dark-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-dark-zh-CN-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#14161a",
+      "bytes": 128498,
+      "file": "clear-dark-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-dark-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#1a1d23"
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 137824,
+      "file": "paper-light-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-light-zh-CN-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 212115,
+      "file": "paper-light-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-light-zh-CN-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 129427,
+      "file": "paper-light-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-light-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#faf7f0"
+    },
+    {
+      "background": "#302b22",
+      "bytes": 136262,
+      "file": "paper-dark-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-dark-zh-CN-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#302b22",
+      "bytes": 210178,
+      "file": "paper-dark-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-dark-zh-CN-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#302b22",
+      "bytes": 124333,
+      "file": "paper-dark-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-dark-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#2b271f"
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 144918,
+      "file": "slate-light-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-light-zh-CN-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 222140,
+      "file": "slate-light-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-light-zh-CN-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 127013,
+      "file": "slate-light-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-light-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#f5f7f8"
+    },
+    {
+      "background": "#242d31",
+      "bytes": 143215,
+      "file": "slate-dark-zh-CN-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-dark-zh-CN-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#242d31",
+      "bytes": 220223,
+      "file": "slate-dark-zh-CN-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-dark-zh-CN-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#242d31",
+      "bytes": 123004,
+      "file": "slate-dark-zh-CN-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-dark-zh-CN-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#20272b"
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 136315,
+      "file": "clear-light-en-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-light-en-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 233360,
+      "file": "clear-light-en-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-light-en-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#f7f8fa",
+      "bytes": 121549,
+      "file": "clear-light-en-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-light-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#ffffff"
+    },
+    {
+      "background": "#14161a",
+      "bytes": 136142,
+      "file": "clear-dark-en-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-dark-en-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#14161a",
+      "bytes": 232388,
+      "file": "clear-dark-en-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-dark-en-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#14161a",
+      "bytes": 117329,
+      "file": "clear-dark-en-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "clear-dark-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#1a1d23"
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 136722,
+      "file": "paper-light-en-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-light-en-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 210686,
+      "file": "paper-light-en-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-light-en-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fffdf7",
+      "bytes": 118643,
+      "file": "paper-light-en-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-light-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#faf7f0"
+    },
+    {
+      "background": "#302b22",
+      "bytes": 135379,
+      "file": "paper-dark-en-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-dark-en-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#302b22",
+      "bytes": 208927,
+      "file": "paper-dark-en-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-dark-en-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#302b22",
+      "bytes": 114040,
+      "file": "paper-dark-en-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "paper-dark-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#2b271f"
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 143743,
+      "file": "slate-light-en-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-light-en-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 220999,
+      "file": "slate-light-en-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-light-en-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#fcfcfd",
+      "bytes": 115475,
+      "file": "slate-light-en-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-light-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#f5f7f8"
+    },
+    {
+      "background": "#242d31",
+      "bytes": 142353,
+      "file": "slate-dark-en-overview.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-dark-en-overview",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#242d31",
+      "bytes": 219327,
+      "file": "slate-dark-en-article.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-dark-en-article",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "background": "#242d31",
+      "bytes": 112021,
+      "file": "slate-dark-en-settings.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "slate-dark-en-settings",
+      "occlusion_point": [
+        554,
+        150
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1,
+      "settings_background": "#20272b"
+    },
+    {
+      "bytes": 234531,
+      "file": "layout-focus.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "name": "layout-focus",
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "bytes": 168658,
+      "file": "narrow-article.png",
+      "logical_size": [
+        900,
+        600
+      ],
+      "name": "narrow-article",
+      "pixels": [
+        900,
+        600
+      ],
+      "scale": 1
+    },
+    {
+      "bytes": 80791,
+      "file": "narrow-settings.png",
+      "logical_size": [
+        900,
+        600
+      ],
+      "name": "narrow-settings",
+      "pixels": [
+        900,
+        600
+      ],
+      "scale": 1
+    }
+  ],
+  "checks": [
+    "i18n key sets and markup",
+    "settings overlay covers list region 0/light/zh-CN",
+    "settings surface follows light 0/zh-CN",
+    "DOM identity 0/light/zh-CN",
+    "settings overlay covers list region 0/dark/zh-CN",
+    "settings surface follows dark 0/zh-CN",
+    "DOM identity 0/dark/zh-CN",
+    "settings overlay covers list region 1/light/zh-CN",
+    "settings surface follows light 1/zh-CN",
+    "DOM identity 1/light/zh-CN",
+    "settings overlay covers list region 1/dark/zh-CN",
+    "settings surface follows dark 1/zh-CN",
+    "DOM identity 1/dark/zh-CN",
+    "settings overlay covers list region 2/light/zh-CN",
+    "settings surface follows light 2/zh-CN",
+    "DOM identity 2/light/zh-CN",
+    "settings overlay covers list region 2/dark/zh-CN",
+    "settings surface follows dark 2/zh-CN",
+    "DOM identity 2/dark/zh-CN",
+    "settings overlay covers list region 0/light/en",
+    "settings surface follows light 0/en",
+    "DOM identity 0/light/en",
+    "settings overlay covers list region 0/dark/en",
+    "settings surface follows dark 0/en",
+    "DOM identity 0/dark/en",
+    "settings overlay covers list region 1/light/en",
+    "settings surface follows light 1/en",
+    "DOM identity 1/light/en",
+    "settings overlay covers list region 1/dark/en",
+    "settings surface follows dark 1/en",
+    "DOM identity 1/dark/en",
+    "settings overlay covers list region 2/light/en",
+    "settings surface follows light 2/en",
+    "DOM identity 2/light/en",
+    "settings overlay covers list region 2/dark/en",
+    "settings surface follows dark 2/en",
+    "DOM identity 2/dark/en",
+    "same-value zero DOM mutations",
+    "paragraph anchor after font and width change",
+    "color change preserves scroll",
+    "zero summary lines",
+    "thumbnail hidden without rebuilding rows",
+    "focus retains navigation",
+    "missing font retains readable layout via fallback",
+    "narrow viewport acknowledged",
+    "narrow reader stays within viewport",
+    "narrow theme picker remains reachable"
+  ],
+  "dpr": 1,
+  "fixture_version": 1,
+  "fonts": "requested/computed stacks only; glyph fallback not inferred",
+  "viewport": [
+    900,
+    600
+  ],
+  "native_background_pixel_checks": 12,
+  "settings_frames": 12,
+  "settings_frame_panel_pixels": [
+    618161,
+    617893,
+    617588,
+    617747,
+    617745,
+    617909,
+    624039,
+    623771,
+    623574,
+    623707,
+    623635,
+    623779
+  ],
+  "scene_frames_per_cell": {
+    "clear-dark-en": 3,
+    "clear-dark-zh": 3,
+    "clear-light-en": 3,
+    "clear-light-zh": 3,
+    "paper-dark-en": 3,
+    "paper-dark-zh": 3,
+    "paper-light-en": 3,
+    "paper-light-zh": 3,
+    "slate-dark-en": 3,
+    "slate-dark-zh": 3,
+    "slate-light-en": 3,
+    "slate-light-zh": 3
+  },
+  "scene_frames_note": "1 distinct frame per cell means scene toggles did not refresh the native snapshot in this environment; DOM assertions carry the per-scene claims",
+  "display": "wayland",
+  "run_log": "/tmp/rustrss-theme-ui-m9hnlhlx/run.log",
+  "binary": "target/debug/examples/theme_ui",
+  "binary_sha256": "e34d03b5ca80f8a0460597b94d7e28f6015591f69212a17acf0343d0dc26efe6",
+  "binary_mtime": "2026-09-30T09:23:07",
+  "captured_at": "2026-09-30T01:23:25+00:00"
+}

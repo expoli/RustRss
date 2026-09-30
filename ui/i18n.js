@@ -1196,12 +1196,18 @@ function t(key, params) {
 function applyStaticI18n(root = document) {
   for (const node of root.querySelectorAll('[data-i18n]')) {
     node.textContent = t(node.dataset.i18n);
+    if (node.dataset.icon && window.RustRssIcons) {
+      node.insertAdjacentHTML('afterbegin', window.RustRssIcons.svg(node.dataset.icon));
+    }
   }
   for (const node of root.querySelectorAll('[data-i18n-placeholder]')) {
     node.placeholder = t(node.dataset.i18nPlaceholder);
   }
   for (const node of root.querySelectorAll('[data-i18n-title]')) {
     node.title = t(node.dataset.i18nTitle);
+  }
+  for (const node of root.querySelectorAll('[data-i18n-aria-label]')) {
+    node.setAttribute('aria-label', t(node.dataset.i18nAriaLabel));
   }
 }
 
@@ -1219,7 +1225,7 @@ function selfTest() {
   if (missingInZh.length) problems.push(`zh 缺 ${missingInZh.length} 个 key: ${missingInZh.join(',')}`);
   if (zh.length !== en.length) problems.push(`key 数不一致: zh=${zh.length} en=${en.length}`);
 
-  const attrs = ['data-i18n', 'data-i18n-placeholder', 'data-i18n-title'];
+  const attrs = ['data-i18n', 'data-i18n-placeholder', 'data-i18n-title', 'data-i18n-aria-label'];
   for (const attr of attrs) {
     for (const node of document.querySelectorAll(`[${attr}]`)) {
       const key = node.getAttribute(attr);

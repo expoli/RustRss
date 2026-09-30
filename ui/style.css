@@ -1,6 +1,16 @@
 /* RustRss 三栏阅读界面：跟随系统深浅色，正文排版按阅读优先 */
 
 :root {
+  /* Shared presentation scale. Theme colors remain owned by the existing renderer. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --control-surface: var(--bg-panel);
+  --control-border: var(--line);
+  --control-text: var(--fg);
   /* 告知浏览器原生控件（select/滚动条/输入框）用深色方案渲染——
      WebKitGTK 的 select 闭合按钮由原生主题绘制，不吃下方变量 */
   color-scheme: dark;
@@ -193,6 +203,19 @@ button {
 }
 button:hover { background: var(--bg-hover); border-color: var(--accent); }
 button:disabled { opacity: .55; cursor: default; }
+
+/* Five control roles share typography and focus behavior; callers choose the role. */
+.ui-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.ui-button--primary, .ui-button--primary:hover { background: var(--accent); border-color: var(--accent); color: var(--bg-panel); font-weight: 600; }
+.ui-button--secondary { background: var(--control-surface); border-color: var(--control-border); color: var(--control-text); }
+.ui-button--text { background: transparent; border-color: transparent; color: var(--control-text); }
+.ui-button--icon { width: 40px; height: 40px; padding: 0; background: transparent; border-color: transparent; }
+.ui-button--danger { color: var(--danger); border-color: var(--danger); }
+button:focus-visible, .ui-button:focus-visible { outline: 2px solid var(--focus, var(--accent)); outline-offset: 2px; }
+.ui-icon { display: inline-block; flex: none; width: 20px; height: 20px; vertical-align: middle; }
+.views .icon .ui-icon, .m-ico .ui-icon { width: 22px; height: 22px; }
+.reader-actions button, #btn-settings, .settings-nav li > button { display: inline-flex; align-items: center; gap: var(--space-2); }
+.ctx-menu .mark .ui-icon { width: 15px; height: 15px; }
 
 .status { color: var(--fg-dim); font-size: 12px; max-width: 72ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .status.error { color: var(--danger); }
@@ -1330,13 +1353,15 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   }
   .reader { padding: 14px 18px 40px; }
   .reader-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-  .reader-actions button { padding: 9px 12px; min-height: 40px; }
+  .reader-actions button { padding: 9px 12px; min-height: 48px; }
 
   /* ---- 触控目标 ---- */
-  .toolbar button { padding: 8px 12px; white-space: nowrap; }
-  .entries li { padding-block: 10px; }
-  .entries li .row-tag-btn { width: 30px; height: 30px; }
-  .views li, .feeds li, .tags li { min-height: 40px; }
+  .toolbar button { padding: 8px 12px; min-height: 48px; white-space: nowrap; }
+  .entries li { padding-block: 10px; min-height: 48px; }
+  .entries li .row-tag-btn { width: 48px; height: 48px; }
+  .views li, .feeds li, .tags li { min-height: 48px; }
+  .m-seg button, #m-reader-back, #btn-list-sort, #btn-list-bulk, #btn-new-folder,
+  .settings-nav li > button, .ctx-menu button { min-width: 48px; min-height: 48px; }
 
   /* ---- 底部主导航 ---- */
   #m-nav {
@@ -1407,8 +1432,8 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   .add-row label { grid-column: 1 / -1; font-weight: 600; }
   .add-row input { width: 100%; min-width: 0; }
   .add-row input, .add-row button, .toolbar button, .m-seg button,
-  .section-title button, .views li, .feeds li, .tags li { min-height: 44px; }
-  .section-title button { min-width: 44px; }
+  .section-title button, .views li, .feeds li, .tags li { min-height: 48px; }
+  .section-title button { min-width: 48px; }
   .add-row input, .add-row button { padding: 10px 12px; }
 
   /* ---- 设置：分类列表 -> 详情页，顶部返回，表单单列 ---- */
@@ -1433,7 +1458,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
     border-bottom: 1px solid var(--line);
   }
   .m-settings-header h2 { font-size: 20px; line-height: 1.3; margin: 0; }
-  #m-settings-back { flex: none; min-height: 44px; }
+  #m-settings-back { flex: none; min-height: 48px; }
   .settings-dialog[data-screen="home"] #m-settings-back { display: none; }
   .settings-nav { flex: 1; border: 0; padding: 12px 16px; min-height: 0; }
   .settings-nav-title, .settings-nav-foot { display: none; }
@@ -1456,27 +1481,27 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   .setting-item { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 16px 0; }
   .setting-item:has(.switch) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
   .setting-item input:not([type=checkbox]), .setting-item select,
-  .setting-item .setting-dropdown { width: 100%; min-height: 44px; font-size: 16px; }
+  .setting-item .setting-dropdown { width: 100%; min-height: 48px; font-size: 16px; }
   .setting-item small, .android-hint { overflow-wrap: anywhere; }
   .setting-actions { flex-wrap: wrap; gap: 8px; }
-  .setting-actions button { min-height: 44px; padding: 10px 14px; }
-  .settings-body button { min-height: 44px; }
+  .setting-actions button { min-height: 48px; padding: 10px 14px; }
+  .settings-body button { min-height: 48px; }
   .m-setting-advanced { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; margin-top: 16px; }
   .m-setting-advanced > summary { display: list-item; min-height: 48px; padding: 14px 0; font-weight: 600; }
   #ai-save { background: var(--accent); color: #fff; border-color: var(--accent); }
   .theme-field { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; padding: 14px 0; }
   .theme-field label { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
-  .theme-field input:not([type=checkbox]):not([type=color]), .theme-field select { width: 100%; min-height: 44px; font-size: 16px; }
-  .theme-field button { min-height: 44px; padding: 10px 12px; }
+  .theme-field input:not([type=checkbox]):not([type=color]), .theme-field select { width: 100%; min-height: 48px; font-size: 16px; }
+  .theme-field button { min-height: 48px; padding: 10px 12px; }
   .theme-field:has(input[type=checkbox]) { align-items: center; }
   .theme-field:has(input[type=checkbox]) label { flex-direction: row; justify-content: space-between; }
   .theme-editor-fields > label { display: flex; flex-direction: column; gap: 8px; }
-  .theme-editor-fields > label select { min-height: 44px; font-size: 16px; }
+  .theme-editor-fields > label select { min-height: 48px; font-size: 16px; }
   .theme-editor-fields details, .theme-preview-details { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; margin: 16px 0; }
   .theme-editor-fields summary, .theme-preview-details summary { min-height: 48px; padding: 14px 0; font-weight: 600; }
   .theme-editor-actions { position: sticky; bottom: -16px; flex-wrap: wrap; padding: 12px 0; }
-  .theme-editor-actions button { min-height: 44px; flex: 1 1 auto; padding: 10px 12px; }
+  .theme-editor-actions button { min-height: 48px; flex: 1 1 auto; padding: 10px 12px; }
   .theme-editor-status { min-height: 0; font-size: 13px; }
-  .theme-presets button { min-height: 44px; }
+  .theme-presets button { min-height: 48px; }
   .settings-body code { overflow-wrap: anywhere; }
 }

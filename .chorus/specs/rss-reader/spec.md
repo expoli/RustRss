@@ -208,3 +208,11 @@ created: 2026-09-20
 - [x] 订阅抓取稳定错误码及双语提示：响应体超时不再记为http_200，数据库/刷新报告共用code，自动发现保留结构化错误；DNS注入、TLS自签名拒绝、生产30秒超时、429与缓存/恢复补验通过。范围见 [网络补验](2026-09-23-theme-preview/network-error-followup.md)。
 - [x] 订阅429/503的Retry-After持久化等待；期限内桌面/MCP刷新不发请求，重启保留、到期恢复及缓存不变（network-proxy-backoff.md）。
 - [x] 应用内环境/直连/自定义HTTP(S)代理与绕过列表；桌面/MCP共享配置，订阅/发现/全文/AI路径接入；不保存代理凭据。已验 HTTP 路由/切换/失败；**HTTPS 成功隧道**已补验：本地 CONNECT 代理日志出现 `github.blog:443` 且经隧道抓回 10 条条目，代理不可达时失败可读、缓存不丢（2026-09-24，`2026-09-24-local-acceptance-closeout/https-connect-tunnel-results.json`）；企业证书/认证代理与跨平台仍未验。
+
+## 2026-09-30 阅读体验与菜单改版
+
+批准契约来自 Chorus Proposal `b5585be7-a1d3-4311-8c1b-ce458ad649d6`，OpenSpec slug `refine-rustrss-reading-experience`。原规划文档在 Chorus 工作区；产品实施与验收记录在本仓库。[动作台账](2026-09-30-reading-experience/action-matrix.md)将 M01–M20 拆成 159 项，后续任务逐项回填。
+
+- [x] T1 共享静态 SVG 图标、间距/五类控件样式与本地化可访问名称已接入列表、阅读、菜单和设置；原主题配置结构及保存覆盖不变。六套预设/明暗真组件矩阵、60 项对比度、设置草稿/历史/CAS 与 MCP 预览检查见 [T1 证据](2026-09-30-reading-experience/evidence/README.md)。360×800 粗指针 CSS 夹具检查 13 个主要目标≥48×48；Android 原生命中仍待测。
+- [ ] T2–T6 完成操作面板、列表、阅读、设置与桌面/平板汇合，并逐动作回填台账。
+- [ ] T7 用重建的 Android APK 和桌面产物完成同场景 before/after、原生触控/键盘/TalkBack、字号、断点及热路径集成验收；Windows/macOS 若不可用需明列未测项。

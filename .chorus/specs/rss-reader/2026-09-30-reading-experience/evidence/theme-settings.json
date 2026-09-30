@@ -1,0 +1,73 @@
+{
+  "captures": [
+    {
+      "bytes": 117956,
+      "file": "appearance-draft.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "bytes": 174869,
+      "file": "aa-reading.png",
+      "logical_size": [
+        1240,
+        772
+      ],
+      "pixels": [
+        1240,
+        772
+      ],
+      "scale": 1
+    },
+    {
+      "bytes": 86954,
+      "file": "reading-narrow-zh.png",
+      "logical_size": [
+        900,
+        600
+      ],
+      "pixels": [
+        900,
+        600
+      ],
+      "scale": 1
+    }
+  ],
+  "checks": [
+    "bilingual key sets and markup",
+    "empty reader survives system preference en/false",
+    "empty reader survives system preference en/true",
+    "empty reader survives system preference zh-CN/false",
+    "empty reader survives system preference zh-CN/true",
+    "system preference changes never persist",
+    "disposed renderer releases preference listener",
+    "late font suggestions preserve focused text and existing draft",
+    "draft preview has zero persistent writes",
+    "independent light and dark presets",
+    "sparse override saved",
+    "save retains article and row nodes",
+    "save preserves paragraph offset",
+    "discard does not write",
+    "history restore creates a new revision",
+    "stale draft fails CAS and remains editable",
+    "Aa saves shared reading fields",
+    "font family and generic fallback persist via Aa",
+    "reading settings reflect Aa",
+    "narrow window has no horizontal overflow",
+    "reading fields fit at CSS zoom 1.25",
+    "reading fields fit at CSS zoom 1.5",
+    "disposed editor ignores late font refresh"
+  ],
+  "final_revision": 4,
+  "limitations": [
+    "system preference events are synthetic",
+    "fractional checks use CSS zoom, not native Wayland scaling"
+  ]
+}
