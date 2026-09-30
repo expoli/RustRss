@@ -1,0 +1,10 @@
+Accepting client connections on sockets: QList("wayland-rustrss-t6-5f37fbc5")
+kwin_core: Configured compositor not supported by Platform. Falling back to defaults
+kwin_xkbcommon: XKB: Multiple definitions of group 0 name in map 'basic'; Using 'Chinese', ignoring 'English (US)'
+kwin_screencast: Failed to connect PipeWire context
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Unable to open /proc/2922444/root")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Unable to open /proc/2922444/root")
+js: T6NEST9810b68e7d3f4746b9c9d106e340e73a {"pid":2922528,"internalId":"{cf4b8071-5303-4a7b-b5be-972e973787ce}","minimized":false,"active":true,"skipTaskbar":false,"frame":{"x":180,"y":90,"width":1240,"height":820}}
+js: T6NEST78ebe14be67a48cb9e64d7e5c6ffd44d {"pid":2922528,"internalId":"{cf4b8071-5303-4a7b-b5be-972e973787ce}","minimized":true,"active":false,"skipTaskbar":false,"frame":{"x":180,"y":90,"width":1240,"height":820}}
+js: T6NESTecbf01f40c1141b192f62716f7c23660 {"pid":2922528,"internalId":"{cf4b8071-5303-4a7b-b5be-972e973787ce}","minimized":false,"active":true,"skipTaskbar":false,"frame":{"x":180,"y":90,"width":1240,"height":820}}
+js: T6NEST60a17798926b4ecc966751696127ad8d {"pid":2922528,"internalId":"{cf4b8071-5303-4a7b-b5be-972e973787ce}","minimized":false,"active":true,"skipTaskbar":false,"frame":{"x":180,"y":90,"width":1240,"height":820}}

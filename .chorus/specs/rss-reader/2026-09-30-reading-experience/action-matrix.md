@@ -150,7 +150,7 @@
 | M19.write-token.copy | 复制写 token | MCP 设置 → 第七类 | 桌面 | 剪贴板核验；隔离服务 | T5/T6 | 通过：写 token 剪贴板读回；[Linux 原生](evidence/t5-settings/desktop-results.json) |
 | M19.write-token.rotate | 轮换写 token | MCP 设置 → 第七类 | 桌面 | 旧值立即失效；隔离服务 | T5/T6 | 通过：轮换后旧 token 失效；[Linux 原生](evidence/t5-settings/desktop-results.json) |
 | M19.write-token.clear | 清除写 token | MCP 设置 → 第七类 | 桌面 | 写工具不可用；隔离服务 | T5/T6 | 通过：清除后写 token 不可用；[Linux 原生](evidence/t5-settings/desktop-results.json) |
-| M20.window.min | 窗口最小化 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 部分：私有 Xvfb 指针可信点击真实按钮；真实 KWin Wayland/XWayland 自有 PID 窗口 IPC 后 compositor minimized=false→true、PID 守卫恢复 false/active=true；同一真实会话指针/任务栏闭环未证：[T6 第二轮](evidence/t6-convergence/record.md) |
+| M20.window.min | 窗口最小化 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | Linux 主链通过：私有 Xvfb 承载嵌套 KWin，同一 Wayland 原生进程可信指针点击真实按钮，compositor minimized=false→true、画面消失、PID 守卫恢复 false/active=true；真实 KWin 两后端状态另证，任务栏 shell 点击未测：[T6 第三轮](evidence/t6-convergence/nested-window-results.json) |
 | M20.window.max | 窗口最大化 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 通过：真实 Wayland 最大化/还原尺寸与状态读回；[T6 原生记录](evidence/t6-convergence/record.md) |
 | M20.window.close | 窗口关闭 | 标题栏 → 原位 | 桌面 | 原生行为；点击 | T6 | 通过：真实 Wayland 标题栏关闭，进程退出码 0；[T6 原生记录](evidence/t6-convergence/record.md) |
 | M20.shortcuts | 快捷键帮助 | ? → 原位 | 桌面 | 列表准确；打开/关闭 | T6 | 通过：原生 ? 打开帮助、Esc 关闭；[T6 原生记录](evidence/t6-convergence/record.md) |

@@ -1,0 +1,89 @@
+{
+  "binarySha256": "82fea6d84c2326cc7a5f835ac087116e8f44f7b07156df6bdd73b65fdc847b8a",
+  "environment": "private Xvfb host + private dbus-run-session nested KWin X11 backend + owned Wayland RustRss; isolated HOME/XDG_DATA_HOME/XDG_CONFIG_HOME/XDG_CACHE_HOME/DB",
+  "hostDisplay": ":70",
+  "hostWindow": "0x200000",
+  "ownedAppPid": 2922528,
+  "pointer": {
+    "method": "XTest on host Xvfb, forwarded by nested KWin",
+    "root": [
+      1329,
+      115
+    ],
+    "target": [
+      1329,
+      115
+    ],
+    "buttonCss": {
+      "x": 1149,
+      "y": 24.84375,
+      "dpr": 1
+    },
+    "clicks": [
+      {
+        "trusted": true,
+        "detail": 1,
+        "currentTarget": "btn-win-min"
+      }
+    ]
+  },
+  "kwinBefore": {
+    "pid": 2922528,
+    "internalId": "{cf4b8071-5303-4a7b-b5be-972e973787ce}",
+    "minimized": false,
+    "active": true,
+    "skipTaskbar": false,
+    "frame": {
+      "x": 180,
+      "y": 90,
+      "width": 1240,
+      "height": 820
+    }
+  },
+  "kwinMinimized": {
+    "pid": 2922528,
+    "internalId": "{cf4b8071-5303-4a7b-b5be-972e973787ce}",
+    "minimized": true,
+    "active": false,
+    "skipTaskbar": false,
+    "frame": {
+      "x": 180,
+      "y": 90,
+      "width": 1240,
+      "height": 820
+    }
+  },
+  "kwinRestoreCommand": {
+    "pid": 2922528,
+    "internalId": "{cf4b8071-5303-4a7b-b5be-972e973787ce}",
+    "minimized": false,
+    "active": true,
+    "skipTaskbar": false,
+    "frame": {
+      "x": 180,
+      "y": 90,
+      "width": 1240,
+      "height": 820
+    }
+  },
+  "kwinRestored": {
+    "pid": 2922528,
+    "internalId": "{cf4b8071-5303-4a7b-b5be-972e973787ce}",
+    "minimized": false,
+    "active": true,
+    "skipTaskbar": false,
+    "frame": {
+      "x": 180,
+      "y": 90,
+      "width": 1240,
+      "height": 820
+    }
+  },
+  "screenshots": [
+    "nested-before.png",
+    "nested-minimized.png",
+    "nested-restored.png"
+  ],
+  "passed": true,
+  "limit": "No taskbar shell in nested compositor; restoration uses PID-guarded KWin compositor state."
+}

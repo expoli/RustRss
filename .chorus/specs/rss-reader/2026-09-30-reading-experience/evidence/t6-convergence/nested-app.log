@@ -1,0 +1,12 @@
+libEGL warning: failed to get driver name for fd -1
+
+libEGL warning: MESA-LOADER: failed to retrieve device information
+
+libEGL warning: failed to get driver name for fd -1
+
+
+** (rustrss-desktop:2922528): WARNING **: 23:52:05.441: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+
+(rustrss-desktop:2922528): libayatana-appindicator-WARNING **: 23:52:05.483: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+
+(rustrss-desktop:2922528): Gtk-CRITICAL **: 23:52:05.640: gtk_widget_get_scale_factor: assertion 'GTK_IS_WIDGET (widget)' failed

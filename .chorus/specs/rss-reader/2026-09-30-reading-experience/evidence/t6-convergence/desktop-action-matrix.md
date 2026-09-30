@@ -150,7 +150,7 @@
 | M19.write-token.copy | 复制写 token | 桌面 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M19.write-token.rotate | 轮换写 token | 桌面 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
 | M19.write-token.clear | 清除写 token | 桌面 | 未在 T6 重测 | 按主矩阵已有任务证据/状态；T7 负责最终逐项组合复核 |
-| M20.window.min | 窗口最小化 | 桌面 | 部分：分环境验证 | review-desktop-results.json · 私有 Xvfb 指针可信点击按钮；compositor-wayland-results.json、compositor-x11-results.json · 真实 KWin 自有窗口 minimized false→true/恢复 false；window-input-limit.json · 真实 KWin 指针/任务栏同场景闭环未到达 |
+| M20.window.min | 窗口最小化 | 桌面 | Linux 原生主链通过；任务栏未测 | nested-window-results.json · 同一嵌套 KWin 可信指针点击真实按钮、自有窗口 minimized false→true、画面消失、PID 守卫恢复 false/active true；真实 KWin Wayland/XWayland IPC 状态另见 compositor-*-results.json；嵌套会话无任务栏 shell |
 | M20.window.max | 窗口最大化 | 桌面 | 本轮实测 | window-real-results.json · 真 Wayland 最大化/还原几何 |
 | M20.window.close | 窗口关闭 | 桌面 | 本轮实测 | window-real-results.json · 真 Wayland 关闭退出码 0 |
 | M20.shortcuts | 快捷键帮助 | 桌面 | 本轮实测 | review-desktop-results.json · 原生 ?/Escape |
