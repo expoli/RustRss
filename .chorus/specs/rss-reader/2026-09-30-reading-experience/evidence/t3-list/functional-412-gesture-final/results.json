@@ -6,6 +6,19 @@
   },
   "checks": [
     {
+      "name": "four-destinations-and-settings-back-focus",
+      "subscriptions": true,
+      "settings": true,
+      "detailBackToHome": true,
+      "returned": "subscriptions",
+      "focusAfterBack": {
+        "html": "<button type=\"button\" class=\"m-nav-btn\" data-mpage-btn=\"settings\" aria-current=\"false\">\n      <span class=\"m-ico\" aria-hidden=\"true\" data-icon=\"settin",
+        "visible": true,
+        "hiddenSettingsFocus": false,
+        "menu": false
+      }
+    },
+    {
       "name": "four-navigation-and-primary-filters",
       "viewport": {
         "width": 412.19049072265625,
@@ -23,7 +36,7 @@
       "after": "articles",
       "rowPreserved": true,
       "search": {
-        "count": "已加载 5 篇",
+        "count": "5",
         "ids": [
           "1",
           "13",

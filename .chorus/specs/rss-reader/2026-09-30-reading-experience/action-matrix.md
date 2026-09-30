@@ -5,14 +5,14 @@
 | ID | 动作 | 旧入口 → 新入口 | 平台 | 状态或副作用；核验步骤 | 责任 | 证据 |
 |---|---|---|---|---|---|---|
 | M01.articles | 文章 | 侧栏/底栏 → 四主导航文章 | 双端 | 保持当前视图；切换并返回 | T3/T6 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
-| M01.subscriptions | 订阅 | 侧栏/底栏 → 四主导航订阅 | 双端 | 保留选中源；切换并返回 | T2/T6 | 待验 |
+| M01.subscriptions | 订阅 | 侧栏/底栏 → 四主导航订阅 | 双端 | 保留选中源；切换并返回 | T2/T6 | Android 导航/激活通过、选中源与桌面组合待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M01.saved | 收藏 | 侧栏/底栏 → 四主导航收藏 | 双端 | 保留星标/稍后读子视图；切换 | T3/T6 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
-| M01.settings | 设置 | 工具栏/底栏 → 四主导航设置 | 双端 | 草稿离开规则；进入再返回 | T5/T6 | 待验 |
+| M01.settings | 设置 | 工具栏/底栏 → 四主导航设置 | 双端 | 草稿离开规则；进入再返回 | T5/T6 | Android 导航/Back/焦点通过，草稿规则待 T5、桌面组合待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M01.unread | 未读视图 | 智能视图/页内切换 → 标题旁筛选 | 双端 | 未读数同 core；切换 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M01.all | 全部视图 | 智能视图/页内切换 → 标题旁筛选 | 双端 | 已读仍可见；切换 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M01.starred | 星标视图 | 智能视图/页内切换 → 收藏内筛选 | 双端 | 仅星标；切换 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M01.later | 稍后读视图 | 智能视图/页内切换 → 收藏内筛选 | 双端 | 仅稍后读；切换 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
-| M02.search | 标题及正文搜索 | 顶部输入 → 搜索按钮展开输入 | 双端 | 当前 scope；查长标题/正文 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.search | 标题及正文搜索 | 顶部输入 → 搜索按钮展开输入 | 双端 | 手机明确全库 scope；查长标题/正文 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M02.clear | 清除及取消搜索 | 输入清除/Esc → 展开区取消 | 双端 | 恢复前一筛选和锚点；搜索后取消 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M02.sort.newest | 最新排序 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M02.sort.oldest | 最旧排序 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |

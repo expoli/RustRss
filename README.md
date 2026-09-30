@@ -29,9 +29,9 @@ RustRss 面向 Linux、Windows 和 macOS 桌面；Android 版可在设备上侧�
 
 0.2.1 补丁版汇总 Android 键盘避让、手机设置布局、OPML 文件选择和图标一致性修复；更新说明见 [CHANGELOG](CHANGELOG.md#021---2026-09-29)。Android APK 沿用原发布签名，可覆盖安装保留数据。
 
-Android 手机界面中，文章、订阅、收藏和设置共用完整的底部导航；搜索框在工具栏内收缩，内容区按底栏实际高度布局。设置是一级页面，分类首页和详情均保留底栏；系统返回先回到分类首页，再回到进入设置前的页面。订阅地址入口位于订阅页上方，键盘弹出时页面避让并滚动到当前输入框。阅读先展示字号、行距和段落间距，字体与代码排版、高级 AI 参数按需展开。主题修改仍需点保存，切到其它一级页面会放弃未保存的主题草稿；桌面设置继续使用模态弹窗。Android OPML 导入允许选择普通文档，按实际内容校验，避免文件管理器把 `.opml` 标成普通文件时无法点击；桌面保留 OPML/XML 过滤。Android 的数据设置只提供 OPML 订阅导入导出；OPML 不包含文章、阅读状态或 AI 设置，不支持的整库备份/恢复入口已隐藏。输入和表单的既有设备证据见 [手机交互验证](.chorus/specs/android-app/2026-09-29-phone-ux/evidence/record.md)，本轮验证见 [底栏与返回记录](.chorus/specs/android-app/2026-09-29-primary-navigation/evidence/record.md)。
+Android 手机界面中，文章、订阅、收藏和设置共用完整的底部导航；文章和收藏页的搜索按钮一击展开输入框，明确提示搜索范围为全部文章；取消后恢复原筛选和列表位置。内容区按底栏实际高度布局。设置是一级页面，分类首页和详情均保留底栏；系统返回先回到分类首页，再回到进入设置前的页面。订阅地址入口位于订阅页上方，键盘弹出时页面避让并滚动到当前输入框。阅读先展示字号、行距和段落间距，字体与代码排版、高级 AI 参数按需展开。主题修改仍需点保存，切到其它一级页面会放弃未保存的主题草稿；桌面设置继续使用模态弹窗。Android OPML 导入允许选择普通文档，按实际内容校验，避免文件管理器把 `.opml` 标成普通文件时无法点击；桌面保留 OPML/XML 过滤。Android 的数据设置只提供 OPML 订阅导入导出；OPML 不包含文章、阅读状态或 AI 设置，不支持的整库备份/恢复入口已隐藏。输入和表单的既有设备证据见 [手机交互验证](.chorus/specs/android-app/2026-09-29-phone-ux/evidence/record.md)，本轮验证见 [底栏与返回记录](.chorus/specs/android-app/2026-09-29-primary-navigation/evidence/record.md)。
 
-列表、阅读动作、菜单和设置现共用本地 SVG 图标、控件间距与焦点样式；手机主要操作入口的触控框按至少 48×48 CSS px 布置。配色、字体和预览仍由现有主题设置控制，已保存的覆盖值不会因图标和布局样式更新而重置。本次视觉基线、隔离数据与验证范围见 [阅读体验 T1 证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/README.md)。
+列表、阅读动作、菜单和设置现共用本地 SVG 图标、控件间距与焦点样式；手机主要操作入口的触控框按至少 48×48 CSS px 布置。配色、字体和预览仍由现有主题设置控制，已保存的覆盖值不会因图标和布局样式更新而重置。本次视觉基线、隔离数据与验证范围见 [阅读体验 T1 证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/README.md)，手机列表与搜索的前后截图、导航和返回证据见 [T3 设备记录](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t3-list/record.md)。
 
 订阅、文件夹和标签行现提供独立的“更多操作”按钮；手机以带内部选择页的底部操作面板呈现刷新间隔、移动文件夹及标签颜色，桌面保留右键级联菜单并支持方向键与 Esc。添加订阅支持网站候选源选择和 RSSHub 地址输入；删除文件夹、取消订阅和删除标签会先显示影响并要求确认。Android 模拟器、Linux WebKitGTK 键盘与 TalkBack 语义树的验证步骤及范围见 [T2 操作面板证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t2-menu/record.md)。
 
