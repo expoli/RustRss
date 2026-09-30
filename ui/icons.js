@@ -13,6 +13,7 @@
     back: '<path d="m14.5 5-7 7 7 7"/>',
     check: '<path d="m4 12 5 5L20 6"/>',
     sort: '<path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3"/>',
+    search: '<circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     minimize: '<path d="M5 12h14"/>',
     maximize: '<rect x="5" y="5" width="14" height="14" rx="1"/>',

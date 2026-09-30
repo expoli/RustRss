@@ -1,0 +1,227 @@
+{
+  "serial": "emulator-5582",
+  "phase": "after",
+  "fixture": "reading_experience_fixture 30, sha256 f4674f9df91a1c1fb1927087d93b0052169da0ecc298b782f8b98ff300aa1cba",
+  "scenes": [
+    {
+      "name": "after-zh-CN-light",
+      "locale": "zh-CN",
+      "theme": "light",
+      "page": "articles",
+      "viewport": {
+        "width": 412.19049072265625,
+        "height": 867.047607421875,
+        "offsetTop": 0,
+        "innerHeight": 867
+      },
+      "firstId": "1",
+      "firstTitle": "000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "firstTitleRect": {
+        "x": 14.666666984558105,
+        "y": 167.52381896972656,
+        "width": 375.6190490722656,
+        "height": 39.19047546386719,
+        "bottom": 206.71429443359375
+      },
+      "firstTitleRatio": 0.19321178852894907,
+      "listHead": {
+        "x": 0,
+        "y": 52.761905670166016,
+        "width": 412.19049072265625,
+        "height": 54.761905670166016,
+        "bottom": 107.52381134033203
+      },
+      "toolbar": {
+        "x": 0,
+        "y": 0,
+        "width": 412.19049072265625,
+        "height": 52.761905670166016,
+        "bottom": 52.761905670166016
+      },
+      "listTitle": "全部未读",
+      "count": "已加载 15 / 共 15 未读",
+      "rowIds": [
+        "1",
+        "21",
+        "12",
+        "3",
+        "23",
+        "14",
+        "5",
+        "25"
+      ],
+      "density": "comfortable",
+      "summaryLines": "2",
+      "thumbnails": "true",
+      "css": {
+        "font": "14px",
+        "background": "rgb(247, 248, 250)"
+      }
+    },
+    {
+      "name": "after-zh-CN-dark",
+      "locale": "zh-CN",
+      "theme": "dark",
+      "page": "articles",
+      "viewport": {
+        "width": 412.19049072265625,
+        "height": 867.047607421875,
+        "offsetTop": 0,
+        "innerHeight": 867
+      },
+      "firstId": "1",
+      "firstTitle": "000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "firstTitleRect": {
+        "x": 14.666666984558105,
+        "y": 167.52381896972656,
+        "width": 375.6190490722656,
+        "height": 39.19047546386719,
+        "bottom": 206.71429443359375
+      },
+      "firstTitleRatio": 0.19321178852894907,
+      "listHead": {
+        "x": 0,
+        "y": 52.761905670166016,
+        "width": 412.19049072265625,
+        "height": 54.761905670166016,
+        "bottom": 107.52381134033203
+      },
+      "toolbar": {
+        "x": 0,
+        "y": 0,
+        "width": 412.19049072265625,
+        "height": 52.761905670166016,
+        "bottom": 52.761905670166016
+      },
+      "listTitle": "全部未读",
+      "count": "已加载 15 / 共 15 未读",
+      "rowIds": [
+        "1",
+        "21",
+        "12",
+        "3",
+        "23",
+        "14",
+        "5",
+        "25"
+      ],
+      "density": "comfortable",
+      "summaryLines": "2",
+      "thumbnails": "true",
+      "css": {
+        "font": "14px",
+        "background": "rgb(20, 22, 26)"
+      }
+    },
+    {
+      "name": "after-en-light",
+      "locale": "en",
+      "theme": "light",
+      "page": "articles",
+      "viewport": {
+        "width": 412.19049072265625,
+        "height": 867.047607421875,
+        "offsetTop": 0,
+        "innerHeight": 867
+      },
+      "firstId": "1",
+      "firstTitle": "000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "firstTitleRect": {
+        "x": 14.666666984558105,
+        "y": 167.52381896972656,
+        "width": 375.6190490722656,
+        "height": 39.19047546386719,
+        "bottom": 206.71429443359375
+      },
+      "firstTitleRatio": 0.19321178852894907,
+      "listHead": {
+        "x": 0,
+        "y": 52.761905670166016,
+        "width": 412.19049072265625,
+        "height": 54.761905670166016,
+        "bottom": 107.52381134033203
+      },
+      "toolbar": {
+        "x": 0,
+        "y": 0,
+        "width": 412.19049072265625,
+        "height": 52.761905670166016,
+        "bottom": 52.761905670166016
+      },
+      "listTitle": "All unread",
+      "count": "loaded 15 / 15 unread",
+      "rowIds": [
+        "1",
+        "21",
+        "12",
+        "3",
+        "23",
+        "14",
+        "5",
+        "25"
+      ],
+      "density": "comfortable",
+      "summaryLines": "2",
+      "thumbnails": "true",
+      "css": {
+        "font": "14px",
+        "background": "rgb(247, 248, 250)"
+      }
+    },
+    {
+      "name": "after-en-dark",
+      "locale": "en",
+      "theme": "dark",
+      "page": "articles",
+      "viewport": {
+        "width": 412.19049072265625,
+        "height": 867.047607421875,
+        "offsetTop": 0,
+        "innerHeight": 867
+      },
+      "firstId": "1",
+      "firstTitle": "000 · 一篇用于测试长标题换行的文章：阅读布局在中文和 English words 混排时必须完整保留标题与操作入口",
+      "firstTitleRect": {
+        "x": 14.666666984558105,
+        "y": 167.52381896972656,
+        "width": 375.6190490722656,
+        "height": 39.19047546386719,
+        "bottom": 206.71429443359375
+      },
+      "firstTitleRatio": 0.19321178852894907,
+      "listHead": {
+        "x": 0,
+        "y": 52.761905670166016,
+        "width": 412.19049072265625,
+        "height": 54.761905670166016,
+        "bottom": 107.52381134033203
+      },
+      "toolbar": {
+        "x": 0,
+        "y": 0,
+        "width": 412.19049072265625,
+        "height": 52.761905670166016,
+        "bottom": 52.761905670166016
+      },
+      "listTitle": "All unread",
+      "count": "loaded 15 / 15 unread",
+      "rowIds": [
+        "1",
+        "21",
+        "12",
+        "3",
+        "23",
+        "14",
+        "5",
+        "25"
+      ],
+      "density": "comfortable",
+      "summaryLines": "2",
+      "thumbnails": "true",
+      "css": {
+        "font": "14px",
+        "background": "rgb(20, 22, 26)"
+      }
+    }
+  ]
+}

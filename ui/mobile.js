@@ -1,5 +1,5 @@
 // 窄屏（手机/平板）页面式导航适配层：Articles / Subscriptions / Saved / Settings
-// 四个一级目的地 + 全屏阅读器。桌面三栏宽度（>900px）下本模块整体休眠，DOM 与
+// 四个一级目的地 + 全屏阅读器。宽触屏（>960px）下本模块整体休眠，DOM 与
 // 行为完全不变；所有表现差异都由 body[data-mpage] + CSS 媒体查询驱动。
 //
 // 设计约束：app.js 是 IIFE，内部状态（state/setView）不可从外部触及——本模块因此
@@ -11,7 +11,7 @@
 (function () {
   'use strict';
 
-  var MQ = window.matchMedia('(max-width: 900px) and (pointer: coarse)');
+  var MQ = window.matchMedia('(max-width: 960px) and (pointer: coarse)');
   var active = function () { return MQ.matches; };
 
   // 阅读器打开前的目的地：popstate 恢复时回到哪里。

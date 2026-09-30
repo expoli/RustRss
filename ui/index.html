@@ -57,7 +57,9 @@
   </div>
   <header class="toolbar" data-tauri-drag-region>
     <span class="brand" data-tauri-drag-region data-i18n="app.name">RustRss</span>
-    <input id="search" type="search" data-i18n-placeholder="search.placeholder" autocomplete="off" />
+    <button id="btn-search-toggle" type="button" class="ui-button ui-button--icon" data-icon="search" data-i18n-aria-label="m.searchOpen" data-i18n-title="m.searchOpen"></button>
+    <input id="search" type="search" data-i18n-placeholder="search.placeholder" aria-describedby="search-scope" autocomplete="off" />
+    <button id="btn-search-cancel" type="button" class="ui-button ui-button--text" data-i18n="m.searchCancel"></button>
     <div class="grow"></div>
     <button id="btn-refresh" class="ui-button" data-icon="refresh" data-i18n="toolbar.refresh" data-i18n-title="toolbar.refreshTitle"></button>
     <button id="btn-add" class="ui-button" data-icon="plus" data-i18n="toolbar.addFeed" data-i18n-title="toolbar.addFeedTitle"></button>
@@ -112,6 +114,7 @@
           <button type="button" data-mview="starred" data-i18n="list.starred"></button>
           <button type="button" data-mview="later" data-i18n="list.later"></button>
         </div>
+        <span id="search-scope" data-i18n="m.searchScope"></span>
         <span id="list-title" role="heading" aria-level="2" tabindex="-1"></span>
         <span class="list-head-right">
           <span id="list-count" class="dim"></span>

@@ -191,6 +191,7 @@ body {
   font: inherit;
 }
 #search:focus { outline: 2px solid var(--focus, var(--accent)); }
+#btn-search-toggle, #btn-search-cancel, #search-scope { display: none; }
 
 button {
   padding: 5px 11px;
@@ -462,7 +463,8 @@ main {
 }
 .load-sentinel button {
   font-size: 12px;
-  padding: 3px 10px;
+  min-height: 44px;
+  padding: 10px;
   color: var(--fg-dim);
   cursor: pointer;
 }
@@ -1330,7 +1332,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 }
 
 /* ================= 窄屏触屏设备（手机/平板）页面式导航 =================
-   触屏且 ≤900px（CSS px）时用四个一级目的地（文章/订阅/收藏/设置）+ 全屏阅读器
+   触屏且 ≤960px（CSS px）时用四个一级目的地（文章/订阅/收藏/设置）+ 全屏阅读器
    替代三栏；**桌面任何宽度都不进本区块**（pointer: coarse 把桌面指针排除在外，
    含 fractional 缩放导致 CSS 宽度缩水的情形），三栏 DOM 与几何保持原样。
    页面可见性由 body[data-mpage] 驱动（mobile.js），阅读页是**覆盖层**：
@@ -1339,7 +1341,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 #m-nav, #m-reader-back, .m-seg, #m-status, .m-only { display: none; }
 .m-setting-advanced > summary { display: none; }
 
-@media (max-width: 900px) and (pointer: coarse) {
+@media (max-width: 960px) and (pointer: coarse) {
   /* 桌面专属控件（窗口三键/MCP/托盘关闭行为/日志目录）不在移动端出现 */
   [data-desktop-only] { display: none !important; }
 
@@ -1381,8 +1383,19 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
           设置入口归底部导航，窗口三键桌面专属 ---- */
   #btn-settings, #btn-refresh, #btn-add { display: none; }
   #search { display: none; }
-  body[data-mpage="articles"] #search,
-  body[data-mpage="saved"] #search { display: block; flex: 1; width: 0; min-width: 0; }
+  body[data-mpage="articles"] #btn-search-toggle,
+  body[data-mpage="saved"] #btn-search-toggle { display: inline-flex; }
+  body[data-search-open="true"] .toolbar .brand,
+  body[data-search-open="true"] #btn-search-toggle,
+  body[data-search-open="true"] #btn-refresh { display: none !important; }
+  body[data-search-open="true"] #search { display: block; flex: 1; width: 0; min-width: 0; }
+  body[data-search-open="true"] #btn-search-cancel { display: inline-flex; }
+  body[data-list-kind="search"] #search-scope { display: block; flex-basis: 100%; font-size: 12px; font-weight: 400; color: var(--fg-dim); }
+  .toolbar { gap: 4px; padding: 2px 8px; min-height: 52px; }
+  .toolbar .brand { margin-right: auto; }
+  #btn-refresh, #btn-search-toggle { width: 48px; min-width: 48px; font-size: 0; justify-content: center; padding: 0; }
+  #btn-refresh .icon, #btn-search-toggle .icon { font-size: 20px; }
+  #search { font-size: 16px; min-height: 48px; }
   body[data-mpage="articles"] #btn-refresh,
   body[data-mpage="saved"] #btn-refresh { display: inline-block; }
   body[data-mpage="subscriptions"] #btn-add { display: inline-block; }
@@ -1390,13 +1403,14 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   body[data-mpage="subscriptions"] #views { display: none; } /* 订阅页只放 文件夹/订阅源/标签（AC） */
 
   /* ---- 列表页头：页内分段切换（未读|全部 / 星标|稍后读） ---- */
-  .m-seg { gap: 0; margin: 0 0 8px; }
+  .list-head { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; padding: 3px 8px; }
+  .m-seg { gap: 0; margin: 0; flex: none; }
   body[data-mpage="articles"] #m-seg-articles { display: inline-flex; }
   body[data-mpage="saved"] #m-seg-saved { display: inline-flex; }
   .m-seg button {
     border-radius: 0;
     border-color: var(--line);
-    padding: 7px 14px;
+    padding: 6px 10px;
     background: var(--bg);
   }
   .m-seg button:first-child { border-radius: 8px 0 0 8px; }
@@ -1406,6 +1420,21 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
     border-color: var(--accent);
     color: #fff;
   }
+  .list-head-right { flex: 1; min-width: 0; margin: 0; justify-content: flex-end; }
+  #list-count { flex: 1; text-align: right; font-size: 12px; font-weight: 400; }
+  #btn-list-bulk, #btn-list-sort { padding: 0; }
+  body[data-list-kind="unread"] #list-title,
+  body[data-list-kind="all"] #list-title,
+  body[data-list-kind="starred"] #list-title,
+  body[data-list-kind="later"] #list-title { display: none; }
+  #list-title { order: 2; flex-basis: 100%; min-height: 0; font-size: 13px; }
+  #search-scope { order: 2; }
+  body[data-list-kind="search"] #list-title { display: none; }
+  .entries .meta { overflow: hidden; align-items: center; white-space: nowrap; }
+  .entries .entry-source { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .entries .entry-time { flex: none; }
+  .entries .title { margin-top: 2px; line-height: 1.4; overflow-wrap: anywhere; }
+  .entries .summary { line-height: 1.4; }
 
   /* ---- 全屏阅读器 ---- */
   body[data-mpage="reader"] #m-reader-back {
@@ -1423,6 +1452,7 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
   .toolbar button { padding: 8px 12px; min-height: 48px; white-space: nowrap; }
   .entries li { padding-block: 10px; min-height: 48px; }
   .entries li .row-tag-btn { width: 48px; height: 48px; }
+  .entries li .search-retry { min-width: 48px; min-height: 48px; margin: 8px 0; }
   .views li, .feeds li, .tags li { min-height: 48px; }
   .m-seg button, #m-reader-back, #btn-list-sort, #btn-list-bulk, #btn-new-folder,
   .settings-nav li > button, .ctx-menu button { min-width: 48px; min-height: 48px; }

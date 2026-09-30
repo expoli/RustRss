@@ -1,0 +1,99 @@
+{
+  "serial": "emulator-5582",
+  "fixtureSha256": "f338b98364e015a907e5904f92944f5b3d24592915dc49136d20b3e88db4676b",
+  "checks": [
+    {
+      "name": "200-rows-count-and-open-node-identity",
+      "viewport": {
+        "width": 360,
+        "height": 776
+      },
+      "count": "已加载 200 / 共 200 篇",
+      "head": [
+        "1",
+        "68",
+        "135",
+        "2",
+        "69"
+      ],
+      "listMs": 42.9,
+      "rowPreserved": true
+    },
+    {
+      "name": "paging-failure-retry-terminal-no-duplicates",
+      "failed": "加载失败，点此重试",
+      "terminal": "已到末尾（共 200 篇）",
+      "rows": 200,
+      "count": "已加载 200 / 共 200 篇"
+    },
+    {
+      "name": "three-sort-modes-and-persisted-setting",
+      "initialHead": [
+        "1",
+        "68",
+        "135",
+        "2",
+        "69"
+      ],
+      "oldestHead": [
+        "134",
+        "67",
+        "200",
+        "133",
+        "66"
+      ],
+      "unreadHead": [
+        "135",
+        "69",
+        "3",
+        "137",
+        "71"
+      ],
+      "restoredHead": [
+        "1",
+        "68",
+        "135",
+        "2",
+        "69"
+      ],
+      "sort": "newest"
+    },
+    {
+      "name": "hide-read-and-restore",
+      "hidden": "已加载 99 / 共 99 未读",
+      "restored": "已加载 200 / 共 200 篇"
+    },
+    {
+      "name": "bulk-read-unread-current-all-scope",
+      "afterRead": "已加载 200 / 共 200 篇",
+      "afterUnread": "已加载 200 / 共 200 篇",
+      "allRows": 200
+    },
+    {
+      "name": "refresh-feedback-stable-footer",
+      "before": {
+        "status": {
+          "y": 683.8809814453125,
+          "h": 27.35714340209961
+        },
+        "nav": {
+          "y": 711.2380981445312,
+          "h": 64.76190948486328
+        },
+        "top": "1"
+      },
+      "after": {
+        "status": {
+          "y": 683.8809814453125,
+          "h": 27.35714340209961
+        },
+        "nav": {
+          "y": 711.2380981445312,
+          "h": 64.76190948486328
+        },
+        "top": "1",
+        "text": "刷新完成：成功 0｜未修改 0｜新增 0｜失败 3"
+      }
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
   function entryContent({ title, meta, summary, thumbnail = '' }) {
-    return `${thumbnail}<span class="title">${title}</span><span class="meta">${meta}</span>${summary ? `<span class="summary">${summary}</span>` : ''}`;
+    return `${thumbnail}<span class="meta">${meta}</span><span class="title">${title}</span>${summary ? `<span class="summary">${summary}</span>` : ''}`;
   }
   function thumbnailImage(url, escapeHtml) {
     if (!url) return '';

@@ -27,6 +27,7 @@ cargo run -p rustrss-core --example reading_experience_fixture -- /tmp/rustrss-r
 
 ## 证据索引
 
+- `t3-list/record.md`：同 30 行夹具中英/浅深、360/412 手机真机 WebView 前后截图与首标题坐标；200 行排序/计数/重试/刷新、搜索返回锚点、系统导航/横屏/大字体检查和本轮签名通用 APK 哈希。
 - `action-matrix.md`：M01–M20 逐动作迁移 ID、平台、副作用、核验与后续责任。所有行初始待验，T2–T7 按行回填。
 - `fixture-results.json`：30/200 行隔离库的实际条目、文件夹、状态、长标题、图与代码/表格计数；数据库留在 `/tmp`，可按上面命令重建。
 - `contrast.json`：从 core 的六个内置解析快照计算文字、焦点、按钮、边框对比度；不会改写任意用户自定义颜色。测试方法：sRGB 线性化、(Lmax+0.05)/(Lmin+0.05)。

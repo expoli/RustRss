@@ -1,0 +1,62 @@
+{
+  "serial": "emulator-5582",
+  "viewport": {
+    "width": 360,
+    "height": 776
+  },
+  "checks": [
+    {
+      "name": "four-navigation-and-primary-filters",
+      "viewport": {
+        "width": 360,
+        "height": 776
+      },
+      "unread": 15,
+      "all": 30,
+      "starred": 14,
+      "later": 14,
+      "savedActive": "all"
+    },
+    {
+      "name": "search-query-reader-system-back-identity",
+      "identityBefore": "1",
+      "after": "articles",
+      "rowPreserved": true,
+      "search": {
+        "count": "loaded 5",
+        "ids": [
+          "1",
+          "13",
+          "25",
+          "8",
+          "20"
+        ],
+        "scope": "Searching all articles"
+      }
+    },
+    {
+      "name": "cancel-restores-filter-and-row-anchor",
+      "anchor": {
+        "id": "2",
+        "offset": -75.54762077331543,
+        "scroll": 499.80950927734375
+      },
+      "restored": {
+        "id": "2",
+        "offset": -75.54762077331543,
+        "scroll": 499.80950927734375
+      },
+      "kind": "all"
+    },
+    {
+      "name": "search-empty-and-cancel",
+      "empty": "No matching articles. Try different keywords.",
+      "restoredKind": "all"
+    },
+    {
+      "name": "search-error-and-retry",
+      "error": "Search failed. Try again: fixture offlineRetry search",
+      "retried": 30
+    }
+  ]
+}

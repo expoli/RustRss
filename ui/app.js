@@ -821,10 +821,12 @@ function buildEntryRow(e) {
   const thumbnail = window.RustRssComponents.thumbnailImage(e.thumbnail_url, escapeHtml);
   li.innerHTML = window.RustRssComponents.entryContent({
     title: escapeHtml(e.title),
-    meta: `<span>${escapeHtml(e.feed_title)}</span><span>${fmtTime(e.published_at)}</span>${star}${laterMark}${tagChips}${tagBtn}`,
+    meta: `<span class="entry-source">${escapeHtml(e.feed_title)}</span><span class="entry-time">${fmtTime(e.published_at)}</span>${star}${laterMark}${tagChips}${tagBtn}`,
     summary: e.summary ? escapeHtml(e.summary) : '',
     thumbnail,
   });
+  // A failed remote thumbnail must not leave a broken-image box in a dense list.
+  li.querySelector('.entry-thumbnail')?.addEventListener('error', (event) => event.currentTarget.remove());
   li.onclick = () => openEntry(e.id, { markRead: true });
   const mark = li.querySelector('.later-mark');
   if (mark) {
@@ -966,7 +968,11 @@ function renderListCount() {
       : unreadFilteredView()
         ? t('list.loadedOfTotalUnread', { m, n })
         : t('list.loadedOfTotal', { m, n });
-  if (target.textContent !== text) target.textContent = text; // 同值零写入
+  const visible = window.matchMedia('(max-width: 720px)').matches
+    ? n == null ? String(m) : `${m}/${n}`
+    : text;
+  if (target.textContent !== visible) target.textContent = visible; // 同值零写入
+  if (target.getAttribute('aria-label') !== text) target.setAttribute('aria-label', text);
 }
 
 function listEmptyKey() {
@@ -979,6 +985,7 @@ function listEmptyKey() {
 
 function renderList() {
   const __t0 = performance.now();
+  document.body.dataset.listKind = state.view.kind;
   el('list-title').textContent = viewTitle();
   renderListCount();
   renderUnreadOnlyButton();
@@ -990,7 +997,17 @@ function renderList() {
     const li = document.createElement('li');
     li.className = 'dim';
     li.style.cursor = 'default';
-    li.textContent = t(listEmptyKey());
+    if (state.view.kind === 'search' && paging.error) {
+      li.textContent = t('m.searchFailed', { error: paging.error });
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'search-retry';
+      retry.textContent = t('m.searchRetry');
+      retry.onclick = () => loadEntries().catch((err) => setStatus(err.message, true));
+      li.appendChild(retry);
+    } else {
+      li.textContent = t(listEmptyKey());
+    }
     list.appendChild(li);
     installSentinel();
     return;
@@ -1274,7 +1291,7 @@ function renderReader(entry) {
 /// Android 系统分享面板；桌面（无 coarse 指针）回退为写剪贴板并在状态栏
 /// 明示结果。分享面板被用户取消不算错误，静默收场。
 function shareEntry(entry) {
-  var mobileTouch = window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches;
+  var mobileTouch = window.matchMedia('(max-width: 960px) and (pointer: coarse)').matches;
   if (mobileTouch) {
     log(`share:native entry=${entry.id}`);
     return invoke('share_url', { title: entry.title || '', url: entry.url })
@@ -2391,8 +2408,19 @@ async function loadEntries({ reader = true, reset = true } = {}) {
     paging.cursor = null;
     paging.exhausted = true;
     paging.error = false;
-    const rows = state.query
-      ? await listRequest('search', { query: state.query, limit: PAGE_SIZE }, generation) : [];
+    state.entries = [];
+    if (state.query) {
+      el('entries').innerHTML = `<li class="dim">${escapeHtml(t('m.searching'))}</li>`;
+    }
+    let rows;
+    try {
+      rows = state.query
+        ? await listRequest('search', { query: state.query, limit: PAGE_SIZE }, generation) : [];
+    } catch (err) {
+      if (generation !== paging.generation) return;
+      paging.error = err.message || String(err);
+      rows = [];
+    }
     if (rows === null || generation !== paging.generation) return;
     state.entries = rows;
     renderList();
@@ -2498,9 +2526,60 @@ async function setView(view) {
   if (view.kind !== 'search') {
     el('search').value = '';
     state.query = '';
+    searchReturn = null;
+    document.body.dataset.searchOpen = 'false';
   }
   renderSidebar();
   await loadEntries();
+}
+
+// Search is a temporary global-library view. Keep the prior scope and a row
+// anchor so Cancel returns to the same place, even after opening an article.
+let searchReturn = null;
+let searchTimer = null;
+let searchSequence = 0;
+
+function captureSearchReturn() {
+  if (searchReturn) return;
+  const list = el('entries');
+  const top = list.getBoundingClientRect().top;
+  const row = [...list.children].find((li) => li.dataset.id && li.getBoundingClientRect().bottom > top);
+  searchReturn = {
+    view: { ...state.view },
+    scrollTop: list.scrollTop,
+    rowId: row?.dataset.id ?? null,
+    rowOffset: row ? row.getBoundingClientRect().top - top : 0,
+    loaded: state.entries.length,
+  };
+}
+
+function openSearch() {
+  captureSearchReturn();
+  document.body.dataset.searchOpen = 'true';
+  el('search').focus();
+}
+
+async function cancelSearch() {
+  clearTimeout(searchTimer);
+  ++searchSequence;
+  el('search').value = '';
+  el('search').blur();
+  document.body.dataset.searchOpen = 'false';
+  const previous = searchReturn;
+  searchReturn = null;
+  if (!previous || state.view.kind !== 'search') return;
+  await setView(previous.view);
+  // A return anchor may be on a later page. Append until it exists or pages end.
+  while (previous.rowId && !el('entries').querySelector(`[data-id="${previous.rowId}"]`) &&
+         !paging.exhausted && state.entries.length < previous.loaded) {
+    await loadEntries({ reader: false, reset: false });
+  }
+  const row = previous.rowId && el('entries').querySelector(`[data-id="${previous.rowId}"]`);
+  if (row) {
+    el('entries').scrollTop += row.getBoundingClientRect().top - el('entries').getBoundingClientRect().top - previous.rowOffset;
+  } else {
+    el('entries').scrollTop = previous.scrollTop;
+  }
 }
 
 /** 打开即已读的公共落地：set_read + 灰显该行 + 计数/按钮文案/侧栏刷新。
@@ -2854,7 +2933,7 @@ function openContextMenu(ev, items, anchor, objectTitle) {
   if (touchMenuActive() && ev.type === 'contextmenu') return;
   closeContextMenu();
   contextMenuTrigger = ev.target?.closest?.('button, li') || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-  if (objectTitle && window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches) {
+  if (objectTitle && window.matchMedia('(max-width: 960px) and (pointer: coarse)').matches) {
     const overlay = document.createElement('div');
     overlay.id = 'ctx-menu';
     overlay.className = 'ctx-sheet-overlay';
@@ -4124,7 +4203,7 @@ function showPane(name) {
 }
 
 function mobileSettings() {
-  return window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches;
+  return window.matchMedia('(max-width: 960px) and (pointer: coarse)').matches;
 }
 
 function showSettingsHome() {
@@ -4457,7 +4536,7 @@ async function boot() {
     // 窗口以 hidden 创建（防主题闪变）：主题/首屏就绪后显示；
     // 真正的显示动作在 Rust 侧，失败时由 5s 兑底定时器接管。
     invoke('show_main_window').catch(() => {});
-    // 视口诊断：窄屏页面式导航按「CSS 宽度 ≤900px 且触屏」切换，日志里直接给出
+    // 视口诊断：窄屏页面式导航按「CSS 宽度 ≤960px 且触屏」切换，日志里直接给出
     // 视口与设备像素比——放在 show 之后（此前 innerWidth 还是 0），无头验证时
     // 能核对「当前是哪套布局」而不靠截图猜。缩放会引起 resize，resize 后再记一条。
     log(`viewport ${window.innerWidth}x${window.innerHeight} dpr=${window.devicePixelRatio}`);
@@ -4950,18 +5029,23 @@ async function boot() {
     }
   };
 
-  let searchTimer = null;
+  el('btn-search-toggle').onclick = openSearch;
+  el('btn-search-cancel').onclick = () => cancelSearch().catch((err) => setStatus(err.message, true));
+  el('search').addEventListener('focus', captureSearchReturn);
   el('search').addEventListener('input', (e) => {
     const value = e.target.value.trim();
     clearTimeout(searchTimer);
+    const sequence = ++searchSequence;
     searchTimer = setTimeout(async () => {
+      if (sequence !== searchSequence) return;
       state.query = value;
       if (value) {
+        if (state.view.kind !== 'search') el('entries').scrollTop = 0;
         state.view = { kind: 'search' };
         renderSidebar();
-        await loadEntries();
+        await loadEntries().catch((err) => setStatus(err.message, true));
       } else {
-        await setView({ kind: 'unread' });
+        await cancelSearch().catch((err) => setStatus(err.message, true));
       }
     }, 250);
   });
@@ -4985,7 +5069,7 @@ function onGlobalKeydown(e) {
   if (!el('ai-confirm-overlay').classList.contains('hidden')) return;
   if (e.key === '/' && !inField) {
     e.preventDefault();
-    el('search').focus();
+    openSearch();
     return;
   }
   if (e.key === 'Escape') {
@@ -4997,6 +5081,10 @@ function onGlobalKeydown(e) {
       return;
     }
     el('settings-overlay').classList.add('hidden');
+    if (searchReturn || state.view.kind === 'search') {
+      cancelSearch().catch((err) => setStatus(err.message, true));
+      return;
+    }
     el('search').value = '';
     el('search').blur();
     el('add-row').classList.add('hidden');

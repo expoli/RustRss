@@ -4,27 +4,27 @@
 
 | ID | 动作 | 旧入口 → 新入口 | 平台 | 状态或副作用；核验步骤 | 责任 | 证据 |
 |---|---|---|---|---|---|---|
-| M01.articles | 文章 | 侧栏/底栏 → 四主导航文章 | 双端 | 保持当前视图；切换并返回 | T3/T6 | 待验 |
+| M01.articles | 文章 | 侧栏/底栏 → 四主导航文章 | 双端 | 保持当前视图；切换并返回 | T3/T6 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M01.subscriptions | 订阅 | 侧栏/底栏 → 四主导航订阅 | 双端 | 保留选中源；切换并返回 | T2/T6 | 待验 |
-| M01.saved | 收藏 | 侧栏/底栏 → 四主导航收藏 | 双端 | 保留星标/稍后读子视图；切换 | T3/T6 | 待验 |
+| M01.saved | 收藏 | 侧栏/底栏 → 四主导航收藏 | 双端 | 保留星标/稍后读子视图；切换 | T3/T6 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M01.settings | 设置 | 工具栏/底栏 → 四主导航设置 | 双端 | 草稿离开规则；进入再返回 | T5/T6 | 待验 |
-| M01.unread | 未读视图 | 智能视图/页内切换 → 标题旁筛选 | 双端 | 未读数同 core；切换 | T3 | 待验 |
-| M01.all | 全部视图 | 智能视图/页内切换 → 标题旁筛选 | 双端 | 已读仍可见；切换 | T3 | 待验 |
-| M01.starred | 星标视图 | 智能视图/页内切换 → 收藏内筛选 | 双端 | 仅星标；切换 | T3 | 待验 |
-| M01.later | 稍后读视图 | 智能视图/页内切换 → 收藏内筛选 | 双端 | 仅稍后读；切换 | T3 | 待验 |
-| M02.search | 标题及正文搜索 | 顶部输入 → 搜索按钮展开输入 | 双端 | 当前 scope；查长标题/正文 | T3 | 待验 |
-| M02.clear | 清除及取消搜索 | 输入清除/Esc → 展开区取消 | 双端 | 恢复前一筛选和锚点；搜索后取消 | T3 | 待验 |
-| M02.sort.newest | 最新排序 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | 待验 |
-| M02.sort.oldest | 最旧排序 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | 待验 |
-| M02.sort.unread | 未读优先 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | 待验 |
-| M02.hide-read | 隐藏已读 | 列表排序菜单/U → 列表更多/U | 双端 | 存储 list.hide_read；切换 | T3/T6 | 待验 |
-| M02.bulk.read | 当前作用域全标已读 | 列表批量菜单/A → 列表更多/A | 双端 | 确认 scope；执行并查库 | T3/T6 | 待验 |
-| M02.bulk.unread | 当前作用域全标未读 | 列表批量菜单 → 列表更多 | 双端 | 确认 scope；执行并查库 | T3 | 待验 |
-| M02.pagination | 续页、加载数、总数 | 列表尾部/头部 → 原位 | 双端 | 30/200行，M/N 正确；续页无重复 | T3 | 待验 |
-| M02.retry | 续页重试 | 失败尾行 → 原位 | 双端 | 失败后重试保留筛选 | T3 | 待验 |
-| M03.refresh-all | 刷新全部 | 工具栏/r → 顶部显式刷新/r | 双端 | 单 flight；观察开始/结束/失败 | T3/T6 | 待验 |
+| M01.unread | 未读视图 | 智能视图/页内切换 → 标题旁筛选 | 双端 | 未读数同 core；切换 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M01.all | 全部视图 | 智能视图/页内切换 → 标题旁筛选 | 双端 | 已读仍可见；切换 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M01.starred | 星标视图 | 智能视图/页内切换 → 收藏内筛选 | 双端 | 仅星标；切换 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M01.later | 稍后读视图 | 智能视图/页内切换 → 收藏内筛选 | 双端 | 仅稍后读；切换 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.search | 标题及正文搜索 | 顶部输入 → 搜索按钮展开输入 | 双端 | 当前 scope；查长标题/正文 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.clear | 清除及取消搜索 | 输入清除/Esc → 展开区取消 | 双端 | 恢复前一筛选和锚点；搜索后取消 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.sort.newest | 最新排序 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.sort.oldest | 最旧排序 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.sort.unread | 未读优先 | 列表排序菜单 → 列表更多 | 双端 | 存储 list.sort；切换并重启 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.hide-read | 隐藏已读 | 列表排序菜单/U → 列表更多/U | 双端 | 存储 list.hide_read；切换 | T3/T6 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.bulk.read | 当前作用域全标已读 | 列表批量菜单/A → 列表更多/A | 双端 | 确认 scope；执行并查库 | T3/T6 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.bulk.unread | 当前作用域全标未读 | 列表批量菜单 → 列表更多 | 双端 | 确认 scope；执行并查库 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.pagination | 续页、加载数、总数 | 列表尾部/头部 → 原位 | 双端 | 30/200行，M/N 正确；续页无重复 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M02.retry | 续页重试 | 失败尾行 → 原位 | 双端 | 失败后重试保留筛选 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
+| M03.refresh-all | 刷新全部 | 工具栏/r → 顶部显式刷新/r | 双端 | 单 flight；观察开始/结束/失败 | T3/T6 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M03.refresh-feed | 单源刷新 | 源右键 → 源更多/右键 | 双端 | 单 flight；对象 ID 不漂移 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
-| M03.status | 刷新状态 | 固定状态栏 → 稳定状态位 | 双端 | 不跳布局；触发和失败 | T3 | 待验 |
+| M03.status | 刷新状态 | 固定状态栏 → 稳定状态位 | 双端 | 不跳布局；触发和失败 | T3 | Android 通过、桌面待 T6：[T3 证据](evidence/t3-list/record.md) |
 | M04.url | URL 或网站发现 | 添加订阅输入 → 订阅页明确添加 | 双端 | 候选发现；输入测试 URL | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M04.candidate | 候选源选择 | 发现结果 → 输入页选择 | 双端 | 选择目标源后新增 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
 | M04.rsshub | RSSHub 入口 | 添加订阅 → 输入页 | 双端 | 输入完整 `rsshub://t2/menu-fixture`；本地镜像命中并回读源 URL/ID/成功状态 | T2 | 通过：[T2 证据](evidence/t2-menu/record.md) |
