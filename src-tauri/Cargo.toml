@@ -61,6 +61,11 @@ png = "0.17"
 # identity, while still allowing patch releases within those lines.
 webview2-com = "0.39.1"
 windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Com_StructuredStorage"] }
+# windows-implement 的 `#[implement]` 宏展开为 `::windows_core::…` 绝对路径，
+# 按下游 crate（本包）的 extern prelude 解析：windows-core 必须是直接依赖，
+# 否则生成代码解析到传递依赖的 0.61 旧版（或根本找不到），编译即 E0433/E0277。
+# 必须与上面 windows 同 minor 线（0.62），保证 IStream 实现的 trait 同源。
+windows-core = "0.62.2"
 png = "0.17"
 
 [target.'cfg(target_os = "macos")'.dependencies]
