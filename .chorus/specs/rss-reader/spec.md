@@ -146,7 +146,7 @@ created: 2026-09-20
 - [x] 安装包体积报出实测值（三平台分别记录）：2026-09-28 [release.yml workflow_dispatch 运行](https://github.com/expoli/RustRss/actions/runs/36423131257)（`master`，`b6e35dc`，成功；Release job 跳过），下载该次 CI 产物以字节数核对：Linux deb `14,219,012` bytes、Windows NSIS `7,522,132` bytes、macOS arm64 dmg `11,716,892` bytes。
   → 2026-09-29 [正式发布 v0.2.0](https://github.com/expoli/RustRss/releases/tag/v0.2.0)（`e1275a8`）：下载正式附件并核对 GitHub SHA-256，Linux deb `14,246,166` bytes、Windows NSIS `7,553,391` bytes、macOS arm64 dmg `11,727,003` bytes，补充发布签名 Android ARM64 / x86_64 通用 APK `72,965,714` bytes。完整构建/验证与校验和见 [发布记录](../../../docs/releases/v0.2.0.md)。
   → 2026-09-29 [补丁发布 v0.2.1](https://github.com/expoli/RustRss/releases/tag/v0.2.1)（`6101f26`）：四份正式附件下载及 GitHub SHA256 核对通过，Linux deb `14,231,840` bytes、Windows NSIS `7,530,710` bytes、macOS arm64 dmg `11,340,038` bytes、原证书签名 Android 通用 APK `73,050,838` bytes；完整证据见 [发布记录](../../../docs/releases/v0.2.1.md)。
-  → 2026-10-01 [正式发布 v0.3.1](https://github.com/expoli/RustRss/releases/tag/v0.3.1)（`f4f3b1e`；0.3.x 首个发布，v0.3.0 因 Windows 构建失败未产出 Release）：三份附件下载核对 GitHub SHA256 一致，Linux deb `14,440,128` bytes、Windows NSIS `7,640,483` bytes、macOS arm64 dmg `11,556,229` bytes；本版未附发布签名 APK；完整证据见 [发布记录](../../../docs/releases/v0.3.1.md)。
+  → 2026-10-01 [正式发布 v0.3.1](https://github.com/expoli/RustRss/releases/tag/v0.3.1)（`f4f3b1e`；0.3.x 首个发布，v0.3.0 因 Windows 构建失败未产出 Release）：四份附件下载核对 GitHub SHA256 一致，Linux deb `14,440,128` bytes、Windows NSIS `7,640,483` bytes、macOS arm64 dmg `11,556,229` bytes、原证书签名 Android 通用 APK `73,548,720` bytes（versionCode 3001，本机从 tag 产品源码构建）；完整证据见 [发布记录](../../../docs/releases/v0.3.1.md)。
 
 ## Non-goals
 
