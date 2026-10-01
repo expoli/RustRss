@@ -6,11 +6,11 @@
 
 ### 修复
 
-- 统一 Windows 预览截图与 Tauri/Wry 的 WebView2 COM 依赖线，避免 `webview2-com` / `windows-core` 跨版本类型混用导致 NSIS 构建失败。
+- 统一 Windows 预览截图与 Tauri/Wry 的 WebView2 COM 依赖线，避免 `webview2-com` / `windows-core` 跨版本类型混用导致 NSIS 构建失败；`windows-core` 保留为直接依赖（`#[implement]` 宏展开按本包 extern prelude 解析 `::windows_core::…`，删除即 CI 复红）。
 
 ### 发布工程
 
-- Tauri 固定在 2.12.x 次版本线，Windows 平台依赖改为兼容范围并移除未直接使用的 `windows-core` 依赖。
+- Tauri 固定在 2.12.x 次版本线，Windows 平台依赖改为兼容范围；`windows` / `webview2-com` / `windows-core` 三者同处 0.62 / 0.39 依赖线。
 - 普通 CI 新增 Windows 专属库编译，在打标签前捕获 WebView2 类型漂移；桌面与 Android 工作流统一使用 Tauri CLI 2.12.1。
 - 新增版本一致性检查，校验 Cargo workspace、Tauri 配置、release tag 与 Android APK `versionName` / `versionCode`。
 
