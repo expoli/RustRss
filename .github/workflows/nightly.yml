@@ -42,6 +42,13 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check application version consistency
+        run: python scripts/check-version-consistency.py
+
       - name: Install Linux build deps
         if: runner.os == 'Linux'
         run: |
@@ -50,7 +57,7 @@ jobs:
 
       # 固定 CLI 版本，避免同一提交因 npx 解析到新版本而产生不同构建结果。
       - name: Build bundles
-        run: npx --yes @tauri-apps/cli@2.11.5 build --bundles ${{ matrix.bundles }}
+        run: npx --yes @tauri-apps/cli@2.12.1 build --bundles ${{ matrix.bundles }}
 
       - uses: actions/upload-artifact@v6
         with:

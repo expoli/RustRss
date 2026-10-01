@@ -20,7 +20,7 @@ rustrss-core = { path = "../crates/rustrss-core" }
 rustrss-mcp = { path = "../crates/rustrss-mcp" }
 # 日志门面：src-tauri 直接用宏（落点与 writer 在 rustrss-core::logging）。
 log = { version = "0.4", features = ["std"] }
-tauri = { version = "2.12", features = [] }
+tauri = { workspace = true, features = [] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
 # 系统通知（桌面端底层是 notify-rust：Linux 走 org.freedesktop.Notifications，
@@ -46,7 +46,7 @@ snapshot-probe = []
 #   （源码首行 `#![cfg(not(any(target_os = "android", target_os = "ios")))]`），
 #   这里连依赖都不再编译。
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri = { version = "2.12", features = ["tray-icon"] }
+tauri = { workspace = true, features = ["tray-icon"] }
 tauri-plugin-single-instance = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -56,11 +56,11 @@ gtk = { version = "0.18" }
 png = "0.17"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-# 三个版本必须与 wry 锁定的 webview2-com 同源（wry 0.57 → 0.39.1/windows 0.62），
-# 否则 controller 类型与 IStream/handler 跨 windows-core 大版本混用，编译即失败。
-webview2-com = "=0.39.1"
-windows = { version = "=0.62.2", features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Com_StructuredStorage"] }
-windows-core = "=0.62.2"
+# `PlatformWebview::controller()` returns Tauri's public webview2-com type.
+# Stay on Tauri 2.12's compatible dependency lines so Cargo resolves one type
+# identity, while still allowing patch releases within those lines.
+webview2-com = "0.39.1"
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Com_StructuredStorage"] }
 png = "0.17"
 
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -79,7 +79,7 @@ required-features = ["snapshot-probe"]
 
 [dev-dependencies]
 # 测试用 mock app（空 feature）：验「没有托盘时 update_badge 静默 no-op」不必起真窗口。
-tauri = { version = "2.12", features = ["test"] }
+tauri = { workspace = true, features = ["test"] }
 
 [[example]]
 name = "theme_ui"

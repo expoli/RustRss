@@ -1,4 +1,4 @@
-# 基础 CI：每次 push(master) / PR 跑测试与 clippy；不生成安装包。
+# 基础 CI：每次 push(master) / PR 跑 Linux 测试/Clippy 与 Windows 编译；不生成安装包。
 # 当前不检查 fmt；Clippy 对所有目标启用 warnings-as-errors。
 name: ci
 
@@ -23,6 +23,9 @@ jobs:
       - name: Check platform icon consistency
         run: python3 scripts/sync-icons.py --check
 
+      - name: Check application version consistency
+        run: python3 scripts/check-version-consistency.py
+
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
@@ -39,3 +42,18 @@ jobs:
 
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+  windows-check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Windows-only WebView2 code is not compiled by the Linux job. A library
+      # check is enough to catch public dependency/type-identity drift without
+      # paying the full NSIS packaging cost on every change.
+      - name: Check Windows desktop library
+        run: cargo check -p rustrss-desktop --lib --locked

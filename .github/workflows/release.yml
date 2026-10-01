@@ -1,7 +1,7 @@
 # 正式发布：推 v* 标签 → 三平台安装包 + GitHub Release（自动生成变更说明）。
 #
 # 用法：先在根 Cargo.toml 的 [workspace.package] 与 src-tauri/tauri.conf.json
-# bump 版本 → 提交 → `git tag vX.Y.Z && git push origin vX.Y.Z`。
+# bump 版本并提交 → 手动运行本 workflow 做三平台 preflight → 全绿后在同一 SHA 推 tag。
 # macOS 只在这里构建，避免每次开发构建都增加一个完整平台矩阵；
 # dmg 未签名，首次打开需右键→打开 绕过 Gatekeeper。
 name: release
@@ -24,31 +24,23 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: dtolnay/rust-toolchain@stable
-
       - name: Validate release tag version
         env:
           EVENT_NAME: ${{ github.event_name }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
+          python3 scripts/check-version-consistency.py
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             echo "Manual dispatch builds artifacts only; no release tag is required."
             exit 0
           fi
 
           tag_version="${RELEASE_TAG#v}"
-          cargo_version="$(cargo metadata --locked --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "rustrss-desktop") | .version')"
-          tauri_version="$(jq -r '.version' src-tauri/tauri.conf.json)"
-
           if [ "$tag_version" = "0.0.0" ]; then
             echo "Refusing to publish the placeholder version 0.0.0." >&2
             exit 1
           fi
-
-          if [ "$tag_version" != "$cargo_version" ] || [ "$tag_version" != "$tauri_version" ]; then
-            echo "Tag $RELEASE_TAG must match workspace version $cargo_version and Tauri version $tauri_version." >&2
-            exit 1
-          fi
+          python3 scripts/check-version-consistency.py --expected "$tag_version"
 
   build:
     needs: validate
@@ -83,7 +75,7 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
 
       - name: Build bundles
-        run: npx --yes @tauri-apps/cli@2.11.5 build --bundles ${{ matrix.bundles }}
+        run: npx --yes @tauri-apps/cli@2.12.1 build --bundles ${{ matrix.bundles }}
 
       # 产物体积记录：写进 job summary（发布后把三平台数字回填 spec 的「安装包体积实测值」条目）。
       # 用 `wc -c` 而不是 `ls -l`/`du -b`：三个 runner 上都可用，且不吃 ls 的输出格式差异。

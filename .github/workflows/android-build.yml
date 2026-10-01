@@ -1,5 +1,5 @@
 # Android 构建：在本地 release 签名链路建立后，为侧载 APK 提供持续构建检查。
-# 只做 x86_64 debug APK（调试签名自动生成，不需要密钥）；发布签名仍由本地
+# 做 x86_64 + aarch64 通用 debug APK（调试签名自动生成，不需要密钥）；发布签名仍由本地
 # keystore.properties 完成（见 docs/development.md 的 Android 段）。
 # 桌面 CI（ci.yml / release.yml）保持不变。
 name: android-build
@@ -8,15 +8,21 @@ on:
   push:
     branches: [master]
     paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
       - "src-tauri/**"
       - "crates/**"
       - "ui/**"
+      - "scripts/check-version-consistency.py"
       - ".github/workflows/android-build.yml"
   pull_request:
     paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
       - "src-tauri/**"
       - "crates/**"
       - "ui/**"
+      - "scripts/check-version-consistency.py"
       - ".github/workflows/android-build.yml"
   workflow_dispatch:
 
@@ -35,6 +41,9 @@ jobs:
 
       - name: Check platform icon consistency
         run: python3 scripts/sync-icons.py --check
+
+      - name: Check application version consistency
+        run: python3 scripts/check-version-consistency.py
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -57,11 +66,10 @@ jobs:
       - name: Install NDK
         run: sdkmanager --install "ndk;27.2.12479018" > /dev/null
 
-      # 项目为 Tauri 2（src-tauri/Cargo.toml: tauri = "2"）；CLI 装 ^2 大版本，
-      # 与本地 2.12.0 同线。--locked 保证依赖与发布锁一致；打印版本留痕。
-      - name: Install tauri-cli (Tauri 2 line)
+      # 与桌面发布工作流固定同一 CLI，避免平台构建工具漂移。
+      - name: Install tauri-cli 2.12.1
         run: |
-          cargo install tauri-cli --locked --version "^2"
+          cargo install tauri-cli --locked --version "=2.12.1"
           cargo tauri --version
 
       - name: Build Android APK (debug, x86_64 + aarch64)
@@ -71,10 +79,11 @@ jobs:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: cargo tauri android build --debug --target x86_64 --target aarch64 --apk
 
-      - name: Verify APK signature
+      - name: Verify APK version and signature
         run: |
           APK="src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk"
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          python3 scripts/check-version-consistency.py --apk "$APK" --aapt "$BT/aapt"
           "$BT/apksigner" verify "$APK"
 
       - uses: actions/upload-artifact@v4

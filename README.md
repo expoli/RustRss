@@ -29,6 +29,8 @@ RustRss 面向 Linux、Windows 和 macOS 桌面；Android 版可在设备上侧�
 
 0.3.0 汇总桌面与 Android 阅读体验整合：四主导航、共享阅读视觉基线、手机操作面板与列表工具收敛；更新说明见 [CHANGELOG](CHANGELOG.md#030---2026-10-01)。Android APK 沿用原发布签名，可覆盖安装保留数据。
 
+0.3.1 修复 Windows WebView2 依赖类型不一致造成的发布构建失败，并在普通 CI 中增加 Windows 编译与跨平台应用版本检查。平台专属 WebView 实现仍使用各自的系统后端，但 RustRss 产品版本、Tauri 次版本线和构建工具在发布流程中统一校验。
+
 Android 手机界面中，文章、订阅、收藏和设置共用完整的底部导航；文章和收藏页的搜索按钮一击展开输入框，明确提示搜索范围为全部文章；取消后恢复原筛选和列表位置。内容区按底栏实际高度布局。设置是一级页面，分类首页和详情均保留底栏；系统返回先回到分类首页，再回到进入设置前的页面。订阅地址入口位于订阅页上方，键盘弹出时页面避让并滚动到当前输入框。阅读先展示字号、行距和段落间距，字体与代码排版、高级 AI 参数按需展开。主题修改仍需点保存，切到其它一级页面会放弃未保存的主题草稿；桌面设置继续使用模态弹窗。Android OPML 导入允许选择普通文档，按实际内容校验，避免文件管理器把 `.opml` 标成普通文件时无法点击；桌面保留 OPML/XML 过滤。Android 的数据设置只提供 OPML 订阅导入导出；OPML 不包含文章、阅读状态或 AI 设置，不支持的整库备份/恢复入口已隐藏。输入和表单的既有设备证据见 [手机交互验证](.chorus/specs/android-app/2026-09-29-phone-ux/evidence/record.md)，本轮验证见 [底栏与返回记录](.chorus/specs/android-app/2026-09-29-primary-navigation/evidence/record.md)。
 
 设置首页按分类显示当前值摘要；外观和阅读保留草稿预览、保存、放弃与主题历史，详情页返回会保留未保存草稿，离开设置才放弃。代理、AI 和 MCP 表单出错时，输入仍在原位，错误会关联到对应字段。桌面窄窗口仍可设置栏宽、阅读宽度与布局；Android 横屏仍只显示手机支持的操作。桌面 MCP 的危险工具开关需要确认，取消不会更改权限。Android 文档选择器在旋转或显示配置变化后仍可用于 OPML 导入导出；Tauri 核心升级至 2.12.0，设备与桌面验证记录见 [T5 设置证据](.chorus/specs/rss-reader/2026-09-30-reading-experience/evidence/t5-settings/record.md)。
@@ -52,11 +54,13 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 
 版本变更和已知限制见 [CHANGELOG.md](CHANGELOG.md)。
 
-1. 在根 `Cargo.toml` 的 `[workspace.package]` 和 `src-tauri/tauri.conf.json` 中同步更新版本号，提交版本变更。
+1. 在根 `Cargo.toml` 的 `[workspace.package]` 和 `src-tauri/tauri.conf.json` 中同步更新版本号，运行 `python3 scripts/check-version-consistency.py` 后提交版本变更。
 2. 更新 `CHANGELOG.md`，记录该版本变更和已知限制并提交。正式 Release 说明由工作流自动生成，发布时核对并补充 CHANGELOG 中的内容。
-3. 将上述提交推送到 `master`，再创建并推送与版本号一致的 `vX.Y.Z` tag。`release.yml` 会校验 tag 与两处版本号，构建 Linux `.deb`、Windows NSIS `.exe`、macOS arm64 `.dmg`，并创建 GitHub Release；macOS 包目前未签名。
-4. 从 tag 对应的产品源码，沿用项目发布密钥构建 Android ARM64 / x86_64 通用 release APK，检查版本、签名和安装升级后上传到同一 Release。命令与密钥配置见 [Android 发布步骤](docs/development.md#android)；`android-build.yml` 的 debug APK 仅用于持续构建检查，不会自动成为 Release 附件。
-5. 从正式附件记录各安装包字节数与 SHA-256，回填 `.chorus/specs/rss-reader/spec.md` 的「安装包体积实测值」条目和 `docs/releases/` 的发布记录。
+3. 将上述提交推送到 `master`，等待 Linux 测试/Clippy、Windows 编译和 Android 持续构建全部通过。
+4. 在这个精确提交上手动触发 `release.yml`（`workflow_dispatch`）。它只构建并上传三平台检查产物，不创建 Release；确认 Linux `.deb`、Windows NSIS `.exe` 和 macOS arm64 `.dmg` 全部通过。
+5. 只有 preflight 全绿后，才在同一 SHA 创建并推送 `vX.Y.Z` tag。`release.yml` 会再次校验 tag 与两处版本号，并创建 GitHub Release；macOS 包目前未签名。
+6. 从 tag 对应的产品源码，沿用项目发布密钥构建 Android ARM64 / x86_64 通用 release APK，用版本检查脚本和 `apksigner` 核对版本、签名及安装升级后上传到同一 Release。命令与密钥配置见 [Android 发布步骤](docs/development.md#android)；`android-build.yml` 的 debug APK 仅用于持续构建检查，不会自动成为 Release 附件。
+7. 从正式附件记录各安装包字节数与 SHA-256，回填 `.chorus/specs/rss-reader/spec.md` 的「安装包体积实测值」条目和 `docs/releases/` 的发布记录。
 
 只需测量体积时，在 GitHub Actions 手动触发 `release.yml`（`workflow_dispatch`）：它构建并上传三平台产物，但不创建 Release；无需为测量打 `v*` tag。
 

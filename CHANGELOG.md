@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-01
+
+### 修复
+
+- 统一 Windows 预览截图与 Tauri/Wry 的 WebView2 COM 依赖线，避免 `webview2-com` / `windows-core` 跨版本类型混用导致 NSIS 构建失败。
+
+### 发布工程
+
+- Tauri 固定在 2.12.x 次版本线，Windows 平台依赖改为兼容范围并移除未直接使用的 `windows-core` 依赖。
+- 普通 CI 新增 Windows 专属库编译，在打标签前捕获 WebView2 类型漂移；桌面与 Android 工作流统一使用 Tauri CLI 2.12.1。
+- 新增版本一致性检查，校验 Cargo workspace、Tauri 配置、release tag 与 Android APK `versionName` / `versionCode`。
+
+### 验证与限制
+
+- Linux 上 workspace 测试与严格 Clippy 通过；Windows NSIS 与三平台安装包仍需以同一提交的远程 preflight 结果为准。
+
 ## [0.3.0] - 2026-10-01
 
 ### 新增与改进
@@ -62,6 +78,7 @@
 - 桌面 Release 提供 Linux deb（Ubuntu 24.04 基线）、Windows NSIS 和 macOS arm64 dmg。macOS 包未签名，首次打开需右键选择「打开」。
 - Android Release 提供使用项目发布密钥签名的 ARM64 / x86_64 通用 APK（Android 7.0+）；构建与侧载步骤见 [开发文档](docs/development.md)。
 
+[0.3.1]: https://github.com/expoli/RustRss/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/expoli/RustRss/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/expoli/RustRss/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/expoli/RustRss/compare/v0.1.0...v0.2.0
