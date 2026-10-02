@@ -1354,6 +1354,26 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 body[data-android="1"] [data-desktop-only] { display: none !important; }
 body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
 
+/* ---- 诊断日志（Android 设置→数据；#logs-block.m-only 桌面不渲染） ---- */
+#logs-list.hidden, #logs-empty.hidden, #logs-view.hidden { display: none; }
+#logs-list { margin: 8px 0 0; padding: 0; list-style: none; }
+.logs-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.logs-row:last-child { border-bottom: 0; }
+.logs-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logs-badge { flex: none; padding: 0 6px; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; color: var(--fg-dim); }
+.logs-meta { flex: none; margin-left: auto; font-size: 12px; color: var(--fg-dim); }
+.logs-row button { flex: none; }
+#logs-truncated-bar {
+  /* 块内固定行：有无论文案都占同一高度，下方 pre 不因它出现/消失而跳动（红线 8） */
+  min-height: 1.5em; margin: 8px 0 0; font-size: 12px; color: var(--danger);
+}
+#logs-content {
+  max-height: 40vh; overflow: auto; margin: 4px 0 0; padding: 8px;
+  border: 1px solid var(--line); border-radius: var(--radius, 6px);
+  font-size: 12px; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
 @media (max-width: 960px) and (pointer: coarse) {
   /* 主区、状态和导航共享一套 flex 高度；不猜测字体/系统缩放后的底栏高度。
      Android 根视图已避让系统栏和 IME，网页不再重复扣安全区。 */

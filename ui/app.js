@@ -337,6 +337,9 @@ const state = {
   readerEntry: null,
   // 正文区当前展示条目所属的源 id：改源名后只更新该源的元信息（正文不重渲染）
   readerFeedId: null,
+  // 诊断日志（Android 设置→数据）：列表与查看区的按需缓存；view 记住
+  // (name, total_bytes, truncated) 供重复「查看」短路，content 是已填进 pre 的文本。
+  logs: { list: [], loaded: false, view: null },
   query: '',
   // 权威值在 Rust 侧（get_ui_settings），这里只是启动前的占位
   settings: { mark_read_on_navigate: true },
@@ -506,6 +509,15 @@ function fmtTime(ts) {
   return sameDay
     ? d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })
     : d.toLocaleDateString(loc, { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
+function fmtBytes(n) {
+  if (n < 1024) return `${n} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let v = n;
+  let i = -1;
+  do { v /= 1024; i++; } while (v >= 1024 && i < units.length - 1);
+  return `${v >= 100 ? Math.round(v) : Math.round(v * 10) / 10} ${units[i]}`;
 }
 
 function setStatus(text, isError = false) {
@@ -4268,10 +4280,109 @@ function showPane(name) {
     el('m-settings-title').textContent = el('tab-' + name).textContent;
     el('m-settings-title').focus();
   }
+  // 诊断日志块按需首载：只认 Android 标记（桌面不渲染该块，也不发起 invoke）
+  if (name === 'data' && document.body.dataset.android === '1') ensureLogsLoaded();
 }
 
 function mobileSettings() {
   return window.matchMedia('(max-width: 960px) and (pointer: coarse)').matches;
+}
+
+// ---------------------------------------------------------------- 诊断日志（设置→数据）
+// 块只在 Android 渲染（#logs-block.m-only）；列表按需加载（首次进 data 页 / 点刷新）。
+// 行由 renderLogsList 一次性重建 + 容器代理点击：刷新是用户显式动作，非热路径，
+// 不受「热路径禁止全量重建」红线约束；查看区是单个 pre 文本节点的一次性填充，
+// 不做逐行 DOM。字段名与 core 直出的 snake_case 序列化一致（modified_at/is_current）。
+
+async function loadLogs() {
+  try {
+    const list = await invoke('list_logs');
+    state.logs.list = Array.isArray(list) ? list : [];
+    state.logs.loaded = true;
+    renderLogsList();
+    // 正在查看的文件已从列表消失 → 收起查看区，不留已删除内容的陈旧视图
+    if (state.logs.view && !state.logs.list.some((f) => f.name === state.logs.view.name)) {
+      el('logs-view').classList.add('hidden');
+      state.logs.view = null;
+    }
+  } catch (err) {
+    setStatus(t('settings.logs.loadFailed', { error: err.message }), true);
+    log(`list_logs failed: ${err.message}`);
+  }
+}
+
+function ensureLogsLoaded() {
+  if (!state.logs.loaded) loadLogs();
+}
+
+function renderLogsList() {
+  const list = el('logs-list');
+  list.textContent = '';
+  for (const f of state.logs.list) {
+    const li = document.createElement('li');
+    li.className = 'logs-row';
+    const name = document.createElement('span');
+    name.className = 'logs-name';
+    name.textContent = f.name;
+    li.append(name);
+    if (f.is_current) {
+      const badge = document.createElement('span');
+      badge.className = 'logs-badge';
+      badge.textContent = t('settings.logs.current');
+      li.append(badge);
+    }
+    const meta = document.createElement('span');
+    meta.className = 'logs-meta';
+    meta.textContent = `${fmtBytes(f.bytes)} · ${f.modified_at ? fmtTime(f.modified_at) : '—'}`;
+    const view = document.createElement('button');
+    view.type = 'button';
+    view.dataset.act = 'view';
+    view.dataset.name = f.name;
+    view.textContent = t('settings.logs.view');
+    const exp = document.createElement('button');
+    exp.type = 'button';
+    exp.dataset.act = 'export';
+    exp.dataset.name = f.name;
+    exp.textContent = t('settings.logs.export');
+    li.append(meta, view, exp);
+    list.append(li);
+  }
+  list.classList.toggle('hidden', state.logs.list.length === 0);
+  el('logs-empty').classList.toggle('hidden', state.logs.list.length !== 0);
+}
+
+async function viewLog(name) {
+  const info = state.logs.list.find((f) => f.name === name);
+  const prev = state.logs.view;
+  // 同 (name, truncated, bytes) 短路：同一文件且列表未见增长就不重复 invoke、不重填 pre
+  if (prev && prev.name === name && (!info || info.bytes === prev.total_bytes)) {
+    el('logs-view').classList.remove('hidden');
+    return;
+  }
+  try {
+    const tail = await invoke('read_log', { name });
+    state.logs.view = { name, content: tail.content, total_bytes: tail.total_bytes, truncated: tail.truncated };
+    // 截断提示条是块内固定行：有无文案都占同一高度，下方 pre 不因它出现/消失而跳动
+    el('logs-truncated-bar').textContent = tail.truncated
+      ? t('settings.logs.truncated', { total: fmtBytes(tail.total_bytes) })
+      : '';
+    el('logs-content').textContent = tail.content;
+    el('logs-view').classList.remove('hidden');
+  } catch (err) {
+    setStatus(t('settings.logs.loadFailed', { error: err.message }), true);
+    log(`read_log ${name} failed: ${err.message}`);
+  }
+}
+
+async function exportLog(name) {
+  try {
+    const path = await invoke('export_log', { name });
+    setStatus(path ? t('settings.logs.exported', { path }) : t('settings.logs.exportCancelled'));
+    log(`export_log ${name} → ${path ?? 'cancelled'}`);
+  } catch (err) {
+    setStatus(t('settings.logs.exportFailed', { error: err.message }), true);
+    log(`export_log ${name} failed: ${err.message}`);
+  }
 }
 
 function refreshSettingsSummaries() {
@@ -5013,6 +5124,15 @@ async function boot() {
       log(`open_logs_dir failed: ${err.message}`);
     }
   };
+
+  // 诊断日志：刷新 + 行内「查看/导出」容器统一代理（行不挂逐行监听器，同 #feeds 口径）
+  el('act-refresh-logs').onclick = () => loadLogs();
+  el('logs-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    if (btn.dataset.act === 'view') viewLog(btn.dataset.name);
+    else exportLog(btn.dataset.name);
+  });
 
   el('add-ok').onclick = doAddFeed;
   el('add-url').addEventListener('keydown', (e) => {
