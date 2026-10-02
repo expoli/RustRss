@@ -1338,3 +1338,11 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [ ] Windows/macOS 真机、实体平板、桌面标签原生拖拽、真实托盘和系统文件管理器/浏览器外链效果仍待验证；见逐 ID 桌面矩阵，不用 Linux/模拟器结果替代。
 
 证据：[T6 原生记录](2026-09-30-reading-experience/evidence/t6-convergence/record.md)与[桌面逐 ID 矩阵](2026-09-30-reading-experience/evidence/t6-convergence/desktop-action-matrix.md)。
+
+## 2026-10-02 Android 诊断日志查看与导出（log-viewer-export）
+
+任务批次：idea `f4d36dc4` / proposal `a2176c7a`，commits `af3c5f2..4e30757`（core API + tauri 命令 + Android UI）。三个任务各自独立评审 PASS（WITH NOTES），Idea 聚合代码复审 PASS WITH NOTES。
+
+- [x] 机械验证：`cargo test --workspace` 全绿（479+，含 logging 37 个新用例与命令守卫/结构测试）、`cargo clippy --workspace --all-targets` 零告警、`cargo build -p rustrss-desktop` 成功（UI 嵌入重建）、i18n selfTest `{ok:true,keys:581}`、mobile 分支 `cargo check --target aarch64-linux-android` 干净。
+- [ ] 实机核验（Android 设备/模拟器，待人工）：设置→数据出现「诊断日志」块且桌面不渲染；列表名称/大小/时间/当前标记正确；查看默认末尾 256KB 且超限有截断提示；导出拉起系统保存对话框，落点可读、取消与失败三态正确；查看/导出的真实 panic 行能对上桌面日志。
+- [ ] 环境限制：本轮无设备运行时证据（评审为静态+构建级）；`.log` 扩展名在部分厂商文档选择器下的 CREATE_DOCUMENT 兼容性未测（未设 MIME filter，按 opml-picker 教验处理，异常时反馈错误文案）。

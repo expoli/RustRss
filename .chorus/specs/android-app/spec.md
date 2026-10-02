@@ -55,6 +55,17 @@ cross-device synchronization is part of this capability.
   of a populated list without replacing its rows or losing scroll position.
   Unsaved theme drafts are discarded when leaving Settings; desktop keeps its
   modal/focus behavior. See the navigation evidence above for runtime limits.
+- [ ] Expose on-device diagnostic logs from Settings → Data: list all retained
+  `rustrss-*.log` files (name, size, mtime, current-startup marker), view the
+  tail (256KB default) with an explicit truncation notice, and export the full
+  file through the system document picker (CREATE_DOCUMENT), reusing the OPML
+  export pipeline. File access is name-whitelisted (`rustrss-*.log`) against
+  path traversal; export keeps the on-disk scrub discipline (no re-scrub) and
+  refuses files over 16MB with a readable error. Desktop gets no entry this
+  round. [Change folder](2026-10-01-log-viewer-export/)
+ 勾选注（未勾）：代码、双平台编译、全量测试与 clippy 已验证（af3c5f2..4e30757，
+  三任务独立评审 + 聚合代码复审均 PASS）；**实机（Android 设备/模拟器）上的块可见性、
+  查看截断提示与 CREATE_DOCUMENT 导出尚无运行时证据**，待人工核验后凭据勾选。
 
 ## Non-goals
 - iOS support.
