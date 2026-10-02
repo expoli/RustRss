@@ -55,7 +55,8 @@ cross-device synchronization is part of this capability.
   of a populated list without replacing its rows or losing scroll position.
   Unsaved theme drafts are discarded when leaving Settings; desktop keeps its
   modal/focus behavior. See the navigation evidence above for runtime limits.
-- [ ] Expose on-device diagnostic logs from Settings → Data: list all retained
+- [ ] Expose on-device diagnostic logs from Settings → General (alongside the
+  log-level setting; relocated from Data in the same release): list all retained
   `rustrss-*.log` files (name, size, mtime, current-startup marker), view the
   tail (256KB default) with an explicit truncation notice, and export the full
   file through the system document picker (CREATE_DOCUMENT), reusing the OPML

@@ -4280,8 +4280,9 @@ function showPane(name) {
     el('m-settings-title').textContent = el('tab-' + name).textContent;
     el('m-settings-title').focus();
   }
-  // 诊断日志块按需首载：只认 Android 标记（桌面不渲染该块，也不发起 invoke）
-  if (name === 'data' && document.body.dataset.android === '1') ensureLogsLoaded();
+  // 诊断日志块按需首载（入口在通用 pane，与日志级别同区）：只认 Android 标记
+  //（桌面不渲染该块，也不发起 invoke）
+  if (name === 'general' && document.body.dataset.android === '1') ensureLogsLoaded();
 }
 
 function mobileSettings() {
