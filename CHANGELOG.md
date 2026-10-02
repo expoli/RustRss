@@ -2,13 +2,15 @@
 
 ## [Unreleased]
 
-### 改动
-
-- Android「诊断日志」入口从设置→数据移至设置→通用，与日志级别同区（原数据页保留 OPML 与备份职责）。
+## [0.4.1] - 2026-10-02
 
 ### 修复
 
-- **Android 刷新全灭修复**：reqwest 0.13 的 `rustls` feature 默认验证器是 rustls-platform-verifier（0.12 的 `rustls-tls` 才是 webpki-roots；`webpki-roots` feature 在 0.13 只启用依赖不参与验证），而 Android 上该验证器需先做 JNI 初始化，否则每次 HTTPS 抓取任务都 panic（设备日志实锤：121 个订阅 117 个逐个 panic，进度停格在 4/121、报告缩水为 4 个）。现三平台统一改为 `tls_certs_only(webpki_root_certs())` 纯根存储验证（内置 Mozilla 根集，webpki-root-certs 提供 DER），绕开 platform-verifier，回归红线 7 的 webpki-roots 口径；MCP preview 客户端同口径。
+- **Android 刷新全灭修复**：reqwest 0.13 的 `rustls` feature 默认验证器是 rustls-platform-verifier（Android 上需先做 JNI 初始化），未初始化时每次 HTTPS 抓取任务都 panic——设备日志实锤 121 个订阅 117 个逐个 panic、进度停格 4/121、报告缩水为 4 个。现三平台统一改为 `tls_certs_only(webpki_root_certs())` 纯根存储验证（内置 Mozilla 根集 DER），回归红线 7 的 webpki-roots 口径；MCP preview 客户端同口径。
+
+### 改动
+
+- Android「诊断日志」入口从设置→数据移至设置→通用，与日志级别同区。
 
 ## [0.4.0] - 2026-10-02
 
