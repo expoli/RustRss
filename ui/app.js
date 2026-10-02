@@ -4290,9 +4290,9 @@ function mobileSettings() {
 
 // ---------------------------------------------------------------- 诊断日志（设置→数据）
 // 块只在 Android 渲染（#logs-block.m-only）；列表按需加载（首次进 data 页 / 点刷新）。
-// 行由 renderLogsList 一次性重建 + 容器代理点击：刷新是用户显式动作，非热路径，
-// 不受「热路径禁止全量重建」红线约束；查看区是单个 pre 文本节点的一次性填充，
-// 不做逐行 DOM。字段名与 core 直出的 snake_case 序列化一致（modified_at/is_current）。
+// 行走与侧栏同一套 keyed reconcile（复用行 + 字段 setText 短路），重复刷新/切语言
+// 不全量重建 DOM；查看区是单个 pre 文本节点的一次性填充，不做逐行 DOM。
+// 字段名与 core 直出的 snake_case 序列化一致（modified_at/is_current）。
 
 async function loadLogs() {
   try {
@@ -4300,6 +4300,7 @@ async function loadLogs() {
     state.logs.list = Array.isArray(list) ? list : [];
     state.logs.loaded = true;
     renderLogsList();
+    log(`list_logs n=${state.logs.list.length}`);
     // 正在查看的文件已从列表消失 → 收起查看区，不留已删除内容的陈旧视图
     if (state.logs.view && !state.logs.list.some((f) => f.name === state.logs.view.name)) {
       el('logs-view').classList.add('hidden');
@@ -4315,40 +4316,64 @@ function ensureLogsLoaded() {
   if (!state.logs.loaded) loadLogs();
 }
 
-function renderLogsList() {
-  const list = el('logs-list');
-  list.textContent = '';
-  for (const f of state.logs.list) {
-    const li = document.createElement('li');
+/** 行构造与字段 patch 分离：keyed 复用行，文本同值短路（同 renderSidebar 口径） */
+function buildLogRow(f, existing) {
+  const key = f.name;
+  let li = existing.get(key);
+  if (!li) {
+    li = document.createElement('li');
+    li.dataset.key = key;
     li.className = 'logs-row';
     const name = document.createElement('span');
     name.className = 'logs-name';
-    name.textContent = f.name;
-    li.append(name);
-    if (f.is_current) {
-      const badge = document.createElement('span');
-      badge.className = 'logs-badge';
-      badge.textContent = t('settings.logs.current');
-      li.append(badge);
-    }
+    const badge = document.createElement('span');
+    badge.className = 'logs-badge';
     const meta = document.createElement('span');
     meta.className = 'logs-meta';
-    meta.textContent = `${fmtBytes(f.bytes)} · ${f.modified_at ? fmtTime(f.modified_at) : '—'}`;
+    // 行不挂逐行监听器：点击由 #logs-list 容器统一代理（data-act/data-name），
+    // 行复用永远拿不到过期闭包 —— 同 #feeds 口径。
     const view = document.createElement('button');
     view.type = 'button';
     view.dataset.act = 'view';
     view.dataset.name = f.name;
-    view.textContent = t('settings.logs.view');
     const exp = document.createElement('button');
     exp.type = 'button';
     exp.dataset.act = 'export';
     exp.dataset.name = f.name;
-    exp.textContent = t('settings.logs.export');
-    li.append(meta, view, exp);
-    list.append(li);
+    li.append(name, badge, meta, view, exp);
   }
+  setText(li.querySelector('.logs-name'), f.name);
+  const badge = li.querySelector('.logs-badge');
+  setText(badge, t('settings.logs.current'));
+  badge.hidden = !f.is_current;
+  setText(
+    li.querySelector('.logs-meta'),
+    `${fmtBytes(f.bytes)} · ${f.modified_at ? fmtTime(f.modified_at) : '—'}`
+  );
+  setText(li.querySelector('button[data-act="view"]'), t('settings.logs.view'));
+  setText(li.querySelector('button[data-act="export"]'), t('settings.logs.export'));
+  return li;
+}
+
+function renderLogsList() {
+  const list = el('logs-list');
+  const existing = new Map([...list.children].map((n) => [n.dataset.key, n]));
+  reconcileChildren(list, state.logs.list.map((f) => buildLogRow(f, existing)));
   list.classList.toggle('hidden', state.logs.list.length === 0);
   el('logs-empty').classList.toggle('hidden', state.logs.list.length !== 0);
+}
+
+/** 切语言后重译列表与截断提示（纯本地 patch，不重新 invoke） */
+function rerenderLogsI18n() {
+  if (!state.logs.loaded) return;
+  renderLogsList();
+  const v = state.logs.view;
+  if (v) {
+    setText(
+      el('logs-truncated-bar'),
+      v.truncated ? t('settings.logs.truncated', { total: fmtBytes(v.total_bytes) }) : ''
+    );
+  }
 }
 
 async function viewLog(name) {
@@ -4361,13 +4386,19 @@ async function viewLog(name) {
   }
   try {
     const tail = await invoke('read_log', { name });
-    state.logs.view = { name, content: tail.content, total_bytes: tail.total_bytes, truncated: tail.truncated };
-    // 截断提示条是块内固定行：有无文案都占同一高度，下方 pre 不因它出现/消失而跳动
-    el('logs-truncated-bar').textContent = tail.truncated
-      ? t('settings.logs.truncated', { total: fmtBytes(tail.total_bytes) })
-      : '';
-    el('logs-content').textContent = tail.content;
+    // content 不入 state：pre 已持有文本，这里只存三元组供重复「查看」短路
+    state.logs.view = { name, total_bytes: tail.total_bytes, truncated: tail.truncated };
+    // 截断提示条是块内固定行：有无文案都占同一高度，下方 pre 不因它出现/消失而跳动；
+    // 同值重入（重复点同一个「查看」）在 setText 里零写入。
+    setText(
+      el('logs-truncated-bar'),
+      tail.truncated ? t('settings.logs.truncated', { total: fmtBytes(tail.total_bytes) }) : ''
+    );
+    const pre = el('logs-content');
+    setText(pre, tail.content);
+    pre.scrollTop = 0;
     el('logs-view').classList.remove('hidden');
+    log(`read_log ${name} bytes=${tail.total_bytes} truncated=${tail.truncated}`);
   } catch (err) {
     setStatus(t('settings.logs.loadFailed', { error: err.message }), true);
     log(`read_log ${name} failed: ${err.message}`);
@@ -4479,6 +4510,7 @@ const SETTING_DROPDOWNS = [
       themeEditors = [mountThemeEditor('appearance-editor', 'appearance'), mountThemeEditor('reading-editor', 'reading')];
       renderSidebar();
       renderList();
+      rerenderLogsI18n();
       if (state.selectedId) {
         const entry = await invoke('get_entry', { id: state.selectedId });
         if (entry) renderReader(entry);
