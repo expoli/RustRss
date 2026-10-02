@@ -482,20 +482,24 @@ pub fn list_log_files(log_dir: &Path) -> Vec<LogFileInfo> {
     files
 }
 
-/// [`read_log_tail`] 的结果：末尾内容 + 全文件大小 + 是否被截断。
+/// [`read_log_tail`] 的结果：末尾内容 + 全文件大小 + 是否被截断 + 实际生效的上限。
 ///（`Serialize` 同 [`LogFileInfo`]：Tauri 命令直出。）
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LogTail {
     pub content: String,
     pub total_bytes: u64,
     pub truncated: bool,
+    /// 实际生效的末尾上限；UI 截断提示据此取数，避免文案与常量漂移。
+    pub max_bytes: u64,
 }
 
 /// 读取日志文件末尾至多 `max_bytes` 字节（查看用；排障最关心的最新内容恰在尾部）。
 ///
 /// - 起点 `seek(len - max_bytes)`；`truncated = len > max_bytes`；
-/// - 截断起点对齐到下一个 `\n` 之后（整行起步，不带半行/半字符）；窗口内一个换行
-///   都没有（单行超长）时无处对齐，就原样输出整个窗口——比空视图有用；
+/// - 截断起点对齐到行首：窗口前一字节是 `\n` 时窗口本来就从完整行开头，原样保留；
+///   否则丢掉开头那半行（连同可能被砍半的多字节字符）。窗口内一个换行都没有
+///   （单行超长）时无处对齐，就原样输出整个窗口——比空视图有用；
+/// - `max_bytes` 原样回传（UI 提示文案从响应取数，不重复硬编码常量）；
 /// - 内容 UTF-8 `from_utf8_lossy` 解码，任何字节序列都不 panic；
 /// - 当前日志正被 logger 以 append 模式持有，POSIX 语义下并发读安全（最多读到
 ///   稍旧的字节量，`total_bytes` 为打开时刻的大小）。
@@ -512,6 +516,18 @@ pub fn read_log_tail(log_dir: &Path, name: &str, max_bytes: u64) -> Result<LogTa
     let truncated = total_bytes > max_bytes;
     let start = if truncated { total_bytes - max_bytes } else { 0 };
     let to_read = total_bytes - start;
+    // 窗口前一字节是 `\n` ⇒ 切割点恰在行边界上，窗口从完整行开头，无需对齐丢弃
+    // （truncated ⇒ start = len - max > 0，前一字节必然存在）。
+    let starts_at_line_boundary = if truncated {
+        file.seek(SeekFrom::Start(start - 1))
+            .map_err(|e| format!("定位日志文件 {} 失败：{e}", path.display()))?;
+        let mut prev = [0u8; 1];
+        file.read_exact(&mut prev)
+            .map_err(|e| format!("读取日志文件 {} 失败：{e}", path.display()))?;
+        prev[0] == b'\n'
+    } else {
+        true
+    };
     file.seek(SeekFrom::Start(start))
         .map_err(|e| format!("定位日志文件 {} 失败：{e}", path.display()))?;
     let mut buf = Vec::with_capacity(to_read.min(usize::MAX as u64) as usize);
@@ -519,8 +535,9 @@ pub fn read_log_tail(log_dir: &Path, name: &str, max_bytes: u64) -> Result<LogTa
         .read_to_end(&mut buf)
         .map_err(|e| format!("读取日志文件 {} 失败：{e}", path.display()))?;
 
-    // 对齐到下一行行首：丢掉窗口开头那半行（连同可能被砍半的多字节字符）。
-    if truncated {
+    // 对齐到下一行行首：仅当切割点在半行中间时，丢掉窗口开头那半行
+    // （连同可能被砍半的多字节字符）。
+    if truncated && !starts_at_line_boundary {
         if let Some(pos) = buf.iter().position(|&b| b == b'\n') {
             buf.drain(..=pos);
         }
@@ -529,6 +546,7 @@ pub fn read_log_tail(log_dir: &Path, name: &str, max_bytes: u64) -> Result<LogTa
         content: String::from_utf8_lossy(&buf).into_owned(),
         total_bytes,
         truncated,
+        max_bytes,
     })
 }
 
@@ -1330,6 +1348,7 @@ mod tests {
         let tail = read_log_tail(&dir, name, 10_000).expect("应成功");
         assert_eq!(tail.content, text, "未超限时原文整返");
         assert_eq!(tail.total_bytes, text.len() as u64);
+        assert_eq!(tail.max_bytes, 10_000, "上限原样回传");
         assert!(!tail.truncated);
         cleanup(&dir);
     }
@@ -1354,6 +1373,26 @@ mod tests {
             "对齐到完整行首，不带半行：{:?}",
             tail.content
         );
+        cleanup(&dir);
+    }
+
+    /// 评审回归（task N1）：切割点恰好落在行边界上（前一字节是 `\n`）时，
+    /// 窗口首行本来完整，不得再丢一行。max=20/40 → 起点 20 = L05 首字节。
+    #[test]
+    fn read_log_tail_keeps_first_line_when_cut_lands_on_a_line_boundary() {
+        let dir = tmp_dir("tail-boundary-aligned");
+        let mut text = String::new();
+        for i in 0..10 {
+            text.push_str(&format!("L{i:02}\n"));
+        }
+        let name = "rustrss-20260101-000005.log";
+        std::fs::write(dir.join(name), &text).unwrap();
+
+        let tail = read_log_tail(&dir, name, 20).expect("应成功");
+        assert!(tail.truncated);
+        assert_eq!(tail.total_bytes, 40);
+        assert_eq!(tail.max_bytes, 20, "实际生效的上限应原样回传");
+        assert_eq!(tail.content, "L05\nL06\nL07\nL08\nL09\n", "行对齐时首行不丢：{:?}", tail.content);
         cleanup(&dir);
     }
 
