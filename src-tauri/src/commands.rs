@@ -3296,6 +3296,75 @@ pub fn ui_log(line: String) {
 /// 这里保留 re-export 让界面侧的调用点（`ui_log`、逐源失败行）照旧直接用。
 pub use rustrss_core::logging::scrub::scrub_log_line;
 
+// ---------------------------------------------------------------- 诊断日志（设置→数据）
+
+/// 查看日志末尾的默认字节数：超过则 `truncated=true`，界面显示截断提示条。
+const LOG_VIEW_DEFAULT_MAX_BYTES: u64 = 256 * 1024;
+/// 导出日志的整读上限（16 MB）：超限返回可读 Err，在打开任何对话框之前失败。
+const LOG_EXPORT_MAX_BYTES: u64 = 16 * 1024 * 1024;
+
+/// 设置→数据「诊断日志」列表：目录里全部 `rustrss-*.log`，最新在前。
+///
+/// 目录不存在/不可读回空列表（core 口径），界面据此显示空态，不算错误。
+#[tauri::command]
+pub async fn list_logs() -> R<Vec<rustrss_core::logging::LogFileInfo>> {
+    Ok(rustrss_core::logging::list_log_files(
+        &rustrss_core::paths::logs_dir(),
+    ))
+}
+
+/// 读取日志末尾（查看用）：默认 256KB，排障最关心的最新内容恰在尾部；
+/// `truncated=true` 时界面显示截断提示条。
+#[tauri::command]
+pub async fn read_log(
+    name: String,
+    max_bytes: Option<u64>,
+) -> R<rustrss_core::logging::LogTail> {
+    rustrss_core::logging::read_log_tail(
+        &rustrss_core::paths::logs_dir(),
+        &name,
+        max_bytes.unwrap_or(LOG_VIEW_DEFAULT_MAX_BYTES),
+    )
+}
+
+/// 导出日志：core 整读（16MB 上限）→ 原生保存对话框 → 写盘。返回实际写入路径（用户取消则 None）。
+///
+/// 与 [`export_opml`] 完全同构：
+/// - **core 整读在最前**：名称非法（core 名称白名单守卫）与超限都在打开任何对话框之前
+///   就返回可读 Err——绝不在弹了对话框之后才失败；
+/// - 只给默认文件名（`set_file_name`），**不加扩展名 filter**：Android 把扩展名映射成
+///   MIME 过滤，`.log` 非标准 MIME，沿用 OPML 导出的教训（选不了等于导不了）；
+/// - 阻塞式对话框在非主线程的 async 命令里是安全的（`export_opml` 同款注释）；
+/// - Android 的 CREATE_DOCUMENT 返回 `content://` URI，经 ContentResolver 写入；桌面保持 std::fs。
+#[tauri::command]
+pub async fn export_log(app: tauri::AppHandle, name: String) -> R<Option<String>> {
+    let content = rustrss_core::logging::read_log_file(
+        &rustrss_core::paths::logs_dir(),
+        &name,
+        LOG_EXPORT_MAX_BYTES,
+    )
+    .map_err(err)?;
+    let picked = app
+        .dialog()
+        .file()
+        .set_file_name(name.as_str())
+        .blocking_save_file();
+    let Some(file_path) = picked else {
+        return Ok(None);
+    };
+    #[cfg(mobile)]
+    {
+        crate::documents::write_text(&file_path.to_string(), &content).map_err(err)?;
+        Ok(Some(file_path.to_string()))
+    }
+    #[cfg(desktop)]
+    {
+        let path = file_path.into_path().map_err(|e| format!("路径无效: {e}"))?;
+        std::fs::write(&path, content).map_err(|e| format!("写入 {} 失败: {e}", path.display()))?;
+        Ok(Some(path.display().to_string()))
+    }
+}
+
 // ---------------------------------------------------------------- MCP
 
 #[derive(Serialize)]
@@ -3887,6 +3956,121 @@ mod mobile_fallback_guard_tests {
         assert!(
             !slice.contains("MOBILE_UNSUPPORTED"),
             "open_external 不再是移动端拒绝分支"
+        );
+    }
+}
+
+/// 诊断日志三命令（`list_logs`/`read_log`/`export_log`）的薄封装口径与安全顺序。
+///
+/// 命令本体要 `AppHandle`（单测里造不出真实例），所以这里钉两件能在单测里钉住的事：
+/// ① 非法文件名在 core 名称白名单守卫就返回可读 Err——守卫在打开任何文件之前，
+///   命令的第一条语句就是 core 读，故不需要对话框参与、也不需要文件存在；
+/// ② `export_log` 的源码形态：core 整读先于 `blocking_save_file`（所有错误都在
+///   弹对话框之前兑完）、不加扩展名 filter（Android MIME 教训）、双平台分支与
+///   `export_opml` 同构。与 `mobile_fallback_guard_tests` 同款 include_str 守卫，
+///   变异可验：把对话框挪到 core 读之前 / 加回 filter，测试变红。
+#[cfg(test)]
+mod log_command_tests {
+    // 不 `use super::*`：本模块只按路径引用两个常量与 core API，全量引入反而招 clippy。
+
+    fn tmp_dir(tag: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "rustrss-log-cmds-{tag}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).expect("测试目录应能创建");
+        dir
+    }
+
+    /// 非法文件名（路径分隔符 / 非 `rustrss-*.log` 形态）在打开任何文件/对话框
+    /// 之前就返回可读 Err：命令 `read_log`/`export_log` 的第一条语句就是这两个
+    /// core 入口，守卫（`ensure_safe_log_name`）不合法直接拒绝，无需文件存在。
+    #[test]
+    fn invalid_names_fail_before_any_file_or_dialog() {
+        let dir = tmp_dir("guard");
+        let bad = [
+            "../x.log",         // 穿越上级
+            "rustrss-x/y.log",  // 路径分隔符
+            "rustrss-x\\y.log", // Windows 分隔符
+            "rustrss-a..log",   // 形态合法但含 ..
+            "a.txt",            // 非 rustrss-*.log 形态
+            "rustrss-.log",     // 前后缀之间为空
+            "",                 // 空名
+        ];
+        for name in bad {
+            // read_log 的入口（256KB 默认在命令层，不影响守卫路径）
+            let err = rustrss_core::logging::read_log_tail(&dir, name, 256 * 1024)
+                .expect_err(name);
+            assert!(err.contains("非法日志文件名"), "{name:?} → {err}");
+            // export_log 的入口（16MB 上限在命令层，不影响守卫路径）
+            let err = rustrss_core::logging::read_log_file(
+                &dir,
+                name,
+                commands_log_export_max_bytes(),
+            )
+            .expect_err(name);
+            assert!(err.contains("非法日志文件名"), "{name:?} → {err}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// 给测试用的导出上限：与命令层常量同源（assert_eq 钉住，防漂移）。
+    fn commands_log_export_max_bytes() -> u64 {
+        assert_eq!(super::LOG_EXPORT_MAX_BYTES, 16 * 1024 * 1024);
+        assert_eq!(super::LOG_VIEW_DEFAULT_MAX_BYTES, 256 * 1024);
+        super::LOG_EXPORT_MAX_BYTES
+    }
+
+    fn command_slice(signature: &str, what: &str) -> String {
+        const COMMANDS_RS: &str = include_str!("commands.rs");
+        let start = COMMANDS_RS
+            .find(signature)
+            .unwrap_or_else(|| panic!("{what}（{signature}）找不到，改结构后本守卫要同步"));
+        let end = COMMANDS_RS[start..]
+            .find("\n#[tauri::command]")
+            .unwrap_or_else(|| panic!("{what} 后面找不到下一个 #[tauri::command] 边界"));
+        COMMANDS_RS[start..start + end].to_string()
+    }
+
+    /// `export_log` 与 `export_opml` 的同构 + 错误先于对话框的顺序守卫（机械钉住）：
+    /// ① core 整读在 `blocking_save_file` 之前——名称/大小错误都在弹对话框前兑完；
+    /// ② 只有 `set_file_name`，没有 `add_filter`（Android 把扩展名映射成 MIME，
+    ///   `.log` 非标准 MIME 会选不了）；
+    /// ③ 双平台分支同 export_opml：mobile `write_text` / desktop `std::fs::write`。
+    #[test]
+    fn export_log_reads_core_before_dialog_and_mirrors_export_opml() {
+        let slice = command_slice("pub async fn export_log", "导出日志");
+        let read_pos = slice
+            .find("read_log_file")
+            .unwrap_or_else(|| panic!("export_log 必须经 core read_log_file 整读"));
+        let dialog_pos = slice.find("blocking_save_file").unwrap_or_else(|| {
+            panic!("export_log 必须弹保存对话框（blocking_save_file）")
+        });
+        assert!(
+            read_pos < dialog_pos,
+            "core 整读必须在保存对话框之前（超限/非法名不得先进对话框）"
+        );
+        assert!(
+            slice.contains("set_file_name(name.as_str())"),
+            "默认文件名 = 待导出的日志名"
+        );
+        assert!(
+            !slice.contains("add_filter"),
+            "不得加扩展名 filter（Android MIME 教训：.log 非标准 MIME 会选不了）"
+        );
+        assert!(slice.contains("#[cfg(mobile)]"), "缺移动分支");
+        assert!(
+            slice.contains("write_text"),
+            "移动分支必须经 documents::write_text"
+        );
+        assert!(slice.contains("#[cfg(desktop)]"), "缺桌面分支");
+        assert!(
+            slice.contains("std::fs::write"),
+            "桌面分支必须经 std::fs::write"
         );
     }
 }

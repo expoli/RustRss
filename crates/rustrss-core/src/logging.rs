@@ -24,6 +24,7 @@ use std::time::SystemTime;
 
 use chrono::{DateTime, Local, SecondsFormat};
 use log::{Level, LevelFilter, Log, Metadata, Record};
+use serde::Serialize;
 
 pub mod scrub;
 
@@ -421,7 +422,10 @@ fn seq_of(name: &str) -> u32 {
 // ---------------------------------------------------------------------------
 
 /// [`list_log_files`] 的一条结果：目录里一个 `rustrss-*.log` 的元数据。
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// `Serialize` 给 Tauri 命令直出（与 store 的 FeedRow/TagRow 同一口径：core 类型
+/// 直接过界面边界，不做镜像视图结构）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LogFileInfo {
     pub name: String,
     pub bytes: u64,
@@ -479,7 +483,8 @@ pub fn list_log_files(log_dir: &Path) -> Vec<LogFileInfo> {
 }
 
 /// [`read_log_tail`] 的结果：末尾内容 + 全文件大小 + 是否被截断。
-#[derive(Debug, Clone, PartialEq, Eq)]
+///（`Serialize` 同 [`LogFileInfo`]：Tauri 命令直出。）
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LogTail {
     pub content: String,
     pub total_bytes: u64,
