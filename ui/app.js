@@ -4371,7 +4371,9 @@ function rerenderLogsI18n() {
   if (v) {
     setText(
       el('logs-truncated-bar'),
-      v.truncated ? t('settings.logs.truncated', { total: fmtBytes(v.total_bytes) }) : ''
+      v.truncated
+        ? t('settings.logs.truncated', { limit: fmtBytes(v.max_bytes), total: fmtBytes(v.total_bytes) })
+        : ''
     );
   }
 }
@@ -4379,20 +4381,33 @@ function rerenderLogsI18n() {
 async function viewLog(name) {
   const info = state.logs.list.find((f) => f.name === name);
   const prev = state.logs.view;
-  // 同 (name, truncated, bytes) 短路：同一文件且列表未见增长就不重复 invoke、不重填 pre
-  if (prev && prev.name === name && (!info || info.bytes === prev.total_bytes)) {
+  // 同 (name, bytes) 短路：同一文件且列表未见增长就不重复 invoke、不重填 pre。
+  // truncated 与 max_bytes 是每构建常量（bytes>maxBytes ⟺ truncated），无需入比较。
+  if (
+    prev &&
+    prev.name === name &&
+    (!info || info.bytes === prev.total_bytes)
+  ) {
     el('logs-view').classList.remove('hidden');
     return;
   }
   try {
     const tail = await invoke('read_log', { name });
-    // content 不入 state：pre 已持有文本，这里只存三元组供重复「查看」短路
-    state.logs.view = { name, total_bytes: tail.total_bytes, truncated: tail.truncated };
+    // content 不入 state：pre 已持有文本，这里只存元组供重复「查看」短路；
+    // max_bytes 来自响应（后端常量单一事实源），截断提示从它取数而非硬编码
+    state.logs.view = {
+      name,
+      total_bytes: tail.total_bytes,
+      truncated: tail.truncated,
+      max_bytes: tail.max_bytes,
+    };
     // 截断提示条是块内固定行：有无文案都占同一高度，下方 pre 不因它出现/消失而跳动；
     // 同值重入（重复点同一个「查看」）在 setText 里零写入。
     setText(
       el('logs-truncated-bar'),
-      tail.truncated ? t('settings.logs.truncated', { total: fmtBytes(tail.total_bytes) }) : ''
+      tail.truncated
+        ? t('settings.logs.truncated', { limit: fmtBytes(tail.max_bytes), total: fmtBytes(tail.total_bytes) })
+        : ''
     );
     const pre = el('logs-content');
     setText(pre, tail.content);
