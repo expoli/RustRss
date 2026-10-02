@@ -11,11 +11,15 @@
 //!
 //! 可选的终端镜像（从终端调试时看得见日志）见 [`init_with_mirror`]：镜像行与文件行
 //! **同源同格式**（同一份 `format_line` 字符串），镜像写失败同样静默忽略。
+//!
+//! 写入之外还有一套**只读访问 API**（日志查看/导出的数据面）：[`list_log_files`]
+//! 列目录、[`read_log_tail`] 读末尾、[`read_log_file`] 整读；读取前一律过名称白名单
+//! 守卫（[`ensure_safe_log_name`]），用户可控的文件名进路径之前先挡掉路径穿越。
 
 use std::fs::{File, OpenOptions};
-use std::io::{self, Write};
+use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::time::SystemTime;
 
 use chrono::{DateTime, Local, SecondsFormat};
@@ -34,6 +38,13 @@ const FILE_PREFIX: &str = "rustrss-";
 const FILE_SUFFIX: &str = ".log";
 /// 同一秒内最多容忍的启动次数（同秒冲突后缀 `-N` 的上限）。
 const MAX_SAME_SECOND_FILES: u32 = 100;
+
+/// 本次启动正在写的日志文件名，由 [`init_with_mirror`] 首次成功时写入，
+/// [`list_log_files`] 用它标记 `is_current`。
+///
+/// `OnceLock` 只认首值：重复 init（全局 logger 本来也只装一次）不会改写
+/// 「当前」的归属——首装 logger 的那个文件才是本次会话真正在写的。
+static CURRENT: OnceLock<String> = OnceLock::new();
 
 /// 追加写单个日志文件的 [`log::Log`] 实现。
 ///
@@ -216,6 +227,9 @@ pub fn init_with_mirror(
     };
     log::set_max_level(level);
     let _ = log::set_boxed_logger(Box::new(logger));
+    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+        let _ = CURRENT.set(name.to_string());
+    }
     Ok(path)
 }
 
@@ -395,6 +409,172 @@ fn seq_of(name: &str) -> u32 {
         .and_then(|rest| rest.strip_prefix('-'))
         .and_then(|n| n.parse().ok())
         .unwrap_or(0)
+}
+
+// ---------------------------------------------------------------------------
+// 只读访问：列表 / 末尾读取 / 整读（日志查看与导出的数据面）
+//
+// 非热路径（用户显式打开设置才触发），无性能红线压力；两条硬口径：
+// - **名称白名单守卫在打开任何文件之前**（[`ensure_safe_log_name`]）：用户可控的
+//   名字拼进路径之前先拦下分隔符 / `..`，杜绝路径穿越；
+// - 内容按字节末尾截取后 UTF-8 lossy 解码，任何字节序列都不 panic。
+// ---------------------------------------------------------------------------
+
+/// [`list_log_files`] 的一条结果：目录里一个 `rustrss-*.log` 的元数据。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LogFileInfo {
+    pub name: String,
+    pub bytes: u64,
+    /// mtime 的 epoch 秒；拿不到时为 `None`（排序时沉底）。
+    pub modified_at: Option<i64>,
+    /// 同秒冲突后缀（基准名 = 0），mtime 打平时的次级排序键。
+    pub seq: u32,
+    /// 是否本次启动正在写的日志（与 [`CURRENT`] 比对）。
+    pub is_current: bool,
+}
+
+/// 列出目录下全部本应用日志（仅 `rustrss-*.log`），最新在前。
+///
+/// 目录不存在 / 不可读时返回空列表（调用方据此显示空态，不算错误）。只读枚举，
+/// 不碰文件内容；名字来自 readdir 本身，不存在穿越问题，故只过 [`is_log_file_name`]。
+pub fn list_log_files(log_dir: &Path) -> Vec<LogFileInfo> {
+    let Ok(entries) = std::fs::read_dir(log_dir) else {
+        return Vec::new();
+    };
+    let current = CURRENT.get();
+    let mut files: Vec<LogFileInfo> = entries
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let name = entry.file_name();
+            let name = name.to_str()?;
+            if !is_log_file_name(name) {
+                return None;
+            }
+            let meta = entry.metadata().ok()?;
+            if !meta.is_file() {
+                return None;
+            }
+            Some(LogFileInfo {
+                name: name.to_string(),
+                bytes: meta.len(),
+                modified_at: meta
+                    .modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs() as i64),
+                seq: seq_of(name),
+                is_current: current.is_some_and(|c| c == name),
+            })
+        })
+        .collect();
+    // 最新在前：mtime 新的在前；打平时同秒后缀序号大的在前（0 是基准名，先于
+    // -1、-2…，与 [`prune`] 的旧→新序刚好相反）；再打平按名字倒序，保证完全确定。
+    files.sort_by(|a, b| {
+        b.modified_at
+            .cmp(&a.modified_at)
+            .then(b.seq.cmp(&a.seq))
+            .then(b.name.cmp(&a.name))
+    });
+    files
+}
+
+/// [`read_log_tail`] 的结果：末尾内容 + 全文件大小 + 是否被截断。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LogTail {
+    pub content: String,
+    pub total_bytes: u64,
+    pub truncated: bool,
+}
+
+/// 读取日志文件末尾至多 `max_bytes` 字节（查看用；排障最关心的最新内容恰在尾部）。
+///
+/// - 起点 `seek(len - max_bytes)`；`truncated = len > max_bytes`；
+/// - 截断起点对齐到下一个 `\n` 之后（整行起步，不带半行/半字符）；窗口内一个换行
+///   都没有（单行超长）时无处对齐，就原样输出整个窗口——比空视图有用；
+/// - 内容 UTF-8 `from_utf8_lossy` 解码，任何字节序列都不 panic；
+/// - 当前日志正被 logger 以 append 模式持有，POSIX 语义下并发读安全（最多读到
+///   稍旧的字节量，`total_bytes` 为打开时刻的大小）。
+pub fn read_log_tail(log_dir: &Path, name: &str, max_bytes: u64) -> Result<LogTail, String> {
+    ensure_safe_log_name(name)?;
+    let path = log_dir.join(name);
+    let mut file =
+        File::open(&path).map_err(|e| format!("打开日志文件 {} 失败：{e}", path.display()))?;
+    let total_bytes = file
+        .metadata()
+        .map_err(|e| format!("读取日志文件 {} 元信息失败：{e}", path.display()))?
+        .len();
+
+    let truncated = total_bytes > max_bytes;
+    let start = if truncated { total_bytes - max_bytes } else { 0 };
+    let to_read = total_bytes - start;
+    file.seek(SeekFrom::Start(start))
+        .map_err(|e| format!("定位日志文件 {} 失败：{e}", path.display()))?;
+    let mut buf = Vec::with_capacity(to_read.min(usize::MAX as u64) as usize);
+    file.take(to_read)
+        .read_to_end(&mut buf)
+        .map_err(|e| format!("读取日志文件 {} 失败：{e}", path.display()))?;
+
+    // 对齐到下一行行首：丢掉窗口开头那半行（连同可能被砍半的多字节字符）。
+    if truncated {
+        if let Some(pos) = buf.iter().position(|&b| b == b'\n') {
+            buf.drain(..=pos);
+        }
+    }
+    Ok(LogTail {
+        content: String::from_utf8_lossy(&buf).into_owned(),
+        total_bytes,
+        truncated,
+    })
+}
+
+/// 整读一个日志文件（导出用）。超过 `max_bytes` 返回可读 `Err`——调用方在打开
+/// 任何对话框 / 写任何盘之前就能失败（上限由调用方定，导出链路用 16 MB）。
+pub fn read_log_file(log_dir: &Path, name: &str, max_bytes: u64) -> Result<String, String> {
+    ensure_safe_log_name(name)?;
+    let path = log_dir.join(name);
+    let file =
+        File::open(&path).map_err(|e| format!("打开日志文件 {} 失败：{e}", path.display()))?;
+    // 预检：超限就不读，不把几十 MB 拽进内存再拒绝。
+    let size = file
+        .metadata()
+        .map_err(|e| format!("读取日志文件 {} 元信息失败：{e}", path.display()))?
+        .len();
+    if size > max_bytes {
+        return Err(too_large_message(size, max_bytes));
+    }
+    // 读的时候多要 1 字节：并发追加把文件顶过上限的竞态（TOCTOU）在这里兑住。
+    let mut buf = Vec::new();
+    file.take(max_bytes.saturating_add(1))
+        .read_to_end(&mut buf)
+        .map_err(|e| format!("读取日志文件 {} 失败：{e}", path.display()))?;
+    if buf.len() as u64 > max_bytes {
+        return Err(too_large_message(buf.len() as u64, max_bytes));
+    }
+    Ok(String::from_utf8_lossy(&buf).into_owned())
+}
+
+fn too_large_message(size: u64, max_bytes: u64) -> String {
+    const MIB: f64 = 1024.0 * 1024.0;
+    format!(
+        "文件过大（{:.1} MB），上限 {:.1} MB",
+        size as f64 / MIB,
+        max_bytes as f64 / MIB
+    )
+}
+
+/// 读取类 API 的名称白名单守卫：只接受 `rustrss-*.log`，且显式拒绝含路径分隔符
+/// （`/`、`\`）或 `..` 的名字——在打开任何文件之前把路径穿越挡掉。
+///
+/// `rustrss-..log` 这种「形态合法但含 `..`」的边界名同样拒绝：宁可错杀一个不可能由
+/// 本程序生成的名字，也不给拼接路径留任何可乘之机。
+fn ensure_safe_log_name(name: &str) -> Result<(), String> {
+    if !is_log_file_name(name) {
+        return Err(format!("非法日志文件名：{name:?}（只接受 rustrss-*.log）"));
+    }
+    if name.contains('/') || name.contains('\\') || name.contains("..") {
+        return Err(format!("非法日志文件名：{name:?}（含路径分隔符或 ..）"));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1021,5 +1201,252 @@ mod tests {
 
         let number: &(dyn std::any::Any + Send) = &42u32;
         assert!(panic_payload_text(number).contains("非字符串"));
+    }
+
+    // -----------------------------------------------------------------------
+    // 只读访问 API：list_log_files / read_log_tail / read_log_file
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn list_sorts_newest_first_and_filters_to_the_whitelist() {
+        let dir = tmp_dir("list");
+        mk_log(&dir, &log_name(1), 10, BASE_MTIME_SECS + 1);
+        mk_log(&dir, &log_name(2), 20, BASE_MTIME_SECS + 2);
+        // 同秒冲突对：mtime 打平时按 seq 定序（基准名先于 -1，故 -1 更新）
+        mk_log(&dir, "rustrss-20260101-000000.log", 5, BASE_MTIME_SECS);
+        mk_log(&dir, "rustrss-20260101-000000-1.log", 7, BASE_MTIME_SECS);
+        // 非白名单：一律不出现
+        std::fs::write(dir.join("a.txt"), b"txt").unwrap();
+        std::fs::write(dir.join("other-app.log"), b"foreign").unwrap();
+        std::fs::write(dir.join("rustrss-.log"), b"empty stem").unwrap();
+        std::fs::write(dir.join("rustrss-short"), b"no suffix").unwrap();
+
+        let files = list_log_files(&dir);
+        let names: Vec<&str> = files.iter().map(|f| f.name.as_str()).collect();
+        assert_eq!(
+            names,
+            vec![
+                "rustrss-20260101-000002.log",
+                "rustrss-20260101-000001.log",
+                "rustrss-20260101-000000-1.log",
+                "rustrss-20260101-000000.log",
+            ],
+            "最新在前，mtime 打平时 seq 大的在前"
+        );
+
+        let newest = &files[0];
+        assert_eq!(newest.bytes, 20);
+        assert_eq!(newest.modified_at, Some(BASE_MTIME_SECS as i64 + 2));
+        assert_eq!(newest.seq, 0);
+        let same_second = &files[2];
+        assert_eq!(same_second.bytes, 7);
+        assert_eq!(same_second.seq, 1, "-1 后缀应解析为 seq=1");
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn list_on_missing_or_empty_dir_is_empty() {
+        let dir = tmp_dir("list-missing");
+        assert!(list_log_files(&dir.join("does-not-exist")).is_empty());
+        std::fs::create_dir_all(&dir).unwrap();
+        assert!(list_log_files(&dir).is_empty());
+        cleanup(&dir);
+    }
+
+    /// `is_current` 的语义钉子：恰好等于 `CURRENT` 的那一条为 `true`，其余为
+    /// `false`——不依赖哪个并行用例先跑了 init（CURRENT 是进程级全局）。
+    #[test]
+    fn list_marks_exactly_the_current_file() {
+        let dir = tmp_dir("list-current");
+        mk_log(&dir, &log_name(1), 10, BASE_MTIME_SECS + 1);
+        mk_log(&dir, &log_name(2), 10, BASE_MTIME_SECS + 2);
+        let current = CURRENT.get().cloned();
+
+        let files = list_log_files(&dir);
+        assert_eq!(files.len(), 2);
+        for f in &files {
+            assert_eq!(
+                f.is_current,
+                current.as_deref() == Some(f.name.as_str()),
+                "{} 的 is_current 应与 CURRENT={:?} 一致",
+                f.name,
+                current
+            );
+        }
+
+        // CURRENT 已被本进程某次 init 写入时，同名文件必须被标为当前（正例）。
+        if let Some(name) = current {
+            mk_log(&dir, &name, 3, BASE_MTIME_SECS + 3);
+            let files = list_log_files(&dir);
+            assert!(
+                files.iter().any(|f| f.name == name && f.is_current),
+                "CURRENT 指向的文件应被标为当前：{files:?}"
+            );
+        }
+        cleanup(&dir);
+    }
+
+    /// init 应把本次文件名写入 CURRENT；OnceLock 只认首值，后续 init 不得覆盖
+    /// （与全局 logger 只装一次的口径一致）。
+    #[test]
+    fn init_records_the_current_log_file_name() {
+        let dir = tmp_dir("init-current");
+        let before = CURRENT.get().cloned();
+        // 用 Trace：全局 max_level 只能放大不能缩小（本文件并行用例的约定），
+        // 否则会掐死并行的 Debug 级用例。
+        let path = init(&dir.join("logs"), LevelFilter::Trace).expect("init 应成功");
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .expect("文件名应可读")
+            .to_string();
+        match before {
+            None => assert_eq!(
+                CURRENT.get(),
+                Some(&name),
+                "首个 init 应写入本次文件名"
+            ),
+            Some(prev) => assert_eq!(
+                CURRENT.get(),
+                Some(&prev),
+                "CURRENT 首值不被后续 init 覆盖"
+            ),
+        }
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn read_log_tail_returns_whole_file_when_within_the_limit() {
+        let dir = tmp_dir("tail-whole");
+        let text = "第一行\nsecond line\n第三行\n";
+        let name = "rustrss-20260101-000001.log";
+        std::fs::write(dir.join(name), text).unwrap();
+
+        let tail = read_log_tail(&dir, name, 10_000).expect("应成功");
+        assert_eq!(tail.content, text, "未超限时原文整返");
+        assert_eq!(tail.total_bytes, text.len() as u64);
+        assert!(!tail.truncated);
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn read_log_tail_truncates_at_the_next_line_boundary() {
+        let dir = tmp_dir("tail-boundary");
+        // L00..L09 每行 4 字节，共 40 字节
+        let mut text = String::new();
+        for i in 0..10 {
+            text.push_str(&format!("L{i:02}\n"));
+        }
+        let name = "rustrss-20260101-000002.log";
+        std::fs::write(dir.join(name), &text).unwrap();
+
+        // 起点 40-21=19，落在 L04 行尾的 \n 上 → 丢掉半行后应从 L05 行首开始
+        let tail = read_log_tail(&dir, name, 21).expect("应成功");
+        assert!(tail.truncated);
+        assert_eq!(tail.total_bytes, 40);
+        assert_eq!(
+            tail.content, "L05\nL06\nL07\nL08\nL09\n",
+            "对齐到完整行首，不带半行：{:?}",
+            tail.content
+        );
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn read_log_tail_is_utf8_lossy_and_never_panics() {
+        let dir = tmp_dir("tail-utf8");
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice("好的开头\n".as_bytes()); // 13 字节
+        bytes.extend_from_slice(b"bad \xff\xfe line\n"); // 12 字节，含非法 UTF-8
+        bytes.extend_from_slice("尾巴行\n".as_bytes()); // 10 字节
+        let name = "rustrss-20260101-000003.log";
+        std::fs::write(dir.join(name), &bytes).unwrap();
+
+        // 非法字节在完整行内 → lossy 替换，不 panic
+        let tail = read_log_tail(&dir, name, bytes.len() as u64).expect("应成功");
+        assert!(!tail.truncated);
+        assert!(
+            tail.content.contains('\u{FFFD}'),
+            "非法字节应替换为 U+FFFD：{:?}",
+            tail.content
+        );
+
+        // 截断点砍在非法字节所在的行中间 → 对齐后从下一完整行开始，无半字节半字符
+        let tail = read_log_tail(&dir, name, 20).expect("应成功");
+        assert!(tail.truncated);
+        assert_eq!(
+            tail.content, "尾巴行\n",
+            "半行连同被砍的非法字节一起被丢掉：{:?}",
+            tail.content
+        );
+        cleanup(&dir);
+    }
+
+    /// 窗口内一个换行都没有（单行超长）时无处对齐：原样输出整个窗口（lossy）
+    /// ——比空视图有用，且仍然不会 panic。
+    #[test]
+    fn read_log_tail_without_any_newline_serves_the_raw_window() {
+        let dir = tmp_dir("tail-no-newline");
+        let name = "rustrss-20260101-000004.log";
+        std::fs::write(dir.join(name), vec![b'a'; 100]).unwrap();
+
+        let tail = read_log_tail(&dir, name, 30).expect("应成功");
+        assert!(tail.truncated);
+        assert_eq!(tail.total_bytes, 100);
+        assert_eq!(tail.content.len(), 30);
+        assert!(tail.content.chars().all(|c| c == 'a'));
+        cleanup(&dir);
+    }
+
+    /// 名称白名单守卫：`../x.log`（穿越）、`a.txt`（非日志名）、含分隔符、
+    /// 形态合法但含 `..` 的边界名（`rustrss-..log` / `rustrss-a..log`）一律拒绝，
+    /// 且在打开任何文件之前就拒绝（目录里什么都没建也能测）。
+    #[test]
+    fn read_apis_reject_names_outside_the_whitelist() {
+        let dir = tmp_dir("guard");
+        let bad = [
+            "../x.log",         // 穿越上级
+            "rustrss-x/y.log",  // 路径分隔符
+            "rustrss-x\\y.log", // Windows 分隔符
+            "rustrss-a..log",   // 形态合法但含 ..
+            "rustrss-..log",    // 边界：前后缀形态合法，仍因 .. 拒绝
+            "a.txt",            // 非日志名
+            "rustrss-.log",     // 前后缀之间为空
+            "",                 // 空名
+        ];
+        for name in bad {
+            let err = read_log_tail(&dir, name, 100).expect_err(name);
+            assert!(err.contains("非法日志文件名"), "{name:?} → {err}");
+            let err = read_log_file(&dir, name, 100).expect_err(name);
+            assert!(err.contains("非法日志文件名"), "{name:?} → {err}");
+        }
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn read_apis_report_readable_errors_for_missing_files() {
+        let dir = tmp_dir("read-missing");
+        let missing = "rustrss-20260101-000009.log";
+        let err = read_log_tail(&dir, missing, 100).expect_err("文件不存在应 Err");
+        assert!(err.contains("打开日志文件"), "{err}");
+        let err = read_log_file(&dir, missing, 100).expect_err("文件不存在应 Err");
+        assert!(err.contains("打开日志文件"), "{err}");
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn read_log_file_over_limit_returns_readable_err() {
+        let dir = tmp_dir("export-limit");
+        let name = "rustrss-20260101-000005.log";
+        std::fs::write(dir.join(name), vec![b'x'; 1000]).unwrap();
+
+        let err = read_log_file(&dir, name, 100).expect_err("超限应 Err");
+        assert!(err.contains("文件过大"), "{err}");
+        assert!(err.contains("上限"), "{err}");
+
+        // 恰好等于上限：不超限，原文整返
+        let ok = read_log_file(&dir, name, 1000).expect("等于上限应成功");
+        assert_eq!(ok.len(), 1000);
+        cleanup(&dir);
     }
 }
