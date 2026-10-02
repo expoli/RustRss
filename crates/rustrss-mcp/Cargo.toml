@@ -18,13 +18,14 @@ schemars = "1"
 thiserror = "2"
 anyhow = "1"
 sha2 = "0.10"
-reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "json"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
+# 与 core 同口径：tls_certs_only(webpki_root_certs())，用 core 的导出 helper，无需直接依赖根集 crate
 
 [dev-dependencies]
 # stdio 冒烟测试要拉起真子进程并逐行读写协议通道
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "process", "time", "test-util"] }
 # 测试里当 HTTP 客户端用（与 rustrss-core 用的是同一个客户端）
-reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "json"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
 # 测试夹具要造带 published_at 的条目（core 公开模型 `Entry.published` 就是 chrono 类型）；
 # 仅测试用，不进产物，也不引入新的依赖树节点（core 已依赖同版本）。
 chrono = "0.4"

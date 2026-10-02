@@ -90,12 +90,34 @@ pub struct FeedFailure {
 pub enum FetchSetupError {
     #[error("构建 HTTP 客户端失败: {0}")]
     Client(#[from] reqwest::Error),
+    #[error("内置根证书不可用: {0}")]
+    Roots(String),
 }
 
 #[derive(Clone)]
 pub struct Fetcher {
     client: reqwest::Client,
     proxy_cache: Arc<std::sync::Mutex<Option<(crate::network::ProxyConfig, reqwest::Client)>>>,
+}
+
+/// 内置 Mozilla 根证书集（红线 7：不依赖系统信任库）。
+///
+/// reqwest 0.13 把 `rustls` feature 的默认验证器换成了 rustls-platform-verifier
+/// （0.12 的 `rustls-tls` 才是 webpki-roots；0.13 的 `webpki-roots` feature 只启用
+/// 依赖不参与验证），而 Android 上 platform-verifier 需要先做 JNI 初始化，否则
+/// **每次 TLS 请求都 panic**（2026-10-02 设备日志实锤：117 个抓取任务逐个
+/// `Expect rustls-platform-verifier to be initialized`，进度停格、报告缩水）。
+/// 这里显式把根集喂给 `tls_certs_only`，三平台统一纯根存储验证，绕开
+/// platform-verifier。根集用 [`webpki_root_certs`]（webpki-roots 1.x 只剩
+/// TrustAnchor，没有完整证书 DER，所以取自 webpki-root-certs）。
+pub fn webpki_root_certs() -> Result<Vec<reqwest::Certificate>, String> {
+    webpki_root_certs::TLS_SERVER_ROOT_CERTS
+        .iter()
+        .map(|der| {
+            reqwest::Certificate::from_der(der.as_ref())
+                .map_err(|e| format!("解析内置根证书失败: {e}"))
+        })
+        .collect()
 }
 
 impl Fetcher {
@@ -107,6 +129,7 @@ impl Fetcher {
             .redirect(reqwest::redirect::Policy::limited(5))
             .gzip(true)
             .brotli(true)
+            .tls_certs_only(webpki_root_certs().map_err(FetchSetupError::Roots)?)
             .build()?;
         Ok(Self { client, proxy_cache: Arc::default() })
     }
@@ -121,6 +144,7 @@ impl Fetcher {
             let builder = reqwest::Client::builder().user_agent(DEFAULT_USER_AGENT)
                 .timeout(Duration::from_secs(30)).connect_timeout(Duration::from_secs(10))
                 .redirect(reqwest::redirect::Policy::limited(5)).gzip(true).brotli(true);
+            let builder = builder.tls_certs_only(webpki_root_certs()?);
             let client = config.apply(builder)?.build().map_err(|_| "proxy_client_setup")?;
             *cache = Some((config.clone(), client));
         }
@@ -589,6 +613,32 @@ fn describe_error(e: &reqwest::Error) -> String {
 mod network_failure_tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// 内置根集可全部解析且规模合理（纯本准证验证器路径的回归钉）。
+    #[test]
+    fn webpki_root_certs_parse_all_builtin_roots() {
+        let certs = webpki_root_certs().expect("内置根集应全部解析成功");
+        assert!(certs.len() >= 100, "Mozilla 根集不应这么小: {}", certs.len());
+    }
+
+    /// 真实网络回归（`cargo test -p rustrss-core -- --ignored` 手动跑）：
+    /// 修复前 Android 上每个 TLS 请求都在 rustls-platform-verifier panic；
+    /// 修复后桌面也走纯根存储验证，此用例验证 webpki 路径真能完成一次 HTTPS 抓取。
+    #[test]
+    #[ignore = "需要真实网络"]
+    fn real_network_https_fetch_via_webpki_roots() {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let outcome = runtime.block_on(async {
+            let fetcher = Fetcher::new("rustrss-release-check").expect("客户端应能构建");
+            fetcher
+                .fetch("https://www.rust-lang.org/", CacheHeaders::default())
+                .await
+        });
+        assert!(
+            matches!(outcome, FetchResult::Fetched { .. } | FetchResult::NotModified { .. }),
+            "HTTPS 抓取应成功（真凶是验证器路径）: {outcome:?}"
+        );
+    }
 
     #[test]
     fn retry_after_boundaries() {

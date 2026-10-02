@@ -30,7 +30,7 @@ ui/                     原生 JS 前端（app.js/i18n.js/index.html/style.css�
 4. **UI 无构建链**：`ui/` 保持原生 JS + 静态文件，不引入打包器/框架；新增文案必须同时补 `ui/i18n.js` 的 zh-CN 与 en 两份 key（有 key-set 一致性测试）。
 5. **MCP 安全口径**（均有测试守护）：只绑回环地址；无/错 token 一律 401；`/health` 不鉴权但不含订阅数据。改动 `crates/rustrss-mcp/src/http.rs` 必须保持这四条及其测试。
 6. **MCP 响应口径**：列表类工具只回元数据 + ≤140 字摘要，正文必须 `get_article` 单取；列表默认 10 条、上限 50。防止撑爆客户端 agent 上下文。
-7. **网络**：reqwest 一律 `default-features = false` + `rustls` + `webpki-roots`（不依赖系统信任库，便于跨发行版出包）。注意 0.13 的 feature 名是 `rustls`，不是 0.12 的 `rustls-tls`。
+7. **网络**：reqwest 一律 `default-features = false` + `rustls` + webpki-roots（不依赖系统信任库，便于跨发行版出包）。注意 0.13 的 feature 名是 `rustls`，不是 0.12 的 `rustls-tls`，**且语义变了**：0.13 的 `rustls` 默认验证器是 rustls-platform-verifier（Android 未初始化即每次 TLS 请求 panic），`webpki-roots` feature 只启用依赖不参与验证——必须用 `tls_certs_only(webpki_root_certs())` 显式纯根存储验证（见 `crates/rustrss-core/src/fetch.rs::webpki_root_certs`），新客户端构造器一律照做。
 
 ## 约定
 

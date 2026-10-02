@@ -25,7 +25,9 @@ rusqlite = { version = "0.40", features = ["bundled", "backup"] }
 # 注意：reqwest 0.13 的 TLS feature 名与 0.12 不同（rustls 而非 rustls-tls）。
 # 关掉默认特性以避免引入 native-tls/OpenSSL；根证书用内置的 webpki-roots，
 # 不依赖系统信任库，便于跨发行版打成 native 包。
-reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "gzip", "brotli", "http2", "json"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "gzip", "brotli", "http2", "json"] }
+# 内置 Mozilla 根集完整证书 DER（webpki-roots 1.x 只剩 TrustAnchor，喂不进 reqwest）
+webpki-root-certs = "1.0"
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
 # 正文提取（readability.js 移植）。选型理由与传递依赖清单见 src/fulltext.rs 顶部注释。
 dom_smoothie = "0.18.2"

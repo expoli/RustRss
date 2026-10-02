@@ -296,10 +296,14 @@ impl RustRssMcp {
                 Some((port, token))
             })
             .ok_or("preview_backend_unavailable")?;
+        // 与 core 同口径：纯 webpki 根存储验证（红线 7，且 Android 上无 platform-verifier 初始化路径）
+        let certs = rustrss_core::fetch::webpki_root_certs()
+            .map_err(|_| "preview_backend_unavailable")?;
         let client = reqwest::Client::builder()
             .no_proxy()
             .redirect(reqwest::redirect::Policy::none())
             .timeout(Duration::from_secs(12))
+            .tls_certs_only(certs)
             .build()
             .map_err(|_| "preview_backend_unavailable")?;
         // Discovery cannot recursively bridge. Verify profile before forwarding writes.
