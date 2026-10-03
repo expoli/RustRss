@@ -4076,3 +4076,160 @@ mod log_command_tests {
         );
     }
 }
+
+
+// ---------------------------------------------------------------- 每日日报
+
+/// 日报视图（serde 出参）。
+#[derive(serde::Serialize)]
+pub struct DigestStatusView {
+    pub has_report: bool,
+    pub added: i64,
+    pub changed: i64,
+    pub removed: i64,
+    pub checkpoint_at: i64,
+    pub article_count: i64,
+    pub candidate_count: i64,
+}
+
+/// 日报完整视图：报告（可能不存在）+ 状态 + 范围回显。
+#[derive(serde::Serialize)]
+pub struct DigestView {
+    pub date: String,
+    pub has_report: bool,
+    pub markdown: Option<String>,
+    pub scope_tag_ids: Vec<i64>,
+    pub scope_key: String,
+    pub checkpoint_at: Option<i64>,
+    pub generated_at: Option<i64>,
+    pub article_count: i64,
+    pub cache_hits: i64,
+    pub items: Vec<DigestItemView>,
+    pub status: DigestStatusView,
+}
+
+#[derive(serde::Serialize)]
+pub struct DigestItemView {
+    pub entry_id: i64,
+    pub title: String,
+    pub feed_id: i64,
+    pub effective_at: i64,
+}
+
+fn digest_view(
+    s: &rustrss_core::store::Store,
+    date: &str,
+    tag_ids: &[i64],
+) -> Result<DigestView, rustrss_core::store::StoreError> {
+    use rustrss_core::store::digest::local_day_bounds;
+    let scope = rustrss_core::store::digest::DigestScope::resolve(s, tag_ids)?;
+    let (start, end) = local_day_bounds(date)?;
+    let report = s.digest_report(date, &scope.key)?;
+    let status = s.digest_status(start, end, &scope)?;
+    let (markdown, checkpoint_at, generated_at, article_count, cache_hits, items) = match report {
+        Some(r) => {
+            let items = r
+                .items
+                .iter()
+                .map(|i| DigestItemView {
+                    entry_id: i.entry_id,
+                    title: i.title.clone(),
+                    feed_id: i.feed_id,
+                    effective_at: i.effective_at,
+                })
+                .collect();
+            (
+                Some(r.markdown),
+                Some(r.checkpoint_at),
+                Some(r.generated_at),
+                r.article_count,
+                r.cache_hits,
+                items,
+            )
+        }
+        None => (None, None, None, 0, 0, vec![]),
+    };
+    Ok(DigestView {
+        date: date.into(),
+        has_report: markdown.is_some(),
+        markdown,
+        scope_tag_ids: scope.tag_ids.clone(),
+        scope_key: scope.key.clone(),
+        checkpoint_at,
+        generated_at,
+        article_count,
+        cache_hits,
+        items,
+        status: DigestStatusView {
+            has_report: status.has_report,
+            added: status.added,
+            changed: status.changed,
+            removed: status.removed,
+            checkpoint_at: status.checkpoint_at,
+            article_count: status.article_count,
+            candidate_count: status.candidate_count,
+        },
+    })
+}
+
+/// 日报视图（读缓存 + 更新状态；零 AI 请求）。
+#[tauri::command]
+pub fn digest_get(
+    state: State<'_, AppState>,
+    date: String,
+    tag_ids: Option<Vec<i64>>,
+) -> R<DigestView> {
+    state.with_store(|s| {
+        digest_view(s, &date, tag_ids.as_deref().unwrap_or(&[])).map_err(err)
+    })
+}
+
+/// 日报状态（轻量：供侧栏状态点轮询，不读正文）。
+#[tauri::command]
+pub fn digest_status(
+    state: State<'_, AppState>,
+    date: String,
+    tag_ids: Option<Vec<i64>>,
+) -> R<DigestStatusView> {
+    state.with_store(|s| {
+        use rustrss_core::store::digest::{local_day_bounds, DigestScope};
+        let scope = DigestScope::resolve(s, tag_ids.as_deref().unwrap_or(&[])).map_err(err)?;
+        let (start, end) = local_day_bounds(&date).map_err(err)?;
+        s.digest_status(start, end, &scope)
+            .map(|st| DigestStatusView {
+                has_report: st.has_report,
+                added: st.added,
+                changed: st.changed,
+                removed: st.removed,
+                checkpoint_at: st.checkpoint_at,
+                article_count: st.article_count,
+                candidate_count: st.candidate_count,
+            })
+            .map_err(err)
+    })
+}
+
+/// 有日报的日期列表（历史入口）。
+#[tauri::command]
+pub fn digest_list(state: State<'_, AppState>) -> R<Vec<String>> {
+    state.with_store(|s| s.digest_days().map_err(err))
+}
+
+/// 订阅源标签（读）。
+#[tauri::command]
+pub fn feed_tags(state: State<'_, AppState>, feed_id: i64) -> R<Vec<rustrss_core::TagBrief>> {
+    state.with_store(|s| s.feed_tags(feed_id).map_err(err))
+}
+
+/// 订阅源标签（写：整体替换）。
+#[tauri::command]
+pub fn set_feed_tags(
+    state: State<'_, AppState>,
+    feed_id: i64,
+    tag_ids: Vec<i64>,
+) -> R<Vec<rustrss_core::TagBrief>> {
+    state.with_store(|s| {
+        s.set_feed_tags(feed_id, &tag_ids).map_err(err)?;
+        s.feed_tags(feed_id).map_err(err)
+    })
+}

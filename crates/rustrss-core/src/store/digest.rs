@@ -284,3 +284,30 @@ impl Store {
         Ok(rows.next().transpose()?)
     }
 }
+
+/// 本地自然日的 UTC 半开区间 `[day_start, next_day_start)`。
+///
+/// 日界由本地时区计算（DST 可产生 23/25 小时一天，禁止 +86400）；core 不读
+/// 系统时区之外的全局状态，调用方传日期字符串即可。
+pub fn local_day_bounds(date: &str) -> super::Result<(i64, i64)> {
+    use chrono::{NaiveDate, TimeZone};
+    let day = NaiveDate::parse_from_str(date, "%Y-%m-%d")
+        .map_err(|e| super::StoreError::Invalid(format!("日期格式应为 YYYY-MM-DD：{e}")))?;
+    let to_ts = |n: chrono::NaiveDateTime| {
+        chrono::Local
+            .from_local_datetime(&n)
+            .earliest()
+            .map(|t| t.timestamp())
+            .ok_or_else(|| super::StoreError::Invalid(format!("本地时间不存在：{n}（DST 跳变）")))
+    };
+    let start = day
+        .and_hms_opt(0, 0, 0)
+        .ok_or_else(|| super::StoreError::Invalid(format!("无效日期 {date}")))?;
+    let next = day
+        .succ_opt()
+        .ok_or_else(|| super::StoreError::Invalid(format!("日期溢出：{date}")))?;
+    let end = next
+        .and_hms_opt(0, 0, 0)
+        .ok_or_else(|| super::StoreError::Invalid("无效的次日".into()))?;
+    Ok((to_ts(start)?, to_ts(end)?))
+}
