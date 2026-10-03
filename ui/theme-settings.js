@@ -74,8 +74,14 @@
     const mode = node('select'); mode.setAttribute('aria-label', t('theme.previewMode'));
     for (const v of ['light', 'dark']) { const o = node('option', t('settings.theme' + (v === 'light' ? 'Light' : 'Dark'))); o.value = v; mode.append(o); }
     mode.onchange = () => { previewMode = mode.value; validate(); };
+    // 示例主题切换搬进示例卡头：裸控件悬在表单与画布之间时没人知道它控制什么（设置评审 P1）
+    const sampleHead = node('div', '', 'theme-sample-head');
+    sampleHead.append(heading, mode);
+    sample.prepend(sampleHead);
     const hint = readOnly ? 'themePreview.readOnly' : mobile ? 'm.themeDraftHint' : 'theme.draftHint';
-    host.replaceChildren(node('p', t(hint), 'dim'), form, mode, sample, status, actions);
+    // 注：mode 已并入示例卡头（sampleHead），不能再用 replaceChildren 插回 host——
+    // 元素只能挂在一个位置，插回会把它从卡头抢走（首次实现踩过）。
+    host.replaceChildren(node('p', t(hint), 'dim'), form, sample, status, actions);
     if (mobile) {
       previewDetails = node('details', '', 'theme-preview-details');
       previewDetails.append(node('summary', t('m.preview')), mode, sample);
@@ -180,7 +186,12 @@
           for (const config of values.reverse()) { const opt = node('option', t('theme.historyRevision', { n: config.revision })); opt.value = config.revision; history.append(opt); }
         } catch (err) { status.textContent = err.message; }
       };
-      host.append(history, restore, button(t('theme.refreshHistory'), refreshHistory));
+      // 历史恢复行加可见标签：原先只有 aria-label 的裸下拉没人知道是干什么的（设置评审 P1）
+      const historyRow = node('div', '', 'theme-history-row');
+      const historyLabel = node('label', t('theme.historyLabel'));
+      historyLabel.append(history);
+      historyRow.append(historyLabel, restore, button(t('theme.refreshHistory'), refreshHistory));
+      host.append(historyRow);
       refreshHistory();
     }
     function markPresets() {

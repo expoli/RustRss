@@ -4434,11 +4434,17 @@ async function exportLog(name) {
 
 function refreshSettingsSummaries() {
   const config = state.settings?.theme_snapshot?.config;
-  const readSize = state.settings?.theme_snapshot?.light?.typography?.read_size;
   const proxy = state.settings?.proxy?.mode || 'environment';
+  const presetName = (id) => t('settings.preset.' + id);
+  // 同一预设明暗通用时不再重复「报纸 / 报纸」（设置评审 P2：导航摘要折行破碎）
+  const presetSummary = config
+    ? (config.light_preset === config.dark_preset
+      ? presetName(config.light_preset)
+      : `${presetName(config.light_preset)} / ${presetName(config.dark_preset)}`)
+    : '';
   const summaries = {
-    appearance: config ? `${t('settings.theme' + config.mode[0].toUpperCase() + config.mode.slice(1))} · ${t('settings.preset.' + config.light_preset)} / ${t('settings.preset.' + config.dark_preset)}` : '',
-    reading: readSize ? `${t('theme.field.typography.read_size')}: ${readSize}` : '',
+    appearance: config ? `${t('settings.theme' + config.mode[0].toUpperCase() + config.mode.slice(1))} · ${presetSummary}` : '',
+    reading: '',
     subscriptions: `${t('settings.proxy.' + proxy)} · ${settingDropdownLabel(SETTING_DROPDOWNS.find(d => d.id === 'set-refresh-interval'))}`,
     ai: state.ai ? `${t('settings.ai.provider' + state.ai.provider[0].toUpperCase() + state.ai.provider.slice(1))} · ${state.ai.model || t('settings.ai.model')}` : '',
     mcp: state.mcp ? `${t('settings.mcp.enabled')}: ${t(state.mcp.enabled ? 'common.yes' : 'common.no')}` : '',
@@ -4712,6 +4718,9 @@ function openSettings() {
   el('settings-db-path').textContent = dbPath;
   el('settings-db-path').title = dbPath;
   el('general-db-path').textContent = dbPath;
+  el('act-copy-db-path').onclick = () => invoke('clip_write', { text: dbPath })
+    .then(() => setStatus(t('settings.pathCopied')))
+    .catch((e) => setStatus(t('status.settingFailed', { error: e.message }), true));
   fillAiForm();
   fillMcpForm();
   refreshSettingsSummaries();
