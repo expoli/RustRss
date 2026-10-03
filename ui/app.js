@@ -1252,8 +1252,8 @@ function renderReader(entry) {
       <button id="act-star" aria-pressed="${!!entry.starred}" aria-label="${entry.starred ? t('reader.removeStar') : t('reader.addStar')}">${window.RustRssIcons.svg('star')}<span class="action-label">${entry.starred ? t('reader.removeStar') : t('reader.addStar')}</span></button>
       <button id="act-later" class="${entry.read_later ? 'later-active' : ''}" aria-pressed="${!!entry.read_later}" aria-label="${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}">${window.RustRssIcons.svg('later')}<span class="action-label">${entry.read_later ? t('reader.removeLater') : t('reader.markLater')}</span></button>
       <button id="act-more" aria-haspopup="menu">${t('reader.more')}</button>
+      <span class="reader-tags-inline"><span class="tag-bar" id="reader-tags">${readerTagChipsHtml(entry)}</span></span>
     </div>
-    <div class="reader-tags-row"><span class="tag-bar" id="reader-tags">${readerTagChipsHtml(entry)}</span></div>
     <div id="ai-panel" class="ai-panel hidden">
       <div class="ai-panel-head">
         <b id="ai-panel-title"></b>

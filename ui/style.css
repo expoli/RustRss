@@ -567,7 +567,8 @@ main {
 .row-tag-btn:hover { opacity: 1; color: var(--accent); border-color: var(--accent); }
 
 /* 阅读器标签单列，元信息保持一行；chips 更新不移动正文的其他节点。 */
-.reader-tags-row .tag-bar {
+.reader-actions .reader-tags-inline { display: inline-flex; align-items: center; margin-left: 6px; }
+.reader-actions .tag-bar {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -575,20 +576,22 @@ main {
   /* 常驻固定高度：chips 出现/消失不引起正文位移（布局跳动红线） */
   min-height: 20px;
 }
-.reader-tags-row .tag-bar .tag-add {
-  border: 1px dashed var(--line);
-  border-radius: 9px;
+/* 「+ 标签」与同排操作钮同一无框语法（评审：虚线框像占位控件）；
+   + 号前缀自身承担「添加」暗示，hover 才给底色与强调色 */
+.reader-actions .tag-bar .tag-add {
+  border: none;
+  border-radius: var(--radius, 2px);
   background: transparent;
   color: var(--fg-dim);
   font: inherit;
-  font-size: 11px;
-  line-height: 16px;
-  padding: 1px 7px;
+  font-size: 12px;
+  line-height: 20px;
+  padding: 0 8px;
+  min-height: 20px;
   cursor: pointer;
   white-space: nowrap;
 }
-.reader-tags-row .tag-bar .tag-add:hover { color: var(--accent); border-color: var(--accent); }
-.reader-tags-row { max-width: var(--reader-width, 680px); margin-bottom: 8px; }
+.reader-actions .tag-bar .tag-add:hover { color: var(--accent); background: var(--bg-hover); }
 
 /* 标签选择器：输入框常驻焦点 + 候选行（最近使用优先序由 core 直出） */
 .tag-sheet { width: min(420px, 92vw); }
@@ -979,10 +982,17 @@ main {
 .reader-head .meta { color: var(--fg-dim); font-size: 13px; margin-bottom: 0; display: flex; gap: 10px; flex-wrap: wrap; }
 .reader-head h1, .article { overflow-wrap: anywhere; }
 
-.reader-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+/* 阅读头操作行：低频操作用无框按钮（报纸的页边注脚语法），hover 才给底色；
+   标签行并入同一行——正文前只留一次明确间距（评审意见）。chips 更新只重写
+   #reader-tags 内部，节点身份不变，不牵动正文其它节点。 */
+.reader-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 12px; }
 /* 词中折行修复：中文按钮文案在窄窗口下被截成两行（「标为未/读」「浏览器打/开」）。
    不换行 + flex-wrap 让整组按钮折行而不是单个按钮内折行 */
-.reader-actions button { white-space: nowrap; }
+.reader-actions button { white-space: nowrap; background: transparent; border-color: transparent; color: var(--fg-dim); }
+.reader-actions button:hover { background: var(--bg-hover); border-color: transparent; color: var(--fg); }
+.reader-actions button[aria-pressed='true'],
+.reader-actions #act-later.later-active { color: var(--accent); }
+.reader-actions #act-later.later-active { border-color: transparent; }
 
 .article {
   max-width: var(--reader-width, 680px);
@@ -1531,9 +1541,8 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
     margin-bottom: 6px;
   }
   .reader-head .meta > span { flex: none; }
-  .reader-tags-row { margin-bottom: 8px; }
-  .reader-tags-row .tag-bar .tag-add { min-width: 48px; min-height: 48px; }
-  .reader-tags-row .tag-chip { min-height: 48px; box-sizing: border-box; }
+  .reader-actions .tag-bar .tag-add { min-width: 48px; min-height: 48px; }
+  .reader-actions .tag-bar .tag-chip { min-height: 48px; box-sizing: border-box; }
   .ai-panel-head { flex-wrap: wrap; }
   .ai-panel-head button, #aa-close, #aa-dialog .theme-editor-actions button,
   #ai-confirm-overlay button, #tag-picker-close { min-width: 48px; min-height: 48px; }
