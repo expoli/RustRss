@@ -460,3 +460,81 @@ async fn ai_requests_use_custom_proxy() {
         &rustrss_core::ai::prompt::ArticleText { title: "fixture", body: "fixture" })).await.unwrap();
     assert_eq!(response, "proxy response");
 }
+
+/// 响应体积闸门（审核 P2-10）：超限响应在获取中被中止，而不是无上界整包读入。
+/// Content-Length 预检路径：诚实声明超大体积的响应直接拒绝，不读 body。
+#[tokio::test]
+async fn oversized_response_with_content_length_is_rejected() {
+    let server = MockServer::start().await;
+    // 17MB > 16MB 上限；wiremock 会带上正确的 Content-Length（预检直接拒绝）。
+    let big = "x".repeat(17 * 1024 * 1024);
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(big))
+        .expect(1) // 请求会发出；闸门在响应体读取侧
+        .mount(&server)
+        .await;
+    let client = AiClient::new(AiConfig::openai_compatible(
+        &format!("{}/v1", server.uri()),
+        "test-model",
+        "test-key",
+    ))
+    .unwrap();
+    let err = client
+        .complete(rustrss_core::ai::prompt::build(
+            &summarize_short(),
+            &rustrss_core::ai::prompt::ArticleText { title: "t", body: "b" },
+        ))
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err, AiError::BadResponse(ref m) if m.contains("超过上限")),
+        "应报体积超限，实际: {err:?}"
+    );
+}
+
+/// 流式累计路径：无 Content-Length 的**真 chunked** 响应（裸 TCP 手写分块帧），
+/// 累计越过上限时必须在下载中止住（红线 11：闸门在获取中）。
+#[tokio::test]
+async fn oversized_chunked_response_is_rejected_midstream() {
+    // 本机监听器：写 3 个 8MB chunk 的合法 chunked 帧（共 24MB > 16MB 上限），
+    // 不带 Content-Length。
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    std::thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        use std::io::Write;
+        let mut s = stream;
+        let chunk = "y".repeat(8 * 1024 * 1024);
+        let _ = write!(
+            s,
+            "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n"
+        );
+        for _ in 0..3 {
+            let _ = write!(s, "{:x}\r\n", chunk.len());
+            let _ = s.write_all(chunk.as_bytes());
+            let _ = write!(s, "\r\n");
+        }
+        let _ = write!(s, "0\r\n\r\n");
+        let _ = s.flush();
+        // 不立即关连接：给客户端留出读完/中止的时间窗
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    });
+
+    let client = AiClient::new(AiConfig::openai_compatible(
+        &format!("http://{addr}/v1"),
+        "test-model",
+        "test-key",
+    ))
+    .unwrap();
+    let err = client
+        .complete(rustrss_core::ai::prompt::build(
+            &summarize_short(),
+            &rustrss_core::ai::prompt::ArticleText { title: "t", body: "b" },
+        ))
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err, AiError::BadResponse(ref m) if m.contains("超过上限")),
+        "流式累计应超限中止，实际: {err:?}"
+    );
+}

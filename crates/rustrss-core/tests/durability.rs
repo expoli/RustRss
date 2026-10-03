@@ -11,7 +11,7 @@ mod legacy_chain;
 
 use legacy_chain::LEGACY_CHAIN;
 use rusqlite::Connection;
-use rustrss_core::store::schema::{self, SchemaState, BASELINE_APPLICATION_ID, BASELINE_VERSION, MIGRATIONS};
+use rustrss_core::store::schema::{self, SchemaState, BASELINE, BASELINE_APPLICATION_ID, BASELINE_VERSION, MIGRATIONS};
 use rustrss_core::store::StoreError;
 use rustrss_core::{EntryQuery, Store};
 use std::time::{Duration, Instant};
@@ -20,11 +20,9 @@ use std::time::{Duration, Instant};
 const LEGACY_STEPS: usize = 13;
 
 fn run_baseline(conn: &Connection) {
-    for (i, migration) in MIGRATIONS.iter().enumerate() {
-        conn.execute_batch(migration).unwrap();
-        conn.pragma_update(None, "user_version", (i + 1) as i64)
-            .unwrap();
-    }
+    // 只跑基线条目：本测试断言「基线 == 旧链终态」，与后续追加的迁移无关。
+    conn.execute_batch(MIGRATIONS[0]).unwrap();
+    conn.pragma_update(None, "user_version", 1).unwrap();
 }
 
 fn legacy_terminal_conn() -> Connection {
@@ -235,7 +233,9 @@ fn legacy_chain_fixture_is_intact() {
         LEGACY_STEPS,
         "旧链夹具步数变了：等价与拒绝断言会随之空跑"
     );
-    assert_eq!(MIGRATIONS.len(), 1, "首发基线只应有一条迁移");
+    // 基线条目一经发布不可改写（迁移红线）；后续版本只允许在尾部追加。
+    assert_eq!(MIGRATIONS[0], BASELINE, "基线条目被改写了");
+    assert!(MIGRATIONS.len() >= 2, "追加迁移不应为空");
     assert_eq!(BASELINE_VERSION, 1);
 }
 
@@ -355,7 +355,7 @@ fn legacy_frozen_db_is_refused_before_any_write() {
     // 反向对照：同目录下的**基线**库可以正常打开（避免「拒绝一切」的假绿）
     let fresh = dir.path().join("fresh.sqlite");
     let store = Store::open(&fresh).unwrap();
-    assert_eq!(store.schema_version().unwrap(), BASELINE_VERSION);
+    assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
 }
 
 #[test]
@@ -364,7 +364,7 @@ fn baseline_rows_and_flags_survive_reopen() {
     let path = dir.path().join("baseline.sqlite");
     {
         let store = Store::open(&path).unwrap();
-        assert_eq!(store.schema_version().unwrap(), BASELINE_VERSION);
+        assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
         let id = store
             .add_feed("https://fixture.invalid/rss", Some("Preserved"))
             .unwrap();
@@ -379,7 +379,7 @@ fn baseline_rows_and_flags_survive_reopen() {
     }
 
     let store = Store::open(&path).unwrap();
-    assert_eq!(store.schema_version().unwrap(), BASELINE_VERSION);
+    assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
     assert_eq!(store.entry_count().unwrap(), 1);
     let entry = store.get_entry(1).unwrap().unwrap();
     assert!(entry.read && entry.starred);

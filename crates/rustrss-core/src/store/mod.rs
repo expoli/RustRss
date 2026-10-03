@@ -467,7 +467,7 @@ impl Store {
         // 与 application_id / user_version）。注意 
         // `PRAGMA journal_mode=WAL` 是**持久写入**（改库头），不能排在拒绝之前。
         match schema::detect(&conn)? {
-            SchemaState::Fresh | SchemaState::Current => {}
+            SchemaState::Fresh | SchemaState::Current | SchemaState::Migratable { .. } => {}
             SchemaState::Foreign { user_version } => {
                 return Err(StoreError::SchemaRefused {
                     reason: format!(
@@ -478,8 +478,8 @@ impl Store {
             SchemaState::VersionMismatch { user_version } => {
                 return Err(StoreError::SchemaRefused {
                     reason: format!(
-                        "库版本 {user_version} 与基线 {} 不一致（可能来自更新的版本，或建库被中断的半成品库）",
-                        schema::BASELINE_VERSION
+                        "库版本 {user_version} 高于当前程序支持的 {}（可能来自更新的版本，或建库被中断的半成品库）",
+                        MIGRATIONS.len()
                     ),
                 });
             }

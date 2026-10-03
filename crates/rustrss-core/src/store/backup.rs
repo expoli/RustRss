@@ -178,10 +178,11 @@ pub fn export_backup(store: &Store, dest_dir: &Path) -> Result<PathBuf> {
     Ok(dest)
 }
 
-/// 校验用户选定的备份文件：能只读打开、且**是当前基线的库**。
+/// 校验用户选定的备份文件：能只读打开、且是本应用的库（允许比当前程序旧的
+/// 版本——恢复后下次打开会顺序追平迁移；高于当前程序支持的版本拒绝）。
 ///
 /// 判据与 `Store::open` 同源：[`crate::store::schema::BASELINE_APPLICATION_ID`] 魔数 +
-/// `user_version == BASELINE_VERSION`。**不用版本号区间**——基线号是 1，旧链也有 v=1 的冻结库，
+/// `user_version ∈ [1, current]`。**不用无下界的区间**——旧开发链也有 v=1 的冻结库，
 /// 按区间判断会把老开发库当成可用备份，恢复后应用反而拒绝打开（自相矛盾）。
 ///
 /// 只读打开是刻意的：校验阶段绝不能动用户的库，也不该给候选备份文件写一个字节。
@@ -226,11 +227,7 @@ pub fn validate_backup(path: &Path, current_version: i64) -> Result<()> {
             "备份的 schema 版本 {version} 高于当前程序支持的 {current_version}：请先升级 RustRss 再恢复",
         )));
     }
-    if version != current_version {
-        return Err(StoreError::Invalid(format!(
-            "备份的 schema 版本 {version} 与当前程序支持的 {current_version} 不一致：请用与备份同版本的程序恢复",
-        )));
-    }
+    // 旧于当前（但 ≥ 基线 1）：允许恢复，打开时会顺序追平迁移（设置审核后的升级路径）。
     Ok(())
 }
 

@@ -6,7 +6,8 @@ use rustrss_core::Store;
 /// 相当于压平前需要回填的老数据，用来验证保留件 `store::backfill`。
 fn baseline_database(path: &std::path::Path) -> rusqlite::Connection {
     let db = rusqlite::Connection::open(path).unwrap();
-    for migration in MIGRATIONS { db.execute_batch(migration).unwrap(); }
+    // 压平前的老数据 = 只含基线（v1）；后续追加的迁移在 Store::open 时才追平。
+    db.execute_batch(MIGRATIONS[0]).unwrap();
     db.pragma_update(None, "user_version", BASELINE_VERSION).unwrap();
     db.execute_batch(r#"
         INSERT INTO feeds(id,url,title,created_at) VALUES(1,'https://example.invalid','Fixture',1);

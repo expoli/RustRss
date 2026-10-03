@@ -27,24 +27,119 @@ pub const BASELINE_VERSION: i64 = 1;
 ///
 /// 首发前只含基线一条。基线发布后，只允许**追加**（新的索引 i+1），
 /// 不得回头修改已发布的条目。
-pub const MIGRATIONS: &[&str] = &[BASELINE];
+pub const MIGRATIONS: &[&str] = &[
+    BASELINE,
+    // v1 → v2：每日日报（feed_tags + digest_* 六张表）。全部为新建表/索引，
+    // 不改既有列（已发布迁移不可修改）。存量文章的首次入库时间无法追溯，
+    // 以 fetched_at 近似回填并标记 first_seen_estimated=1；effective_at =
+    // COALESCE(published_at, fetched_at)。覆盖索引供日报状态检查走窄投影，
+    // 不碰 entries 正文大列（性能红线 1/2）。
+    r#"
+    CREATE TABLE feed_tags (
+        feed_id INTEGER NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
+        tag_id  INTEGER NOT NULL REFERENCES tags(id)  ON DELETE CASCADE,
+        PRIMARY KEY (feed_id, tag_id)
+    );
+    CREATE INDEX idx_feed_tags_tag ON feed_tags(tag_id, feed_id);
+
+    CREATE TABLE digest_entry_meta (
+        instance_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        entry_id             INTEGER NOT NULL UNIQUE REFERENCES entries(id) ON DELETE CASCADE,
+        feed_id              INTEGER NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
+        first_seen_at        INTEGER NOT NULL,
+        first_seen_estimated INTEGER NOT NULL DEFAULT 0 CHECK (first_seen_estimated IN (0,1)),
+        effective_at         INTEGER NOT NULL,
+        source_revision      INTEGER NOT NULL DEFAULT 1 CHECK (source_revision >= 1)
+    );
+    CREATE INDEX idx_digest_meta_day ON digest_entry_meta(
+        effective_at, feed_id, entry_id, instance_id, source_revision);
+    CREATE INDEX idx_digest_meta_feed_day ON digest_entry_meta(
+        feed_id, effective_at, entry_id, instance_id, source_revision);
+    INSERT INTO digest_entry_meta (entry_id, feed_id, first_seen_at, first_seen_estimated, effective_at)
+    SELECT id, feed_id, fetched_at, 1, COALESCE(published_at, fetched_at) FROM entries;
+
+    CREATE TABLE digests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        report_day TEXT NOT NULL,
+        timezone_label TEXT NOT NULL,
+        day_start_at INTEGER NOT NULL,
+        day_end_at INTEGER NOT NULL,
+        utc_offset_start INTEGER NOT NULL,
+        utc_offset_end INTEGER NOT NULL,
+        date_basis TEXT NOT NULL DEFAULT 'published_or_first_seen_v1',
+        scope_key TEXT NOT NULL,
+        scope_json TEXT NOT NULL,
+        profile_key TEXT NOT NULL,
+        profile_json TEXT NOT NULL,
+        revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0),
+        active_job_id INTEGER,
+        checkpoint_at INTEGER,
+        generated_at INTEGER,
+        manifest_hash TEXT,
+        article_count INTEGER NOT NULL DEFAULT 0,
+        cited_count INTEGER NOT NULL DEFAULT 0,
+        truncated_count INTEGER NOT NULL DEFAULT 0,
+        summary_only_count INTEGER NOT NULL DEFAULT 0,
+        stats_json TEXT NOT NULL DEFAULT '{}',
+        summary TEXT NOT NULL DEFAULT '' CHECK (length(summary) <= 140),
+        stored_bytes INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        CHECK (day_start_at < day_end_at),
+        UNIQUE (report_day, day_start_at, day_end_at, date_basis, scope_key, profile_key)
+    );
+    CREATE INDEX idx_digests_history ON digests(report_day DESC, generated_at DESC, id DESC);
+    CREATE INDEX idx_digests_scope_history ON digests(scope_key, report_day DESC, generated_at DESC, id DESC);
+
+    CREATE TABLE digest_bodies (
+        digest_id INTEGER PRIMARY KEY REFERENCES digests(id) ON DELETE CASCADE,
+        revision INTEGER NOT NULL CHECK (revision >= 1),
+        schema_ver INTEGER NOT NULL,
+        content_json TEXT NOT NULL,
+        markdown TEXT NOT NULL
+    );
+
+    CREATE TABLE digest_items (
+        digest_id INTEGER NOT NULL REFERENCES digests(id) ON DELETE CASCADE,
+        instance_id INTEGER NOT NULL,
+        entry_id INTEGER NOT NULL,
+        feed_id INTEGER NOT NULL,
+        source_revision INTEGER NOT NULL,
+        effective_at INTEGER NOT NULL,
+        input_hash TEXT NOT NULL,
+        truncated INTEGER NOT NULL CHECK (truncated IN (0,1)),
+        summary_only INTEGER NOT NULL CHECK (summary_only IN (0,1)),
+        title TEXT NOT NULL DEFAULT '',
+        PRIMARY KEY (digest_id, instance_id)
+    );
+
+    CREATE TABLE digest_node_cache (
+        node_key TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,
+        content TEXT NOT NULL,
+        input_hash TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+    );
+    "#,
+];
 
 /// 打开一个**已有**库时看到的 schema 状态。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SchemaState {
     /// 没有任何用户表：新库，可建基线（0 字节文件与新建空文件都落这里）。
     Fresh,
-    /// 我们的基线库，且版本一致。
+    /// 已迁移到最新（`user_version == MIGRATIONS.len()`）。
     Current,
+    /// 我们的库且版本落后：可顺序追平 `MIGRATIONS` 后打开。
+    Migratable { user_version: i64 },
     /// 有用户表但没有魔数：旧开发库（含旧链 v1 冻结库）或外来 sqlite 文件。
     Foreign { user_version: i64 },
-    /// 我们的库，但版本与基线不一致（更新的版本，或被外部/中断操作弄成的状态）。
+    /// 我们的库，但版本比当前程序支持的还新（由更新版本的程序建立/升级）。
     VersionMismatch { user_version: i64 },
 }
 
 /// 探测库的 schema 状态。**只读**：不建表、不写 PRAGMA。
 ///
-/// 调用方据此决定「建基线 / 直接打开 / 拒绝」（老库拒绝对外呈现见桌面与 MCP 侧）。
+/// 调用方据此决定「建基线 / 直接打开 / 追平迁移 / 拒绝」（老库拒绝对外呈现见桌面与 MCP 侧）。
 pub fn detect(conn: &Connection) -> rusqlite::Result<SchemaState> {
     let user_tables: i64 = conn.query_row(
         "SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
@@ -53,14 +148,18 @@ pub fn detect(conn: &Connection) -> rusqlite::Result<SchemaState> {
     )?;
     let application_id: i64 = conn.query_row("PRAGMA application_id", [], |r| r.get(0))?;
     let user_version: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+    let latest = MIGRATIONS.len() as i64;
     Ok(if user_tables == 0 {
         SchemaState::Fresh
     } else if application_id != BASELINE_APPLICATION_ID as i64 {
         SchemaState::Foreign { user_version }
-    } else if user_version == BASELINE_VERSION {
+    } else if !(BASELINE_VERSION..=latest).contains(&user_version) {
+        // 高于当前程序支持的版本，或低于基线的异常半成品库：都拒绝。
+        SchemaState::VersionMismatch { user_version }
+    } else if user_version == latest {
         SchemaState::Current
     } else {
-        SchemaState::VersionMismatch { user_version }
+        SchemaState::Migratable { user_version }
     })
 }
 
@@ -69,7 +168,7 @@ pub fn detect(conn: &Connection) -> rusqlite::Result<SchemaState> {
 ///
 /// 行内注释保留了各列的性能/语义理由（AGENTS.md 性能红线的依据），
 /// 但不再保留「哪个版本加的」这类演进叙述。
-const BASELINE: &str = r#"
+pub const BASELINE: &str = r#"
     PRAGMA application_id = 0x52535331;
 
     CREATE TABLE folders (

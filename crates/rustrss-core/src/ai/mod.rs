@@ -146,6 +146,39 @@ pub struct AiClient {
     config: AiConfig,
 }
 
+/// AI 响应体大小上限：正常 JSON 响应远小于此；超限即断（红线 11：闸门在获取中）。
+const MAX_RESPONSE_BYTES: usize = 16 * 1024 * 1024;
+
+/// 读 AI 响应体并施加体积上限（与 `fetch` 的 `read_body_limited` 同款双层闸门：
+/// Content-Length 预检 + 流式累计），不做无上界的整包 `.text()`。
+async fn read_ai_body_limited(
+    mut resp: reqwest::Response,
+    max_bytes: usize,
+) -> Result<String, AiError> {
+    if let Some(len) = resp.content_length() {
+        if len as usize > max_bytes {
+            return Err(AiError::BadResponse(format!(
+                "AI 响应体积 {len} 超过上限 {max_bytes}，已中止读取"
+            )));
+        }
+    }
+    let mut body: Vec<u8> = Vec::new();
+    while let Some(chunk) = resp
+        .chunk()
+        .await
+        .map_err(|e| AiError::Transport(scrub_log_line(&e.to_string())))?
+    {
+        let received = body.len() + chunk.len();
+        if received > max_bytes {
+            return Err(AiError::BadResponse(format!(
+                "AI 响应体积 {received} 超过上限 {max_bytes}，已中止读取"
+            )));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    String::from_utf8(body).map_err(|e| AiError::BadResponse(format!("响应不是有效的 UTF-8: {e}")))
+}
+
 impl AiClient {
     pub fn new(config: AiConfig) -> Result<Self, AiError> {
         Self::with_proxy(config, &crate::network::ProxyConfig::default())
@@ -154,6 +187,10 @@ impl AiClient {
     pub fn with_proxy(config: AiConfig, proxy: &crate::network::ProxyConfig) -> Result<Self, AiError> {
         let http = proxy.apply(reqwest::Client::builder())
             .map_err(AiError::Request)?
+            // 与 fetch.rs 同一红线：Android 上 platform-verifier 需先做 JNI 初始化，
+            // 未初始化时每个 HTTPS 请求都 panic。显式纯根存储验证（内置 Mozilla 根集），
+            // 三平台一致，不依赖系统信任库。
+            .tls_certs_only(crate::fetch::webpki_root_certs().map_err(AiError::Request)?)
             .timeout(std::time::Duration::from_secs(120))
             .connect_timeout(std::time::Duration::from_secs(10))
             .build()
@@ -216,7 +253,9 @@ impl AiClient {
             .map_err(|e| AiError::Transport(scrub_log_line(&e.to_string())))?;
 
         let status = resp.status();
-        let text = resp.text().await.unwrap_or_default();
+        // 体积闸门在获取中（红线 11）：Content-Length 预检 + 流式累计超限即断，
+        // 不做无上界的整包 .text()。
+        let text = read_ai_body_limited(resp, MAX_RESPONSE_BYTES).await?;
 
         if !status.is_success() {
             // 保留 provider 的原始错误信息（定位问题必需），但先对 key 打码
@@ -232,7 +271,7 @@ impl AiClient {
         self.extract_text(&value)
     }
 
-    /// 把凭据从任意文本里抹掉（错误信息、日志、预览共用同一套规则）
+/// 把凭据从任意文本里抹掉（错误信息、日志、预览共用同一套规则）
     fn scrub(&self, text: &str) -> String {
         match self.config.api_key.as_deref() {
             Some(key) if !key.is_empty() => text.replace(key, "***"),
