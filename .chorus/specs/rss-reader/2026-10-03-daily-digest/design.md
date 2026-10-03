@@ -196,7 +196,7 @@ CREATE TABLE digest_node_cache (
 ```
 
 ### 5.3 schema 迁移路径（红线 9 的专项）
-- `BASELINE_VERSION` 1 → 2：`detect()` 接受 1（触发迁移）与 2（就绪）；
+- **基线常量保持 1（不可改写）**；当前支持版本 = `MIGRATIONS.len()`（现为 2）。`detect()` 接受 1（触发迁移）与 2（就绪）；
 - 迁移 1→2 = 新建上述表 + `digest_entry_meta` 回填（一条 `INSERT … SELECT`，不重算正文哈希）；
 - 备份/恢复校验同步接受 1 与 2（恢复旧版本库后允许再次迁移）；
 - 相关测试：旧库打开→迁移→再打开；备份 1→恢复→迁移→打开；`#[ignore]` 外的真实库冒烟。

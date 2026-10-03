@@ -120,7 +120,10 @@ impl Store {
     pub fn digest_days(&self) -> super::Result<Vec<String>> {
         let mut stmt = self
             .conn
-            .prepare("SELECT DISTINCT report_day FROM digests ORDER BY report_day DESC")?;
+            .prepare(
+                "SELECT DISTINCT report_day FROM digests
+                  WHERE generated_at IS NOT NULL ORDER BY report_day DESC",
+            )?;
         let rows = stmt.query_map([], |r| r.get(0))?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
@@ -131,30 +134,34 @@ impl Store {
         date: &str,
         scope_key: &str,
     ) -> super::Result<Option<DigestReport>> {
-        let head = self
-            .conn
+        let conn = &self.conn;
+        // 单一读事务：头、正文、素材清单绑定**同一个**报告身份（审核 P1-3）。
+        // 变体选择：同日期+范围可有多个 profile 变体，取最近完成的一份。
+        let tx = conn.unchecked_transaction()?;
+        let head = tx
             .query_row(
-                "SELECT d.scope_json, d.profile_key, d.checkpoint_at, d.generated_at,
+                "SELECT d.id, d.scope_json, d.profile_key, d.checkpoint_at, d.generated_at,
                         d.manifest_hash, b.markdown, d.article_count,
                         COALESCE(json_extract(d.stats_json, '$.cache_hits'), 0)
-                   FROM digests d JOIN digest_bodies b ON b.digest_id = d.id
+                   FROM digests d
+                   JOIN digest_bodies b
+                     ON b.digest_id = d.id AND b.revision = d.revision
                   WHERE d.report_day = ?1 AND d.scope_key = ?2
-                    AND d.generated_at IS NOT NULL",
+                    AND d.generated_at IS NOT NULL
+                  ORDER BY d.generated_at DESC, d.id DESC LIMIT 1",
                 params![date, scope_key],
                 |r| {
-                    Ok(DigestReport {
-                        date: date.into(),
-                        scope_key: scope_key.into(),
-                        scope_json: r.get(0)?,
-                        profile_key: r.get(1)?,
-                        checkpoint_at: r.get(2)?,
-                        generated_at: r.get(3)?,
-                        manifest_hash: r.get(4)?,
-                        markdown: r.get(5)?,
-                        article_count: r.get(6)?,
-                        cache_hits: r.get(7)?,
-                        items: vec![],
-                    })
+                    Ok((
+                        r.get::<_, i64>(0)?,
+                        r.get::<_, String>(1)?,
+                        r.get::<_, String>(2)?,
+                        r.get::<_, i64>(3)?,
+                        r.get::<_, i64>(4)?,
+                        r.get::<_, String>(5)?,
+                        r.get::<_, String>(6)?,
+                        r.get::<_, i64>(7)?,
+                        r.get::<_, i64>(8)?,
+                    ))
                 },
             )
             .map(Some)
@@ -162,20 +169,18 @@ impl Store {
                 rusqlite::Error::QueryReturnedNoRows => Ok(None),
                 other => Err(super::StoreError::Sqlite(other)),
             })?;
-        let Some(mut report) = head else { return Ok(None) };
+        let Some((digest_id, scope_json, profile_key, checkpoint_at, generated_at,
+                  manifest_hash, markdown, article_count, cache_hits)) = head else {
+            return Ok(None)
+        };
 
-        let digest_id: i64 = self.conn.query_row(
-            "SELECT id FROM digests WHERE report_day = ?1 AND scope_key = ?2",
-            params![date, scope_key],
-            |r| r.get(0),
-        )?;
-        let mut stmt = self.conn.prepare(
+        let mut stmt = tx.prepare(
             "SELECT instance_id, entry_id, feed_id, source_revision, effective_at,
                     input_hash, title
                FROM digest_items WHERE digest_id = ?1
               ORDER BY effective_at DESC, instance_id",
         )?;
-        report.items = stmt
+        let items = stmt
             .query_map(params![digest_id], |r| {
                 Ok(DigestItemRef {
                     instance_id: r.get(0)?,
@@ -188,7 +193,21 @@ impl Store {
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
-        Ok(Some(report))
+        drop(stmt);
+        tx.commit()?;
+        Ok(Some(DigestReport {
+            date: date.into(),
+            scope_key: scope_key.into(),
+            scope_json,
+            profile_key,
+            checkpoint_at,
+            generated_at,
+            manifest_hash,
+            markdown,
+            article_count,
+            cache_hits,
+            items,
+        }))
     }
 
     /// 与已存报告的更新对比：走 `digest_entry_meta` 覆盖索引与报告素材清单，
@@ -230,7 +249,8 @@ impl Store {
         let candidate_count = current.len() as i64;
 
         // 已存报告的素材清单。
-        let Some(report) = self.latest_report_head(day_start, day_end, scope)? else {
+        let Some((report_id, checkpoint_at)) = self.latest_report_head(day_start, day_end, scope)?
+        else {
             return Ok(DigestUpdateStatus {
                 has_report: false,
                 candidate_count,
@@ -241,14 +261,14 @@ impl Store {
             "SELECT instance_id, source_revision FROM digest_items WHERE digest_id = ?1",
         )?;
         let stored: std::collections::HashMap<i64, i64> = stmt
-            .query_map(params![report], |r| {
+            .query_map(params![report_id], |r| {
                 Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?))
             })?
             .collect::<rusqlite::Result<std::collections::HashMap<_, _>>>()?;
 
         let mut status = DigestUpdateStatus {
             has_report: true,
-            checkpoint_at: report,
+            checkpoint_at,
             article_count: stored.len() as i64,
             candidate_count,
             ..Default::default()
@@ -270,17 +290,19 @@ impl Store {
         day_start: i64,
         day_end: i64,
         scope: &DigestScope,
-    ) -> super::Result<Option<i64>> {
+    ) -> super::Result<Option<(i64, i64)>> {
         // 无标签选择 = 全部订阅源（scope_key='all'）；有选择时 key 已规范化。
         let scope_key = if scope.feed_ids.is_some() { scope.key.as_str() } else { "all" };
         let conn = &self.conn;
         let mut stmt = conn.prepare(
-            "SELECT id FROM digests
+            "SELECT id, COALESCE(checkpoint_at, 0) FROM digests
               WHERE day_start_at = ?1 AND day_end_at = ?2 AND scope_key = ?3
                 AND generated_at IS NOT NULL
               ORDER BY generated_at DESC, id DESC LIMIT 1",
         )?;
-        let mut rows = stmt.query_map(params![day_start, day_end, scope_key], |r| r.get(0))?;
+        let mut rows = stmt.query_map(params![day_start, day_end, scope_key], |r| {
+            Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?))
+        })?;
         Ok(rows.next().transpose()?)
     }
 }

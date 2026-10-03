@@ -496,6 +496,18 @@ impl Store {
         conn.execute_batch("PRAGMA foreign_keys=ON; PRAGMA synchronous=NORMAL;")?;
         let mut store = Store { conn };
         store.migrate()?;
+        // 幂等补齐日报窄投影的缺失行：阶段 0 迁移先于本修复运行过的 v2 库，
+        // 其后插入的条目没有投影行（审核 P1-1）。first_seen 只能近似（estimated=1）。
+        store.conn.execute(
+            "INSERT INTO digest_entry_meta
+                (entry_id, feed_id, first_seen_at, first_seen_estimated,
+                 effective_at, source_revision)
+             SELECT id, feed_id, fetched_at, 1,
+                    COALESCE(published_at, fetched_at), 1
+               FROM entries
+              WHERE id NOT IN (SELECT entry_id FROM digest_entry_meta)",
+            [],
+        )?;
         Ok(store)
     }
 
@@ -1023,6 +1035,22 @@ impl Store {
                             e.thumbnail_url
                         ],
                     )?;
+                    // 内容指纹已变化：投影跟随（effective_at 可变）并推进内容版本，
+                    // 日报据此判「内容变化」。 Upsert 语义：新行插入、旧行版本 +1。
+                    // 冲突时保留原 first_seen_*（首见时间不可变），仅跟随
+                    // published 变化更新 effective_at 并推进内容版本。
+                    tx.execute(
+                        "INSERT INTO digest_entry_meta
+                            (entry_id, feed_id, first_seen_at, first_seen_estimated,
+                             effective_at, source_revision)
+                         SELECT id, feed_id, fetched_at, 0,
+                                COALESCE(published_at, fetched_at), 1
+                           FROM entries WHERE id = ?1
+                         ON CONFLICT(entry_id) DO UPDATE SET
+                             effective_at = excluded.effective_at,
+                             source_revision = digest_entry_meta.source_revision + 1",
+                        params![id],
+                    )?;
                     stats.updated += 1;
                 }
                 None => {
@@ -1049,6 +1077,17 @@ impl Store {
                             fetched_at,
                             e.thumbnail_url
                         ],
+                    )?;
+                    // 日报窄投影（审核 P1-1）：首见时间准确（estimated=0），
+                    // effective_at = published（缺失时 fetched）。同事务保证一致。
+                    tx.execute(
+                        "INSERT INTO digest_entry_meta
+                            (entry_id, feed_id, first_seen_at, first_seen_estimated,
+                             effective_at, source_revision)
+                         SELECT id, feed_id, fetched_at, 0,
+                                COALESCE(published_at, fetched_at), 1
+                           FROM entries WHERE id = ?1",
+                        params![tx.last_insert_rowid()],
                     )?;
                     stats.inserted += 1;
                 }
@@ -1078,13 +1117,21 @@ impl Store {
         };
         let tokens = search_tokens_of(&[Some(title.as_str()), summary.as_deref(), Some(content_text)]);
         let thumbnail = crate::thumbnail::first_image(content_html, url.as_deref());
-        self.conn.execute(
+        let tx = self.conn.unchecked_transaction()?;
+        tx.execute(
             "UPDATE entries SET content_html = ?2, content_text = ?3,
                 search_tokens = ?4, fulltext_fetched = 1,
                 thumbnail_url = COALESCE(thumbnail_url, ?5)
              WHERE id = ?1",
             params![entry_id, content_html, content_text, tokens, thumbnail],
         )?;
+        // 抓到的全文是真实内容变化：推进日报投影版本（审核 P1-1）
+        tx.execute(
+            "UPDATE digest_entry_meta SET source_revision = source_revision + 1
+              WHERE entry_id = ?1",
+            params![entry_id],
+        )?;
+        tx.commit()?;
         Ok(())
     }
 
