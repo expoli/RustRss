@@ -153,8 +153,10 @@ pub fn detect(conn: &Connection) -> rusqlite::Result<SchemaState> {
         SchemaState::Fresh
     } else if application_id != BASELINE_APPLICATION_ID as i64 {
         SchemaState::Foreign { user_version }
-    } else if !(BASELINE_VERSION..=latest).contains(&user_version) {
-        // 高于当前程序支持的版本，或低于基线的异常半成品库：都拒绝。
+    } else if user_version > latest {
+        SchemaState::VersionMismatch { user_version }
+    } else if user_version < BASELINE_VERSION {
+        // 有表有魔数但 user_version=0：基线建库被中断的半成品（不能迁移，只能重建）。
         SchemaState::VersionMismatch { user_version }
     } else if user_version == latest {
         SchemaState::Current

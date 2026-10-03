@@ -162,8 +162,8 @@ CREATE TABLE digests (
     CHECK (day_start_at < day_end_at),
     UNIQUE (report_day, day_start_at, day_end_at, date_basis, scope_key, profile_key)
 );
-CREATE INDEX idx_digests_history ON digests(report_day DESC, completed_job_id DESC, id DESC);
-CREATE INDEX idx_digests_scope_history ON digests(scope_key, report_day DESC, id DESC);
+CREATE INDEX idx_digests_history ON digests(report_day DESC, generated_at DESC, id DESC);
+CREATE INDEX idx_digests_scope_history ON digests(scope_key, report_day DESC, generated_at DESC, id DESC);
 
 -- 报告正文（列表/计数不读它）
 CREATE TABLE digest_bodies (

@@ -88,10 +88,11 @@ fn status_check_uses_covering_index_not_a_scan() {
             .unwrap()
             .map(|r| r.unwrap())
             .collect();
-        // 两条覆盖索引（day 先导 / feed 先导）都是设计内路径；SCAN 才是失败。
+        // 两条覆盖索引（day 先导 / feed 先导）都是设计内路径；
+        // 必须 SEARCH（范围定位），整条索引 SCAN 不可接受。
         details
             .iter()
-            .any(|d| d.contains("USING COVERING INDEX idx_digest_meta_"))
+            .any(|d| d.contains("SEARCH") && d.contains("USING COVERING INDEX idx_digest_meta_"))
     }
 
     let dbg: Vec<String> = {

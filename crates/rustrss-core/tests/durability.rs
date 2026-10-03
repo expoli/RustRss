@@ -280,7 +280,7 @@ fn baseline_schema_is_equivalent_to_legacy_terminal_state() {
     // （不与已打开的 Store 并发改 schema）
     let removal = Connection::open_in_memory().unwrap();
     removal
-        .execute_batch(&MIGRATIONS.join(";").replace(
+        .execute_batch(&MIGRATIONS[0].replace(
             "CREATE INDEX idx_entries_starred ON entries(starred) WHERE starred = 1",
             "-- 变异：删掉星标部分索引",
         ))
@@ -294,8 +294,7 @@ fn baseline_schema_is_equivalent_to_legacy_terminal_state() {
     let modification = Connection::open_in_memory().unwrap();
     modification
         .execute_batch(
-            &MIGRATIONS
-                .join(";")
+            &MIGRATIONS[0]
                 .replace("ON DELETE CASCADE", "ON DELETE SET NULL"),
         )
         .unwrap();

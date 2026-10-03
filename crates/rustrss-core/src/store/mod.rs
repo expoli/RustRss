@@ -10,6 +10,7 @@
 
 pub mod backfill;
 pub mod backup;
+pub mod digest;
 pub mod schema;
 pub mod tokens;
 mod theme;
@@ -476,12 +477,18 @@ impl Store {
                 });
             }
             SchemaState::VersionMismatch { user_version } => {
-                return Err(StoreError::SchemaRefused {
-                    reason: format!(
-                        "库版本 {user_version} 高于当前程序支持的 {}（可能来自更新的版本，或建库被中断的半成品库）",
+                let reason = if user_version < schema::BASELINE_VERSION {
+                    format!(
+                        "库版本 {user_version} 低于基线 {}：基线建库被中断的半成品库，请删除后重建",
+                        schema::BASELINE_VERSION
+                    )
+                } else {
+                    format!(
+                        "库版本 {user_version} 高于当前程序支持的 {}（可能来自更新的版本）",
                         MIGRATIONS.len()
-                    ),
-                });
+                    )
+                };
+                return Err(StoreError::SchemaRefused { reason });
             }
         }
         // journal_mode 会返回一行，必须用 query_row 消费掉
