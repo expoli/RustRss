@@ -60,7 +60,7 @@
           el('reader').style.visibility=scene==='overview'?'hidden':'';
           el('settings-overlay').classList.toggle('hidden',scene!=='settings');
           await settle();
-          const name=`${['clear','paper','slate'][i]}-${mode}-${locale}-${scene}`;
+          const name=`${['clear','paper','slate','print'][i]}-${mode}-${locale}-${scene}`;
           if (scene==='settings') {
             // The claim is "the settings overlay covers the list region", so assert it
             // structurally: the element at the list's right edge must not be the list.

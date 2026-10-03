@@ -150,7 +150,8 @@ body {
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--line);
+  /* 报头线：全页唯一的粗版线，压住纸面色工具栏的下缘 */
+  border-bottom: 2px solid var(--fg);
   background: var(--bg-panel);
   flex: 0 0 auto;
 }
@@ -177,7 +178,15 @@ body {
 .win-controls button:active { background: var(--bg-active); }
 #btn-win-close:hover { background: var(--danger); color: #fff; }
 
-.brand { font-weight: 600; letter-spacing: .3px; }
+/* 报头：衬线大写、字距拉开的小型刊名（跟随主题正文字体，无衬线主题自动退回 UI 字体） */
+.brand {
+  font-family: var(--font-read, var(--font-ui));
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+/* 默认窗口尺寸下「刷新全部」等按钮文字曾折成两行（实测截图缺陷）：工具栏按钮不换行 */
+.toolbar button { white-space: nowrap; }
 
 .grow { flex: 1; }
 
@@ -242,7 +251,7 @@ main {
 
 .sidebar { padding: 8px 0 0; background: var(--bg-sidebar, var(--bg-panel)); }
 .list { background: var(--bg); }
-.reader { min-height: 0; overflow-y: auto; padding: 22px 30px 60px; }
+.reader { min-height: 0; overflow-y: auto; padding: 26px 34px 60px; }
 
 /* 第三列包裹：reader + 右下角状态栏。状态栏原先在工具栏右侧，长文案会挤压
    刷新/添加/设置按钮；常驻固定高度避免状态出现/消失时阅读区高度跳动。 */
@@ -453,7 +462,7 @@ main {
   border-left: 3px solid transparent;
 }
 .entries li:hover { background: var(--bg-hover); }
-.entries li.active { background: var(--bg-active); border-left-color: var(--accent); }
+.entries li.active { background: transparent; border-left-color: var(--accent); }
 .empty-search-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .empty-search-actions button { min-height: 40px; }
 
@@ -475,8 +484,17 @@ main {
   opacity: 0.7;
 }
 .entries li.read .title { color: var(--fg-dim); font-weight: 400; }
+/* 批注式选中：行首红竖线 + 标题变红，像编辑部画过的稿；不用色块 */
+.entries li.active .title { color: var(--accent); }
 
-.entries .title { font-weight: 600; display: block; margin-bottom: 2px; }
+.entries .title {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+  /* 列表标题用正文字体：衬线主题下标题是版面的主角（无衬线主题退回 UI 字体） */
+  font-family: var(--font-read, var(--font-ui));
+  font-size: 15px;
+}
 .entries .meta { font-size: 12px; color: var(--fg-dim); display: flex; gap: 8px; }
 .entries .summary {
   font-size: 12.5px;
@@ -495,7 +513,7 @@ main {
 .reader-actions #act-later.later-active { border-color: var(--accent); color: var(--accent); }
 
 /* ---------------- 标签：chips / 行按钮 / 选择器 ----------------
-   颜色只用圆点表达，不改文字色：深浅主题下都要可读（对比度不靠标签色）。 */
+   方括号式直角 chip（[ 名称 ] 观感），不带色点；侧栏标签行的圆点保留。 */
 
 .tag-chip {
   display: inline-flex;
@@ -504,7 +522,7 @@ main {
   max-width: 12em;
   padding: 1px 6px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 2px;
   font-size: 11px;
   line-height: 16px;
   color: var(--fg-dim);
@@ -514,17 +532,8 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tag-chip::before {
-  content: '';
-  flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--tag-color, var(--fg-dim));
-}
 .tag-chip:hover { color: var(--fg); border-color: var(--accent); }
 .tag-chip.more { color: var(--fg-dim); font-variant-numeric: tabular-nums; }
-.tag-chip.more::before { display: none; }
 
 /* 行内 chips 容器：不换行、可压缩（长标签名不得把行高撑歪或挤走标记） */
 .entries .meta { min-width: 0; }
@@ -579,7 +588,7 @@ main {
   white-space: nowrap;
 }
 .reader-tags-row .tag-bar .tag-add:hover { color: var(--accent); border-color: var(--accent); }
-.reader-tags-row { max-width: var(--reader-width, 680px); margin-bottom: 12px; }
+.reader-tags-row { max-width: var(--reader-width, 680px); margin-bottom: 8px; }
 
 /* 标签选择器：输入框常驻焦点 + 候选行（最近使用优先序由 core 直出） */
 .tag-sheet { width: min(420px, 92vw); }
@@ -625,6 +634,14 @@ main {
 /* ---------------- 右栏：正文 ---------------- */
 
 .reader-empty { color: var(--fg-dim); max-width: 60ch; }
+/* 空态层级：第一句是衬线导语，其余说明退为小字，不再三段同权像调试输出 */
+.reader-empty p:first-child {
+  font-family: var(--font-read, var(--font-ui));
+  font-size: 17px;
+  color: var(--fg);
+  margin: 0 0 10px;
+}
+.reader-empty p + p { font-size: 12.5px; line-height: 1.7; margin: 0 0 6px; }
 
 /* ---------------- 设置面板（左栏可选分类 + 右栏设置项，整体适配窗口） ---------------- */
 
@@ -956,11 +973,13 @@ main {
 .ai-panel-head button { padding: 3px 9px; font-size: 12px; }
 .ai-panel-body { max-width: 74ch; white-space: pre-wrap; }
 
-.reader-head h1 { font-size: 24px; line-height: 1.3; margin: 0 0 6px; }
-.reader-head .meta { color: var(--fg-dim); font-size: 13px; margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+/* 报眼式阅读头：特大衬线标题，标题与元信息下方一根细版线（不给 h1 单独划线，避免双线） */
+.reader-head { border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px; }
+.reader-head h1 { font-family: var(--font-read, var(--font-ui)); font-size: 26px; font-weight: 700; line-height: 1.3; margin: 0 0 6px; text-wrap: balance; }
+.reader-head .meta { color: var(--fg-dim); font-size: 13px; margin-bottom: 0; display: flex; gap: 10px; flex-wrap: wrap; }
 .reader-head h1, .article { overflow-wrap: anywhere; }
 
-.reader-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.reader-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 /* 词中折行修复：中文按钮文案在窄窗口下被截成两行（「标为未/读」「浏览器打/开」）。
    不换行 + flex-wrap 让整组按钮折行而不是单个按钮内折行 */
 .reader-actions button { white-space: nowrap; }
@@ -1059,7 +1078,9 @@ li.folder-head {
   cursor: pointer;
   margin-top: 8px;
   padding: 6px 10px;
-  border-left: 3px solid var(--accent);
+  /* 分组头不描强调色边：红竖线是「批注选中」的专属语义（当前导航/文章），
+     文件夹分组用底色 + 字重表达，不与之争夺注意力（评审意见） */
+  border-left: none;
   background: var(--bg-panel);
   background: color-mix(in srgb, var(--bg-panel) 55%, transparent);
   color: var(--fg);
@@ -1079,7 +1100,7 @@ li.folder-head .folder-arrow {
 li.folder-head .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 li.folder-head .count {
   margin-left: auto;
-  color: var(--accent);
+  color: var(--fg-dim);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }

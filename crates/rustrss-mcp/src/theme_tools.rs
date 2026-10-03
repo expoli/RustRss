@@ -85,8 +85,8 @@ impl RustRssMcp {
     }
     pub fn theme_presets_result(&self) -> CallToolResult {
         response(
-            json!({"ok":true,"preset_version":PRESET_VERSION,"count":3,"presets":PRESETS.iter().map(|id|{
-            let label=match id {rustrss_core::theme::PresetId::Clear=>"Clear",rustrss_core::theme::PresetId::Paper=>"Paper",rustrss_core::theme::PresetId::Slate=>"Slate"};
+            json!({"ok":true,"preset_version":PRESET_VERSION,"count":PRESETS.len(),"presets":PRESETS.iter().map(|id|{
+            let label=match id {rustrss_core::theme::PresetId::Clear=>"Clear",rustrss_core::theme::PresetId::Paper=>"Paper",rustrss_core::theme::PresetId::Slate=>"Slate",rustrss_core::theme::PresetId::Print=>"Print"};
             json!({"id":id,"name":label,"modes":["light","dark"]})
         }).collect::<Vec<_>>()}),
         )

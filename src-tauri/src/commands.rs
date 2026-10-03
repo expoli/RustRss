@@ -2033,13 +2033,15 @@ mod tests {
     fn ui_settings_reads_font_defaults_and_survives_broken_values() {
         let state = AppState::for_test();
 
-        // 全新库：三类字体都跟随主题，字号/行高回默认
+        // 全新库：三类字体都跟随主题，字号/行高回主题默认（默认报纸预设 read 16.5px / 1.85）
         let fresh = ui_settings(&state).unwrap();
         assert_eq!(fresh.font_ui, "");
         assert_eq!(fresh.font_read, "");
         assert_eq!(fresh.font_mono, "");
-        assert_eq!(fresh.font_read_size, DEFAULT_FONT_READ_SIZE);
-        assert_eq!(fresh.font_read_line, DEFAULT_FONT_READ_LINE);
+        assert_eq!(fresh.font_read_size, fresh.theme_snapshot.light.typography.read_size);
+        assert_eq!(fresh.font_read_line, fresh.theme_snapshot.light.typography.line_height);
+        assert_eq!(fresh.font_read_size, 16.5);
+        assert_eq!(fresh.font_read_line, 1.85);
 
         // 库里被写坏：非数字/超区间值都得夹回或回默认，而不是让正文排版崩掉
         state
@@ -2072,7 +2074,7 @@ mod tests {
         .unwrap();
         assert_eq!(after_ui.font_ui, "Noto Sans CJK SC");
         assert_eq!(after_ui.font_read, "", "没传的项不该被写");
-        assert_eq!(after_ui.font_read_size, DEFAULT_FONT_READ_SIZE);
+        assert_eq!(after_ui.font_read_size, 16.5, "字号仍跟随主题默认（报纸预设）");
 
         // 第二次：滑块只写字号，越界值夹回上限；已设的字体族不被冲掉
         let after_size = set_font_config_core(&state, None, None, None, Some(99.0), Some(0.4)).unwrap();

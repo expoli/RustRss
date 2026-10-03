@@ -96,7 +96,11 @@ async fn read_discovery_schema_and_validation_are_non_mutating() {
     assert_eq!(g["capabilities"]["preview"]["available"], false);
     assert_eq!(g["patch_schema"]["additionalProperties"], false);
     let presets = body(&f.call("reader", "list_theme_presets", json!({})).await);
-    assert_eq!(presets["count"], 3);
+    assert_eq!(presets["count"], 4);
+    assert_eq!(
+        presets["presets"].as_array().unwrap().last().unwrap()["name"],
+        "Print"
+    );
     let validated=body(&f.call("reader","validate_theme",json!({"expected_revision":0,"patch":{"light_preset":"paper","overrides":{"typography":{"read_size":24}}}})).await);
     assert_eq!(validated["persisted"], false);
     assert_eq!(validated["theme"]["light"]["typography"]["read_size"], 24.);

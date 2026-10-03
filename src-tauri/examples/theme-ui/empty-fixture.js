@@ -124,7 +124,7 @@
             // matrix, not just in the first one.
             assert(el('reader').querySelector('.reader-empty p').textContent === I18N.t('reader.empty'),
               `reader empty copy kept ${locale}/${mode}/${scene}`);
-            const name = `empty-${['clear', 'paper', 'slate'][i]}-${mode}-${locale}-${scene}`;
+            const name = `empty-${['clear', 'paper', 'slate', 'print'][i]}-${mode}-${locale}-${scene}`;
             const shot = { ...await invoke('capture_scene', { name }), name, background: v.colors.background };
             if (scene === 'settings') {
               const probeX = Math.round(el('entries').getBoundingClientRect().right - 5);

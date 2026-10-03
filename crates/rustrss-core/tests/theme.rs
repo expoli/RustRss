@@ -7,7 +7,18 @@ fn patch(v: Value) -> ThemePatch {
 }
 
 #[test]
-fn six_presets_resolve_and_pass_declared_contrast_pairs() {
+fn every_preset_resolves_and_passes_declared_contrast_pairs() {
+    // Print must stay last: stored configs deserialize preset ids by name, but
+    // the display order and fixture capture names follow this array.
+    assert_eq!(
+        PRESETS,
+        [
+            PresetId::Clear,
+            PresetId::Paper,
+            PresetId::Slate,
+            PresetId::Print
+        ]
+    );
     for id in PRESETS {
         let c = ThemeConfig {
             light_preset: id,
@@ -20,6 +31,54 @@ fn six_presets_resolve_and_pass_declared_contrast_pairs() {
             assert!(pair.passes, "{id:?}: {pair:?}");
         }
     }
+}
+
+/// The redesign's landing point: Print (头版·报纸) is the default preset with
+/// serif reading typography, 2px chrome corners and true hairline borders.
+#[test]
+fn print_is_default_and_ships_newsprint_values_in_both_modes() {
+    assert_eq!(
+        serde_json::from_value::<PresetId>(json!("print")).unwrap(),
+        PresetId::Print
+    );
+    let config = ThemeConfig::default();
+    assert_eq!(config.light_preset, PresetId::Print);
+    assert_eq!(config.dark_preset, PresetId::Print);
+    let snapshot = config.resolve().unwrap();
+    assert_eq!(snapshot.preset_version, 2);
+    for (values, background, accent, border) in [
+        (&snapshot.light, "#f6f3ec", "#a03b28", "#d9d2c3"),
+        (&snapshot.dark, "#17140f", "#e0694e", "#3b3323"),
+    ] {
+        assert_eq!(values.colors.background, background);
+        assert_eq!(values.colors.accent, accent);
+        assert_eq!(values.colors.border, border);
+        // Deliberate fix: hairlines must never inherit the muted text color.
+        assert_ne!(values.colors.border, values.colors.muted);
+        assert_eq!(values.typography.read_family[0], "Noto Serif CJK SC");
+        assert_eq!(values.typography.read_size, 16.5);
+        assert_eq!(values.typography.line_height, 1.85);
+        assert_eq!(values.chrome.radius, 2.);
+    }
+    assert_eq!(snapshot.light.colors.hover, "#e9e1d0");
+    assert_eq!(snapshot.dark.colors.hover, "#2b2417");
+    // Review-round fixes: night-press selection red and secondary text must
+    // clear the warm-black ground; the list gains width and one-line summaries.
+    assert_eq!(snapshot.dark.colors.muted, "#b5aa94");
+    assert_eq!(snapshot.dark.list.summary_lines, 1);
+    assert_eq!(snapshot.light.list.summary_lines, 1);
+    assert_eq!(snapshot.dark.chrome.list_width, 375.);
+    assert_eq!(snapshot.light.chrome.list_width, 375.);
+    assert_eq!(snapshot.light.colors.danger, "#8b2f1f");
+    assert_eq!(snapshot.dark.colors.danger, "#e8907f");
+    assert_eq!(snapshot.light.colors.diff_add_background, "#e7efdf");
+    assert_eq!(snapshot.light.colors.diff_add_text, "#4a6b2f");
+    assert_eq!(snapshot.light.colors.diff_delete_background, "#f6e4de");
+    assert_eq!(snapshot.dark.colors.diff_add_background, "#24301f");
+    assert_eq!(snapshot.dark.colors.diff_add_text, "#8fb573");
+    assert_eq!(snapshot.dark.colors.diff_delete_background, "#3a2420");
+    assert_eq!(snapshot.light.colors.code_background, "#efe9dc");
+    assert_eq!(snapshot.dark.colors.code_background, "#1d1913");
 }
 
 #[test]

@@ -138,7 +138,7 @@
       select.onchange = () => change('mode', select.value); row.append(select); form.append(row);
       for (const variant of ['light', 'dark']) {
         const group = node('div', '', 'theme-presets'); group.append(node('h4', t('theme.' + variant + 'Preset')));
-        for (const preset of ['clear', 'paper', 'slate']) {
+        for (const preset of ['clear', 'paper', 'slate', 'print']) {
           const b = button(t('settings.preset.' + preset), () => { change(variant + '_preset', preset); markPresets(); });
           b.dataset.preset = preset; b.dataset.variant = variant; group.append(b);
         }

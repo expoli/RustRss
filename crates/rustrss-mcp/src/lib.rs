@@ -679,7 +679,7 @@ impl RustRssMcp {
         self.theme_capabilities_result(&p).await
     }
     #[tool(
-        description = "List the three built-in theme presets (metadata only). Use validate_theme to resolve a preset without saving."
+        description = "List the four built-in theme presets (metadata only). Use validate_theme to resolve a preset without saving."
     )]
     fn list_theme_presets(&self) -> CallToolResult {
         self.theme_presets_result()

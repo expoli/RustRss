@@ -4,7 +4,9 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
 pub const SCHEMA_VERSION: u32 = 1;
-pub const PRESET_VERSION: u32 = 1;
+/// Version of the built-in preset value table; folded into the config hash so
+/// stale fingerprints from older tables never compare equal across upgrades.
+pub const PRESET_VERSION: u32 = 2;
 pub const MAX_PATCH_BYTES: usize = 16 * 1024;
 pub const MAX_REVISION: u64 = 9_007_199_254_740_991;
 
@@ -46,8 +48,15 @@ pub enum PresetId {
     Clear,
     Paper,
     Slate,
+    // New variants append only: stored configs deserialize preset ids by name.
+    Print,
 }
-pub const PRESETS: [PresetId; 3] = [PresetId::Clear, PresetId::Paper, PresetId::Slate];
+pub const PRESETS: [PresetId; 4] = [
+    PresetId::Clear,
+    PresetId::Paper,
+    PresetId::Slate,
+    PresetId::Print,
+];
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Density {
@@ -153,8 +162,8 @@ impl Default for ThemeConfig {
             schema_version: SCHEMA_VERSION,
             revision: 0,
             mode: ThemeMode::System,
-            light_preset: PresetId::Clear,
-            dark_preset: PresetId::Clear,
+            light_preset: PresetId::Print,
+            dark_preset: PresetId::Print,
             overrides: empty_object(),
         }
     }
@@ -220,9 +229,28 @@ pub fn preset(id: PresetId, dark: bool) -> ThemeValues {
         (PresetId::Slate, true) => (
             "#242d31", "#191e21", "#20272b", "#e0e8e8", "#a2b3b6", "#a5cfca", "#314845",
         ),
+        // Print（头版·报纸）: paper & ink with one editorial red; dark is night press.
+        (PresetId::Print, false) => (
+            "#f6f3ec", "#efe9dc", "#faf7f0", "#211e17", "#6e675a", "#a03b28", "#eee7d8",
+        ),
+        (PresetId::Print, true) => (
+            "#17140f", "#131109", "#1d1913", "#e8e2d4", "#b5aa94", "#e0694e", "#2b2417",
+        ),
     };
-    let danger = if dark { "#ffb3ab" } else { "#9a2c2c" };
-    let green = if dark { "#7ee787" } else { "#116329" };
+    let (danger, green) = match (id, dark) {
+        (PresetId::Print, false) => ("#8b2f1f", "#4a6b2f"),
+        (PresetId::Print, true) => ("#e8907f", "#8fb573"),
+        (_, true) => ("#ffb3ab", "#7ee787"),
+        (_, false) => ("#9a2c2c", "#116329"),
+    };
+    // Print never reuses `muted` for rules: bright gray hairlines across dark
+    // panels were a measured defect of the shared mapping. Its hairlines, hover
+    // and code surfaces come from the newsprint palette instead.
+    let (border, hover, code_background) = match (id, dark) {
+        (PresetId::Print, false) => ("#d9d2c3", "#e9e1d0", "#efe9dc"),
+        (PresetId::Print, true) => ("#3b3323", "#2b2417", "#1d1913"),
+        _ => (muted, selected, panel),
+    };
     let ui = vec![
         "-apple-system".into(),
         "Noto Sans CJK SC".into(),
@@ -238,12 +266,12 @@ pub fn preset(id: PresetId, dark: bool) -> ThemeValues {
             muted: muted.into(),
             accent: accent.into(),
             selected: selected.into(),
-            hover: selected.into(),
-            border: muted.into(),
+            hover: hover.into(),
+            border: border.into(),
             focus: accent.into(),
             danger: danger.into(),
             star: accent.into(),
-            code_background: panel.into(),
+            code_background: code_background.into(),
             code_text: text.into(),
             code_keyword: accent.into(),
             code_string: green.into(),
@@ -252,15 +280,27 @@ pub fn preset(id: PresetId, dark: bool) -> ThemeValues {
             code_function: accent.into(),
             code_type: green.into(),
             code_variable: text.into(),
-            diff_add_background: if dark { "#173322" } else { "#e1f3e4" }.into(),
+            diff_add_background: match (id, dark) {
+                (PresetId::Print, false) => "#e7efdf",
+                (PresetId::Print, true) => "#24301f",
+                (_, true) => "#173322",
+                (_, false) => "#e1f3e4",
+            }
+            .into(),
             diff_add_text: green.into(),
-            diff_delete_background: if dark { "#412627" } else { "#fbe5e3" }.into(),
+            diff_delete_background: match (id, dark) {
+                (PresetId::Print, false) => "#f6e4de",
+                (PresetId::Print, true) => "#3a2420",
+                (_, true) => "#412627",
+                (_, false) => "#fbe5e3",
+            }
+            .into(),
             diff_delete_text: danger.into(),
             diff_hunk_background: selected.into(),
         },
         typography: Typography {
             ui_family: ui.clone(),
-            read_family: if id == PresetId::Paper {
+            read_family: if matches!(id, PresetId::Paper | PresetId::Print) {
                 vec!["Noto Serif CJK SC".into(), "Georgia".into(), "serif".into()]
             } else {
                 ui
@@ -276,12 +316,14 @@ pub fn preset(id: PresetId, dark: bool) -> ThemeValues {
                 PresetId::Clear => 14.,
                 PresetId::Paper => 18.,
                 PresetId::Slate => 16.,
+                PresetId::Print => 16.5,
             },
             mono_size: 13.,
             line_height: match id {
                 PresetId::Clear => 1.55,
                 PresetId::Paper => 1.9,
                 PresetId::Slate => 1.7,
+                PresetId::Print => 1.85,
             },
         },
         list: ListStyle {
@@ -290,7 +332,7 @@ pub fn preset(id: PresetId, dark: bool) -> ThemeValues {
             } else {
                 Density::Comfortable
             },
-            summary_lines: 2,
+            summary_lines: if id == PresetId::Print { 1 } else { 2 },
             thumbnail: true,
         },
         reader: ReaderStyle {
@@ -299,9 +341,15 @@ pub fn preset(id: PresetId, dark: bool) -> ThemeValues {
             layout: ReaderLayout::ThreeColumn,
         },
         chrome: ChromeStyle {
-            radius: if id == PresetId::Paper { 5. } else { 8. },
+            radius: match id {
+                PresetId::Paper => 5.,
+                PresetId::Print => 2.,
+                _ => 8.,
+            },
             sidebar_width: 220.,
-            list_width: 340.,
+            // Print widens the list: thumbnails + serif titles need more column
+            // than the shared default, otherwise long headlines wrap to three lines.
+            list_width: if id == PresetId::Print { 375. } else { 340. },
         },
     }
 }
@@ -692,7 +740,7 @@ pub fn patch_schema() -> Value {
     json!({"type":"object","additionalProperties":false,"max_serialized_bytes":MAX_PATCH_BYTES,
     "properties":{
         "mode":{"enum":["system","light","dark"]},
-        "light_preset":{"enum":["clear","paper","slate"]},"dark_preset":{"enum":["clear","paper","slate"]},
+        "light_preset":{"enum":["clear","paper","slate","print"]},"dark_preset":{"enum":["clear","paper","slate","print"]},
         "overrides":{"anyOf":[{"type":"object","additionalProperties":false,"properties":properties},{"type":"null"}],"description":"null clears all overrides; arrays replace atomically."}
     }})
 }
