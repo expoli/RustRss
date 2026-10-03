@@ -72,7 +72,9 @@ cargo tauri android build --target aarch64 --target x86_64 --apk --ci
 # 产物：src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
 ```
 
-用 Android SDK 的 `aapt dump badging <apk>` 核对版本、`arm64-v8a` / `x86_64` 架构和非 debuggable 状态，用 `apksigner verify --verbose --print-certs <apk>` 核对有效签名及证书与上一版本一致。安装升级验证通过后，重命名为 `RustRss_X.Y.Z_android-universal.apk`，用 `gh release upload vX.Y.Z <apk>` 上传到对应 Release，并下载回读核对 SHA-256。私钥和 `keystore.properties` 均不提交、不作为附件上传。Android CI 生成 debug APK 用于构建检查，目前不自动发布签名 release APK。
+用 Android SDK 的 `aapt dump badging <apk>` 核对版本、`arm64-v8a` / `x86_64` 架构和非 debuggable 状态，用 `apksigner verify --verbose --print-certs <apk>` 核对有效签名及证书与上一版本一致。安装升级验证通过后，重命名为 `RustRss_X.Y.Z_android-universal.apk`，用 `gh release upload vX.Y.Z <apk>` 上传到对应 Release，并下载回读核对 SHA-256。私钥和 `keystore.properties` 均不提交、不作为附件上传。
+
+**CI 自动发布签名 APK（默认路径）**：推 `v*` tag 后 [release 工作流](../.github/workflows/release.yml) 的 `android` job 会自动构建并随 Release 附件上传签名 APK。签名材料从 repo secrets 还原（`ANDROID_KEYSTORE_B64` = 密钥库文件 `base64 -w0`，`ANDROID_SIGNING_PROPS_B64` = `keystore.properties` 整文件 `base64 -w0`；2026-10-03 已配置），构建后工作流硬编码断言发布证书指纹（密钥被换则构建直接红）。本地构建仅作为 secrets 不可用时的后备路径，流程同上段。Android CI（android-build.yml）另生成 debug APK 用于持续构建检查，与发布链路无关。
 
 `cargo tauri android build` 会从 `tauri.conf.json` 重新生成被 Git 忽略的 `gen/android/app/tauri.properties`；因此仓库里的旧 APK 或本地生成文件不能代表当前源码版本。发布包用以下命令直接核对 APK manifest：
 
