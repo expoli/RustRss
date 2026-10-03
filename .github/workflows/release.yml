@@ -1,9 +1,13 @@
-# 正式发布：推 v* 标签 → 三平台安装包 + GitHub Release（自动生成变更说明）。
+# 正式发布：推 v* 标签 → 三平台安装包 + Android 签名 APK + GitHub Release（自动生成变更说明）。
 #
 # 用法：先在根 Cargo.toml 的 [workspace.package] 与 src-tauri/tauri.conf.json
-# bump 版本并提交 → 手动运行本 workflow 做三平台 preflight → 全绿后在同一 SHA 推 tag。
+# bump 版本并提交 → 手动运行本 workflow 做四平台 preflight → 全绿后在同一 SHA 推 tag。
 # macOS 只在这里构建，避免每次开发构建都增加一个完整平台矩阵；
 # dmg 未签名，首次打开需右键→打开 绕过 Gatekeeper。
+# Android 签名材料走 repo secrets（ANDROID_KEYSTORE_B64 / ANDROID_SIGNING_PROPS_B64，
+# 见 docs/development.md 的 Android 段）：job 内还原为构建系统已接好约定的
+# gen/android/{app/android-release.keystore, keystore.properties}，证书指纹
+# 在构建后硬编码断言，防密钥被换。
 name: release
 
 on:
@@ -99,8 +103,79 @@ jobs:
           path: ${{ matrix.glob }}
           if-no-files-found: error
 
+  android:
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install NDK
+        run: sdkmanager --install "ndk;27.2.12479018" > /dev/null
+
+      - name: Install tauri-cli 2.12.1
+        run: |
+          cargo install tauri-cli --locked --version "=2.12.1"
+          cargo tauri --version
+
+      # 签名材料从 repo secrets 还原为构建系统已接好约定的两个文件
+      # （gen/android/.gitignore 忽略它们，仓库内永远不含密钥本体）。
+      - name: Restore release signing material
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          SIGNING_PROPS_B64: ${{ secrets.ANDROID_SIGNING_PROPS_B64 }}
+        run: |
+          set -eu
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$SIGNING_PROPS_B64" ]; then
+            echo "Missing secrets: ANDROID_KEYSTORE_B64 / ANDROID_SIGNING_PROPS_B64" >&2
+            echo "Set them from the local signing files (base64 -w0)." >&2
+            exit 1
+          fi
+          echo -n "$KEYSTORE_B64" | base64 -d > src-tauri/gen/android/app/android-release.keystore
+          echo -n "$SIGNING_PROPS_B64" | base64 -d > src-tauri/gen/android/keystore.properties
+
+      - name: Build Android APK (release, x86_64 + aarch64)
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: cargo tauri android build --release --target x86_64 --target aarch64 --apk
+
+      - name: Verify APK version, signature and certificate fingerprint
+        env:
+          # 发布证书指纹是公开信息（APK 内自带）；硬编码在这里做防篡改断言：
+          # CI 上若密钥被换，构建直接红。与 0.1.0 以来所有发布包同钥。
+          EXPECTED_CERT_SHA256: 89269c116afaa9ca546f7287b268f00c14d5598b6c633715a74fbbcd28de8cc5
+        run: |
+          set -eu
+          APK="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          python3 scripts/check-version-consistency.py --apk "$APK" --aapt "$BT/aapt"
+          "$BT/apksigner" verify "$APK"
+          "$BT/apksigner" verify --print-certs "$APK" | grep -qi "$EXPECTED_CERT_SHA256"
+          VERSION="$(python3 -c "import json;print(json.load(open('src-tauri/tauri.conf.json'))['version'])")"
+          cp "$APK" "RustRss_${VERSION}_android-universal.apk"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: android-apk
+          path: RustRss_*_android-universal.apk
+          if-no-files-found: error
+
   release:
-    needs: build
+    needs: [build, android]
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
