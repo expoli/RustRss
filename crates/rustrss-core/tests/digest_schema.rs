@@ -18,6 +18,23 @@ fn v1_database(path: &std::path::Path) {
     .unwrap();
 }
 
+    fn plan_is_covering(conn: &rusqlite::Connection, sql: &str) -> bool {
+    let mut stmt = conn
+        .prepare(&format!("EXPLAIN QUERY PLAN {sql}"))
+        .unwrap();
+    let details: Vec<String> = stmt
+        .query_map([], |r| r.get::<_, String>(3))
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    // 两条覆盖索引（day 先导 / feed 先导）都是设计内路径；
+    // 必须 SEARCH（范围定位），整条索引 SCAN 不可接受。
+    details
+        .iter()
+        .any(|d| d.contains("SEARCH") && d.contains("USING COVERING INDEX idx_digest_meta_"))
+}
+
+
 #[test]
 fn v1_database_migrates_to_v2_on_open_and_backfills_meta() {
     let dir = tempfile::tempdir().unwrap();
@@ -79,22 +96,6 @@ fn status_check_uses_covering_index_not_a_scan() {
     const STATUS_SQL: &str = "SELECT count(*) FROM digest_entry_meta \
          WHERE effective_at >= 0 AND effective_at < 86400 AND feed_id = 1";
 
-    fn plan_is_covering(conn: &rusqlite::Connection, sql: &str) -> bool {
-        let mut stmt = conn
-            .prepare(&format!("EXPLAIN QUERY PLAN {sql}"))
-            .unwrap();
-        let details: Vec<String> = stmt
-            .query_map([], |r| r.get::<_, String>(3))
-            .unwrap()
-            .map(|r| r.unwrap())
-            .collect();
-        // 两条覆盖索引（day 先导 / feed 先导）都是设计内路径；
-        // 必须 SEARCH（范围定位），整条索引 SCAN 不可接受。
-        details
-            .iter()
-            .any(|d| d.contains("SEARCH") && d.contains("USING COVERING INDEX idx_digest_meta_"))
-    }
-
     let dbg: Vec<String> = {
         let mut stmt = conn.prepare(&format!("EXPLAIN QUERY PLAN {STATUS_SQL}")).unwrap();
         stmt.query_map([], |r| r.get::<_, String>(3)).unwrap().map(|r| r.unwrap()).collect()
@@ -111,6 +112,41 @@ fn status_check_uses_covering_index_not_a_scan() {
     assert!(
         !plan_is_covering(&conn, STATUS_SQL),
         "索引删除后断言必须变红（防假绿）"
+    );
+}
+
+/// 阴性对照：无过滤的 count 必然产生 `SCAN … USING COVERING INDEX`——
+/// plan_is_covering 必须拒绝它（只认 SEARCH），否则弱断言假绿无法被证伪
+///（独立审核要求的反例证据）。
+#[test]
+fn full_index_scan_is_not_accepted_as_covering_search() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rustrss.sqlite");
+    v1_database(&path);
+    let store = Store::open(&path).unwrap();
+    let conn = rusqlite::Connection::open(&path).unwrap();
+
+    // 只取 effective_at：无过滤时 planner 全扫 idx_digest_meta_day（该列是其首列）。
+    let scan_sql = "SELECT effective_at FROM digest_entry_meta";
+    let mut stmt = conn
+        .prepare(&format!("EXPLAIN QUERY PLAN {scan_sql}"))
+        .unwrap();
+    let details: Vec<String> = stmt
+        .query_map([], |r| r.get::<_, String>(3))
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    // 反例前提成立：这个 plan 确实是「SCAN + 覆盖索引」的组合。
+    assert!(
+        details.iter().any(|d| {
+            d.contains("SCAN") && d.contains("USING COVERING INDEX idx_digest_meta_")
+        }),
+        "反例前提：无过滤查询应为 SCAN+覆盖索引，实际: {details:?}"
+    );
+    // 被测断言必须拒绝它。
+    assert!(
+        !plan_is_covering(&conn, scan_sql),
+        "SCAN+覆盖索引不得通过 SEARCH 断言"
     );
 }
 
