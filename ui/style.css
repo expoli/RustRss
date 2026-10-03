@@ -9,7 +9,10 @@
   --space-6: 24px;
   --space-8: 32px;
   --control-surface: var(--bg-panel);
-  --control-border: var(--line);
+  /* 控件边界语义色：头发分隔线留在 --line（装饰，允许低对比），控件轮廓与
+     开关轨道需要非文本对比度 ≥3:1（WCAG 1.4.11），用 fg 与 line 混出
+     主题自适应的控制边界色（Print 亮 3.4:1 / 暗 4.2:1，设置审核 P2） */
+  --control-border: color-mix(in srgb, var(--fg) 42%, var(--line));
   --control-text: var(--fg);
   /* 告知浏览器原生控件（select/滚动条/输入框）用深色方案渲染——
      WebKitGTK 的 select 闭合按钮由原生主题绘制，不吃下方变量 */
@@ -579,8 +582,8 @@ main {
 .entries li.active .row-tag-btn { opacity: .75; }
 .row-tag-btn:hover { opacity: 1; color: var(--accent); border-color: var(--accent); }
 
-/* 阅读器标签单列，元信息保持一行；chips 更新不移动正文的其他节点。 */
-.reader-actions .reader-tags-inline { display: inline-flex; align-items: center; margin-left: 6px; }
+/* 阅读器标签：受限槽内单行展示，溢出裁切；chips 更新不移动正文的其他节点。 */
+.reader-actions .reader-tags-inline { display: inline-flex; align-items: center; margin-left: 6px; flex: 0 1 auto; min-width: 0; max-height: 20px; overflow: hidden; }
 .reader-actions .tag-bar {
   display: inline-flex;
   align-items: center;
@@ -776,7 +779,7 @@ main {
   flex: 0 0 auto;
   width: min(280px, 42%);
   padding: 6px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-border, var(--line));
   border-radius: 7px;
   background: var(--bg);
   color: var(--fg);
@@ -890,7 +893,8 @@ main {
   position: absolute;
   inset: 0;
   cursor: pointer;
-  background: var(--line);
+  /* 轨道用控制边界色而非装饰线：关态也要 ≥3:1 可辦识（设置审核 P2） */
+  background: var(--control-border, var(--line));
   border-radius: 999px;
   transition: background .15s ease;
 }
@@ -1007,8 +1011,9 @@ main {
 .reader-head h1, .article { overflow-wrap: anywhere; }
 
 /* 阅读头操作行：低频操作用无框按钮（报纸的页边注脚语法），hover 才给底色；
-   标签行并入同一行——正文前只留一次明确间距（评审意见）。chips 更新只重写
-   #reader-tags 内部，节点身份不变，不牵动正文其它节点。 */
+   标签槽受限收敛（min-width:0 + 限高裁切）：增删标签不改变操作行高度、
+   不推移正文锚点——按钮行恒定，标签超出即裁切，完整列表在标签选择器里。
+   （移动端由媒体查询改为整行展示，保 48px 触控目标。） */
 .reader-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 12px; }
 /* 词中折行修复：中文按钮文案在窄窗口下被截成两行（「标为未/读」「浏览器打/开」）。
    不换行 + flex-wrap 让整组按钮折行而不是单个按钮内折行 */
@@ -1338,7 +1343,8 @@ html[data-reader-layout="focus"] .article { margin-inline: auto; }
 }
 .aa-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .theme-sample { max-width: var(--reader-width); }
-.theme-editor-fields select, .theme-editor-fields input, #appearance-editor > select, #reading-editor > select, #aa-editor > select { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius); padding: 5px; }
+.theme-editor-fields select, .theme-editor-fields input, #appearance-editor > select, #reading-editor > select, #aa-editor > select,
+.theme-sample-head select, .theme-history-row select { background: var(--bg); color: var(--fg); border: 1px solid var(--control-border, var(--line)); border-radius: var(--radius); padding: 5px; }
 /* Fixed two-row header keeps long counts from hiding the current view title. */
 .list-head { display: block; }
 #list-title { display: block; min-height: 1.4em; }
@@ -1564,6 +1570,10 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   }
   .reader-actions button { padding: 8px; min-width: 48px; min-height: 48px; justify-content: center; }
   .reader-actions .action-label { display: none; }
+  /* 触屏：标签整行展示（48px 触控目标），不与固定操作钮争一行宽度——
+     否则 320px 视口下标签会把按钮推出 overflow-x:hidden 的阅读区（审核 P1） */
+  .reader-actions { flex-wrap: wrap; }
+  .reader-actions .reader-tags-inline { flex: 1 1 100%; margin-left: 0; max-height: none; }
   .reader-head h1 { font-size: 22px; line-height: 1.3; }
   .reader-head .meta {
     flex-wrap: nowrap;

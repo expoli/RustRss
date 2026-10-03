@@ -63,7 +63,7 @@
   assert((await snap()).theme_snapshot.config.revision===0,'draft preview has zero persistent writes');
   await capture('appearance-draft');
   action(host,'theme.save').click();await wait(()=>state.config.revision===1);
-  assert(state.config.light_preset==='paper'&&state.config.dark_preset==='clear','independent light and dark presets');
+  assert(state.config.light_preset==='paper'&&state.config.dark_preset==='print','independent light and dark presets (dark keeps its default)');
   assert(state.config.overrides.chrome.radius===8,'sparse override saved');
   assert(article===el('reader').firstElementChild&&row===el('entries').firstElementChild,'save retains article and row nodes');
   assert(Math.abs(offset()-before)<2,'save preserves paragraph offset');
@@ -71,7 +71,7 @@
   assert(!editor.dirty&&(await snap()).theme_snapshot.config.revision===1,'discard does not write');
   action(host,'theme.refreshHistory').click();await wait(()=>host.querySelector('[data-theme-history]').options.length>1);
   host.querySelector('[data-theme-history]').value='0';action(host,'theme.restore').click();await wait(()=>state.config.revision===2);
-  assert(state.config.light_preset==='clear','history restore creates a new revision');
+  assert(state.config.light_preset==='print','history restore returns the initial default preset');
   change(host,'chrome.radius','9');
   await invoke('update_ui_theme',{expectedRevision:2,patch:{mode:'dark'}});
   action(host,'theme.save').click();await wait(()=>host.querySelector('.theme-editor-status').textContent.includes('Save failed'));

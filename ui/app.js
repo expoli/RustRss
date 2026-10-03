@@ -4236,6 +4236,8 @@ function fillMcpForm() {
   el('set-mcp-enabled').checked = mcp.enabled;
   el('mcp-port').value = mcp.port;
   el('mcp-snippet').value = mcp.snippet || '';
+  // 空内容时禁用复制：否则能「成功复制」一个空串，误导用户（审核 P2）
+  el('mcp-copy-snippet').disabled = !(mcp.snippet || '').trim();
   // token 只显示首尾：设置页不需要完整明文，需要时用「复制客户端配置」
   const masked = mcp.token ? `${mcp.token.slice(0, 6)}…${mcp.token.slice(-4)}` : '(无)';
   el('mcp-status').textContent = mcp.running

@@ -114,7 +114,7 @@
       validate();
     }
     function control(field, parent = form) {
-      const [path, , type, max, step] = field;
+      const [path, , type, max] = field;
       const row = node('div', '', 'theme-field');
       const label = node('label', t('theme.field.' + path.replace(/^colors\.(light|dark)\./, 'colors.')));
       let input;
@@ -123,7 +123,9 @@
         for (const value of type) { const opt = node('option', t('theme.option.' + value)); opt.value = value; input.append(opt); }
       } else {
         input = node('input'); input.type = type === 'boolean' ? 'checkbox' : type === 'color' ? 'color' : typeof type === 'number' ? 'number' : 'text';
-        if (typeof type === 'number') { input.min = type; input.max = max; input.step = step; }
+        if (typeof type === 'number') { input.min = type; input.max = max; input.step = 'any'; }
+        // step 用 'any'：core 只约束 min/max，不约束粒度；Print 默认值本身是
+        // 16.5 / 375 这类非整步长值，固定 step 会 stepMismatch 拒掉合法编辑（审核 P2）
         if (type === 'font') { input.maxLength = 515; input.placeholder = 'system-ui'; input.setAttribute('list', fonts.id);
           input.onfocus = refreshFonts; }
       }
