@@ -151,7 +151,8 @@ jobs:
       - name: Build Android APK (release, x86_64 + aarch64)
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
-        run: cargo tauri android build --release --target x86_64 --target aarch64 --apk
+        # tauri v2 CLI 默认即 release（--debug 才是开关），没有 --release 旗子
+        run: cargo tauri android build --target x86_64 --target aarch64 --apk
 
       - name: Verify APK version, signature and certificate fingerprint
         env:
