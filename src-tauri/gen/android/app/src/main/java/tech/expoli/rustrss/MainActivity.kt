@@ -53,10 +53,18 @@ class MainActivity : TauriActivity() {
       // document-start：脚本在**每次页面导航**的文档起点自动执行——根除
       // 「注入早于文档就绪、随后被导航冲掉」的时序竞态（真机冷启动 >1s 时
       // 延迟注入全部落空，状态栏时间与报头重叠）。函数定义 + 立即应用当前值。
-      val script = "window.__applyInsets=function(t,b){var d=document.documentElement;" +
-        "d.style.setProperty('--inset-top',t+'px');" +
-        "d.style.setProperty('--inset-bottom',b+'px');};" +
-        "window.__applyInsets($lastTop,$lastBottom);"
+      // 值经 sessionStorage 跨导航持久：页面中途重载（真机实测会发生——用户
+      // 看到「启动正常 → 闪一下 → 向上弹回重叠」正是重载把已修正的变量打回
+      // 注册时的快照值）时，恢复的是**最新值**而不是注册时的快照。
+      val script = "try{" +
+        "var d=document.documentElement;" +
+        "window.__applyInsets=function(t,b){d.style.setProperty('--inset-top',t+'px');" +
+        "d.style.setProperty('--inset-bottom',b+'px');" +
+        "try{sessionStorage.setItem('__insets',t+','+b);}catch(e){}};" +
+        "var s=sessionStorage.getItem('__insets');" +
+        "if(s){var p=s.split(',');window.__applyInsets(p[0],p[1]);}" +
+        "else{window.__applyInsets($lastTop,$lastBottom);}" +
+        "}catch(e){}"
       WebViewCompat.addDocumentStartJavaScript(webView, script, setOf("*"))
       documentStartRegistered = true
       // 慢设备/老 WebView 兜底：确认 CSS 变量真的算进去了，没生效就重试。
