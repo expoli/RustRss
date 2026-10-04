@@ -1516,8 +1516,10 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
      简写 padding: 2px 8px 曾把它覆盖回 2px——三台真机顶部重叠的首因（评审裁定）。 */
   .toolbar {
     gap: 4px;
-    padding: 2px 8px;
-    padding-top: calc(2px + var(--inset-top, 0px));
+    padding: 8px;
+    /* 基数 8px（与桌面一致）：2px 时高按钮（48px 触控目标）顶部与状态栏
+       图标底缘只差 ~2px，真机上视觉重叠 1/4（真机反馈）。 */
+    padding-top: calc(8px + var(--inset-top, 0px));
     min-height: 52px;
   }
   .toolbar .brand { margin-right: auto; }
