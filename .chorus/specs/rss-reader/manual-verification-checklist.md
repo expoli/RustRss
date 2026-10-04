@@ -1346,3 +1346,23 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 机械验证：`cargo test --workspace` 全绿（479+，含 logging 37 个新用例与命令守卫/结构测试）、`cargo clippy --workspace --all-targets` 零告警、`cargo build -p rustrss-desktop` 成功（UI 嵌入重建）、i18n selfTest `{ok:true,keys:581}`、mobile 分支 `cargo check --target aarch64-linux-android` 干净。
 - [ ] 实机核验（Android 设备/模拟器，待人工）：设置→数据出现「诊断日志」块且桌面不渲染；列表名称/大小/时间/当前标记正确；查看默认末尾 256KB 且超限有截断提示；导出拉起系统保存对话框，落点可读、取消与失败三态正确；查看/导出的真实 panic 行能对上桌面日志。
 - [ ] 环境限制：本轮无设备运行时证据（评审为静态+构建级）；`.log` 扩展名在部分厂商文档选择器下的 CREATE_DOCUMENT 兼容性未测（未设 MIME filter，按 opml-picker 教验处理，异常时反馈错误文案）。
+
+## 2026-10-04 · AI 对话助手阶段①批次 B（双端 UI）
+
+### 机械验证（已验证）
+- `node --test scripts/tests/*.test.cjs`：76/76 通过，新增 `chat-ui.test.cjs` 13 项；覆盖 parts_json/安全转义/seed 徽章、真实 failed 状态的快完成恢复、端点及范围重新授权、取消不发送、single-flight/停止、错误草稿、过期响应/后台不导航、增量同值短路与上滚保持、composition Enter、防遗留草稿、手机返回先关闭输入再回日报/五 tab、双语键集。
+- i18n：新增 25 对 chat keys，补既有缺失的两条中文 reader keys，zh-CN/en 各 644，selfTest ok；`node --check ui/app.js` / `ui/mobile.js` 通过。
+- `cargo test --workspace` 全绿；`cargo build -p rustrss-desktop` 已在最终 UI 修改后重建（编译期嵌入）。
+
+### 真产物 Xvfb 冒烟（已验证）
+- 隔离数据库 `/tmp/rss-chat-audit/final.sqlite`、HOME `/tmp/rss-chat-audit/verified-home`，运行 `target/debug/rustrss-desktop`；Xvfb :99、GDK_GL=disable、测试子进程用 X11（产品代码不设置显示后端）。未配置 API key，未发送付费请求。
+- `/tmp/rss-chat-audit/01-sidebar-chat.png`：侧栏「AI 助手」点击打开独立聊天容器，显示模型/范围、新建、历史、删除与输入区。
+- `/tmp/rss-chat-audit/02-privacy.png`：Enter 提交出现端点/会话范围/正文与 token 费用确认。
+- `/tmp/rss-chat-audit/03-no-key.png`：确认后收到真实异步 failed 终态，错误气泡红色、可重试，输入框恢复 `Hello assistant`，显示 AI 设置入口。
+- `/tmp/rss-chat-audit/04-setup-entry.png`：点击错误下方入口直达 AI 设置页。
+- SQLite 回读：1 会话，user/assistant 各一行 status=failed；启动日志 `/tmp/rss-chat-audit/final-run.log` 含 `i18n selftest ok (keys=644)`，无新增 JS error；四张截图哈希互异；二进制时间戳、哈希与回读断言在 `/tmp/rss-chat-audit/evidence.json`。
+
+### 未验证 / 已知限制
+- Android 模拟器/手机 320px、旋转、大字号、真实 IME、后台恢复、四家真实 BYOK 多轮、重启中断与 X11/Wayland 输入法尚未实机验收；单元测试不能替代这些验收。
+- v1 Markdown 为安全纯文本，不自动渲染图片/链接；引用、工具过程、工具循环与流式仍后置。
+- 启动仍输出既有 `menu render selftest FAILED: checked 条目未打勾`（菜单未在本批修改），不将其记作聊天验证通过。

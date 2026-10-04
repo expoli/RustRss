@@ -86,10 +86,21 @@
       // 日报页（设计 2026-10-04 #4）：今日/昨日/近期历史的日期列表。
       // 渲染进 .right-col（与 reader 覆盖层同容器）；先退阅读层再进。
       setPage('digest');
-      renderDigestHome();
+      if (digestMode === 'chat') window.RustRssChatBridge?.resume();
+      else renderDigestHome();
       return;
     }
     setPage(name);
+  }
+
+  var digestMode = 'digest';
+
+  function syncDigestTabs() {
+    document.querySelectorAll('[data-digest-tab]').forEach(function (button) {
+      var selected = button.dataset.digestTab === digestMode;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
   }
 
   var savedMode = 'starred'; // 收藏页内部的 星标/稍后读 记忆（会话内）
@@ -106,7 +117,13 @@
     var app = window.__TAURI__?.app;
     if (!app?.onBackButtonPress) return;
     app.onBackButtonPress(function () {
+      // Keep chat drafts/tasks alive: close IME first, then return to digests.
+      if (active() && document.activeElement?.id === 'chat-input') {
+        document.activeElement.blur();
+        return;
+      }
       if (active() && historyStack.length) history.back();
+      else if (active() && bodyPage() === 'digest' && digestMode === 'chat') renderDigestHome();
       else app.exit();
     });
   }
@@ -374,6 +391,10 @@
   // ---- 日报页（设计 2026-10-04 #4） ------------------------------------
   /// 日报首页：今日/昨日/近期历史（digest_list 有界元数据），点击进阅读层。
   function renderDigestHome() {
+    digestMode = 'digest';
+    syncDigestTabs();
+    window.RustRssChatBridge?.leave();
+    window.RustRssChatBridge?.invalidateReader();
     var t = window.I18N ? window.I18N.t : function (k) { return k; };
     try {
     var bridge = window.RustRssDigestBridge || {};
@@ -426,13 +447,25 @@
   // digest 首页渲染入口暴露给 app.js（digest_list 刷新时同步）；
   // onDigestView：日报详情进共享阅读层，返回（#m-reader-back / 系统返回）回日报首页
   window.RustRssMobileDigest = {
-    renderDigestHome: renderDigestHome,
+    renderDigestHome: function () { if (active() && bodyPage() === 'digest' && digestMode === 'digest') renderDigestHome(); },
     // 日报详情进共享阅读层：显式压返回栈（returnPage=digest）。watchReader 的
     // 观察器在 bodyPage 已变 reader 后会跳过压栈——这里不压，返回就落 articles。
     onDigestView: function () {
+      if (!active()) return;
       returnPage = 'digest';
       pushEntry({ t: 'reader', returnPage: 'digest' });
       setPage('reader');
+    },
+  };
+
+  window.RustRssMobileChat = {
+    onChatView: function () {
+      if (!active()) return;
+      digestMode = 'chat';
+      setPage('digest');
+      syncDigestTabs();
+      // Discussing a digest leaves its explicit reader return entry in place.
+      // Back still returns to the digest list; completion does not navigate.
     },
   };
 
@@ -455,6 +488,14 @@
       btn.addEventListener('click', function () {
         if (btn.closest('#m-seg-saved')) savedMode = btn.dataset.mview;
         pickView(btn.dataset.mview);
+      });
+    });
+    document.querySelectorAll('[data-digest-tab]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        digestMode = button.dataset.digestTab;
+        if (digestMode === 'chat') window.RustRssChatBridge?.resume();
+        else renderDigestHome();
+        syncDigestTabs();
       });
     });
     var readerBack = el('m-reader-back');

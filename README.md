@@ -13,7 +13,7 @@ Rust + Tauri 2 · SQLite · RSS / Atom / JSON Feed
 - **专注阅读**：订阅、文章列表和正文分栏展示；支持搜索、稍后读、星标、标签和键盘操作。
 - **报纸版式为默认主题**：四套视觉预设（报纸 Print / Clear / Paper / Slate），默认「报纸」——纸墨配色加一处编辑部红，正文与列表标题用衬线字体、版心居中；明暗色可分别选预设，所有值均可覆盖。
 - **数据在本地**：订阅、文章与阅读状态存入 SQLite；无需账号或云同步。
-- **AI 由你选择**：配置自己的 OpenAI 兼容、Anthropic、Gemini 或 Ollama 服务，用于文章摘要、翻译和每日日报（按本地日历日聚合订阅内容，AI 生成结构化日报，缓存与范围过滤）。对话助手阶段① **Rust 后端**已具备四家非流式单轮执行、持久多轮历史、日报快照绑定（无日报也可新建）、取消与启动中断恢复；桌面/手机聊天 UI 尚未接入，流式与工具执行后置。
+- **AI 由你选择**：配置自己的 OpenAI 兼容、Anthropic、Gemini 或 Ollama 服务，用于文章摘要、翻译和每日日报（按本地日历日聚合订阅内容，AI 生成结构化日报，缓存与范围过滤）。对话助手阶段①已接入桌面/手机聊天 UI：侧栏「AI 助手」、手机日报内分段及「讨论这份日报」，支持持久多轮历史、日报快照绑定（无日报也可新建）、取消与启动中断恢复；四家非流式传输已就绪，真实 BYOK 完整验收、引用、流式与工具执行后置。
 - **面向 agent 的 MCP**：让兼容客户端读取你的订阅、文章与每日日报。服务只监听回环地址，默认只读，写能力需单独授权。
 
 ![RustRss 外观与主题设置](docs/images/settings.png)
@@ -85,14 +85,16 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 | [开发指南](docs/development.md) | 项目结构、构建、日志和发布 |
 | [全部文档](docs/README.md) | 按读者角色浏览指南与项目资料 |
 
-## 对话助手后端（阶段①，UI 待接入）
+## 对话助手（阶段①，非流式双端 UI）
 
 - schema 追加 v2→v3；会话元数据与消息正文分表，手动删除级联清理。应用启动将遗留 `running` 标为 `interrupted`，普通 core/MCP 开库不恢复、不自动重试计费。
 - 日报上下文冻结为第一条 `done` user 消息（`scope_json.has_seed` + `seq=1` 标识）；保存真实范围、checkpoint 与报告正文 hash，重写日报后仍讨论原快照。无日报也可会话，但助手明确说明资料不足。
 - 每回合仅一次模型请求、最多 120 秒、输出最多 4096 tokens；输入采用保守 48,000 字符闸门（不是账单 token 估算），旧历史按完整回合裁剪并返回 `historyTrimmed`，绑定日报不裁掉。provider usage 缺失即未知；已知累计达到 200,000 tokens 后要求新会话，暂不提供继续付费旗标。
 - provider/模型/端点变化时旧会话拒绝发送，须开启新会话；同会话单 flight，在飞删除拒绝（先停止、等待终态）。停止会丢弃在途 HTTP future，但已发生费用不保证撤销。
-- Tauri 提供 `chat_send/stop/sessions_list/session_get/session_delete`；返回 `sessionId/messageId`（本回合 user id），事件 `chat:started/progress/done/error` 携带身份；终态另给 `assistantMessageId/blocks/usage/status`。端点/范围/费用确认由下一批前端持久化，本批没有新增隐私确认 command。
-- 会话不存 API key；SQLite 聊天正文不加密，整库备份含聊天及日报上下文。下一批前端应把 seed 标为「日报上下文」，发送的日报、历史与新消息会交给配置的服务商。
+- Tauri 提供 `chat_send/stop/sessions_list/session_get/session_delete`；返回 `sessionId/messageId`（本回合 user id），事件 `chat:started/progress/done/error` 携带身份；终态另给 `assistantMessageId/blocks/usage/status`。双端共用聊天容器，以会话身份处理终态事件，不因后台完成抢导航。消息按 id 增量更新，Markdown v1 仅显示安全转义纯文本。
+- 发送前按 provider/model/base_url 指纹与会话范围确认端点、正文外发与 token 费用；授权记在本地 `chat.privacyConfirmed.<指纹>`，换端点/模型或范围重新确认。会话头部提供新建、历史切换与删除；失败保留草稿并可手动重试，未配 key 显示 AI 设置入口，预算/配置漂移直接展示后端错误并可新建会话。
+- 输入框 Enter 发送、Shift+Enter 换行，中文 composition 期间不发送；运行中按钮改为停止。手机助手位于日报 tab 内，不新增底栏 tab，输入区随 WebView/IME 可用高度贴底。
+- 会话不存 API key；SQLite 聊天正文不加密，整库备份含聊天及日报上下文。seed 仅显示「日报上下文」徽章，不进入可编辑输入；发送的日报、历史与新消息会交给配置的服务商。来源引用/工具过程属于后续批次，本批不伪造来源或检索能力。
 
 ## 隐私概览
 

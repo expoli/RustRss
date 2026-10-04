@@ -1841,3 +1841,31 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   .theme-presets button { min-height: 48px; }
   .settings-body code { overflow-wrap: anywhere; }
 }
+
+/* Chat has its own route/container, not a reader-head observer heuristic. */
+.chat { display: none; min-height: 0; min-width: 0; }
+.right-col.chat-active > #reader, .right-col.chat-active > #m-reader-back { display: none; }
+.right-col.chat-active > .chat { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
+.chat-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); flex: none; }
+.chat-head h2 { flex: 1; margin: 0; min-width: 100px; font-size: 20px; overflow-wrap: anywhere; }
+.chat-head select { max-width: 100%; min-width: 0; flex: 1 1 120px; }
+.chat-head p { width: 100%; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.chat-messages { flex: 1; overflow-y: auto; min-height: 0; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.chat-message { flex: none; max-width: 90%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; overflow-wrap: anywhere; }
+.chat-user { align-self: flex-end; background: var(--bg); }
+.chat-assistant { align-self: flex-start; background: var(--bg-panel); }
+.chat-failed { color: var(--danger, #b42318); }
+.chat-message p { margin: 8px 0 0; }
+.chat-context { color: var(--fg-dim); font-size: 12px; }
+.chat-notice { flex: none; padding: 0 12px; overflow-wrap: anywhere; max-height: 25%; overflow-y: auto; }
+.chat-notice p { margin: 6px 0; min-height: 1.5em; }
+.chat-notice button { margin-bottom: 6px; }
+.chat-compose { display: flex; align-items: flex-end; gap: 8px; padding: 12px; border-top: 1px solid var(--line); flex: none; }
+.chat-compose textarea { flex: 1; min-width: 0; resize: vertical; max-height: 180px; font: inherit; }
+@media (max-width: 960px) and (pointer: coarse) {
+  body[data-mpage="digest"] #m-seg-digest { display: flex; margin: 8px 12px; }
+  .chat-head, .chat-compose { padding: 8px 12px; }
+  .chat-head button, .chat-head select, .chat-compose button, .chat-notice button { min-height: 48px; }
+  .chat-compose textarea { min-height: 60px; max-height: 120px; }
+  .chat-message { max-width: 95%; }
+}

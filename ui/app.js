@@ -655,6 +655,16 @@ function reconcileViews(existing) {
     if (countEl.textContent !== n) countEl.textContent = n;
     desired.push(li);
   }
+  let assistant = existing.get('chat:entry');
+  if (!assistant) {
+    assistant = document.createElement('li');
+    assistant.dataset.key = 'chat:entry';
+    bindSidebarKeyboard(assistant);
+    assistant.innerHTML = `<span class="icon">${window.RustRssIcons.svg('ai')}</span><span class="vlabel"></span>`;
+    assistant.onclick = () => renderChatView();
+  }
+  setText(assistant.querySelector('.vlabel'), t('chat.title'));
+  desired.push(assistant);
   reconcileChildren(el('views'), desired);
 }
 
@@ -1309,6 +1319,7 @@ async function openDigest(kind) {
 }
 
 function renderDigestView(view) {
+  leaveChatView();
   readerToken++;
   digestOpenDate = view.date;
   el('reader')?.classList.remove('digest-home');
@@ -1385,11 +1396,12 @@ function renderDigestView(view) {
         <h1>${t('digest.title', { date: view.date })}</h1>
         <div class="meta">${statusBits.map(escapeHtml).join('<span class="dim"> · </span>')}</div>
       </div>
-      <div class="digest-actions">${buttons}</div>
+      <div class="digest-actions">${buttons}${view.has_report ? `<button id="digest-discuss">${t('chat.discussThis')}</button>` : ''}</div>
       ${warn}
       ${view.has_report ? `<div class="digest-meta dim">${metaBits.map(escapeHtml).join(' · ')}</div>` : ''}
       ${content}
     </div>`;
+  el('digest-discuss')?.addEventListener('click', () => renderChatView({ date: view.date, scopeKey: view.scope_key, seedTitle: t('digest.title', { date: view.date }) }));
   el('digest-cancel')?.addEventListener('click', () => {
     if (!digestJob) return;
     invoke('digest_cancel', { jobId: digestJob.jobId }).catch((e) => setStatus(e.message, true));
@@ -1433,7 +1445,8 @@ function renderDigestRefresh() {
   if (bar) {
     bar.innerHTML = `<button class="digest-cancel" id="digest-cancel">${t('digest.cancel')}</button>
       <span class="digest-progress dim" id="digest-progress">${t('digest.generating')}</span>`;
-    el('digest-cancel')?.addEventListener('click', () => {
+    el('digest-discuss')?.addEventListener('click', () => renderChatView({ date: view.date, scopeKey: view.scope_key, seedTitle: t('digest.title', { date: view.date }) }));
+  el('digest-cancel')?.addEventListener('click', () => {
       if (!digestJob?.jobId) return;
       invoke('digest_cancel', { jobId: digestJob.jobId }).catch((e) => setStatus(e.message, true));
     });
@@ -1464,7 +1477,281 @@ async function openDigestDate(date, scopeKey) {
   }
 }
 
+// Chat owns an explicit container/route; late events never navigate the reader.
+let chatView = null;
+const chatDrafts = new Map();
+let chatRefreshSerial = 0;
+
+function chatScope(session) {
+  try { return JSON.parse(session?.scope_json || '{}'); } catch { return {}; }
+}
+
+function chatText(message) {
+  try {
+    return JSON.parse(message.parts_json || '[]')
+      .filter(block => typeof block.text === 'string').map(block => block.text).join('\n');
+  } catch { return ''; }
+}
+
+function chatScopeLabel(view) {
+  const scope = view.data ? chatScope(view.data.session) : view;
+  return scope.date ? `${scope.date} · ${scope.scope_key || scope.scopeKey || 'all'}` : t('chat.noDigest');
+}
+
+function leaveChatView() {
+  document.querySelector('.right-col')?.classList.remove('chat-active');
+}
+
+function chatIsVisible(view) {
+  return chatView === view && document.querySelector('.right-col')?.classList.contains('chat-active');
+}
+
+function chatError(view, error) {
+  view.error = String(error?.message || error);
+  view.needSetup = /API.?key|密钥|凭据|模型.*空|model.*empty/i.test(view.error);
+  if (chatIsVisible(view)) paintChatView(view);
+}
+
+function buildChatMessage(message, seed, retryText, view) {
+  const row = document.createElement('div');
+  row.className = `chat-message chat-${message.role === 'assistant' ? 'assistant' : 'user'}`;
+  const failed = ['failed', 'cancelled', 'interrupted'].includes(message.status);
+  row.classList.toggle('chat-failed', failed);
+  // v1 deliberately renders Markdown as escaped plain text: no remote images/links.
+  row.innerHTML = seed
+    ? `<span class="chat-context">${escapeHtml(t('chat.digestContext'))}</span>`
+    : `<div>${escapeHtml(chatText(message)).replace(/\n/g, '<br>')}</div>`;
+  if (message.status === 'running') {
+    row.insertAdjacentHTML('beforeend', `<p class="dim">${escapeHtml(t('chat.running'))}</p>`);
+  } else if (failed && !seed) {
+    row.insertAdjacentHTML('beforeend', `<p>${escapeHtml(t(message.status === 'failed' ? 'chat.error' : 'chat.' + message.status))}</p>`);
+    // Completed error turns include both user and assistant; expose retry only once.
+    if (message.role === 'assistant' || message.status === 'interrupted') {
+      const button = document.createElement('button');
+      button.textContent = t('chat.retry');
+      button.onclick = () => sendChat(view, retryText);
+      row.append(button);
+    }
+  }
+  return row;
+}
+
+function paintChatView(view) {
+  if (!chatIsVisible(view)) return;
+  const data = view.data;
+  const messages = data?.messages || [];
+  view.running = messages.some(message => message.status === 'running');
+  setText(el('chat-heading'), data?.session.title || view.seedTitle || t('chat.title'));
+  const ai = data?.session || state.ai || {};
+  setText(el('chat-meta'), `${ai.provider || ''} · ${ai.model || ''} · ${chatScopeLabel(view)}`);
+  const list = el('chat-messages');
+  const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 48;
+  const existing = new Map([...list.children].map(row => [row.dataset.messageId, row]));
+  const desired = [];
+  let messagesChanged = false;
+  let userText = '';
+  for (const message of messages) {
+    const seed = chatScope(data.session).has_seed && message.seq === 1;
+    if (message.role === 'user' && !seed) userText = chatText(message);
+    const signature = JSON.stringify([message, seed, userText, currentLocale()]);
+    let row = existing.get(String(message.id));
+    if (!row || row.dataset.signature !== signature) {
+      messagesChanged = true;
+      const next = buildChatMessage(message, seed, userText, view);
+      next.dataset.messageId = String(message.id);
+      next.dataset.signature = signature;
+      if (row) row.replaceWith(next);
+      row = next;
+    }
+    desired.push(row);
+  }
+  // Keyed reconcile: preserve unchanged bubbles and the user's scroll position.
+  for (const row of [...list.children]) if (!desired.includes(row)) { messagesChanged = true; row.remove(); }
+  desired.forEach((row, index) => { if (list.children[index] !== row) list.insertBefore(row, list.children[index] || null); });
+  if (atBottom && messagesChanged) list.scrollTop = list.scrollHeight;
+  const error = el('chat-error');
+  setText(error, view.error || (view.trimmed ? t('chat.historyTrimmed') : ''));
+  error.classList.toggle('error', !!view.error);
+  el('chat-setup').hidden = !view.needSetup;
+  el('chat-retry').hidden = !view.error || !view.lastText || view.needSetup;
+  el('chat-send').disabled = !!view.pending;
+  setText(el('chat-send'), t(view.running ? 'chat.stop' : 'chat.send'));
+  el('chat-input').disabled = view.running;
+  el('chat-delete').disabled = !view.id || !!view.pending;
+}
+
+async function refreshChatView(view) {
+  if (!view.id) { paintChatView(view); return; }
+  const serial = ++chatRefreshSerial;
+  try {
+    const data = await invoke('chat_session_get', { sessionId: view.id });
+    if (serial !== chatRefreshSerial || !chatIsVisible(view)) return;
+    if (!data) { chatError(view, t('chat.notFound')); return; }
+    view.data = data;
+    const last = data.messages.at(-1);
+    if (last?.status === 'failed') {
+      view.error = chatText(last) || t('chat.error');
+      view.needSetup = /API.?key|密钥|凭据|模型.*空|model.*empty/i.test(view.error);
+      // Immediate completion may precede chat_send's receipt. Recover the draft
+      // from the persisted terminal state as well as from completion events.
+      if (view.lastText && !el('chat-input').value) {
+        el('chat-input').value = view.lastText;
+        view.draft = view.lastText;
+        chatDrafts.set(view.id, view.draft);
+      }
+    }
+    paintChatView(view);
+  } catch (error) { if (chatIsVisible(view)) chatError(view, error); }
+}
+
+async function refreshChatHistory(view) {
+  try {
+    const sessions = await invoke('chat_sessions_list');
+    if (!chatIsVisible(view)) return;
+    const select = el('chat-history');
+    const html = `<option value="">${escapeHtml(t('chat.history'))}</option>` + sessions.map(session =>
+      `<option value="${session.id}">${escapeHtml(session.title)}</option>`).join('');
+    if (select.innerHTML !== html) select.innerHTML = html;
+    select.value = view.id ? String(view.id) : '';
+  } catch (error) { if (chatIsVisible(view)) chatError(view, error); }
+}
+
+async function sendChat(view, retryText) {
+  if (!chatIsVisible(view) || view.pending) return;
+  if (view.running) {
+    try { await invoke('chat_stop', { sessionId: view.id }); }
+    catch (error) { chatError(view, error); }
+    return;
+  }
+  const text = retryText === undefined ? el('chat-input').value : retryText;
+  if (!text.trim()) return;
+  view.pending = true;
+  view.lastText = text;
+  view.error = '';
+  view.needSetup = false;
+  paintChatView(view);
+  try {
+    const ai = await invoke('get_ai_settings');
+    state.ai = ai;
+    const fingerprint = encodeURIComponent(JSON.stringify([ai.provider, ai.model, ai.base_url]));
+    const key = 'chat.privacyConfirmed.' + fingerprint;
+    const scope = chatScopeLabel(view);
+    let confirmed = [];
+    try { confirmed = JSON.parse(localStorage.getItem(key) || '[]'); } catch {}
+    if (!Array.isArray(confirmed)) confirmed = [];
+    if (!confirmed.includes(scope)) {
+      const ok = await confirmDialog({
+        title: t('chat.privacyTitle'),
+        body: t('chat.privacyBody', { endpoint: `${ai.provider} · ${ai.model} · ${ai.base_url || t('chat.defaultEndpoint')}`, scope }),
+        okLabel: t('chat.privacyOk'), danger: false,
+      });
+      if (!ok || !chatIsVisible(view)) return;
+      try { localStorage.setItem(key, JSON.stringify([...confirmed, scope])); } catch {}
+    }
+    if (!chatIsVisible(view)) return;
+    const result = await invoke('chat_send', {
+      sessionId: view.id || null, date: view.date || null,
+      scopeKey: view.scopeKey || null, message: text,
+    });
+    chatDrafts.delete(view.id);
+    view.id = result.sessionId;
+    view.trimmed = result.historyTrimmed;
+    view.draft = '';
+    chatDrafts.delete(view.id);
+    if (chatIsVisible(view)) {
+      el('chat-input').value = '';
+      await refreshChatView(view);
+      await refreshChatHistory(view);
+    }
+  } catch (error) { chatError(view, error); }
+  finally { view.pending = false; if (chatIsVisible(view)) paintChatView(view); }
+}
+
+async function renderChatView(target) {
+  const binding = typeof target === 'object' && target ? target : {};
+  const id = typeof target === 'number' ? target : null;
+  const view = { id, ...binding, draft: chatDrafts.get(id) || '', pending: false, error: '' };
+  chatView = view;
+  readerToken++;
+  digestOpenDate = null;
+  state.selectedId = null;
+  state.readerFeedId = null;
+  state.readerEntry = null;
+  renderList();
+  renderSidebar();
+  el('reader').innerHTML = '';
+  document.querySelector('.right-col').classList.add('chat-active');
+  window.RustRssMobileChat?.onChatView?.();
+  const host = el('chat');
+  host.innerHTML = `<header class="chat-head">
+    <h2 id="chat-heading"></h2><button id="chat-new">${t('chat.newSession')}</button>
+    <select id="chat-history" aria-label="${t('chat.history')}"></select>
+    <button id="chat-delete">${t('chat.delete')}</button><p id="chat-meta" class="dim"></p>
+    </header><div id="chat-messages" class="chat-messages" role="log" aria-live="polite"></div>
+    <div class="chat-notice"><p id="chat-error" role="status"></p>
+      <button id="chat-setup" hidden>${t('chat.needSetup')}</button>
+      <button id="chat-retry" hidden>${t('chat.errorRetry')}</button></div>
+    <div class="chat-compose"><textarea id="chat-input" rows="3" placeholder="${t('chat.inputPlaceholder')}" aria-label="${t('chat.inputPlaceholder')}"></textarea>
+      <button id="chat-send">${t('chat.send')}</button></div>`;
+  el('chat-input').value = view.draft;
+  el('chat-input').oninput = () => { view.draft = el('chat-input').value; chatDrafts.set(view.id, view.draft); };
+  let composing = false;
+  el('chat-input').addEventListener('compositionstart', () => { composing = true; });
+  el('chat-input').addEventListener('compositionend', () => { composing = false; });
+  el('chat-input').onkeydown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && !composing && event.keyCode !== 229) {
+      event.preventDefault(); sendChat(view);
+    }
+  };
+  el('chat-send').onclick = () => sendChat(view);
+  el('chat-new').onclick = () => renderChatView();
+  el('chat-history').onchange = () => { if (el('chat-history').value) renderChatView(Number(el('chat-history').value)); };
+  el('chat-delete').onclick = async () => {
+    const ok = await confirmDialog({ title: t('chat.delete'), body: t('chat.deleteConfirm') });
+    if (!ok || !chatIsVisible(view)) return;
+    try { await invoke('chat_session_delete', { sessionId: view.id }); chatDrafts.delete(view.id); renderChatView(); }
+    catch (error) { chatError(view, error); }
+  };
+  el('chat-setup').onclick = () => { openSettings(); showPane('ai'); };
+  el('chat-retry').onclick = () => sendChat(view, view.lastText);
+  paintChatView(view);
+  await Promise.all([refreshChatView(view), refreshChatHistory(view)]);
+}
+
+function onChatTerminal(event) {
+  const payload = event.payload || {};
+  const view = chatView;
+  if (!view || payload.sessionId !== view.id || !chatIsVisible(view)) return;
+  if (payload.error) chatError(view, payload.error);
+  refreshChatView(view);
+  refreshChatHistory(view);
+}
+
+window.RustRssChatBridge = {
+  open: renderChatView,
+  resume: () => {
+    if (!chatView) return renderChatView();
+    readerToken++;
+    digestOpenDate = null;
+    state.selectedId = null;
+    state.readerFeedId = null;
+    state.readerEntry = null;
+    renderList();
+    renderSidebar();
+    document.querySelector('.right-col').classList.add('chat-active');
+    window.RustRssMobileChat?.onChatView?.();
+    refreshChatView(chatView);
+    refreshChatHistory(chatView);
+  },
+  leave: leaveChatView,
+  invalidateReader: () => { readerToken++; digestOpenDate = null; },
+};
+for (const event of ['chat:done', 'chat:error']) {
+  window.__TAURI__?.event?.listen(event, onChatTerminal).catch(error => log(`listen ${event} failed: ${error.message}`));
+}
+
 function renderReaderEmpty() {
+  leaveChatView();
   readerToken++;
   digestOpenDate = null;
   state.readerFeedId = null;
@@ -1478,6 +1765,7 @@ function renderReaderEmpty() {
 }
 
 function renderReader(entry) {
+  leaveChatView();
   readerToken++;
   digestOpenDate = null;
   state.readerFeedId = entry.feed_id;
