@@ -35,17 +35,12 @@ use rmcp::model::{
 };
 use rmcp::service::{RequestContext, RoleServer};
 use rmcp::{tool, tool_handler, tool_router, transport::stdio, ServerHandler, ServiceExt};
-use rustrss_core::{EntryQuery, Fetcher, ListSort, RefreshGate, Store, UnreadGroupBy};
+use rustrss_core::{Fetcher, RefreshGate, Store};
 use serde_json::Value;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use registry::{GateError, Scope, Switches, ToolSpec};
-
-const DEFAULT_LIMIT: u32 = 10;
-const MAX_LIMIT: u32 = 50;
-/// 列表里的摘要截断长度：够判断「要不要点进去看」，又不至于撑爆上下文
-const SUMMARY_CHARS: usize = 140;
 
 /// `list_articles` 的参数。
 ///
@@ -53,7 +48,7 @@ const SUMMARY_CHARS: usize = 140;
 /// 设置（`list.sort` / `list.hide_read`）。显式传参才会偏离默认。
 /// 分页：`page_size`（别名 `limit`）默认 10、上限 50；翻页把上一页的
 /// `next_cursor` 原样回传给 `cursor`。
-#[derive(Debug, Default, Deserialize, JsonSchema)]
+#[derive(Debug, Default, Deserialize, Serialize, JsonSchema)]
 #[serde(default)]
 pub struct ListArticlesParams {
     /// 只看某个订阅源（feed id，来自 list_feeds）；与 folder_id 二选一
@@ -87,7 +82,7 @@ pub struct ListArticlesParams {
     pub hide_read: Option<bool>,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct GetArticleParams {
     /// 条目 id（来自 list_articles / search_articles）
     pub id: i64,
@@ -96,7 +91,7 @@ pub struct GetArticleParams {
     pub include_html: bool,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct SearchParams {
     /// 关键词（在标题与正文中检索；中文两字及以上可精确匹配）
     pub query: String,
@@ -105,7 +100,7 @@ pub struct SearchParams {
 }
 
 /// `digest_list` 的参数。
-#[derive(Debug, Default, Deserialize, JsonSchema)]
+#[derive(Debug, Default, Deserialize, Serialize, JsonSchema)]
 #[serde(default)]
 pub struct DigestListParams {
     /// 最多返回多少份（默认 10，上限 50；按日期倒序）
@@ -113,7 +108,7 @@ pub struct DigestListParams {
 }
 
 /// `digest_get` 的参数。
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct DigestGetParams {
     /// 日期（YYYY-MM-DD，来自 digest_list）
     pub date: String,
@@ -126,110 +121,11 @@ pub struct DigestGetParams {
 }
 
 /// `get_unread_summary` 的参数
-#[derive(Debug, Default, Deserialize, JsonSchema)]
+#[derive(Debug, Default, Deserialize, Serialize, JsonSchema)]
 #[serde(default)]
 pub struct UnreadSummaryParams {
     /// 聚合维度：`feed`（默认，按订阅源）或 `folder`（按分组，未分组单列一组）
     pub by: Option<String>,
-}
-
-/// 列表分页游标：`<sort>:<sortkey>:<id>`（`unread_first` 档多一位 `:<read>`）。
-///
-/// 带上排序档是**故意的**：换了排序档却复用旧游标，keyset 定位到的是另一套顺序里
-/// 的坐标，会翻出乱序/重复页。此处直接报错比静默出错好。
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct Cursor {
-    sort: ListSort,
-    sortkey: i64,
-    id: i64,
-    read: Option<bool>,
-}
-
-impl Cursor {
-    fn encode(&self) -> String {
-        let base = format!("{}:{}:{}", self.sort.as_str(), self.sortkey, self.id);
-        match (self.sort, self.read) {
-            (ListSort::UnreadFirst, Some(read)) => {
-                format!("{base}:{}", if read { 1 } else { 0 })
-            }
-            _ => base,
-        }
-    }
-
-    /// 解析并校验游标。`expected` 是本次请求的排序档：不一致即报错。
-    fn parse(raw: Option<&str>, expected: ListSort) -> std::result::Result<Option<Self>, String> {
-        let Some(text) = raw.map(str::trim).filter(|t| !t.is_empty()) else {
-            return Ok(None);
-        };
-        let shape_err = || {
-            format!(
-                "cursor 不合法（{text:?}）：请把上一页的 next_cursor 原样回传，不要自己拼"
-            )
-        };
-        let parts: Vec<&str> = text.split(':').collect();
-        let sort = match parts.first().copied() {
-            Some("newest") => ListSort::Newest,
-            Some("oldest") => ListSort::Oldest,
-            Some("unread_first") => ListSort::UnreadFirst,
-            _ => return Err(shape_err()),
-        };
-        if sort != expected {
-            return Err(format!(
-                "cursor 属于 sort={} 的翻页结果，与本次 sort={} 不匹配",
-                sort.as_str(),
-                expected.as_str()
-            ));
-        }
-        let need = if sort == ListSort::UnreadFirst { 4 } else { 3 };
-        if parts.len() != need {
-            return Err(shape_err());
-        }
-        let sortkey = parts[1].parse::<i64>().map_err(|_| shape_err())?;
-        let id = parts[2].parse::<i64>().map_err(|_| shape_err())?;
-        let read = match parts.get(3).copied() {
-            None => None,
-            Some("0") => Some(false),
-            Some("1") => Some(true),
-            Some(_) => return Err(shape_err()),
-        };
-        Ok(Some(Self { sort, sortkey, id, read }))
-    }
-}
-
-#[derive(Serialize)]
-struct FeedOut {
-    id: i64,
-    title: String,
-    url: String,
-    site_url: Option<String>,
-    unread: i64,
-    /// 上次抓取状态；非 "ok" 时 agent 应知道这个源目前不可信
-    status: Option<String>,
-    error: Option<String>,
-}
-
-#[derive(Serialize)]
-struct ArticleMetaOut {
-    id: i64,
-    feed: String,
-    title: String,
-    url: Option<String>,
-    published_at: Option<i64>,
-    read: bool,
-    starred: bool,
-    summary: Option<String>,
-    /// 该条目的标签名（只回名称；写工具的 tag_id 用 list_tags 取）。
-    /// 超过 [`tag_tools::TAGS_PER_ENTRY_MAX`] 时截断并置 `tags_truncated`
-    tags: Vec<String>,
-    #[serde(skip_serializing_if = "std::ops::Not::not")]
-    tags_truncated: bool,
-}
-
-#[derive(Serialize)]
-struct FolderOut {
-    id: i64,
-    name: String,
-    unread: i64,
 }
 
 #[derive(Clone)]
@@ -446,320 +342,43 @@ impl RustRssMcp {
     }
 
     pub fn list_feeds_json(&self) -> String {
-        self.with_store(|store| match store.list_feeds() {
-            Ok(feeds) => {
-                let out: Vec<FeedOut> = feeds
-                    .into_iter()
-                    .map(|f| FeedOut {
-                        id: f.id,
-                        title: f.title,
-                        url: f.url,
-                        site_url: f.site_url,
-                        unread: f.unread,
-                        status: f.last_status,
-                        error: f.last_error,
-                    })
-                    .collect();
-                to_json(&serde_json::json!({
-                    "count": out.len(),
-                    "feeds": out,
-                }))
-            }
-            Err(e) => error_json(&e.to_string()),
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "list_feeds", &serde_json::json!({})))
     }
 
     pub fn list_articles_json(&self, p: &ListArticlesParams) -> String {
-        // 两个源过滤是两种口径（单源 / 多源），同时给无从裁决 → 直接报错
-        if p.feed_id.is_some() && p.folder_id.is_some() {
-            return error_json("feed_id 与 folder_id 只能用一个（二者互斥）");
-        }
-        // 标签过滤同样二选一：id 与名称同时给无从裁决
-        if p.tag_id.is_some() && p.tag_name.is_some() {
-            return tag_tools::error_body(
-                tag_tools::ERROR_INVALID_ARGUMENT,
-                "tag_id 与 tag_name 只能用一个（二者互斥）",
-            );
-        }
-        let sort = match parse_sort(p.sort.as_deref()) {
-            Ok(s) => s,
-            Err(e) => return error_json(&e),
-        };
-        let cursor = match Cursor::parse(p.cursor.as_deref(), sort) {
-            Ok(c) => c,
-            Err(e) => return error_json(&e),
-        };
-        let page_size = clamp_limit(p.page_size.or(p.limit));
-        self.with_store(|store| {
-            // 分组过滤：先把 folder_id 解析成该分组下全部源 id，再走 core 的多源 IN。
-            // 空分组解析出空列表，core 对空列表的语义是「匹配零条」
-            // （绝不能退化成「不过滤」把全库倒给 agent）。
-            let feed_ids = match p.folder_id {
-                Some(folder_id) => match store.feed_ids_in_folder(folder_id) {
-                    Ok(ids) => Some(ids),
-                    Err(e) => return error_json(&e.to_string()),
-                },
-                None => None,
-            };
-            // 标签过滤：tag_name 在这里解析成 id（大小写不敏感，与 UNIQUE COLLATE NOCASE
-            // 同口径）；未知标签 → 机器可读的 `tag_not_found`，而不是静默空列表
-            let tag_id = match tag_tools::resolve_tag_filter(store, p.tag_id, p.tag_name.as_deref())
-            {
-                Ok(v) => v,
-                Err(e) => return tag_tools::error_body(e.code, &e.message),
-            };
-            let query = EntryQuery {
-                folder_id: None, // MCP already resolves folder membership into feed_ids.
-                feed_id: p.feed_id,
-                feed_ids,
-                unread_only: p.unread_only,
-                starred_only: p.starred_only,
-                read_later_only: p.read_later_only,
-                since: p.since,
-                until: p.until,
-                limit: Some(page_size),
-                cursor: cursor.map(|c| (c.sortkey, c.id)),
-                cursor_read: cursor.and_then(|c| c.read),
-                // MCP 默认口径固定（不继承界面设置）：显式传参才偏离默认
-                sort: Some(sort),
-                hide_read: Some(p.hide_read.unwrap_or(false)),
-                tag_id,
-            };
-            match store.list_entries(&query) {
-                Ok(rows) => {
-                    let items: Vec<ArticleMetaOut> = rows.iter().map(meta_out).collect();
-                    // 只在「满页」时给下一页游标：不满页说明已到底，
-                    // 再给游标会让客户端多翻一页空的（对 agent 是浪费一轮）
-                    let next_cursor = if items.len() == page_size as usize {
-                        rows.last().map(|r| {
-                            Cursor {
-                                sort,
-                                sortkey: r.sortkey,
-                                id: r.id,
-                                read: match sort {
-                                    ListSort::UnreadFirst => Some(r.read),
-                                    _ => None,
-                                },
-                            }
-                            .encode()
-                        })
-                    } else {
-                        None
-                    };
-                    to_json(&serde_json::json!({
-                        "count": items.len(),
-                        "page_size": page_size,
-                        "articles": items,
-                        "next_cursor": next_cursor,
-                        "hint": "正文请用 get_article(id) 单独取；翻页把 next_cursor 原样回传",
-                    }))
-                }
-                Err(e) => error_json(&e.to_string()),
-            }
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "list_articles", &serde_json::to_value(p).expect("typed tool parameters")))
     }
 
     /// 分组清单 + 每组未读合计（未分组单列）
     pub fn list_folders_json(&self) -> String {
-        self.with_store(|store| match store.unread_summary(UnreadGroupBy::Folder) {
-            Ok(groups) => {
-                let folders: Vec<FolderOut> = groups
-                    .iter()
-                    .filter_map(|g| {
-                        g.id.map(|id| FolderOut {
-                            id,
-                            name: g.name.clone(),
-                            unread: g.unread,
-                        })
-                    })
-                    .collect();
-                let ungrouped_unread = groups
-                    .iter()
-                    .find(|g| g.id.is_none())
-                    .map(|g| g.unread)
-                    .unwrap_or(0);
-                let total_unread: i64 = groups.iter().map(|g| g.unread).sum();
-                to_json(&serde_json::json!({
-                    "count": folders.len(),
-                    "folders": folders,
-                    "ungrouped_unread": ungrouped_unread,
-                    "total_unread": total_unread,
-                }))
-            }
-            Err(e) => error_json(&e.to_string()),
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "list_folders", &serde_json::json!({})))
     }
 
     /// 日报列表：元数据 + ≤140 字概览（默认 10、上限 50，按日期倒序）
     pub fn digest_list_json(&self, p: &DigestListParams) -> String {
-        let limit = clamp_limit(p.limit);
-        self.with_store(|store| match store.digest_list(limit) {
-            Ok(items) => {
-                let list: Vec<serde_json::Value> = items
-                    .iter()
-                    .map(|i| {
-                        serde_json::json!({
-                            "date": i.report_day,
-                            "scope_key": i.scope_key,
-                            "generated_at": i.generated_at,
-                            "article_count": i.article_count,
-                            // ≤140 字概览；报告正文走 digest_get 单取
-                            "overview": i.overview,
-                        })
-                    })
-                    .collect();
-                to_json(&serde_json::json!({ "count": list.len(), "digests": list }))
-            }
-            Err(e) => error_json(&e.to_string()),
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "digest_list", &serde_json::to_value(p).expect("typed tool parameters")))
     }
 
     /// 单份日报：头 + 正文（Markdown）+ 来源清单分页（默认 10、上限 50）
     pub fn digest_get_json(&self, p: &DigestGetParams) -> String {
-        let scope_key = p.scope_key.as_deref().unwrap_or("all");
-        let page_size = clamp_limit(p.items_page_size);
-        let page = p.items_page.unwrap_or(1).max(1);
-        self.with_store(|store| match store.digest_report(&p.date, scope_key) {
-            Ok(Some(report)) => {
-                // 来源清单分页（内存切片：清单上限即 200，无需 SQL 游标）
-                let total = report.items.len();
-                let start = ((page - 1) as usize * page_size as usize).min(total);
-                let end = (start + page_size as usize).min(total);
-                let items: Vec<serde_json::Value> = report.items[start..end]
-                    .iter()
-                    .map(|i| {
-                        serde_json::json!({
-                            "title": i.title,
-                            "feed_id": i.feed_id,
-                            // agent 可用 get_article(feed 过滤) 取正文
-                            "effective_at": i.effective_at,
-                        })
-                    })
-                    .collect();
-                // 正文上限：日报本身有 200 篇预算，成品 Markdown 天然有界；
-                // 仍按响应口径设硬顶，超出显式标注（不静默截断语义）
-                const MARKDOWN_MAX: usize = 32 * 1024;
-                let (markdown, truncated) = if report.markdown.len() > MARKDOWN_MAX {
-                    // 按 UTF-8 字符边界截断
-                    let mut cut = MARKDOWN_MAX;
-                    while !report.markdown.is_char_boundary(cut) {
-                        cut -= 1;
-                    }
-                    (report.markdown[..cut].to_string(), true)
-                } else {
-                    (report.markdown.clone(), false)
-                };
-                to_json(&serde_json::json!({
-                    "date": report.date,
-                    "scope_key": report.scope_key,
-                    "generated_at": report.generated_at,
-                    "checkpoint_at": report.checkpoint_at,
-                    "article_count": report.article_count,
-                    "cache_hits": report.cache_hits,
-                    "markdown": markdown,
-                    "markdown_truncated": truncated,
-                    "sources": {
-                        "total": total,
-                        "page": page,
-                        "page_size": page_size,
-                        "items": items,
-                    },
-                }))
-            }
-            Ok(None) => error_json(&format!(
-                "未找到 {date}（范围 {scope_key}）的日报；先用 digest_list 取可用日期",
-                date = p.date
-            )),
-            Err(e) => error_json(&e.to_string()),
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "digest_get", &serde_json::to_value(p).expect("typed tool parameters")))
     }
 
     /// 未读聚合（按源或按分组）
     pub fn unread_summary_json(&self, p: &UnreadSummaryParams) -> String {
-        let by = match p.by.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
-            None | Some("feed") => UnreadGroupBy::Feed,
-            Some("folder") => UnreadGroupBy::Folder,
-            Some(other) => {
-                return error_json(&format!("by 只支持 feed / folder，收到 {other:?}"))
-            }
-        };
-        self.with_store(|store| match store.unread_summary(by) {
-            Ok(groups) => {
-                let total_unread: i64 = groups.iter().map(|g| g.unread).sum();
-                to_json(&serde_json::json!({
-                    "by": match by {
-                        UnreadGroupBy::Feed => "feed",
-                        UnreadGroupBy::Folder => "folder",
-                    },
-                    "count": groups.len(),
-                    "total_unread": total_unread,
-                    "groups": groups,
-                }))
-            }
-            Err(e) => error_json(&e.to_string()),
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "get_unread_summary", &serde_json::to_value(p).expect("typed tool parameters")))
     }
 
     pub fn get_article_json(&self, p: &GetArticleParams) -> String {
-        self.with_store(|store| match store.get_entry(p.id) {
-            Ok(Some(row)) => {
-                let text = row.content_text.unwrap_or_default();
-                let mut body = serde_json::json!({
-                    "id": row.id,
-                    "feed": row.feed_title,
-                    "title": row.title,
-                    "url": row.url,
-                    "published_at": row.published_at,
-                    "read": row.read,
-                    "starred": row.starred,
-                    // 纯文本：agent 绝大多数场景只需要这个
-                    "text": text,
-                });
-                if p.include_html {
-                    body["html"] = serde_json::json!(row.content_html);
-                }
-                to_json(&body)
-            }
-            Ok(None) => error_json(&format!("未找到条目 {}；先用 list_articles 取 id", p.id)),
-            Err(e) => error_json(&e.to_string()),
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "get_article", &serde_json::to_value(p).expect("typed tool parameters")))
     }
 
     pub fn search_articles_json(&self, p: &SearchParams) -> String {
-        let limit = clamp_limit(p.limit);
-        self.with_store(|store| match store.search(&p.query, limit) {
-            Ok(rows) => {
-                let items: Vec<ArticleMetaOut> = rows.iter().map(meta_out).collect();
-                to_json(&serde_json::json!({
-                    "query": p.query,
-                    "count": items.len(),
-                    "articles": items,
-                }))
-            }
-            Err(e) => error_json(&e.to_string()),
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "search_articles", &serde_json::to_value(p).expect("typed tool parameters")))
     }
 
     pub fn db_stats_json(&self) -> String {
-        self.with_store(|store| {
-            let feeds = store.list_feeds().map(|f| f.len()).unwrap_or(0);
-            let entries = store.entry_count().unwrap_or(0);
-            let unread = store.unread_total().unwrap_or(0);
-            let starred = store
-                .list_entries(&EntryQuery {
-                    starred_only: true,
-                    limit: Some(1),
-                    ..Default::default()
-                })
-                .map(|v| v.len())
-                .unwrap_or(0);
-            to_json(&serde_json::json!({
-                "feeds": feeds,
-                "entries": entries,
-                "unread": unread,
-                "has_starred": starred > 0,
-            }))
-        })
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "db_stats", &serde_json::json!({})))
     }
 }
 
@@ -1180,61 +799,6 @@ pub async fn serve_stdio(server: RustRssMcp) -> anyhow::Result<()> {
     let service = server.serve(stdio()).await?;
     service.waiting().await?;
     Ok(())
-}
-
-fn meta_out(row: &rustrss_core::EntryRow) -> ArticleMetaOut {
-    ArticleMetaOut {
-        id: row.id,
-        feed: row.feed_title.clone(),
-        title: row.title.clone(),
-        url: row.url.clone(),
-        published_at: row.published_at,
-        read: row.read,
-        starred: row.starred,
-        summary: row.summary.as_deref().map(truncate),
-        tags: row
-            .tags
-            .iter()
-            .take(tag_tools::TAGS_PER_ENTRY_MAX)
-            .map(|t| t.name.clone())
-            .collect(),
-        tags_truncated: row.tags.len() > tag_tools::TAGS_PER_ENTRY_MAX,
-    }
-}
-
-fn truncate(text: &str) -> String {
-    let cleaned = text.split_whitespace().collect::<Vec<_>>().join(" ");
-    if cleaned.chars().count() <= SUMMARY_CHARS {
-        return cleaned;
-    }
-    let cut: String = cleaned.chars().take(SUMMARY_CHARS).collect();
-    format!("{cut}…")
-}
-
-fn clamp_limit(limit: Option<u32>) -> u32 {
-    limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT)
-}
-
-/// 排序档参数解析：`None`/空串 = 默认 `newest`；其它不合法值**报错**，
-/// 不静默回默认（agent 写错档位时希望被告知，而不是拿到它没要的顺序）。
-fn parse_sort(raw: Option<&str>) -> std::result::Result<ListSort, String> {
-    match raw.map(str::trim).filter(|v| !v.is_empty()) {
-        None => Ok(ListSort::Newest),
-        Some("newest") => Ok(ListSort::Newest),
-        Some("oldest") => Ok(ListSort::Oldest),
-        Some("unread_first") => Ok(ListSort::UnreadFirst),
-        Some(other) => Err(format!(
-            "sort 只支持 newest / oldest / unread_first，收到 {other:?}"
-        )),
-    }
-}
-
-fn to_json<T: Serialize>(value: &T) -> String {
-    serde_json::to_string(value).unwrap_or_else(|e| error_json(&format!("序列化失败: {e}")))
-}
-
-fn error_json(message: &str) -> String {
-    serde_json::json!({ "error": message }).to_string()
 }
 
 #[cfg(test)]

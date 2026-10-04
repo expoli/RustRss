@@ -22,6 +22,8 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls", "j
 # 与 core 同口径：tls_certs_only(webpki_root_certs())，用 core 的导出 helper，无需直接依赖根集 crate
 
 [dev-dependencies]
+# Two connections to one fixture verify exact shared read-tool projections.
+tempfile = "3"
 # stdio 冒烟测试要拉起真子进程并逐行读写协议通道
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "process", "time", "test-util"] }
 # 测试里当 HTTP 客户端用（与 rustrss-core 用的是同一个客户端）

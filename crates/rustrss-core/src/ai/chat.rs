@@ -44,6 +44,12 @@ pub enum ChatBlock {
         data_json: String,
         error: Option<String>,
     },
+    /// Opaque provider-required part adjacent to its call, never displayed as
+    /// assistant text. Gemini thinking models require the original signature.
+    ProviderReplay {
+        provider: String,
+        part_json: String,
+    },
 }
 
 /// 工具声明；参数使用 JSON Schema 子集，执行时仍须由工具层校验。
@@ -54,7 +60,7 @@ pub struct ChatTool {
     pub parameters_json: Value,
 }
 
-/// 每用户回合护栏；未来执行层负责累计次数和超时。
+/// 每用户回合护栏；chat_agent 执行层负责累计次数和超时。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChatLimits {
     pub max_model_requests: u32,
@@ -146,13 +152,37 @@ pub fn encode_chat_request(provider: Provider, request: &ChatRequest) -> Result<
             ChatRole::Assistant if provider == Provider::Gemini => "model",
             ChatRole::Assistant => "assistant",
         };
-        let mut parts = Vec::new();
+        let mut parts: Vec<Value> = Vec::new();
         let mut tool_results = Vec::new();
         let mut text = String::new();
         let mut tool_calls = Vec::new();
         let flat = matches!(provider, Provider::OpenAiCompatible | Provider::Ollama);
         for block in &message.blocks {
             match block {
+                ChatBlock::ProviderReplay {
+                    provider: replay_provider,
+                    part_json,
+                } => {
+                    if provider == Provider::Gemini && replay_provider == "gemini" {
+                        let original = request_json(part_json)?;
+                        let previous = parts.last_mut().ok_or_else(|| {
+                            AiError::Request("Gemini replay part must follow its tool call".into())
+                        })?;
+                        if message.role != ChatRole::Assistant
+                            || original
+                                .get("thoughtSignature")
+                                .and_then(Value::as_str)
+                                .is_none()
+                            || original.get("functionCall").is_none()
+                            || original.get("functionCall") != previous.get("functionCall")
+                        {
+                            return Err(AiError::Request(
+                                "Gemini replay part does not match its tool call".into(),
+                            ));
+                        }
+                        *previous = original;
+                    }
+                }
                 ChatBlock::Text(value) => {
                     if flat {
                         text.push_str(value);
@@ -377,9 +407,17 @@ pub fn decode_chat_response(provider: Provider, value: &Value) -> Result<ChatRes
                         name: response_str(call, "name")?.into(),
                         args_json: response_args(&call["args"], false)?,
                     });
+                    if part["thoughtSignature"].is_string() {
+                        blocks.push(ChatBlock::ProviderReplay {
+                            provider: "gemini".into(),
+                            part_json: part.to_string(),
+                        });
+                    }
                     call_index += 1;
-                } else if let Some(text) = part["text"].as_str() {
-                    blocks.push(ChatBlock::Text(text.into()));
+                } else if part["thought"] != Value::Bool(true) {
+                    if let Some(text) = part["text"].as_str() {
+                        blocks.push(ChatBlock::Text(text.into()));
+                    }
                 }
             }
             if provider == Provider::Anthropic {

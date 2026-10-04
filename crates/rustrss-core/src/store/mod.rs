@@ -1213,6 +1213,42 @@ impl Store {
         Ok(rows.pop())
     }
 
+    /// Chat-only body read: SQLite clips before allocating Rust strings; scope is
+    /// applied in SQL, before any out-of-scope body can be returned.
+    pub fn get_entry_bounded(
+        &self,
+        id: i64,
+        feed_ids: Option<&[i64]>,
+        max_chars: usize,
+    ) -> Result<Option<(EntryRow, bool)>> {
+        let select = ENTRY_SELECT.replace(
+            "e.content_html, e.content_text",
+            &format!("substr(e.content_html,1,{max_chars}), substr(e.content_text,1,{max_chars})"),
+        );
+        let mut sql = format!("{select} WHERE e.id = ?");
+        let mut values = vec![Value::Integer(id)];
+        append_feed_scope(&mut sql, &mut values, feed_ids);
+        let mut rows = self.query_entries(&sql, values, map_entry_row_list)?;
+        let Some(row) = rows.pop() else {
+            return Ok(None);
+        };
+        let truncated: bool = self.conn.query_row(
+            "SELECT COALESCE(length(content_text),0) > ?2 OR COALESCE(length(content_html),0) > ?2 FROM entries WHERE id=?1",
+            params![id, max_chars as i64], |r| r.get(0))?;
+        Ok(Some((row, truncated)))
+    }
+
+    /// Scoped FTS query, using exactly the same search planner as MCP/UI.
+    pub fn search_scoped(
+        &self,
+        query: &str,
+        limit: u32,
+        feed_ids: Option<&[i64]>,
+    ) -> Result<Vec<EntryRow>> {
+        let (sql, values) = search_sql_scoped(query, limit, self.list_hide_read(), feed_ids);
+        self.query_entries(&sql, values, map_entry_row_list)
+    }
+
     /// 全文搜索：拉丁词、中文bigram/单字先走FTS5；单字再校验标题/正文。
     ///
     /// 搜索的排序仍是「相关度（bm25）优先 / 无词时按时间」——排序档是列表的展示
@@ -2297,15 +2333,41 @@ fn list_order_by(sort: ListSort) -> &'static str {
 }
 
 fn search_sql(query: &str, limit: u32, hide_read: bool) -> (String, Vec<Value>) {
+    search_sql_scoped(query, limit, hide_read, None)
+}
+
+fn append_feed_scope(sql: &mut String, values: &mut Vec<Value>, feed_ids: Option<&[i64]>) {
+    if let Some(ids) = feed_ids {
+        if ids.is_empty() {
+            sql.push_str(" AND 0");
+        } else {
+            sql.push_str(&format!(
+                " AND e.feed_id IN ({})",
+                vec!["?"; ids.len()].join(",")
+            ));
+            values.extend(ids.iter().map(|id| Value::Integer(*id)));
+        }
+    }
+}
+
+fn search_sql_scoped(
+    query: &str,
+    limit: u32,
+    hide_read: bool,
+    feed_ids: Option<&[i64]>,
+) -> (String, Vec<Value>) {
     let plan = plan_query(query);
     if plan.rank_by_relevance && plan.like_terms.is_empty() {
-        return ranked_search_sql(&plan.fts, limit, hide_read);
+        return ranked_search_sql(&plan.fts, limit, hide_read, feed_ids);
     }
     let mut values = Vec::new();
     let mut sql = entry_list_sql(if !plan.rank_by_relevance && !plan.fts.is_empty() {
         Some(ListSort::Newest)
-    } else { None });
+    } else {
+        None
+    });
     append_search_filter(&mut sql, &mut values, query, hide_read);
+    append_feed_scope(&mut sql, &mut values, feed_ids);
     if plan.rank_by_relevance {
         sql.push_str(" ORDER BY bm25(entries_fts), COALESCE(e.published_at, e.fetched_at) DESC");
     } else {
@@ -2320,6 +2382,7 @@ fn ranked_search_sql(
     fts_query: &str,
     limit: u32,
     hide_read: bool,
+    feed_ids: Option<&[i64]>,
 ) -> (String, Vec<Value>) {
     let mut sql = String::from(
         "WITH hits AS MATERIALIZED (
@@ -2333,6 +2396,7 @@ fn ranked_search_sql(
     if hide_read {
         sql.push_str(" AND e.read = 0");
     }
+    append_feed_scope(&mut sql, &mut values, feed_ids);
     sql.push_str(
         " ORDER BY relevance, sortkey DESC, e.id DESC LIMIT ?
         )
@@ -2745,7 +2809,7 @@ mod scoped_list_plan_tests {
     #[test]
     fn ranked_search_limits_before_loading_entry_metadata_and_requires_covering_index() {
         let store = Store::open_in_memory().unwrap();
-        let (sql, values) = ranked_search_sql("\"common\"", 200, true);
+        let (sql, values) = ranked_search_sql("\"common\"", 200, true, None);
         let explain = || {
             let mut stmt = store.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
             let rows = stmt.query_map(params_from_iter(values.clone()), |r| {

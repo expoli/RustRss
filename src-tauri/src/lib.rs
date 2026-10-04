@@ -386,6 +386,7 @@ pub fn run() {
             commands::digest_list,
             commands::digest_generate,
             commands::chat_send,
+            commands::chat_capability,
             commands::chat_stop,
             commands::chat_sessions_list,
             commands::chat_session_get,

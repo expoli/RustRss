@@ -583,3 +583,51 @@ fn anthropic_and_gemini_response_preserves_interleaved_text_and_calls() {
         );
     }
 }
+
+#[test]
+fn gemini_signed_function_part_is_replayed_opaque_and_other_providers_ignore_it() {
+    let signed = json!({"functionCall":{"name":"search_articles","args":{"query":"Rust"}},"thoughtSignature":"opaque+/signature=="});
+    let value = json!({"candidates":[{"content":{"parts":[{"thought":true,"text":"private thought"},signed.clone() ]},"finishReason":"STOP"}]});
+    let response = decode_chat_response(Provider::Gemini, &value).unwrap();
+    assert_eq!(response.blocks.len(), 2);
+    assert!(
+        matches!(&response.blocks[1], ChatBlock::ProviderReplay{provider,part_json} if provider=="gemini" && serde_json::from_str::<Value>(part_json).unwrap()==signed)
+    );
+    let request = ChatRequest {
+        system: None,
+        messages: vec![ChatMessage {
+            role: ChatRole::Assistant,
+            blocks: response.blocks,
+        }],
+        tools: vec![],
+        limits: ChatLimits::default(),
+    };
+    let encoded = encode_chat_request(Provider::Gemini, &request).unwrap();
+    assert_eq!(encoded["contents"][0]["parts"][0], signed);
+    assert!(!encoded.to_string().contains("private thought"));
+    let openai = encode_chat_request(Provider::OpenAiCompatible, &request).unwrap();
+    assert!(!openai.to_string().contains("thoughtSignature"));
+    assert_eq!(
+        openai["messages"][0]["tool_calls"][0]["function"]["name"],
+        "search_articles"
+    );
+}
+
+#[test]
+fn gemini_replay_must_follow_its_matching_call() {
+    let req = ChatRequest {
+        system: None,
+        messages: vec![ChatMessage {
+            role: ChatRole::Assistant,
+            blocks: vec![ChatBlock::ProviderReplay {
+                provider: "gemini".into(),
+                part_json:
+                    json!({"functionCall":{"name":"db_stats","args":{}},"thoughtSignature":"s"})
+                        .to_string(),
+            }],
+        }],
+        tools: vec![],
+        limits: ChatLimits::default(),
+    };
+    assert!(encode_chat_request(Provider::Gemini, &req).is_err());
+}

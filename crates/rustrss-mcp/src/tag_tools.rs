@@ -17,11 +17,11 @@
 
 use rustrss_core::{EntryScope, StoreError, TagAssignReport, TagRow, TagTarget};
 use schemars::JsonSchema;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::write_contract::{self, ItemResult, WriteOutcome, MAX_BATCH_IDS};
-use crate::write_tools::{internal_error, scope_json, ERROR_ARTICLE_NOT_FOUND, ERROR_INTERNAL};
+use crate::write_tools::{internal_error, scope_json, ERROR_ARTICLE_NOT_FOUND};
 use crate::RustRssMcp;
 
 // ---------------------------------------------------------------- 错误码（机器可读，README 同步）
@@ -32,16 +32,16 @@ pub const ERROR_INVALID_ARGUMENT: &str = write_contract::ERROR_INVALID_ARGUMENT;
 
 /// `list_tags` 一次最多回多少个标签（超出时 `truncated=true` + `total` 给全量口径，
 /// 不静默丢也不无上限地倒给 agent）。
-pub const TAG_LIST_MAX: usize = 200;
+pub const TAG_LIST_MAX: usize = rustrss_core::ai::tools::TAG_LIST_MAX;
 
 /// 单篇条目最多回多少个标签名（超出置 `tags_truncated=true`；一个条目的标签数
 /// 通常个位数，这个上限只为挡住「一个条目挂几百个标签」的极端情况）。
-pub const TAGS_PER_ENTRY_MAX: usize = 20;
+pub const TAGS_PER_ENTRY_MAX: usize = rustrss_core::ai::tools::TAGS_PER_ENTRY_MAX;
 
 // ---------------------------------------------------------------- 入参
 
 /// `list_tags` 的参数
-#[derive(Debug, Default, Deserialize, JsonSchema)]
+#[derive(Debug, Default, Deserialize, Serialize, JsonSchema)]
 #[serde(default)]
 pub struct ListTagsParams {
     /// 排序档：`sidebar`（默认：置顶优先 → 手动顺序 → 名称）或
@@ -102,39 +102,7 @@ pub struct DeleteTagParams {
 impl RustRssMcp {
     /// 标签清单：元数据 + 未读计数；带上限与显式截断标记。
     pub fn list_tags_json(&self, p: &ListTagsParams) -> String {
-        let sort = match p.sort.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-            None | Some("sidebar") => "sidebar",
-            Some("recent") => "recent",
-            Some(other) => {
-                return error_body(
-                    ERROR_INVALID_ARGUMENT,
-                    &format!("sort 只支持 sidebar / recent，收到 {other:?}"),
-                )
-            }
-        };
-        let listed = self.with_store(|store| {
-            if sort == "recent" {
-                store.list_tags_recent_first()
-            } else {
-                store.list_tags()
-            }
-        });
-        match listed {
-            Ok(rows) => {
-                let total = rows.len();
-                let tags: Vec<Value> = rows.iter().take(TAG_LIST_MAX).map(tag_json).collect();
-                json!({
-                    "count": tags.len(),
-                    "total": total,
-                    "truncated": total > TAG_LIST_MAX,
-                    "sort": sort,
-                    "tags": tags,
-                    "hint": "标签行只有元数据（无条目正文）；写工具的 tag_id 取自这里",
-                })
-                .to_string()
-            }
-            Err(e) => error_body(ERROR_INTERNAL, &format!("读库失败: {e}")),
-        }
+        self.with_store(|store| rustrss_core::ai::tools::project_tool(store, "list_tags", &serde_json::to_value(p).expect("typed tool parameters")))
     }
 
     pub fn create_tag_json(&self, p: &CreateTagParams) -> String {
@@ -341,59 +309,6 @@ impl RustRssMcp {
 
 // ---------------------------------------------------------------- 纯函数帮手
 
-/// `list_articles` 标签过滤参数的解析错误（机器可读码 + 人读说明）
-pub(crate) struct TagFilterError {
-    pub code: &'static str,
-    pub message: String,
-}
-
-/// 解析 `list_articles` 的标签过滤：`tag_id` / `tag_name` 互斥由调用方先判，
-/// 这里把 `tag_name` 解析成 id（大小写不敏感，与 `tags.name` 的 `UNIQUE COLLATE NOCASE`
-/// 同口径）。未知标签 / 空名称 → 机器可读错误——**不静默返回空列表**，否则 agent 会把
-/// 「没有这个标签」读成「这个标签下没有文章」。
-pub(crate) fn resolve_tag_filter(
-    store: &rustrss_core::Store,
-    tag_id: Option<i64>,
-    tag_name: Option<&str>,
-) -> std::result::Result<Option<i64>, TagFilterError> {
-    if let Some(id) = tag_id {
-        return match store.tag_row(id) {
-            Ok(Some(_)) => Ok(Some(id)),
-            Ok(None) => Err(TagFilterError {
-                code: ERROR_TAG_NOT_FOUND,
-                message: format!("标签 #{id} 不存在；先用 list_tags 取 id"),
-            }),
-            Err(e) => Err(TagFilterError {
-                code: ERROR_INTERNAL,
-                message: format!("读库失败: {e}"),
-            }),
-        };
-    }
-    let Some(raw) = tag_name else {
-        return Ok(None);
-    };
-    let needle = raw.trim();
-    if needle.is_empty() {
-        return Err(TagFilterError {
-            code: ERROR_INVALID_ARGUMENT,
-            message: "tag_name 不能为空（要给名称就给个有值的）".to_string(),
-        });
-    }
-    match store.list_tags() {
-        Ok(rows) => match rows.iter().find(|t| t.name.eq_ignore_ascii_case(needle)) {
-            Some(row) => Ok(Some(row.id)),
-            None => Err(TagFilterError {
-                code: ERROR_TAG_NOT_FOUND,
-                message: format!("标签 {needle:?} 不存在；先用 list_tags 取名称"),
-            }),
-        },
-        Err(e) => Err(TagFilterError {
-            code: ERROR_INTERNAL,
-            message: format!("读库失败: {e}"),
-        }),
-    }
-}
-
 /// 标签 id 批量闸门：空 / 超 100 都是 `invalid_argument`（不静默截断）
 fn check_tag_ids(tag_ids: &[i64]) -> std::result::Result<(), String> {
     if tag_ids.is_empty() {
@@ -451,14 +366,10 @@ fn store_error_body(err: StoreError) -> String {
     }
 }
 
-/// 读工具的机器可读错误（与写信封同形：`error_code` + `error`，agent 不必记第二套解包规则）
-pub(crate) fn error_body(code: &str, message: &str) -> String {
-    json!({ "error_code": code, "error": message }).to_string()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::write_tools::ERROR_INTERNAL;
     use crate::RustRssMcp;
     use rustrss_core::{Entry, IdOrigin, Store};
 

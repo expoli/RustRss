@@ -23,7 +23,10 @@ fn seed_missing_report_allows_no_report_session() {
         prepare_chat_turn(&store, &client(), None, Some("2026-10-04"), None, "问题").unwrap();
     assert_eq!(turn.request.messages.len(), 1);
     assert!(turn.request.system.unwrap().contains("没有日报"));
-    assert!(turn.request.tools.is_empty());
+    assert_eq!(turn.request.tools.len(), 10);
+    assert_eq!(turn.request.limits.max_model_requests, 6);
+    assert_eq!(turn.request.limits.max_tool_calls, 10);
+    assert_eq!(turn.scope_key, "all");
     assert!(store.chat_has_running(turn.session_id).unwrap());
 }
 

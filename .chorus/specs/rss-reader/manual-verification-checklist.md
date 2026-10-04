@@ -1383,3 +1383,17 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 加载延迟由 inspector 临时 IPC 包装器注入，仅用于测试；返回的会话来自真实 Rust/SQLite。产品代码没有加入调试钩子或设置显示后端。
 - Xvfb 无 WM；Android/真实 IME、Wayland、Windows/macOS 与真实 BYOK 未验证。切语言与迟到删除/成功回执以 deferred JS 回归为证，不冒称跨平台实机通过。
 - 既有 `menu render selftest FAILED: checked 条目未打勾` 仍存在，本批未修改菜单。
+
+## 2026-10-04 · 对话助手阶段② Rust 只读资料助手
+
+### 机械验证（已验证）
+- `cargo test --workspace`：582 passed、1 个既有 ignored；本批新增 35 个测试（agent 25、tools 6、共享 MCP 投影 2、Gemini 签名 2），并更新会话白名单/预算断言。
+- MCP 全量 118 passed：10 个工具与同库 core 投影逐字节比较；大结果 UTF-8 前缀/截断 JSON 验证；既有只读/写授权/HTTP 安全/stdio 等回归不变。
+- 四 provider mock 多工具回灌、6 请求/10 工具硬顶与收紧 limits、同轮/跨轮重复熔断、12KiB 单结果/48KiB 累计证据、32k 已报告 usage 熔断、未知 usage 不估账单、取消/超时均通过。
+- 四家明确不支持工具的 400 → 无 tools 纯问答；本地 FTS 与绑定日报相关章节注入、结构性 seed 替换不改持久快照；401/429/超时/无效 schema 不降级。当前 tags 源范围在真实 agent callback/FTS/正文/统计内强制注入；日报先范围过滤再日期去重/LIMIT，缺省范围注入与显式越界拒绝通过。
+- `cargo clippy --workspace --all-targets -- -D warnings`：零警告；`cargo build --workspace` 成功，`node --test scripts/tests/*.test.cjs` 既有 83/83 通过。无新增 UI/构建链/显示后端设置，无真实网络能力探测。
+
+### 未验证 / 环境限制
+- OpenAI 兼容、Anthropic、Gemini、Ollama 四家真实 BYOK 检索→取文→回答均**未验证**；签名/降级证据来自 mock，不能冒称真实服务商能力通过。
+- 未运行本批桌面/手机 UI 实机流程；工具过程/能力/降级字段已有 Rust payload，但前端消费下一批实施。可编辑降级检索关键词、来源引用、流式与设备验收仍未完成。
+- 查询按 scope_key 当前源标签成员执行；日报是冻结快照。受限范围 list_tags 暂拒绝 scope_unsupported，而非暴露全库计数。

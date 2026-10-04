@@ -134,10 +134,20 @@ impl Store {
     /// 历史报告列表（历史入口 / MCP digest_list）：元数据 + ≤140 字概览。
     /// 只取生成完成的行；概览经 json_extract 单列提取，不拉正文大列。
     pub fn digest_list(&self, limit: u32) -> super::Result<Vec<DigestListItem>> {
+        self.digest_list_scoped(limit, None)
+    }
+
+    /// Apply scope before per-day deduplication and LIMIT; filtering a global
+    /// page afterwards would hide scoped reports behind other-scope variants.
+    pub fn digest_list_scoped(
+        &self,
+        limit: u32,
+        scope_key: Option<&str>,
+    ) -> super::Result<Vec<DigestListItem>> {
         // 只读 digests（含 summary 列，CHECK ≤140）；绝不 JOIN 正文表（审核 R5-P1）。
         // 同日多范围/多配置变体按「最近生成」取一份（ROW_NUMBER 去重，LIMIT 在去重后
         // 生效——侧栏/列表的键是日期，重复键会让 keyed reconcile 合并行）。
-        let mut stmt = self.conn.prepare(
+        let mut sql = String::from(
             "SELECT report_day, scope_key, scope_json, profile_key,
                     generated_at, article_count, summary
                FROM (
@@ -151,8 +161,17 @@ impl Store {
               WHERE rn = 1
               ORDER BY report_day DESC
               LIMIT ?1",
-        )?;
-        let rows = stmt.query_map(params![limit], |r| {
+        );
+        let mut values = vec![rusqlite::types::Value::Integer(limit as i64)];
+        if let Some(key) = scope_key {
+            sql = sql.replace(
+                "WHERE d.generated_at IS NOT NULL",
+                "WHERE d.generated_at IS NOT NULL AND d.scope_key = ?2",
+            );
+            values.push(rusqlite::types::Value::Text(key.into()));
+        }
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(values), |r| {
             Ok(DigestListItem {
                 report_day: r.get(0)?,
                 scope_key: r.get(1)?,
@@ -168,12 +187,10 @@ impl Store {
 
     /// 有日报的日期（历史入口用；不读正文）。
     pub fn digest_days(&self) -> super::Result<Vec<String>> {
-        let mut stmt = self
-            .conn
-            .prepare(
-                "SELECT DISTINCT report_day FROM digests
+        let mut stmt = self.conn.prepare(
+            "SELECT DISTINCT report_day FROM digests
                   WHERE generated_at IS NOT NULL ORDER BY report_day DESC",
-            )?;
+        )?;
         let rows = stmt.query_map([], |r| r.get(0))?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
@@ -184,46 +201,89 @@ impl Store {
         date: &str,
         scope_key: &str,
     ) -> super::Result<Option<DigestReport>> {
+        self.digest_report_inner(date, scope_key, None)
+            .map(|row| row.map(|(report, _)| report))
+    }
+
+    /// Chat-only excerpt read. Clip Markdown in SQLite and skip the structured
+    /// content body entirely; the legacy MCP/report reader remains unbounded.
+    pub fn digest_report_bounded(
+        &self,
+        date: &str,
+        scope_key: &str,
+        max_chars: usize,
+    ) -> super::Result<Option<(DigestReport, bool)>> {
+        self.digest_report_inner(date, scope_key, Some(max_chars))
+    }
+
+    fn digest_report_inner(
+        &self,
+        date: &str,
+        scope_key: &str,
+        max_chars: Option<usize>,
+    ) -> super::Result<Option<(DigestReport, bool)>> {
         let conn = &self.conn;
         // 单一读事务：头、正文、素材清单绑定**同一个**报告身份（审核 P1-3）。
         // 变体选择：同日期+范围可有多个 profile 变体，取最近完成的一份。
         let tx = conn.unchecked_transaction()?;
-        let head = tx
-            .query_row(
-                "SELECT d.id, d.scope_json, d.profile_key, d.checkpoint_at, d.generated_at,
+        let mut sql = String::from(
+            "SELECT d.id, d.scope_json, d.profile_key, d.checkpoint_at, d.generated_at,
                         d.manifest_hash, b.markdown, b.content_json, d.article_count,
-                        COALESCE(json_extract(d.stats_json, '$.cache_hits'), 0)
+                        COALESCE(json_extract(d.stats_json, '$.cache_hits'), 0), 0 AS body_truncated
                    FROM digests d
                    JOIN digest_bodies b
                      ON b.digest_id = d.id AND b.revision = d.revision
                   WHERE d.report_day = ?1 AND d.scope_key = ?2
                     AND d.generated_at IS NOT NULL
                   ORDER BY d.generated_at DESC, d.id DESC LIMIT 1",
-                params![date, scope_key],
-                |r| {
-                    Ok((
-                        r.get::<_, i64>(0)?,
-                        r.get::<_, String>(1)?,
-                        r.get::<_, String>(2)?,
-                        r.get::<_, i64>(3)?,
-                        r.get::<_, i64>(4)?,
-                        r.get::<_, String>(5)?,
-                        r.get::<_, String>(6)?,
-                        r.get::<_, String>(7)?,
-                        r.get::<_, i64>(8)?,
-                        r.get::<_, i64>(9)?,
-                    ))
-                },
-            )
+        );
+        if let Some(max) = max_chars {
+            sql = sql
+                .replace(
+                    "b.markdown, b.content_json",
+                    &format!("substr(b.markdown,1,{max}), '{{}}'"),
+                )
+                .replace(
+                    "0 AS body_truncated",
+                    &format!("COALESCE(length(b.markdown),0) > {max} AS body_truncated"),
+                );
+        }
+        let head = tx
+            .query_row(&sql, params![date, scope_key], |r| {
+                Ok((
+                    r.get::<_, i64>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, i64>(3)?,
+                    r.get::<_, i64>(4)?,
+                    r.get::<_, String>(5)?,
+                    r.get::<_, String>(6)?,
+                    r.get::<_, String>(7)?,
+                    r.get::<_, i64>(8)?,
+                    r.get::<_, i64>(9)?,
+                    r.get::<_, bool>(10)?,
+                ))
+            })
             .map(Some)
             .or_else(|e| match e {
                 rusqlite::Error::QueryReturnedNoRows => Ok(None),
                 other => Err(super::StoreError::Sqlite(other)),
             })?;
-        let Some((digest_id, scope_json, profile_key, checkpoint_at, generated_at,
-                  manifest_hash, markdown, content_json, article_count, cache_hits)) = head
+        let Some((
+            digest_id,
+            scope_json,
+            profile_key,
+            checkpoint_at,
+            generated_at,
+            manifest_hash,
+            markdown,
+            content_json,
+            article_count,
+            cache_hits,
+            truncated,
+        )) = head
         else {
-            return Ok(None)
+            return Ok(None);
         };
 
         let mut stmt = tx.prepare(
@@ -247,20 +307,23 @@ impl Store {
             .collect::<rusqlite::Result<Vec<_>>>()?;
         drop(stmt);
         tx.commit()?;
-        Ok(Some(DigestReport {
-            date: date.into(),
-            scope_key: scope_key.into(),
-            scope_json,
-            profile_key,
-            checkpoint_at,
-            generated_at,
-            manifest_hash,
-            markdown,
-            content_json,
-            article_count,
-            cache_hits,
-            items,
-        }))
+        Ok(Some((
+            DigestReport {
+                date: date.into(),
+                scope_key: scope_key.into(),
+                scope_json,
+                profile_key,
+                checkpoint_at,
+                generated_at,
+                manifest_hash,
+                markdown,
+                content_json,
+                article_count,
+                cache_hits,
+                items,
+            },
+            truncated,
+        )))
     }
 
     /// 与已存报告的更新对比：走 `digest_entry_meta` 覆盖索引与报告素材清单，
