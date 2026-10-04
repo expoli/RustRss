@@ -82,6 +82,13 @@
     } else if (name === 'saved' && kind !== 'starred' && kind !== 'later') {
       pickView(savedMode);
     }
+    if (name === 'digest') {
+      // 日报页（设计 2026-10-04 #4）：今日/昨日/近期历史的日期列表。
+      // 渲染进 .right-col（与 reader 覆盖层同容器）；先退阅读层再进。
+      setPage('digest');
+      renderDigestHome();
+      return;
+    }
     setPage(name);
   }
 
@@ -119,6 +126,8 @@
     if (!entry) return; // 外来导航（理论不会有）：忽略
     if (entry.t === 'reader') {
       setPage(entry.returnPage);
+      // 日报详情占用了 right-col：返回日报页时重渲染日期列表
+      if (entry.returnPage === 'digest') renderDigestHome();
     } else if (entry.t === 'menu-page') {
       menuBackFromHistory = true;
       window.RustRssMenu?.back();
@@ -361,6 +370,70 @@
       el('add-row').classList.add('hidden');
     }
   }
+
+  // ---- 日报页（设计 2026-10-04 #4） ------------------------------------
+  /// 日报首页：今日/昨日/近期历史（digest_list 有界元数据），点击进阅读层。
+  function renderDigestHome() {
+    var t = window.I18N ? window.I18N.t : function (k) { return k; };
+    try {
+    var bridge = window.RustRssDigestBridge || {};
+    var days = bridge.days ? bridge.days() : [];
+    var list = [
+      { label: t('sidebar.digestToday'), kind: 'today' },
+      { label: t('sidebar.digestYesterday'), kind: 'yesterday' },
+    ];
+    var today = bridge.date ? bridge.date('today') : '';
+    var yesterday = bridge.date ? bridge.date('yesterday') : '';
+    var history = days.filter(function (d) {
+      return d.date !== today && d.date !== yesterday;
+    });
+    var html = '<div class="m-digest-home">';
+    html += '<h2 class="m-digest-title">' + t('m.nav.digest') + '</h2>';
+    list.forEach(function (d) {
+      var has = days.some(function (x) { return x.date === (bridge.date ? bridge.date(d.kind) : ''); });
+      html += '<button type="button" class="m-digest-row" data-digest-kind="' + d.kind + '">' +
+        d.label + (has ? ' <span class="dot">●</span>' : '') + '</button>';
+    });
+    if (history.length) {
+      html += '<h3 class="m-digest-sub">' + t('digest.history') + '</h3>';
+      history.forEach(function (d) {
+        html += '<button type="button" class="m-digest-row" data-digest-date="' + d.date + '" ' +
+          'data-digest-scope="' + (d.scope_key || 'all') + '">' + d.date +
+          ' · ' + (d.article_count || 0) + '</button>';
+      });
+    }
+    html += '</div>';
+    var host = document.querySelector('.right-col #reader');
+    if (!host) return;
+    host.innerHTML = html;
+    host.querySelectorAll('[data-digest-kind]').forEach(function (btn) {
+      btn.addEventListener('click', function () { bridge.open(btn.dataset.digestKind); });
+    });
+    host.querySelectorAll('[data-digest-date]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        bridge.openDate(btn.dataset.digestDate, btn.dataset.digestScope);
+      });
+    });
+    } catch (err) {
+      var host2 = document.querySelector('.right-col #reader');
+      if (host2) host2.innerHTML = '<div class="reader-empty">digest home error: ' + (err && err.message) + '</div>';
+    }
+    // 打开日报（openDigest* 渲染进 #reader 并设 reader 覆盖层），返回到日报首页
+    // 需要记位：返回按钮逻辑复用 data-mpage="digest" 的呈现。
+  }
+
+  // digest 首页渲染入口暴露给 app.js（digest_list 刷新时同步）；
+  // onDigestView：日报详情进共享阅读层，返回（#m-reader-back / 系统返回）回日报首页
+  window.RustRssMobileDigest = {
+    renderDigestHome: renderDigestHome,
+    // 日报详情进共享阅读层：显式压返回栈（returnPage=digest）。watchReader 的
+    // 观察器在 bodyPage 已变 reader 后会跳过压栈——这里不压，返回就落 articles。
+    onDigestView: function () {
+      returnPage = 'digest';
+      pushEntry({ t: 'reader', returnPage: 'digest' });
+      setPage('reader');
+    },
+  };
 
   // ---- 初始化 -----------------------------------------------------------
 

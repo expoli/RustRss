@@ -1495,10 +1495,24 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
 
   /* ---- 页面可见性矩阵 ---- */
   body:not([data-mpage="subscriptions"]) .sidebar { display: none; }
+  /* 日报页：right-col 承载日期列表（与 reader 覆盖层同容器） */
+  body[data-mpage="digest"] .list,
+  body[data-mpage="digest"] .sidebar { display: none; }
+  body[data-mpage="digest"] .right-col { display: block; position: absolute; inset: 0; z-index: 5; background: var(--bg); }
+  .m-digest-home { padding: 8px 4px 24px; }
+  .m-digest-title { margin: 0 0 8px; font-size: 20px; }
+  .m-digest-sub { margin: 14px 0 6px; font-size: 13px; color: var(--fg-dim); }
+  .m-digest-row {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; min-height: 48px; padding: 10px 8px;
+    background: none; border: none; border-bottom: 1px solid var(--line);
+    color: inherit; font: inherit; text-align: left; cursor: pointer;
+  }
+  .m-digest-row .dot { color: var(--accent); font-size: 10px; }
   body[data-mpage="subscriptions"] .list,
   body[data-mpage="subscriptions"] .right-col { display: none; }
   body:not([data-mpage="articles"]):not([data-mpage="saved"]):not([data-mpage="reader"]) .list { display: none; }
-  body:not([data-mpage="articles"]):not([data-mpage="saved"]):not([data-mpage="reader"]) .right-col { display: none; }
+  body:not([data-mpage="articles"]):not([data-mpage="saved"]):not([data-mpage="reader"]):not([data-mpage="digest"]) .right-col { display: none; }
 
   /* ---- 工具栏按页面裁剪：搜索/刷新归文章页，添加归订阅页；
           设置入口归底部导航，窗口三键桌面专属 ---- */
@@ -1561,6 +1575,19 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   #search-scope { order: 2; }
   body[data-list-kind="search"] #list-title { display: none; }
   .entries .meta { overflow: hidden; align-items: center; white-space: nowrap; }
+  /* 源名 = 语义按钮（跳该源文章列表）：继承 span 外观 + 轻下划线可点提示；
+     手机触控区 ≥44px 纵向（行内 flex 自适应，宽度截断长名） */
+  .entries .entry-source,
+  #reader .reader-head .meta .entry-source {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+  }
   .entries .entry-source { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .entries .entry-time { flex: none; }
   .entries .title { margin-top: 2px; line-height: 1.4; overflow-wrap: anywhere; }
@@ -1587,8 +1614,9 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   #m-reader-back .ui-icon { width: 22px; height: 22px; }
   /* 阅读页无 toolbar/m-nav：滚动正文自己避让上下系统栏 */
   .reader {
+    /* 左侧 58px = 返回钮（48px）+ 8px 间距：日报/文章头部的返回槽（评审） */
     padding: calc(8px + var(--inset-top, 0px)) 18px
-      calc(40px + var(--inset-bottom, 0px));
+      calc(40px + var(--inset-bottom, 0px)) 58px;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;

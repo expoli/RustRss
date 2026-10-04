@@ -125,6 +125,8 @@ const DICTS = {
 
     // 窄屏（手机/平板）页面式导航
     'm.nav.articles': '文章',
+    'm.nav.digest': '日报',
+    'digest.history': '近期日报',
     'm.nav.subscriptions': '订阅',
     'm.nav.saved': '收藏',
     'm.nav.settings': '设置',
@@ -245,8 +247,8 @@ const DICTS = {
     'confirm.cancel': '取消',
     'confirm.ok': '确定',
     'confirm.unsubscribeTitle': '取消订阅',
-    'confirm.unsubscribeOk': '删除',
-    'confirm.unsubscribeBody': '将删除「{name}」及其全部条目（含已读/星标状态），不可恢复。',
+    'confirm.unsubscribeOk': '退订并删除文章',
+    'confirm.unsubscribeBody': '将删除订阅源「{name}」及其全部本地文章，包括星标与稍后读，不可撤销。已生成的日报及素材快照会保留。',
     'status.unsubscribed': '已取消订阅：{name}',
     'menu.refreshInterval': '刷新间隔',
     'menu.refreshFollowGlobalWith': '跟随全局（{state}）',
@@ -773,6 +775,8 @@ const DICTS = {
 
     // Narrow-viewport (phone/tablet) page navigation
     'm.nav.articles': 'Articles',
+    'm.nav.digest': 'Digest',
+    'digest.history': 'Recent digests',
     'm.nav.subscriptions': 'Subscriptions',
     'm.nav.saved': 'Saved',
     'm.nav.settings': 'Settings',
@@ -879,6 +883,8 @@ const DICTS = {
     'reader.group.organize': 'Organize',
     'reader.group.link': 'Link and full text',
     'reader.group.ai': 'AI tools',
+    'reader.group.feed': 'Feed',
+    'reader.openFeed': 'View feed',
     'reader.markUnread': 'Mark unread',
     'reader.addStar': 'Star',
     'reader.removeStar': 'Unstar',
@@ -894,8 +900,8 @@ const DICTS = {
     'confirm.cancel': 'Cancel',
     'confirm.ok': 'OK',
     'confirm.unsubscribeTitle': 'Unsubscribe',
-    'confirm.unsubscribeOk': 'Delete',
-    'confirm.unsubscribeBody': 'This removes "{name}" and all its articles (including read/starred state). This cannot be undone.',
+    'confirm.unsubscribeOk': 'Unsubscribe and delete articles',
+    'confirm.unsubscribeBody': 'This removes the feed "{name}" and all its local articles, including starred and read-later items. This cannot be undone. Generated digests and their snapshots are kept.',
     'status.unsubscribed': 'Unsubscribed: {name}',
     'menu.refreshInterval': 'Refresh interval',
     'menu.refreshFollowGlobalWith': 'Follow the global setting ({state})',

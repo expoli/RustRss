@@ -900,9 +900,15 @@ function buildEntryRow(e) {
   const thumbnail = window.RustRssComponents.thumbnailImage(e.thumbnail_url, escapeHtml);
   li.innerHTML = window.RustRssComponents.entryContent({
     title: escapeHtml(e.title),
-    meta: `<span class="entry-source">${escapeHtml(e.feed_title)}</span><span class="entry-time">${fmtTime(e.published_at)}</span>${star}${laterMark}${tagChips}${tagBtn}`,
+    meta: `<button type="button" class="entry-source" data-feed-id="${e.feed_id}" title="${t('reader.openFeed')}">${escapeHtml(e.feed_title)}</button><span class="entry-time">${fmtTime(e.published_at)}</span>${star}${laterMark}${tagChips}${tagBtn}`,
     summary: e.summary ? escapeHtml(e.summary) : '',
     thumbnail,
+  });
+  // 源名 = 跳该源文章列表的语义按钮（设计 2026-10-04 #2）：阻断行点击（不打开
+  // 文章、不标已读）；手机上停在文章页、列表静默切源。
+  li.querySelector('.entry-source')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    setView({ kind: 'feed', feedId: e.feed_id }).catch((err) => setStatus(err.message, true));
   });
   // A failed remote thumbnail must not leave a broken-image box in a dense list.
   li.querySelector('.entry-thumbnail')?.addEventListener('error', (event) => event.currentTarget.remove());
@@ -1305,6 +1311,8 @@ async function openDigest(kind) {
 function renderDigestView(view) {
   readerToken++;
   digestOpenDate = view.date;
+  // 手机：日报在共享阅读层呈现（mobile.js 切 mpage=reader，返回钮/返回栈生效）
+  window.RustRssMobileDigest?.onDigestView?.(view);
   state.readerFeedId = null;
   state.readerEntry = null;
   const st = view.status;
@@ -1486,7 +1494,7 @@ function renderReader(entry) {
 
   reader.innerHTML = window.RustRssComponents.readerHead({
     title: escapeHtml(entry.title),
-    meta: `<span>${escapeHtml(entry.feed_title)}</span><span>${fmtTime(entry.published_at)}</span>
+    meta: `<button type="button" class="entry-source" data-feed-id="${entry.feed_id}" title="${t('reader.openFeed')}">${escapeHtml(entry.feed_title)}</button><span>${fmtTime(entry.published_at)}</span>
       ${entry.author ? `<span>${escapeHtml(entry.author)}</span>` : ''}`,
   });
   reader.insertAdjacentHTML('beforeend', `
@@ -1580,6 +1588,16 @@ function openReaderMore(ev, entry) {
     { label: t('reader.summarize'), action: () => runAi('summarize') },
     { label: t('reader.translate'), action: () => runAi('translate') },
   );
+  // 订阅源分组（设计 2026-10-04 #3）：查看源 + 危险项退订（二次确认在
+  // unsubscribeFeed 内，文案明示级联删除全部本地文章；日报快照保留）
+  const feedRow = (state.feeds || []).find((f) => f.id === entry.feed_id);
+  if (feedRow) {
+    items.push(
+      { header: true, label: t('reader.group.feed') },
+      { label: t('reader.openFeed'), action: () => setView({ kind: 'feed', feedId: entry.feed_id }).catch((e) => setStatus(e.message, true)) },
+      { label: t('menu.unsubscribe'), action: () => unsubscribeFeed(feedRow) },
+    );
+  }
   openContextMenu(ev, items, el('act-more'), entry.title);
 }
 
@@ -3152,6 +3170,15 @@ function touchMenuBack() {
   return true;
 }
 window.RustRssMenu = { back: touchMenuBack, close: closeContextMenu, isOpen: touchMenuActive, runAction: runMenuAction };
+// 手机日报页（mobile.js）需要的 app 层数据/工具：本地日期推导与历史列表镜像
+window.RustRssDigestBridge = {
+  date: digestDate,
+  days: () => state.digestDays || [],
+  refresh: refreshSidebarDigestDays,
+  renderHome: () => window.RustRssMobileDigest?.renderDigestHome?.(),
+  open: openDigest,
+  openDate: openDigestDate,
+};
 function runMenuAction(action) {
   if (el('status').classList.contains('error')) setStatus('');
   try {
@@ -3784,11 +3811,11 @@ function syncFeedTitle(row) {
     const entry = state.entries.find((e) => e.id === Number(li.dataset.id));
     if (!entry || entry.feed_id !== row.id) continue;
     entry.feed_title = row.title;
-    const meta = li.querySelector('.meta span');
+    const meta = li.querySelector('.meta .entry-source');
     if (meta) setText(meta, row.title);
   }
   if (state.readerFeedId === row.id) {
-    const meta = document.querySelector('#reader .reader-head .meta span');
+    const meta = document.querySelector('#reader .reader-head .meta .entry-source');
     if (meta) setText(meta, row.title);
   }
   if (state.view.kind === 'feed' && state.feedId === row.id) {
