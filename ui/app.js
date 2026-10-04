@@ -596,6 +596,29 @@ function reconcileViews(existing) {
     setText(li.querySelector('.count'), String(counts[v.kind] ?? 0));
     return li;
   });
+  // 日报入口（今日/昨日）：查看的是具体日期，跨午夜后入口语义自然滚动；
+  // 状态点 = 当日已有完成报告（digest_list 异步刷新，不阻塞侧栏渲染）。
+  const digestDays = state.digestDays || [];
+  for (const kind of ['today', 'yesterday']) {
+    const key = `d:${kind}`;
+    const date = digestDate(kind);
+    let li = existing.get(key);
+    if (!li) {
+      li = document.createElement('li');
+      li.dataset.key = key;
+      bindSidebarKeyboard(li);
+      li.innerHTML = `<span class="icon">${window.RustRssIcons.svg('reading')}</span><span class="vlabel"></span><span class="count"></span>`;
+    }
+    // onclick 每次重绑：日期随真实时钟滚动（入口语义由 kind 推导）
+    li.onclick = () => openDigest(kind);
+    const className = digestOpenDate === date ? 'active' : '';
+    if (li.className !== className) li.className = className;
+    setText(li.querySelector('.vlabel'), t(kind === 'today' ? 'sidebar.digestToday' : 'sidebar.digestYesterday'));
+    const mark = digestDays.includes(date) ? '●' : '';
+    const countEl = li.querySelector('.count');
+    if (countEl.textContent !== mark) countEl.textContent = mark;
+    desired.push(li);
+  }
   reconcileChildren(el('views'), desired);
 }
 
@@ -1216,6 +1239,76 @@ function onSentinel(records) {
   if (records.some((r) => r.isIntersecting)) loadMore();
 }
 
+// ---------------- 每日日报 ----------------
+
+let digestOpenDate = null;
+
+/// 本地自然日（YYYY-MM-DD）；跨午夜后入口按 kind 重新解析。
+function digestDate(kind) {
+  const d = new Date();
+  if (kind === 'yesterday') d.setDate(d.getDate() - 1);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+/// 日报范围（阶段 1 固定全部订阅源；范围配置随生成流水线在阶段 2 开放）
+function digestScopeTags() {
+  return [];
+}
+
+async function openDigest(kind) {
+  const date = digestDate(kind);
+  digestOpenDate = date;
+  renderSidebar();
+  try {
+    const view = await invoke('digest_get', { date, tagIds: digestScopeTags() });
+    if (digestOpenDate !== date) return; // 期间切了别的日期：丢弃过期渲染
+    renderDigestView(view);
+  } catch (e) {
+    setStatus(e.message, true);
+  }
+}
+
+function renderDigestView(view) {
+  state.readerFeedId = null;
+  state.readerEntry = null;
+  const st = view.status;
+  const statusBits = [];
+  if (st.has_report) {
+    statusBits.push(t('digest.statusUpToDate'));
+  } else {
+    statusBits.push(t('digest.statusNoReport'));
+  }
+  statusBits.push(t('digest.candidates', { n: st.candidate_count }));
+  if (st.has_report && (st.added || st.changed || st.removed)) {
+    statusBits.push(
+      t('digest.statusChanges', { a: st.added, c: st.changed, r: st.removed })
+    );
+  }
+  const meta = view.has_report
+    ? `<div class="digest-meta dim">${t('digest.generatedAt', {
+        t: new Date(view.generated_at * 1000).toLocaleString(),
+      })} · ${t('digest.articles', { n: view.article_count })} · ${t('digest.cacheHits', {
+        n: view.cache_hits,
+      })}</div>`
+    : '';
+  const content = view.has_report
+    ? `<div class="article digest-article">${escapeHtml(view.markdown)}</div>`
+    : `<div class="reader-empty">
+         <p>${t('digest.emptyTitle')}</p>
+         <p class="dim">${t('digest.emptyHint', { n: st.candidate_count })}</p>
+       </div>`;
+  el('reader').innerHTML = `<div class="digest-view">
+      <div class="reader-head">
+        <h1>${t('digest.title', { date: view.date })}</h1>
+        <div class="meta">${statusBits.map(escapeHtml).join('<span class="dim"> · </span>')}</div>
+      </div>
+      ${meta}
+      ${content}
+    </div>`;
+}
+
 function renderReaderEmpty() {
   state.readerFeedId = null;
   state.readerEntry = null;
@@ -1539,6 +1632,11 @@ async function createAndAttachTag(entryId, name) {
 // ---- 选择器：state.tags（最近使用优先序）+ type-ahead 过滤 + ↑↓/Enter/Esc
 
 let tagPickerEntryId = null;
+// 选择器双模式：'entry'（文章打标，原路径）/ 'feed'（订阅源打标，日报范围配置）。
+// feed 模式下勾选集在本地维护，每次变更整体 set_feed_tags（替换语义）。
+let tagPickerMode = 'entry';
+let tagPickerFeedId = null;
+let tagPickerFeedTagIds = [];
 let tagPickerIndex = 0;
 /** 当前候选行（含「新建并附加」合成行）；渲染与键盘选择读同一份，不会各走各的 */
 let tagPickerRows = [];
@@ -1549,6 +1647,7 @@ function tagPickerOpen() {
 
 async function openTagPicker(entryId) {
   if (entryId == null) return;
+  tagPickerMode = 'entry';
   tagPickerEntryId = entryId;
   // 每次打开重取一次：两次打标（last_used_at 被推进）后最近使用的那条必然排前
   await refreshTagCache();
@@ -1570,14 +1669,37 @@ async function openTagPicker(entryId) {
   );
 }
 
+/// 订阅源打标：复用文章标签选择器，勾选集整体 set_feed_tags（日报范围配置用）。
+async function openFeedTagPicker(feed) {
+  await refreshTagCache();
+  tagPickerMode = 'feed';
+  tagPickerFeedId = feed.id;
+  try {
+    tagPickerFeedTagIds = (await invoke('feed_tags', { feedId: feed.id })).map((x) => x.id);
+  } catch (e) {
+    setStatus(e.message, true);
+    return;
+  }
+  el('tag-picker-title').textContent = `${t('tags.feedPickerTitle')} · ${feed.title}`;
+  const input = el('tag-picker-input');
+  input.value = '';
+  tagPickerIndex = 0;
+  renderTagPicker('');
+  el('tag-picker-overlay').classList.remove('hidden');
+  input.focus();
+}
+
 function closeTagPicker(reason) {
   if (!tagPickerOpen()) return;
   el('tag-picker-overlay').classList.add('hidden');
   el('tag-picker-input').value = '';
   tagPickerRows = [];
   tagPickerIndex = 0;
-  const id = tagPickerEntryId;
+  const id = tagPickerMode === 'feed' ? tagPickerFeedId : tagPickerEntryId;
+  tagPickerMode = 'entry';
   tagPickerEntryId = null;
+  tagPickerFeedId = null;
+  tagPickerFeedTagIds = [];
   // 关闭（含 Esc/点遮罩）本身不改任何数据、不动视图/搜索/设置——只有这一行日志
   log(`tagPicker:close reason=${reason} entry=${id} view=${state.view.kind}`);
 }
@@ -1598,7 +1720,9 @@ function renderTagPicker(q) {
   if (createName) tagPickerRows.push({ kind: 'create', name: createName });
   if (tagPickerIndex >= tagPickerRows.length) tagPickerIndex = 0;
 
-  const attachedIds = new Set(entryTags(tagPickerEntryId).map((x) => x.id));
+  const attachedIds = new Set(
+    tagPickerMode === 'feed' ? tagPickerFeedTagIds : entryTags(tagPickerEntryId).map((x) => x.id)
+  );
   const list = el('tag-picker-list');
   list.innerHTML = tagPickerRows.length
     ? tagPickerRows
@@ -1629,6 +1753,21 @@ function renderTagPicker(q) {
 async function confirmTagPickerRow() {
   const row = tagPickerRows[tagPickerIndex];
   if (!row) return;
+  if (tagPickerMode === 'feed') {
+    if (row.kind === 'create') {
+      const created = await invoke('create_tag', { name: row.name });
+      if (created && !tagPickerFeedTagIds.includes(created.id)) tagPickerFeedTagIds.push(created.id);
+    } else {
+      const id = row.tag.id;
+      tagPickerFeedTagIds = tagPickerFeedTagIds.includes(id)
+        ? tagPickerFeedTagIds.filter((x) => x !== id)
+        : [...tagPickerFeedTagIds, id];
+    }
+    tagPickerFeedTagIds.sort((a, b) => a - b);
+    await invoke('set_feed_tags', { feedId: tagPickerFeedId, tagIds: tagPickerFeedTagIds });
+    renderTagPicker(el('tag-picker-input').value);
+    return;
+  }
   if (row.kind === 'create') {
     await createAndAttachTag(tagPickerEntryId, row.name);
     const input = el('tag-picker-input');
@@ -2704,6 +2843,14 @@ async function refreshCounts() {
   // 头部与尾部都同值短路，未变零写入。
   renderListCount();
   refreshSentinelFooter();
+  // 日报状态点：轻量（日期列表），失败静默（侧栏不因它阻塞）
+  invoke('digest_list')
+    .then((days) => {
+      if (JSON.stringify(state.digestDays) === JSON.stringify(days)) return;
+      state.digestDays = days;
+      renderSidebar();
+    })
+    .catch(() => {});
 }
 
 // ---------------- 侧栏文件夹：折叠与右键管理 ----------------
@@ -3147,6 +3294,8 @@ function openFeedMenu(ev, feed) {
   items.push({ header: true, label: t('menu.organize') });
   // 编辑：标题/文件夹/间隔三件套的收敛入口（与下面的快捷项同一落库路径）
   items.push({ label: t('menu.editFeed'), action: () => openFeedEditDialog(feed) });
+  // 订阅源打标：日报范围配置的入口（feed_tags，与文章级 entry_tags 互不隐含）
+  items.push({ label: t('menu.feedTags'), action: () => openFeedTagPicker(feed) });
   // 刷新间隔：父项直出当前档位（FeedRow 的 refresh_interval_minutes），子菜单 6 档打勾。
   // 原先 6 个档位平铺在菜单里，21 个分组 + 6 档 = 菜单本体几十行，找一项要滚半天。
   const current =
