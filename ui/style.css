@@ -653,6 +653,19 @@ main {
 /* ---------------- 右栏：正文 ---------------- */
 
 .reader-empty { color: var(--fg-dim); max-width: 60ch; }
+
+/* 日报视图（阶段 1：Markdown 以等宽保换行展示；阶段 2 换结构化渲染） */
+.digest-view .digest-article { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* 侧栏「日报」分组标题：与订阅源/标签分组同一小节头语法 */
+.digest-group-title {
+  padding: 12px 12px 4px;
+  font-size: 12px;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  cursor: default;
+}
+.digest-group-title .digest-dot { color: var(--accent); }
 /* 空态层级：第一句是衬线导语，其余说明退为小字，不再三段同权像调试输出 */
 .reader-empty p:first-child {
   font-family: var(--font-read, var(--font-ui));

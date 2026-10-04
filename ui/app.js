@@ -596,9 +596,19 @@ function reconcileViews(existing) {
     setText(li.querySelector('.count'), String(counts[v.kind] ?? 0));
     return li;
   });
-  // 日报入口（今日/昨日）：查看的是具体日期，跨午夜后入口语义自然滚动；
+  // 日报入口（今日/昨日）：独立分组标题（设计 §7），不混入智能视图；
   // 状态点 = 当日已有完成报告（digest_list 异步刷新，不阻塞侧栏渲染）。
   const digestDays = state.digestDays || [];
+  let groupTitle = existing.get('d:group');
+  if (!groupTitle) {
+    groupTitle = document.createElement('li');
+    groupTitle.dataset.key = 'd:group';
+    groupTitle.className = 'digest-group-title';
+    groupTitle.setAttribute('aria-hidden', 'true');
+  }
+  const groupText = t('sidebar.digestGroup');
+  if (groupTitle.textContent !== groupText) groupTitle.textContent = groupText;
+  desired.push(groupTitle);
   for (const kind of ['today', 'yesterday']) {
     const key = `d:${kind}`;
     const date = digestDate(kind);
@@ -1242,6 +1252,9 @@ function onSentinel(records) {
 // ---------------- 每日日报 ----------------
 
 let digestOpenDate = null;
+// 阅读窗格内容令牌：文章/空态/日报每次替换 +1；异步返回时令牌过期即丢弃，
+// 防止迟到的 digest_get 覆盖之后打开的文章（反之亦然）。
+let readerToken = 0;
 
 /// 本地自然日（YYYY-MM-DD）；跨午夜后入口按 kind 重新解析。
 function digestDate(kind) {
@@ -1260,10 +1273,14 @@ function digestScopeTags() {
 async function openDigest(kind) {
   const date = digestDate(kind);
   digestOpenDate = date;
+  const token = ++readerToken;
+  // 日报展示与条目选中互斥：旧选中残留会让 s/u/l 改到看不见的文章（审核 P1）
+  state.selectedId = null;
+  renderList();
   renderSidebar();
   try {
     const view = await invoke('digest_get', { date, tagIds: digestScopeTags() });
-    if (digestOpenDate !== date) return; // 期间切了别的日期：丢弃过期渲染
+    if (token !== readerToken) return; // 期间打开了文章/切了日期：丢弃过期渲染
     renderDigestView(view);
   } catch (e) {
     setStatus(e.message, true);
@@ -1271,21 +1288,22 @@ async function openDigest(kind) {
 }
 
 function renderDigestView(view) {
+  readerToken++;
   state.readerFeedId = null;
   state.readerEntry = null;
   const st = view.status;
   const statusBits = [];
   if (st.has_report) {
-    statusBits.push(t('digest.statusUpToDate'));
+    // 有变更就不能写「已是最新」（审核 P2）
+    statusBits.push(
+      st.added || st.changed || st.removed
+        ? t('digest.statusChanges', { a: st.added, c: st.changed, r: st.removed })
+        : t('digest.statusUpToDate')
+    );
   } else {
     statusBits.push(t('digest.statusNoReport'));
   }
   statusBits.push(t('digest.candidates', { n: st.candidate_count }));
-  if (st.has_report && (st.added || st.changed || st.removed)) {
-    statusBits.push(
-      t('digest.statusChanges', { a: st.added, c: st.changed, r: st.removed })
-    );
-  }
   const meta = view.has_report
     ? `<div class="digest-meta dim">${t('digest.generatedAt', {
         t: new Date(view.generated_at * 1000).toLocaleString(),
@@ -1310,6 +1328,8 @@ function renderDigestView(view) {
 }
 
 function renderReaderEmpty() {
+  readerToken++;
+  digestOpenDate = null;
   state.readerFeedId = null;
   state.readerEntry = null;
   // 空状态把三套语义一次说清：星标=收藏 · 稍后读=待读 · 标签=主题分类（i18n 双语）
@@ -1321,6 +1341,8 @@ function renderReaderEmpty() {
 }
 
 function renderReader(entry) {
+  readerToken++;
+  digestOpenDate = null;
   state.readerFeedId = entry.feed_id;
   state.readerEntry = entry;
   const __t = [{ tag: 'start', ms: performance.now() }];
@@ -1637,6 +1659,9 @@ let tagPickerEntryId = null;
 let tagPickerMode = 'entry';
 let tagPickerFeedId = null;
 let tagPickerFeedTagIds = [];
+// 选择器会话号：关闭/重开即失效。await 之后必须比对，否则源 A 的迟到
+// 操作会写进源 B（审核 P1）。文章模式的 create+assign 同样受会话保护。
+let pickerSession = 0;
 let tagPickerIndex = 0;
 /** 当前候选行（含「新建并附加」合成行）；渲染与键盘选择读同一份，不会各走各的 */
 let tagPickerRows = [];
@@ -1671,7 +1696,9 @@ async function openTagPicker(entryId) {
 
 /// 订阅源打标：复用文章标签选择器，勾选集整体 set_feed_tags（日报范围配置用）。
 async function openFeedTagPicker(feed) {
+  const session = ++pickerSession;
   await refreshTagCache();
+  if (session !== pickerSession) return;
   tagPickerMode = 'feed';
   tagPickerFeedId = feed.id;
   try {
@@ -1680,6 +1707,7 @@ async function openFeedTagPicker(feed) {
     setStatus(e.message, true);
     return;
   }
+  if (session !== pickerSession) return;
   el('tag-picker-title').textContent = `${t('tags.feedPickerTitle')} · ${feed.title}`;
   const input = el('tag-picker-input');
   input.value = '';
@@ -1695,6 +1723,7 @@ function closeTagPicker(reason) {
   el('tag-picker-input').value = '';
   tagPickerRows = [];
   tagPickerIndex = 0;
+  pickerSession++; // 会话失效：进行中的 create/set 不得落库
   const id = tagPickerMode === 'feed' ? tagPickerFeedId : tagPickerEntryId;
   tagPickerMode = 'entry';
   tagPickerEntryId = null;
@@ -1754,22 +1783,35 @@ async function confirmTagPickerRow() {
   const row = tagPickerRows[tagPickerIndex];
   if (!row) return;
   if (tagPickerMode === 'feed') {
+    // 捕获会话与目标：await 期间关闭/换源后，本次操作作废（审核 P1）
+    const session = pickerSession;
+    const feedId = tagPickerFeedId;
+    const ids = [...tagPickerFeedTagIds];
     if (row.kind === 'create') {
       const created = await invoke('create_tag', { name: row.name });
-      if (created && !tagPickerFeedTagIds.includes(created.id)) tagPickerFeedTagIds.push(created.id);
+      if (session !== pickerSession || !created) return;
+      if (!ids.includes(created.id)) ids.push(created.id);
+      // 新标签立即可见（审核 P2：否则再确认会重复新建）
+      await refreshTagCache();
     } else {
       const id = row.tag.id;
-      tagPickerFeedTagIds = tagPickerFeedTagIds.includes(id)
-        ? tagPickerFeedTagIds.filter((x) => x !== id)
-        : [...tagPickerFeedTagIds, id];
+      ids = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+      if (session !== pickerSession) return;
     }
-    tagPickerFeedTagIds.sort((a, b) => a - b);
-    await invoke('set_feed_tags', { feedId: tagPickerFeedId, tagIds: tagPickerFeedTagIds });
+    if (session !== pickerSession) return;
+    ids.sort((a, b) => a - b);
+    tagPickerFeedTagIds = [...ids];
+    await invoke('set_feed_tags', { feedId, tagIds: ids });
+    if (session !== pickerSession) return;
+    tagPickerFeedTagIds = [...ids];
     renderTagPicker(el('tag-picker-input').value);
     return;
   }
+  const entryId = tagPickerEntryId;
+  const session = pickerSession;
   if (row.kind === 'create') {
-    await createAndAttachTag(tagPickerEntryId, row.name);
+    await createAndAttachTag(entryId, row.name);
+    if (session !== pickerSession) return;
     const input = el('tag-picker-input');
     input.value = '';
     tagPickerIndex = 0;
@@ -1777,7 +1819,8 @@ async function confirmTagPickerRow() {
     input.focus();
     return;
   }
-  await toggleTagOnEntry(tagPickerEntryId, row.tag);
+  if (session !== pickerSession) return;
+  await toggleTagOnEntry(entryId, row.tag);
   renderTagPicker(el('tag-picker-input').value);
 }
 
@@ -2715,6 +2758,8 @@ async function loadMore({ manual = false } = {}) {
 async function setView(view) {
   state.view = view;
   state.feedId = view.feedId ?? null;
+  digestOpenDate = null;
+  readerToken++;
   if (view.kind !== 'search') {
     el('search').value = '';
     state.query = '';
