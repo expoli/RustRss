@@ -408,3 +408,39 @@ fn missing_meta_rows_are_backfilled_on_open() {
     assert_eq!((count, estimated), (1, 1), "缺失投影应在打开时补齐（近似标记）");
     assert_eq!(store.schema_version().unwrap(), 2);
 }
+
+/// 订阅源打标（DAO）+ 范围 OR 解析（设计 §5.1/§6，审核 P1-1 关联）：
+/// replace-all 语义、OR 匹配、空选择 = 全部。
+#[test]
+fn feed_tags_roundtrip_and_scope_resolution() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rustrss.sqlite");
+    let store = Store::open(&path).unwrap();
+    let f1 = store.add_feed("https://a.invalid/rss", Some("A")).unwrap();
+    let f2 = store.add_feed("https://b.invalid/rss", Some("B")).unwrap();
+    let t1 = store.create_tag("工具", None).unwrap();
+    let t2 = store.create_tag("AI", None).unwrap();
+
+    // replace-all：先挂两个，再收敛为一个（整替语义）
+    store.set_feed_tags(f1, &[t1.id, t2.id]).unwrap();
+    store.set_feed_tags(f1, &[t2.id]).unwrap();
+    let f1_tags = store.feed_tags(f1).unwrap();
+    assert_eq!(f1_tags.len(), 1);
+    assert_eq!(f1_tags[0].id, t2.id);
+    store.set_feed_tags(f2, &[t1.id]).unwrap();
+
+    // OR 解析：t2 → {f1}；双标签 → {f1,f2}；空 → 全部（feed_ids=None）
+    let scope_t2 = rustrss_core::store::digest::DigestScope::resolve(&store, &[t2.id]).unwrap();
+    assert_eq!(scope_t2.feed_ids, Some(vec![f1]));
+    let scope_both =
+        rustrss_core::store::digest::DigestScope::resolve(&store, &[t1.id, t2.id]).unwrap();
+    let mut got = scope_both.feed_ids.clone().unwrap();
+    got.sort_unstable();
+    assert_eq!(got, vec![f1, f2]);
+    let scope_all = rustrss_core::store::digest::DigestScope::resolve(&store, &[]).unwrap();
+    assert_eq!(scope_all.feed_ids, None);
+    assert_eq!(scope_all.key, "all");
+    // scope_key 规范化：顺序无关
+    let scope_rev = rustrss_core::store::digest::DigestScope::resolve(&store, &[t2.id, t1.id]).unwrap();
+    assert_eq!(scope_rev.key, scope_both.key);
+}
