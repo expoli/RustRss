@@ -4282,13 +4282,17 @@ pub fn set_feed_tags(
 // ---------------------------------------------------------------- 每日日报 · 生成流水线
 
 /// 在飞日报任务注册表：job_id → 取消旗标。guard 统一清理（审核 P1-6）。
-fn digest_jobs() -> &'static std::sync::Mutex<
-    std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>,
-> {
+/// 注册表条目：取消旗标 + 事件身份（job_id）。键是稳定槽位键，
+/// 取消命令只拿得到 job_id，按值反查。
+#[derive(Clone)]
+struct DigestJobEntry {
+    flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    job_id: String,
+}
+
+fn digest_jobs() -> &'static std::sync::Mutex<std::collections::HashMap<String, DigestJobEntry>> {
     static JOBS: std::sync::OnceLock<
-        std::sync::Mutex<
-            std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>,
-        >,
+        std::sync::Mutex<std::collections::HashMap<String, DigestJobEntry>>,
     > = std::sync::OnceLock::new();
     JOBS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
 }
@@ -4302,14 +4306,17 @@ struct DigestJobGuard {
 impl DigestJobGuard {
     /// 原子抢占：互斥锁内完成「查槽 + 插任务」，两个并发受理只有一个成功
     /// （审核 P1-单飞：键是稳定槽位，不含素材指纹——素材变化的重跑同槽互斥）。
-    fn claim(slot_key: String) -> Result<Self, ()> {
+    fn claim(slot_key: String, job_id: String) -> Result<Self, ()> {
         let mut map = digest_jobs().lock().unwrap();
         if map.contains_key(&slot_key) {
             return Err(());
         }
         map.insert(
             slot_key.clone(),
-            std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            DigestJobEntry {
+                flag: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+                job_id,
+            },
         );
         Ok(Self { slot_key })
     }
@@ -4318,7 +4325,7 @@ impl DigestJobGuard {
             .lock()
             .unwrap()
             .get(&self.slot_key)
-            .is_none_or(|f| f.load(std::sync::atomic::Ordering::Relaxed))
+            .is_none_or(|e| e.flag.load(std::sync::atomic::Ordering::Relaxed))
     }
 }
 
@@ -4413,7 +4420,7 @@ pub async fn digest_generate(
         ])[..12]
     );
     // 注册表抢占 = 在飞权威；成功后才写槽（无条件覆盖崩溃残留的 active_job_id）
-    let guard = DigestJobGuard::claim(slot_key.clone())
+    let guard = DigestJobGuard::claim(slot_key.clone(), job_id.clone())
         .map_err(|_| "该日期的日报正在生成中".to_string())?;
     state.with_store(|s| {
         s.digest_slot_begin(
@@ -4672,11 +4679,53 @@ pub async fn digest_generate(
 /// 取消进行中的日报生成（请求之间生效；已付费的单篇要点会先落缓存）。
 #[tauri::command]
 pub fn digest_cancel(job_id: String) -> R<bool> {
+    // 注册表键是槽位键，命令只拿得到 job_id：按值反查
     let cancelled = digest_jobs()
         .lock()
         .unwrap()
-        .get(&job_id)
-        .map(|f| f.store(true, std::sync::atomic::Ordering::Relaxed))
+        .values()
+        .find(|e| e.job_id == job_id)
+        .map(|e| e.flag.store(true, std::sync::atomic::Ordering::Relaxed))
         .is_some();
     Ok(cancelled)
+}
+
+#[cfg(test)]
+mod digest_jobs_tests {
+    use super::*;
+
+    /// 注册表语义：正确 job_id 可取消；错误/旧 job_id 不影响当前任务；
+    /// guard drop 后条目被清理。
+    #[test]
+    fn claim_cancel_and_drop_lifecycle() {
+        let slot = "test-slot-A".to_string();
+        let guard = DigestJobGuard::claim(slot.clone(), "job-A1".to_string()).unwrap();
+        assert!(!guard.cancelled(), "刚认领的任务未取消");
+
+        // 错误身份：取消无效，任务不受影响
+        assert!(!digest_cancel("job-old".to_string()).unwrap());
+        assert!(!guard.cancelled());
+
+        // 正确身份：取消置旗标
+        assert!(digest_cancel("job-A1".to_string()).unwrap());
+        assert!(guard.cancelled(), "取消后 guard 应读到旗标");
+
+        // drop 清理：同槽可再次认领（新任务新身份）
+        drop(guard);
+        let guard2 = DigestJobGuard::claim(slot.clone(), "job-A2".to_string()).unwrap();
+        assert!(!guard2.cancelled(), "重跑的新任务不继承旧取消旗标");
+        assert!(
+            !digest_cancel("job-A1".to_string()).unwrap(),
+            "旧身份不可取消新任务"
+        );
+        drop(guard2);
+    }
+
+    /// 同槽重复认领必须失败（单飞契约）。
+    #[test]
+    fn double_claim_same_slot_rejected() {
+        let slot = "test-slot-B".to_string();
+        let _g1 = DigestJobGuard::claim(slot.clone(), "job-B1".to_string()).unwrap();
+        assert!(DigestJobGuard::claim(slot.clone(), "job-B2".to_string()).is_err());
+    }
 }
