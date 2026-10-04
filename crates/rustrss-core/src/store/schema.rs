@@ -120,6 +120,48 @@ pub const MIGRATIONS: &[&str] = &[
         created_at INTEGER NOT NULL
     );
     "#,
+    // v2 → v3：聊天元数据与正文分表；不改变已发布基线/日报迁移。
+    r#"
+    CREATE TABLE chat_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        model TEXT NOT NULL,
+        endpoint_id TEXT NOT NULL,
+        scope_json TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX idx_chat_sessions_updated ON chat_sessions(updated_at DESC, id);
+    CREATE TABLE chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+        seq INTEGER NOT NULL,
+        run_id INTEGER,
+        role TEXT NOT NULL CHECK (role IN ('user','assistant')),
+        status TEXT NOT NULL CHECK (status IN ('running','done','failed','cancelled','interrupted')),
+        input_tokens INTEGER CHECK (input_tokens >= 0),
+        output_tokens INTEGER CHECK (output_tokens >= 0),
+        created_at INTEGER NOT NULL,
+        UNIQUE(session_id, seq)
+    );
+    CREATE INDEX idx_chat_running ON chat_messages(session_id) WHERE status = 'running';
+    CREATE TABLE chat_message_bodies (
+        message_id INTEGER PRIMARY KEY REFERENCES chat_messages(id) ON DELETE CASCADE,
+        parts_json TEXT NOT NULL
+    );
+    CREATE TABLE chat_sources (
+        message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+        source_key TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        source_identity TEXT NOT NULL,
+        revision INTEGER,
+        hash TEXT NOT NULL,
+        title TEXT NOT NULL,
+        excerpt TEXT NOT NULL CHECK (length(CAST(excerpt AS BLOB)) <= 12288),
+        PRIMARY KEY(message_id, source_key)
+    );
+    "#,
 ];
 
 /// 打开一个**已有**库时看到的 schema 状态。

@@ -13,7 +13,7 @@ Rust + Tauri 2 · SQLite · RSS / Atom / JSON Feed
 - **专注阅读**：订阅、文章列表和正文分栏展示；支持搜索、稍后读、星标、标签和键盘操作。
 - **报纸版式为默认主题**：四套视觉预设（报纸 Print / Clear / Paper / Slate），默认「报纸」——纸墨配色加一处编辑部红，正文与列表标题用衬线字体、版心居中；明暗色可分别选预设，所有值均可覆盖。
 - **数据在本地**：订阅、文章与阅读状态存入 SQLite；无需账号或云同步。
-- **AI 由你选择**：配置自己的 OpenAI 兼容、Anthropic、Gemini 或 Ollama 服务，用于文章摘要、翻译和每日日报（按本地日历日聚合订阅内容，AI 生成结构化日报，缓存与范围过滤）。core 已提供对话助手阶段 0 的四家协议编解码基座（含工具消息）：OpenAI 工具结果连续输出后再合并用户文本；Anthropic 将全部工具结果保序放在同一 user 消息的文本前。尚未接入网络执行或 UI。
+- **AI 由你选择**：配置自己的 OpenAI 兼容、Anthropic、Gemini 或 Ollama 服务，用于文章摘要、翻译和每日日报（按本地日历日聚合订阅内容，AI 生成结构化日报，缓存与范围过滤）。对话助手阶段① **Rust 后端**已具备四家非流式单轮执行、持久多轮历史、日报快照绑定（无日报也可新建）、取消与启动中断恢复；桌面/手机聊天 UI 尚未接入，流式与工具执行后置。
 - **面向 agent 的 MCP**：让兼容客户端读取你的订阅、文章与每日日报。服务只监听回环地址，默认只读，写能力需单独授权。
 
 ![RustRss 外观与主题设置](docs/images/settings.png)
@@ -84,6 +84,15 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 | [隐私与数据](docs/privacy.md) | 本地数据、外部请求和安全边界 |
 | [开发指南](docs/development.md) | 项目结构、构建、日志和发布 |
 | [全部文档](docs/README.md) | 按读者角色浏览指南与项目资料 |
+
+## 对话助手后端（阶段①，UI 待接入）
+
+- schema 追加 v2→v3；会话元数据与消息正文分表，手动删除级联清理。应用启动将遗留 `running` 标为 `interrupted`，普通 core/MCP 开库不恢复、不自动重试计费。
+- 日报上下文冻结为第一条 `done` user 消息（`scope_json.has_seed` + `seq=1` 标识）；保存真实范围、checkpoint 与报告正文 hash，重写日报后仍讨论原快照。无日报也可会话，但助手明确说明资料不足。
+- 每回合仅一次模型请求、最多 120 秒、输出最多 4096 tokens；输入采用保守 48,000 字符闸门（不是账单 token 估算），旧历史按完整回合裁剪并返回 `historyTrimmed`，绑定日报不裁掉。provider usage 缺失即未知；已知累计达到 200,000 tokens 后要求新会话，暂不提供继续付费旗标。
+- provider/模型/端点变化时旧会话拒绝发送，须开启新会话；同会话单 flight，在飞删除拒绝（先停止、等待终态）。停止会丢弃在途 HTTP future，但已发生费用不保证撤销。
+- Tauri 提供 `chat_send/stop/sessions_list/session_get/session_delete`；返回 `sessionId/messageId`（本回合 user id），事件 `chat:started/progress/done/error` 携带身份；终态另给 `assistantMessageId/blocks/usage/status`。端点/范围/费用确认由下一批前端持久化，本批没有新增隐私确认 command。
+- 会话不存 API key；SQLite 聊天正文不加密，整库备份含聊天及日报上下文。下一批前端应把 seed 标为「日报上下文」，发送的日报、历史与新消息会交给配置的服务商。
 
 ## 隐私概览
 

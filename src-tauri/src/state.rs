@@ -61,6 +61,7 @@ impl AppState {
         }
         let store = Store::open(&db_path)
             .map_err(|e| format!("打开数据库失败（{}）: {e}", db_path.display()))?;
+        store.mark_running_interrupted().map_err(|e| format!("恢复中断会话失败: {e}"))?;
         let fetcher =
             Fetcher::new(DEFAULT_USER_AGENT).map_err(|e| format!("初始化 HTTP 客户端失败: {e}"))?;
         Ok(Self {

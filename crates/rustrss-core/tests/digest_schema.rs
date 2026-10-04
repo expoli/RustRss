@@ -90,7 +90,7 @@ fn status_check_uses_covering_index_not_a_scan() {
     let path = dir.path().join("rustrss.sqlite");
     v1_database(&path);
     let store = Store::open(&path).unwrap();
-    assert_eq!(store.schema_version().unwrap(), 2);
+    assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
     let conn = rusqlite::Connection::open(&path).unwrap();
 
     // 日报状态检查的代表性查询（新增计数）：必须走 idx_digest_meta_day 覆盖路径。
@@ -339,7 +339,7 @@ fn backfill_handles_null_published_at() {
     drop(store);
     // 迁移后重开（幂等）
     let store2 = Store::open(&path).unwrap();
-    assert_eq!(store2.schema_version().unwrap(), 2);
+    assert_eq!(store2.schema_version().unwrap(), MIGRATIONS.len() as i64);
 }
 
 /// 日期归属不可漂移（审核 P1 回归）：无 published_at 的条目，首见在第 1 天、
@@ -406,7 +406,7 @@ fn missing_meta_rows_are_backfilled_on_open() {
         )
         .unwrap();
     assert_eq!((count, estimated), (1, 1), "缺失投影应在打开时补齐（近似标记）");
-    assert_eq!(store.schema_version().unwrap(), 2);
+    assert_eq!(store.schema_version().unwrap(), MIGRATIONS.len() as i64);
 }
 
 /// 订阅源打标（DAO）+ 范围 OR 解析（设计 §5.1/§6，审核 P1-1 关联）：

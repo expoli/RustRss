@@ -10,6 +10,7 @@
 
 pub mod backfill;
 pub mod backup;
+pub mod chat;
 pub mod digest;
 pub mod schema;
 pub mod tokens;

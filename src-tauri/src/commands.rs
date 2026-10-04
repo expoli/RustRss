@@ -4766,3 +4766,267 @@ mod digest_jobs_tests {
         assert!(DigestJobGuard::claim(slot.clone(), "job-B2".to_string()).is_err());
     }
 }
+
+// ---- 非流式聊天：业务/预算在 core，壳仅凭据快照、取消与事件转发 ----
+fn chat_jobs(
+) -> &'static std::sync::Mutex<std::collections::HashMap<i64, tokio::sync::watch::Sender<bool>>> {
+    static JOBS: std::sync::OnceLock<
+        std::sync::Mutex<std::collections::HashMap<i64, tokio::sync::watch::Sender<bool>>>,
+    > = std::sync::OnceLock::new();
+    JOBS.get_or_init(Default::default)
+}
+
+struct ChatJobGuard {
+    session_id: i64,
+    message_id: i64,
+    app: Option<tauri::AppHandle>,
+    cancel: tokio::sync::watch::Receiver<bool>,
+}
+
+impl ChatJobGuard {
+    fn claim(session_id: i64, message_id: i64, app: Option<tauri::AppHandle>) -> R<Self> {
+        use std::collections::hash_map::Entry;
+        let mut jobs = chat_jobs()
+            .lock()
+            .map_err(|_| "聊天任务锁被污染".to_string())?;
+        let Entry::Vacant(entry) = jobs.entry(session_id) else {
+            return Err("该会话正在回答中".into());
+        };
+        let (sender, cancel) = tokio::sync::watch::channel(false);
+        entry.insert(sender);
+        Ok(Self {
+            session_id,
+            message_id,
+            app,
+            cancel,
+        })
+    }
+}
+
+impl Drop for ChatJobGuard {
+    fn drop(&mut self) {
+        use tauri::Manager;
+        // 先清库再释放单 flight，所有早退/取消/panic 都不会遗留 running。
+        if let Some(state) = self
+            .app
+            .as_ref()
+            .and_then(|app| app.try_state::<AppState>())
+        {
+            let _ = state.with_store(|s| {
+                s.chat_end_running(self.message_id, "interrupted")
+                    .map_err(err)
+            });
+        }
+        if let Ok(mut jobs) = chat_jobs().lock() {
+            jobs.remove(&self.session_id);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatSendView {
+    pub session_id: i64,
+    /// 本回合 user 消息 id；完成事件另给 assistantMessageId。
+    pub message_id: i64,
+    pub history_trimmed: bool,
+}
+
+#[tauri::command]
+pub async fn chat_send(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    session_id: Option<i64>,
+    date: Option<String>,
+    scope_key: Option<String>,
+    message: String,
+) -> R<ChatSendView> {
+    use rustrss_core::ai::chat::{execute_chat_turn, ChatBlock, ChatUsage};
+    let client = crate::ai::client_from_state(&state)?;
+    let turn = state.with_store(|s| {
+        rustrss_core::ai::chat_session::prepare_chat_turn(
+            s,
+            &client,
+            session_id,
+            date.as_deref(),
+            scope_key.as_deref(),
+            &message,
+        )
+        .map_err(err)
+    })?;
+    let mut guard = match ChatJobGuard::claim(turn.session_id, turn.message_id, Some(app.clone())) {
+        Ok(guard) => guard,
+        Err(error) => {
+            let _ = state.with_store(|s| {
+                s.chat_end_running(turn.message_id, "interrupted")
+                    .map_err(err)
+            });
+            return Err(error);
+        }
+    };
+    let view = ChatSendView {
+        session_id: turn.session_id,
+        message_id: turn.message_id,
+        history_trimmed: turn.history_trimmed,
+    };
+    let payload = serde_json::json!({"sessionId":view.session_id,"messageId":view.message_id,"historyTrimmed":view.history_trimmed});
+    let _ = app.emit("chat:started", &payload);
+    let _ = app.emit("chat:progress",serde_json::json!({"sessionId":view.session_id,"messageId":view.message_id,"stage":"generating"}));
+    tauri::async_runtime::spawn(async move {
+        use tauri::Manager;
+        // watch 保留取消值：stop 早于 await 时也不会丢失；select 丢弃在途 HTTP future。
+        let result = chat_until_cancelled(&mut guard.cancel, async {
+            tokio::time::timeout(
+                std::time::Duration::from_secs(120),
+                execute_chat_turn(&client, &turn.request),
+            )
+            .await
+            .map_err(|_| "对话回合超时（120 秒）".to_string())
+            .and_then(|r| r.map_err(err))
+        })
+        .await;
+        let (status, blocks, usage, error) = match result {
+            None => (
+                "cancelled",
+                vec![],
+                ChatUsage::default(),
+                Some("已停止回答".to_string()),
+            ),
+            Some(Ok(response)) => ("done", response.blocks, response.usage, None),
+            Some(Err(error)) => (
+                "failed",
+                vec![ChatBlock::Text(error.clone())],
+                ChatUsage::default(),
+                Some(error),
+            ),
+        };
+        let state = app.state::<AppState>();
+        let saved = state.with_store(|s| {
+            let parts = serde_json::to_string(&blocks).map_err(err)?;
+            s.chat_finish_message(turn.session_id, turn.message_id, status, &parts, &usage)
+                .map_err(err)
+        });
+        let (assistant_id, error) = match saved {
+            Ok(id) => (Some(id), error),
+            Err(e) => (None, Some(e)),
+        };
+        let event = if error.is_some() {
+            "chat:error"
+        } else {
+            "chat:done"
+        };
+        drop(guard);
+        let _ = app.emit(event,serde_json::json!({"sessionId":turn.session_id,"messageId":turn.message_id,"assistantMessageId":assistant_id,"status":status,"usage":usage,"blocks":blocks,"error":error}));
+    });
+    Ok(view)
+}
+
+async fn chat_until_cancelled<T>(
+    cancel: &mut tokio::sync::watch::Receiver<bool>,
+    request: impl std::future::Future<Output = T>,
+) -> Option<T> {
+    tokio::select! {
+        biased;
+        _ = async { if !*cancel.borrow() { let _ = cancel.changed().await; } } => None,
+        result = request => Some(result),
+    }
+}
+
+#[tauri::command]
+pub fn chat_stop(state: State<'_, AppState>, session_id: i64) -> R<bool> {
+    let _ = state;
+    cancel_chat_job(session_id)
+}
+
+fn cancel_chat_job(session_id: i64) -> R<bool> {
+    let jobs = chat_jobs()
+        .lock()
+        .map_err(|_| "聊天任务锁被污染".to_string())?;
+    Ok(jobs
+        .get(&session_id)
+        .is_some_and(|sender| sender.send(true).is_ok()))
+}
+
+#[tauri::command]
+pub fn chat_sessions_list(
+    state: State<'_, AppState>,
+) -> R<Vec<rustrss_core::store::chat::ChatSessionRow>> {
+    state.with_store(|s| s.list_sessions().map_err(err))
+}
+
+#[tauri::command]
+pub fn chat_session_get(
+    state: State<'_, AppState>,
+    session_id: i64,
+) -> R<Option<rustrss_core::store::chat::ChatSession>> {
+    state.with_store(|s| s.get_session(session_id).map_err(err))
+}
+
+#[tauri::command]
+pub fn chat_session_delete(state: State<'_, AppState>, session_id: i64) -> R<bool> {
+    // 不让删除与落库竞态产生迟到响应；用户先 stop，终态后再删除。
+    let jobs = chat_jobs()
+        .lock()
+        .map_err(|_| "聊天任务锁被污染".to_string())?;
+    if jobs.contains_key(&session_id) {
+        return Err("该会话正在回答中，请先停止".into());
+    }
+    state.with_store(|s| {
+        if s.chat_has_running(session_id).map_err(err)? {
+            return Err("该会话正在回答中，请先停止".into());
+        }
+        s.delete_session(session_id).map_err(err)
+    })
+}
+
+#[cfg(test)]
+mod chat_jobs_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn stop_drops_in_flight_future_and_latched_stop_wins() {
+        struct Dropped(std::sync::Arc<std::sync::atomic::AtomicBool>);
+        impl Drop for Dropped {
+            fn drop(&mut self) {
+                self.0.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+        }
+        let (sender, mut receiver) = tokio::sync::watch::channel(false);
+        let dropped = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let marker = Dropped(dropped.clone());
+        let request = async move {
+            let _marker = marker;
+            std::future::pending::<()>().await
+        };
+        let task = tokio::spawn(async move { chat_until_cancelled(&mut receiver, request).await });
+        tokio::task::yield_now().await;
+        sender.send(true).unwrap();
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), task)
+                .await
+                .unwrap()
+                .unwrap()
+                .is_none()
+        );
+        assert!(dropped.load(std::sync::atomic::Ordering::SeqCst));
+        let (sender, mut receiver) = tokio::sync::watch::channel(false);
+        sender.send(true).unwrap();
+        assert_eq!(
+            chat_until_cancelled(&mut receiver, async { 42 }).await,
+            None
+        );
+    }
+
+    #[tokio::test]
+    async fn single_flight_cancel_before_await_and_drop() {
+        let id = -101;
+        let guard = ChatJobGuard::claim(id, 1, None).unwrap();
+        assert!(ChatJobGuard::claim(id, 2, None).is_err());
+        assert!(!cancel_chat_job(-102).unwrap());
+        assert!(cancel_chat_job(id).unwrap());
+        assert!(*guard.cancel.borrow());
+        drop(guard);
+        let next = ChatJobGuard::claim(id, 3, None).unwrap();
+        assert!(!*next.cancel.borrow());
+    }
+}
