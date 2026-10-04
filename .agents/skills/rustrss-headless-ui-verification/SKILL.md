@@ -97,6 +97,13 @@ export ANDROID_SDK_ROOT=/usr/lib/android-sdk
 - **先查 CSS 再怀疑注入**：布局 bug 优先用 Chrome 直接加载 CSS 检查计算样式
   （断点内靠后的 padding 简写覆盖靠前的 padding-top 这类覆盖，症状与「注入
   失败」一模一样——2026-10-04 日报顶部重叠首因即此）。
+- **换算状态位是经典坑**：原生 px→dp 换算结果回写状态位后，重试/二次消费把它
+  当原始值再除一次密度（32→10→3→1→0 衰减，周期性「先正常后弹回」）——状态位
+  恒存原始值，换算收敛在单点。
+- **旋转/键盘回归必测**：insets 修复只验竖屏首屏不算完，旋转（cutout 左右）、
+  键盘弹出（ime）都要截屏；webview debug 用 debug 包 + `adb forward tcp:9222
+  localabstract:webview_devtools_remote_*` 可做 CDP reload 等场景（release 包
+  默认关调试）。
 - 真机截图工具常裁掉状态栏——排查「重叠/遮挡」类问题必须让用户拍**含系统时间**
   的照片，或直接用模拟器复现。
 - 排查完 `adb emu kill` 或留着复用。
