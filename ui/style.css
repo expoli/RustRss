@@ -1464,11 +1464,8 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
      有惯性即可，长容器里那条粗杆只显得突兀（真机反馈）。桌面无此标记不受影响。 */
   body[data-android="1"] * { scrollbar-width: none; }
   body[data-android="1"] *::-webkit-scrollbar { width: 0; height: 0; }
-  /* 报头延伸到状态栏后面：inset 由 Android 原生注入（--inset-top），
-     桌面/未注入时变量默认 0，calc 原值不变。 */
   .toolbar {
     min-width: 0;
-    padding-top: calc(8px + var(--inset-top, 0px));
     /* 桌面报头 2px 墨线在手机全宽下压着筛选行显得突兀（真机反馈）：
        手机减细为与其它分隔一致的 1px 线 */
     border-bottom-width: 1px;
@@ -1515,7 +1512,14 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   body[data-search-open="true"] #search { display: block; flex: 1; width: 0; min-width: 0; }
   body[data-search-open="true"] #btn-search-cancel { display: inline-flex; }
   body[data-list-kind="search"] #search-scope { display: block; flex-basis: 100%; font-size: 12px; font-weight: 400; color: var(--fg-dim); }
-  .toolbar { gap: 4px; padding: 2px 8px; min-height: 52px; }
+  /* padding-top 单列：手机报头要避让状态栏（--inset-top，Android 原生注入）。
+     简写 padding: 2px 8px 曾把它覆盖回 2px——三台真机顶部重叠的首因（评审裁定）。 */
+  .toolbar {
+    gap: 4px;
+    padding: 2px 8px;
+    padding-top: calc(2px + var(--inset-top, 0px));
+    min-height: 52px;
+  }
   .toolbar .brand { margin-right: auto; }
   #btn-refresh, #btn-search-toggle { width: 48px; min-width: 48px; font-size: 0; justify-content: center; padding: 0; }
   #btn-refresh .icon, #btn-search-toggle .icon { font-size: 20px; }

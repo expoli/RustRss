@@ -85,7 +85,12 @@ class MainActivity : TauriActivity() {
   }
 
   /// 把上下系统栏 inset 写进 CSS 变量。同值短路：insets 事件里重复触发零注入。
-  private fun pushInsets(top: Int, bottom: Int, force: Boolean = false) {
+  /// inset 是物理像素，CSS px 是 dp——必须除以 density（评审指出的单位错误，
+  /// 否则修好覆盖后会 ~2.6 倍过度留白）。
+  private fun pushInsets(topPx: Int, bottomPx: Int, force: Boolean = false) {
+    val d = resources.displayMetrics.density
+    val top = (topPx / d).toInt()
+    val bottom = (bottomPx / d).toInt()
     if (!force && top == lastTop && bottom == lastBottom) return
     lastTop = top
     lastBottom = bottom
