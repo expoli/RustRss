@@ -1672,6 +1672,7 @@ function tagPickerOpen() {
 
 async function openTagPicker(entryId) {
   if (entryId == null) return;
+  const session = ++pickerSession; // 打开文章选择器同样使在飞 feed 会话失效
   tagPickerMode = 'entry';
   tagPickerEntryId = entryId;
   // 每次打开重取一次：两次打标（last_used_at 被推进）后最近使用的那条必然排前
@@ -1786,7 +1787,7 @@ async function confirmTagPickerRow() {
     // 捕获会话与目标：await 期间关闭/换源后，本次操作作废（审核 P1）
     const session = pickerSession;
     const feedId = tagPickerFeedId;
-    const ids = [...tagPickerFeedTagIds];
+    let ids = [...tagPickerFeedTagIds];
     if (row.kind === 'create') {
       const created = await invoke('create_tag', { name: row.name });
       if (session !== pickerSession || !created) return;
@@ -1800,9 +1801,8 @@ async function confirmTagPickerRow() {
     }
     if (session !== pickerSession) return;
     ids.sort((a, b) => a - b);
-    tagPickerFeedTagIds = [...ids];
     await invoke('set_feed_tags', { feedId, tagIds: ids });
-    if (session !== pickerSession) return;
+    if (session !== pickerSession) return; // 提交期间会话失效：不写回全局勾选集
     tagPickerFeedTagIds = [...ids];
     renderTagPicker(el('tag-picker-input').value);
     return;
@@ -2619,6 +2619,8 @@ async function applyListSetting(run) {
 /// 自动标读又违背「点击才算已读」的预期（实测反馈 2026-09-22 两轮）。
 /// 清空选中 + 阅读区占位；首次点击列表行或键盘 j/k 才打开并按设置标读。
 function renderSelectedEntry() {
+  // 日报打开时在飞的列表加载完成，不得把日报清成空态（审核 P1）
+  if (digestOpenDate) return;
   state.selectedId = null;
   renderReaderEmpty();
 }
@@ -2846,8 +2848,10 @@ let readerRequest = 0;
 async function openEntry(id, { markRead, follow = true } = {}) {
   const request = ++readerRequest;
   const generation = paging.generation;
+  const token = ++readerToken; // 与日报互斥：迟到的日报渲染不得覆盖文章
   const entry = await invoke('get_entry', { id });
   if (!entry || request !== readerRequest || generation !== paging.generation) return;
+  if (token !== readerToken) return;
   const changed = state.selectedId !== id;
   state.selectedId = id;
   if (changed) focusRow(id, { follow });

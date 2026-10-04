@@ -483,7 +483,6 @@ const DICTS = {
     'settings.copyPath': '复制路径',
     'sidebar.digestGroup': '日报',
     'sidebar.digestToday': '今日日报',
-    'sidebar.digestGroup': 'Digests',
     'sidebar.digestYesterday': '昨日日报',
     'menu.feedTags': '标签…',
     'tags.feedPickerTitle': '订阅源标签',
