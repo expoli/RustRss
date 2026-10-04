@@ -38,7 +38,7 @@ pub fn final_request(language: &str, day: &str, sections: &[String]) -> AiReques
                 .to_string(),
         ),
         user: format!(
-            "{body}\n\n请用{language}把以上素材汇编成一份每日日报：\n- 以一段 2-3 句的总览开头；\n- 按「今天发生了什么」的意义分成小节，每节以 `## ` 标题开始；\n- 保留具体事实（数字、名称、结果），不要空话；\n- 末尾不要总结陈词。"
+            "日期：{day}\n\n{body}\n\n请用{language}把以上素材汇编成一份每日日报：\n- 以一段 2-3 句的总览开头；\n- 按「今天发生了什么」的意义分成小节，每节以 `## ` 标题开始；\n- 保留具体事实（数字、名称、结果），不要空话；\n- 末尾不要总结陈词。"
         ),
     }
 }

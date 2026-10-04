@@ -4385,9 +4385,7 @@ pub async fn digest_generate(
             rustrss_core::ai::prompt::PROMPT_VERSION,
         )
     };
-    let config_tag = client.config().cache_tag();
-
-    // 空素材：零请求直接返回空态（审核 P2-8）——不写槽位、不建任务。
+        // 空素材：零请求直接返回空态（审核 P2-8）——不写槽位、不建任务。
     if manifest.entries.is_empty() {
         return Ok(DigestJobView {
             job_id: String::new(),
@@ -4435,7 +4433,7 @@ pub async fn digest_generate(
         let job_id = task_job_id;
         let ai_cfg = client.config();
         let state = task_app.state::<crate::state::AppState>();
-        let finish_slot = |guard: &DigestJobGuard| {
+        let finish_slot = || {
             let _ = state.with_store(|s| {
                 s.digest_slot_end(&date, &scope.key).map_err(err)?;
                 Ok(())
@@ -4449,7 +4447,8 @@ pub async fn digest_generate(
             );
         };
         let fail = |guard: &DigestJobGuard, payload: serde_json::Value| {
-            finish_slot(guard);
+            let _ = guard;
+            finish_slot();
             let _ = task_app.emit("digest:done", payload);
         };
 
@@ -4462,7 +4461,7 @@ pub async fn digest_generate(
         let mut ai_calls = 0i64;
         for (idx, entry) in manifest.entries.iter().enumerate() {
             if guard.cancelled() {
-                finish_slot(&guard);
+                finish_slot();
                 let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                     "date": date, "ok": false, "cancelled": true }));
                 return;
@@ -4501,7 +4500,7 @@ pub async fn digest_generate(
                         .map_err(|e| e.to_string())
                 });
                 if guard.cancelled() {
-                    finish_slot(&guard);
+                    finish_slot();
                     let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                         "date": date, "ok": false, "cancelled": true }));
                     return;
@@ -4520,7 +4519,7 @@ pub async fn digest_generate(
         let mut sections: Vec<String> = Vec::new();
         for (gi, group) in groups.iter().enumerate() {
             if guard.cancelled() {
-                finish_slot(&guard);
+                finish_slot();
                 let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                     "date": date, "ok": false, "cancelled": true }));
                 return;
@@ -4567,7 +4566,7 @@ pub async fn digest_generate(
         // ③ 最终合成：rewrite 绕过读缓存，但写回同一个规范键（审核 P1-3）；
         //    合成前与提交前都检查取消（审核 P1-5）。
         if guard.cancelled() {
-            finish_slot(&guard);
+            finish_slot();
             let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                 "date": date, "ok": false, "cancelled": true }));
             return;
@@ -4608,7 +4607,7 @@ pub async fn digest_generate(
 
         // ④ 提交（CAS：事务内重算素材指纹，漂移即拒绝覆盖旧报告——审核 P1-2）
         if guard.cancelled() {
-            finish_slot(&guard);
+            finish_slot();
             let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                 "date": date, "ok": false, "cancelled": true }));
             return;
@@ -4636,7 +4635,7 @@ pub async fn digest_generate(
         });
         match commit {
             Ok(_) => {
-                finish_slot(&guard);
+                finish_slot();
                 let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                     "date": date, "ok": true }));
             }

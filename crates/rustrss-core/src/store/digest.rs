@@ -445,7 +445,7 @@ impl Store {
         drop(stmt);
 
         // 预算截断：只取最近的 N 篇（明确的缩小范围，total_in_window 交代全量）
-        let picked: Vec<_> = candidates.iter().take(MANIFEST_MAX_ENTRIES as usize).collect();
+        let picked: Vec<_> = candidates.iter().take(MANIFEST_MAX_ENTRIES).collect();
 
         let mut entries = Vec::new();
         for (instance_id, entry_id, feed_id, source_revision, effective_at) in &picked {
@@ -614,9 +614,9 @@ impl Store {
         })()
         .map_err(super::StoreError::Sqlite)?;
         if manifest_pairs_hash_of(&current_pairs) != expected_pairs_hash {
-            return Err(super::StoreError::Invalid(format!(
-                "日报素材在生成期间又发生了变化，请再次「更新日报」"
-            )));
+            return Err(super::StoreError::Invalid(
+                "日报素材在生成期间又发生了变化，请再次「更新日报」".into(),
+            ));
         }
         tx.execute(
             "INSERT INTO digests(report_day, timezone_label, day_start_at, day_end_at,
