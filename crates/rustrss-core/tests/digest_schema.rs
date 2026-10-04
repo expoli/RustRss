@@ -515,22 +515,33 @@ fn freeze_manifest_truncates_to_budget() {
     let manifest = store.freeze_manifest(start, end, None).unwrap();
     assert!(manifest.truncated, "250 篇 > 上界 200 应标记截断");
     assert_eq!(manifest.entries.len(), 200);
-    // 确定性断言：保留集的 effective_at 最小值 = 全体第 200 新的值
-    // （抽掉刚好 50 篇最旧的：g0-g12 与 g14-g26 等 14 的倍数时段最旧批次）
-    let kept: Vec<(i64, i64)> =
-        manifest.entries.iter().map(|e| (e.instance_id, e.effective_at)).collect();
-    let oldest_kept = kept.iter().map(|(_, a)| *a).min().unwrap();
-    // 恰有 50 篇比 oldest_kept 更旧（被截掉的）
-    let older_count = 250 - kept.iter().filter(|(_, a)| *a >= oldest_kept).count();
-    assert_eq!(older_count + kept.len(), 250);
-    // 边界精确：被截掉的 50 篇的 effective_at 全部 < oldest_kept（严格旧于保留集）
-    assert!(
-        kept.iter().all(|(_, a)| *a >= oldest_kept),
-        "保留集内部无更旧项"
-    );
+    // 确定性断言：从已知 pubDate 模式独立推导期望保留集（不依赖 manifest 自身）。
+    // 条目 g{i} 的 pubDate = 2026-10-04T{hh}:00Z，hh = i%14 → effective_at 已知；
+    // instance_id 按插入顺序 = i+1。effective_at desc, instance_id desc 排序后
+    // 取前 200 = 丢弃 desc 序前 50。
+    let base = 1791072000i64; // 2026-10-04T00:00:00Z
+    let mut all: Vec<(i64, i64)> = (0..250i64)
+        .map(|i| (i + 1, base + (i % 14) * 3600))
+        .collect();
+    all.sort_by(|a, b| b.1.cmp(&a.1).then(b.0.cmp(&a.0)));
+    let expected: std::collections::BTreeSet<i64> =
+        all.into_iter().take(200).map(|(id, _)| id).collect();
+    let kept: std::collections::BTreeSet<i64> =
+        manifest.entries.iter().map(|e| e.instance_id).collect();
+    assert_eq!(kept, expected, "保留集必须是 effective_at 最近的 200 篇");
     // pairs_hash 覆盖全量 250 篇（截断不丢 CAS 指纹的成员）
     assert_eq!(manifest.total_in_window, 250);
     assert!(!manifest.pairs_hash.is_empty());
+
+    // 截断清单的无漂移提交应成功（200 行 items + 全量对指纹）
+    store
+        .commit_digest_report(
+            "2026-10-04", "UTC", start, end, "all", "{}", "p", "{}",
+            &manifest.hash, &manifest.pairs_hash, &[],
+            manifest.frozen_at, 0, 0,
+            "{}", "# 日报", 1, "{}", manifest.entries.len() as i64, &manifest.entries,
+        )
+        .unwrap();
 }
 
 /// 提交 CAS：生成期间素材变化（成员增删/版本变更/源标签重打）必须拒绝提交。

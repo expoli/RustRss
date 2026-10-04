@@ -4295,35 +4295,36 @@ fn digest_jobs() -> &'static std::sync::Mutex<
 
 /// 注册表守卫：持有期间任务在册；drop = 所有退出路径统一清册（审核 P1-6）。
 struct DigestJobGuard {
-    job_id: String,
+    /// 稳定槽位键（date+scope+profile）：同槽同时刻只有一个在飞
+    slot_key: String,
 }
 
 impl DigestJobGuard {
     /// 原子抢占：互斥锁内完成「查槽 + 插任务」，两个并发受理只有一个成功
-    /// （审核 P1-单飞：检查与占位不再分属两次锁）。
-    fn claim(job_id: String) -> Result<Self, ()> {
+    /// （审核 P1-单飞：键是稳定槽位，不含素材指纹——素材变化的重跑同槽互斥）。
+    fn claim(slot_key: String) -> Result<Self, ()> {
         let mut map = digest_jobs().lock().unwrap();
-        if map.contains_key(&job_id) {
+        if map.contains_key(&slot_key) {
             return Err(());
         }
         map.insert(
-            job_id.clone(),
+            slot_key.clone(),
             std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         );
-        Ok(Self { job_id })
+        Ok(Self { slot_key })
     }
     fn cancelled(&self) -> bool {
         digest_jobs()
             .lock()
             .unwrap()
-            .get(&self.job_id)
+            .get(&self.slot_key)
             .is_none_or(|f| f.load(std::sync::atomic::Ordering::Relaxed))
     }
 }
 
 impl Drop for DigestJobGuard {
     fn drop(&mut self) {
-        digest_jobs().lock().unwrap().remove(&self.job_id);
+        digest_jobs().lock().unwrap().remove(&self.slot_key);
     }
 }
 
@@ -4401,15 +4402,18 @@ pub async fn digest_generate(
         });
     }
 
-    // 任务身份含范围与配置档案：不同范围/配置互不冒充（审核 P1-单飞）
-    let slot_stamp = &rustrss_core::store::digest::sha256_hex_of(&[
-        &scope.key,
-        &profile_key,
-        &manifest.pairs_hash,
-    ])[..12];
-    let job_id = format!("digest:{date}:{slot_stamp}");
+    // 稳定槽位键（不含素材指纹）：素材变化的重跑仍同槽互斥（审核 R3-P1）
+    let slot_key = format!("digest-slot:{date}:{slot_stamp}", slot_stamp =
+        &rustrss_core::store::digest::sha256_hex_of(&[&scope.key, &profile_key])[..12]);
+    // 事件/取消身份含素材指纹：素材变化后的新任务有新 job_id
+    let job_id = format!(
+        "digest:{date}:{}",
+        &rustrss_core::store::digest::sha256_hex_of(&[
+            &scope.key, &profile_key, &manifest.pairs_hash
+        ])[..12]
+    );
     // 注册表抢占 = 在飞权威；成功后才写槽（无条件覆盖崩溃残留的 active_job_id）
-    let guard = DigestJobGuard::claim(job_id.clone())
+    let guard = DigestJobGuard::claim(slot_key.clone())
         .map_err(|_| "该日期的日报正在生成中".to_string())?;
     state.with_store(|s| {
         s.digest_slot_begin(
@@ -4451,7 +4455,7 @@ pub async fn digest_generate(
         let state = task_app.state::<crate::state::AppState>();
         let finish_slot = || {
             let _ = state.with_store(|s| {
-                s.digest_slot_end(&date, &scope.key).map_err(err)?;
+                s.digest_slot_end(&date, &scope.key, &profile_key).map_err(err)?;
                 Ok(())
             });
         };

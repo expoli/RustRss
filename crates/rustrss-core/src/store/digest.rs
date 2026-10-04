@@ -778,10 +778,17 @@ impl Store {
     }
 
     /// 生成结束（成功/取消/失败）：清掉在飞标记。旧报告不受影响。
-    pub fn digest_slot_end(&self, date: &str, scope_key: &str) -> super::Result<()> {
+    pub fn digest_slot_end(
+        &self,
+        date: &str,
+        scope_key: &str,
+        profile_key: &str,
+    ) -> super::Result<()> {
+        // 限定本槽位（date+scope+profile），不波及同日其它配置档案的行
         self.conn.execute(
-            "UPDATE digests SET active_job_id = NULL WHERE report_day = ?1 AND scope_key = ?2",
-            params![date, scope_key],
+            "UPDATE digests SET active_job_id = NULL
+              WHERE report_day = ?1 AND scope_key = ?2 AND profile_key = ?3",
+            params![date, scope_key, profile_key],
         )?;
         Ok(())
     }

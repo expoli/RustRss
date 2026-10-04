@@ -1326,7 +1326,7 @@ function renderDigestView(view) {
     : `<button class="digest-gen" data-mode="update">${t('digest.update')}</button>
        <button class="digest-gen" data-mode="rewrite" title="${t('digest.rewriteHint')}">${t('digest.rewrite')}</button>`;
   const warn = view.manifest_truncated
-    ? `<p class="dim digest-warn">${t('digest.manifestTruncated', { n: view.entries })}</p>`
+    ? `<p class="dim digest-warn">${t('digest.manifestTruncated', { total: view.total_in_window, kept: 200 })}</p>`
     : '';
   let content;
   if (running) {
@@ -1342,13 +1342,9 @@ function renderDigestView(view) {
   } else if (view.has_report) {
     content = `<div class="article digest-article">${escapeHtml(view.markdown || '')}</div>`;
   } else {
-    const trunc = view.manifest_truncated
-      ? `<p class="dim">${t('digest.manifestTruncated', { total: view.total_in_window, kept: 200 })}</p>`
-      : '';
     content = `<div class="reader-empty">
         <p>${t('digest.emptyTitle')}</p>
         <p class="dim">${t('digest.emptyHint', { n: st.candidate_count })}</p>
-        ${trunc}
       </div>`;
   }
   el('reader').innerHTML = `<div class="digest-view">
@@ -1376,21 +1372,22 @@ function renderDigestView(view) {
 async function digestGenerate(mode) {
   const date = digestOpenDate;
   if (!date || digestJob) return;
-  digestJob = { date, jobId: null };
+  const pending = { date, jobId: null }; // 本次调用身份：回执只作用于同一对象
+  digestJob = pending;
   renderDigestRefresh();
   try {
     const job = await invoke('digest_generate', { date, mode });
-    if (!digestJob || digestJob.date !== date) return; // 期间视图已切走
+    if (digestJob !== pending) return; // 期间已切换/结束，回执不复活
     if (!job.job_id) {
       // 空素材：后端零请求直接回执，无事件——立即结束生成态
       digestJob = null;
       if (digestOpenDate === date) openDigestDate(date).catch(() => {});
       return;
     }
-    // 正常路径：jobId 先经 digest:started 绑定（监听器幂等），回执兜底
-    digestJob.jobId = digestJob.jobId || job.job_id;
+    // 正常路径：jobId 先经 digest:started 绑定，回执兜底
+    pending.jobId = pending.jobId || job.job_id;
   } catch (e) {
-    digestJob = null;
+    if (digestJob === pending) digestJob = null;
     setStatus(e.message, true);
     if (digestOpenDate === date) openDigestDate(date);
   }
@@ -4106,7 +4103,8 @@ function initRefreshEvents() {
     .listen('digest:started', (e) => {
       const p = e.payload || {};
       if (!digestJob || digestJob.date !== p.date) return;
-      digestJob.jobId = p.jobId; // 幂等：后到回执不复活已完成任务
+      if (digestJob.jobId && digestJob.jobId !== p.jobId) return; // 不覆盖他人绑定
+      digestJob.jobId = p.jobId;
       renderDigestRefresh();
     })
     .catch((e2) => log(`listen digest:started failed: ${e2.message}`));
