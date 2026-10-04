@@ -59,11 +59,28 @@ class MainActivity : TauriActivity() {
         "window.__applyInsets($lastTop,$lastBottom);"
       WebViewCompat.addDocumentStartJavaScript(webView, script, setOf("*"))
       documentStartRegistered = true
-    } else {
-      // 老 WebView 无 document-start 支持：退回延迟注入（尽力而为）
-      webView.postDelayed({ pushInsets(lastTop, lastBottom, force = true) }, 0)
-      webView.postDelayed({ pushInsets(lastTop, lastBottom, force = true) }, 800)
-      webView.postDelayed({ pushInsets(lastTop, lastBottom, force = true) }, 2000)
+      // 慢设备/老 WebView 兜底：确认 CSS 变量真的算进去了，没生效就重试。
+      // （document-start 覆盖绝大多数场景；此循环收敛其余：fallback 注入晚于
+      //   页面加载完成、WebView 版本差异等。上限 10 次 × 600ms 后放弃。）
+      verifyApplied(0)
+    }
+  }
+
+  /// 读回计算样式验证 --inset-top 已生效；未生效则重注入并重试（原生侧闭环）。
+  private fun verifyApplied(attempt: Int) {
+    val web = webView ?: return
+    web.post {
+      web.evaluateJavascript(
+        "getComputedStyle(document.documentElement).getPropertyValue('--inset-top').trim()",
+      ) { result ->
+        val applied = result?.trim()?.trim('"') == "${lastTop}px"
+        if (!applied && attempt < 10) {
+          web.postDelayed({
+            pushInsets(lastTop, lastBottom, force = true)
+            verifyApplied(attempt + 1)
+          }, 600)
+        }
+      }
     }
   }
 
