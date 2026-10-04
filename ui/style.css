@@ -1469,6 +1469,9 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   .toolbar {
     min-width: 0;
     padding-top: calc(8px + var(--inset-top, 0px));
+    /* 桌面报头 2px 墨线在手机全宽下压着筛选行显得突兀（真机反馈）：
+       手机减细为与其它分隔一致的 1px 线 */
+    border-bottom-width: 1px;
   }
   .toolbar .grow { display: none; }
   .toolbar .brand { flex: none; }
@@ -1637,10 +1640,20 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
     order: 3;
     z-index: 40;
     gap: 2px;
-    /* 面板延伸到手势条后面：inset 由 Android 原生注入（--inset-bottom） */
-    padding: 4px 6px calc(4px + var(--inset-bottom, 0px));
+    /* 用户选择按钮完全贴底（不因手势条 inset 抬高）；面板背景仍要延伸到
+       手势条后面（不留底色断层）——由 ::after 把面板色画进 inset 区 */
+    padding: 4px 6px;
     background: var(--bg-panel);
     border-top: 1px solid var(--line);
+  }
+  #m-nav::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: var(--inset-bottom, 0px);
+    background: var(--bg-panel);
   }
   body[data-mpage="reader"] #m-nav { display: none; } /* 沉浸式阅读 */
   .m-nav-btn {
