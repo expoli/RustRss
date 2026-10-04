@@ -191,11 +191,27 @@ impl Store {
         Ok(Some(ChatSession { session, messages }))
     }
 
+    /// 删除会话（级联消息/正文/引用）。业务规则在 core：**在飞（running）会话
+    /// 拒绝删除**——同一事务内检查，删除/迟到响应无竞态（评审 P1：此前只由
+    /// Tauri 壳层检查进程内任务，core CRUD 本身不设防）。
     pub fn delete_session(&self, id: i64) -> Result<bool> {
-        Ok(self
-            .conn
-            .execute("DELETE FROM chat_sessions WHERE id=?1", [id])?
-            > 0)
+        let tx = self.conn.unchecked_transaction()?;
+        let running: bool = tx
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM chat_messages
+                                WHERE session_id = ?1 AND status = 'running')",
+                [id],
+                |r| r.get::<_, i64>(0),
+            )
+            .map(|v| v != 0)?;
+        if running {
+            return Err(super::StoreError::Invalid(
+                "会话正在生成中，请先停止再删除".into(),
+            ));
+        }
+        let deleted = tx.execute("DELETE FROM chat_sessions WHERE id=?1", [id])? > 0;
+        tx.commit()?;
+        Ok(deleted)
     }
 
     /// 宿主启动时调用；普通 Store::open 不恢复，避免 MCP 次要连接误伤在飞任务。

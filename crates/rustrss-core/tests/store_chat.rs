@@ -249,3 +249,49 @@ fn sources_excerpt_byte_gate_and_running_query_uses_partial_index() {
         .join(" ")
         .contains("idx_chat_running"));
 }
+
+/// 在飞会话删除保护在 core 层生效（评审 P1）：running 拒绝且数据不变；
+/// 标记 interrupted（终态）后删除成功；跨连接读取一致。
+#[test]
+fn delete_session_rejects_inflight_and_allows_terminal() {
+    let store = Store::open_in_memory().unwrap();
+    let sid = store.create_session("标题", "openai", "gpt-x", "ep", "{}").unwrap();
+    let no_usage = ChatUsage::default();
+    let (msg, _seq) = store
+        .append_message(sid, "user", "running", r#"{"parts":[]}"#, &no_usage)
+        .unwrap();
+
+    // running：拒绝，且会话与消息原样保留
+    let err = store.delete_session(sid).unwrap_err();
+    assert!(err.to_string().contains("正在生成中"), "{err}");
+    let session = store.get_session(sid).unwrap().unwrap();
+    assert!(!session.messages.is_empty(), "会话未被删除");
+    let still = session.messages.iter().find(|m| m.id == msg).unwrap();
+    assert_eq!(still.status, "running");
+
+    // 终态（interrupted）：删除成功且级联清空
+    store.mark_running_interrupted().unwrap();
+    assert!(store.delete_session(sid).unwrap());
+    assert!(store.get_session(sid).unwrap().is_none());
+}
+
+/// 跨连接一致性：文件库上第二个 Store 实例的删除同样受 core 防护约束。
+#[test]
+fn delete_session_guard_is_cross_connection() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("chat.sqlite");
+    let store = Store::open(&path).unwrap();
+    let sid = store.create_session("标题", "openai", "gpt-x", "ep", "{}").unwrap();
+    let no_usage = ChatUsage::default();
+    store
+        .append_message(sid, "user", "running", r#"{"parts":[]}"#, &no_usage)
+        .unwrap();
+    drop(store);
+
+    let other = Store::open(&path).unwrap(); // 模拟另一连接/进程
+    let err = other.delete_session(sid).unwrap_err();
+    assert!(err.to_string().contains("正在生成中"));
+    // 终态化后（另一连接标记 interrupted）即可删除
+    other.mark_running_interrupted().unwrap();
+    assert!(other.delete_session(sid).unwrap());
+}
