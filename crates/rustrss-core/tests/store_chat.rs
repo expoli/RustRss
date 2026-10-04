@@ -286,7 +286,6 @@ fn delete_session_guard_is_cross_connection() {
     store
         .append_message(sid, "user", "running", r#"{"parts":[]}"#, &no_usage)
         .unwrap();
-    drop(store);
 
     let other = Store::open(&path).unwrap(); // 模拟另一连接/进程
     let err = other.delete_session(sid).unwrap_err();
