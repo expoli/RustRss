@@ -4854,7 +4854,7 @@ pub async fn chat_send(
 ) -> R<ChatSendView> {
     use rustrss_core::ai::chat::{ChatBlock, ChatUsage};
     use rustrss_core::ai::chat_agent::{
-        prepare_local_retrieval, run_agent_turn_streaming, ChatCapability,
+        prepare_local_retrieval, run_agent_turn_streaming_with_usage, ChatCapability,
     };
     let client = crate::ai::client_from_state(&state)?;
     let turn = state.with_store(|s| {
@@ -4901,6 +4901,9 @@ pub async fn chat_send(
         let (delta_tx, mut delta_rx) = tokio::sync::mpsc::unbounded_channel::<String>();
         let mut received_text = String::new();
         let mut pending_text = String::new();
+        // Kept outside the cancellable/timeout future: dropping it must not
+        // discard billing already reported by the provider.
+        let usage_snapshot = std::sync::Mutex::new(ChatUsage::default());
         let emit_chunk = |text: &mut String| {
             if text.is_empty() {
                 return;
@@ -4913,7 +4916,7 @@ pub async fn chat_send(
             let request = chat_until_cancelled(&mut guard.cancel, async {
                 tokio::time::timeout(
                 std::time::Duration::from_secs(120),
-                run_agent_turn_streaming(
+                run_agent_turn_streaming_with_usage(
                     &client,
                     turn.request,
                     |name, args| {
@@ -4933,6 +4936,7 @@ pub async fn chat_send(
                         let _ = app.emit("chat:progress", serde_json::json!({"sessionId":turn.session_id,"messageId":turn.message_id,"seq":event_seq.fetch_add(1, std::sync::atomic::Ordering::Relaxed),"stage":"tool","name":log.name,"summary":if log.ok {"completed"} else {"rejected"},"ok":log.ok,"truncated":log.truncated}));
                     },
                     |text| { let _ = delta_tx.send(text.to_string()); },
+                    |usage| { *usage_snapshot.lock().unwrap() = usage.clone(); },
                 ),
             )
             .await
@@ -4972,7 +4976,7 @@ pub async fn chat_send(
                 } else {
                     vec![ChatBlock::Text(received_text.clone())]
                 },
-                ChatUsage::default(),
+                usage_snapshot.lock().unwrap().clone(),
                 Some("已停止回答".to_string()),
             ),
             Some(Ok(response)) => {
@@ -4989,7 +4993,7 @@ pub async fn chat_send(
                 }
                 // Persist both partial output and the failure, including after restart.
                 blocks.push(ChatBlock::Text(error.clone()));
-                ("failed", blocks, ChatUsage::default(), Some(error))
+                ("failed", blocks, usage_snapshot.lock().unwrap().clone(), Some(error))
             }
         };
         let state = app.state::<AppState>();
@@ -5112,6 +5116,172 @@ mod chat_jobs_tests {
             chat_until_cancelled(&mut receiver, async { 42 }).await,
             None
         );
+    }
+
+    // Exercise the same external-drop boundary used by chat_send, then read
+    // terminal billing back from SQLite (not just the callback/error value).
+    async fn partial_usage_persists(status: &str) {
+        use rustrss_core::ai::chat::{
+            ChatBlock, ChatLimits, ChatMessage, ChatRequest, ChatRole, ChatUsage,
+        };
+        use rustrss_core::ai::chat_agent::run_agent_turn_streaming_with_usage;
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let uri = format!("http://{}", listener.local_addr().unwrap());
+        let (release, wait) = std::sync::mpsc::channel();
+        let eof = status == "failed";
+        let server = std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(std::time::Duration::from_secs(2)))
+                .unwrap();
+            let mut request = Vec::new();
+            let mut buf = [0; 8192];
+            loop {
+                let n = socket.read(&mut buf).unwrap();
+                assert!(n > 0);
+                request.extend_from_slice(&buf[..n]);
+                if let Some(end) = request.windows(4).position(|s| s == b"\r\n\r\n") {
+                    let headers = String::from_utf8_lossy(&request[..end]);
+                    let length: usize = headers
+                        .lines()
+                        .find_map(|line| {
+                            line.to_ascii_lowercase()
+                                .strip_prefix("content-length:")
+                                .map(|n| n.trim().parse().unwrap())
+                        })
+                        .unwrap();
+                    if request.len() >= end + 4 + length {
+                        break;
+                    }
+                }
+            }
+            socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n").unwrap();
+            let frame = concat!(
+                "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":11}}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"partial\"}}\n\n"
+            );
+            write!(socket, "{:x}\r\n{}\r\n", frame.len(), frame).unwrap();
+            if eof {
+                socket.write_all(b"0\r\n\r\n").unwrap();
+            } else {
+                let _ = wait.recv_timeout(std::time::Duration::from_secs(2));
+            }
+        });
+        let client = rustrss_core::ai::AiClient::new(
+            rustrss_core::ai::AiConfig::anthropic("test", "secret").with_base_url(&uri),
+        )
+        .unwrap();
+        let mut limits = ChatLimits::default();
+        if status == "deadline" {
+            limits.timeout = std::time::Duration::from_millis(100);
+        }
+        let request = ChatRequest {
+            system: None,
+            messages: vec![ChatMessage {
+                role: ChatRole::User,
+                blocks: vec![ChatBlock::Text("question".into())],
+            }],
+            tools: vec![],
+            limits,
+        };
+        let (stop, mut cancel) = tokio::sync::watch::channel(false);
+        let snapshot = std::sync::Mutex::new(ChatUsage::default());
+        let agent_cancel = std::sync::atomic::AtomicBool::new(false);
+        let result = chat_until_cancelled(&mut cancel, async {
+            tokio::time::timeout(
+                if status == "timeout" {
+                    std::time::Duration::from_millis(100)
+                } else {
+                    std::time::Duration::from_secs(2)
+                },
+                run_agent_turn_streaming_with_usage(
+                    &client,
+                    request,
+                    |_, _| panic!("no tool"),
+                    |_| panic!("no fallback"),
+                    || agent_cancel.load(std::sync::atomic::Ordering::SeqCst),
+                    |_| {},
+                    |_| {},
+                    |usage| {
+                        *snapshot.lock().unwrap() = usage.clone();
+                        if usage.input_tokens == Some(11) {
+                            if status == "cancelled" {
+                                stop.send(true).unwrap();
+                            }
+                            if status == "agent_cancel" {
+                                agent_cancel.store(true, std::sync::atomic::Ordering::SeqCst);
+                            }
+                        }
+                    },
+                ),
+            )
+            .await
+        })
+        .await;
+        match status {
+            "cancelled" => assert!(result.is_none()),
+            "timeout" => assert!(matches!(result, Some(Err(_)))),
+            _ => {
+                let error = result.unwrap().unwrap().unwrap_err();
+                assert_eq!(error.chat_usage(), Some(&snapshot.lock().unwrap().clone()));
+            }
+        }
+        let usage = snapshot.lock().unwrap().clone();
+        assert_eq!(usage.input_tokens, Some(11));
+        assert_eq!(usage.output_tokens, None);
+        let _ = release.send(());
+        server.join().unwrap();
+        let dir = std::env::temp_dir().join(format!(
+            "rustrss-partial-usage-{}-{status}.sqlite",
+            std::process::id()
+        ));
+        {
+            let store = rustrss_core::Store::open(&dir).unwrap();
+            let session = store
+                .create_session("test", "anthropic", "test", "local", "{}")
+                .unwrap();
+            let (user, _) = store
+                .append_message(session, "user", "running", "[]", &ChatUsage::default())
+                .unwrap();
+            let terminal_status = if status == "cancelled" || status == "agent_cancel" {
+                "cancelled"
+            } else {
+                "failed"
+            };
+            let assistant = store
+                .chat_finish_message(session, user, terminal_status, "[]", &usage)
+                .unwrap();
+            drop(store);
+            let reopened = rustrss_core::Store::open(&dir).unwrap();
+            let history = reopened.get_session(session).unwrap().unwrap();
+            let saved = history.messages.iter().find(|m| m.id == assistant).unwrap();
+            assert_eq!(saved.status, terminal_status);
+            assert_eq!(saved.usage.input_tokens, Some(11));
+            assert_eq!(saved.usage.output_tokens, None);
+        }
+        std::fs::remove_file(dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn disconnected_stream_persists_reported_input_usage() {
+        partial_usage_persists("failed").await;
+    }
+    #[tokio::test]
+    async fn cancelled_stream_persists_reported_input_usage() {
+        partial_usage_persists("cancelled").await;
+    }
+    #[tokio::test]
+    async fn timed_out_agent_persists_reported_input_usage() {
+        partial_usage_persists("timeout").await;
+    }
+    #[tokio::test]
+    async fn timed_out_stream_persists_reported_input_usage() {
+        partial_usage_persists("deadline").await;
+    }
+    #[tokio::test]
+    async fn agent_cancel_retains_reported_input_usage() {
+        partial_usage_persists("agent_cancel").await;
     }
 
     #[tokio::test]

@@ -570,7 +570,18 @@ pub async fn execute_chat_turn(
 pub async fn execute_chat_turn_streaming(
     client: &AiClient,
     req: &ChatRequest,
+    on_delta: impl FnMut(&str),
+) -> Result<ChatResponse, AiError> {
+    execute_chat_turn_streaming_with_usage(client, req, on_delta, |_| {}).await
+}
+
+/// Publish billing snapshots before the next await so dropping the HTTP future
+/// on cancellation cannot discard usage already received in complete frames.
+pub async fn execute_chat_turn_streaming_with_usage(
+    client: &AiClient,
+    req: &ChatRequest,
     mut on_delta: impl FnMut(&str),
+    mut on_usage: impl FnMut(&ChatUsage),
 ) -> Result<ChatResponse, AiError> {
     let mut parser = super::chat_stream::ChatStreamParser::new(client.config().provider);
     let request = async {
@@ -619,14 +630,35 @@ pub async fn execute_chat_turn_streaming(
             if received > super::MAX_RESPONSE_BYTES {
                 return Err(parser.interrupted("AI 流式响应体积超过上限"));
             }
-            parser.push(&chunk, &mut on_delta)?;
+            let result = parser.push(&chunk, &mut on_delta);
+            on_usage(&parser.usage_snapshot());
+            result?;
         }
         Ok(())
     };
     match tokio::time::timeout(req.limits.timeout.min(Duration::from_secs(120)), request).await {
         Err(_) => Err(parser.interrupted("对话请求超时（最多 120 秒）")),
-        Ok(Err(e)) => Err(e),
-        Ok(Ok(())) => parser.finish(on_delta),
+        Ok(Err(e)) => {
+            let usage = parser.usage_snapshot();
+            if usage.input_tokens.is_some() || usage.output_tokens.is_some() {
+                Err(e.with_chat_usage(usage))
+            } else {
+                // Preserve HTTP capability errors for the agent's tools fallback.
+                Err(e)
+            }
+        }
+        Ok(Ok(())) => {
+            let result = parser.finish(on_delta);
+            match &result {
+                Ok(response) => on_usage(&response.usage),
+                Err(error) => {
+                    if let Some(usage) = error.chat_usage() {
+                        on_usage(usage);
+                    }
+                }
+            }
+            result
+        }
     }
 }
 

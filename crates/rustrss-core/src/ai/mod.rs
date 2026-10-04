@@ -128,6 +128,12 @@ pub enum AiError {
     Request(String),
     #[error("网络请求失败: {0}")]
     Transport(String),
+    /// Streaming failures retain billing components already reported by the provider.
+    #[error("{source}")]
+    ChatInterrupted {
+        source: Box<AiError>,
+        usage: chat::ChatUsage,
+    },
     #[error("服务端返回 {status}: {message}")]
     Provider { status: u16, message: String },
     #[error("响应结构不符合预期: {0}")]
@@ -136,6 +142,23 @@ pub enum AiError {
     Store(String),
     #[error("未找到条目 {0}")]
     EntryNotFound(i64),
+}
+
+impl AiError {
+    pub fn chat_usage(&self) -> Option<&chat::ChatUsage> {
+        match self {
+            Self::ChatInterrupted { usage, .. } => Some(usage),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn with_chat_usage(self, usage: chat::ChatUsage) -> Self {
+        let source = match self {
+            Self::ChatInterrupted { source, .. } => source,
+            other => Box::new(other),
+        };
+        Self::ChatInterrupted { source, usage }
+    }
 }
 
 /// 请求预览：给「发送前确认」用。headers 里的凭据已打码。

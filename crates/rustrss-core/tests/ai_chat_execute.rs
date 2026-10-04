@@ -290,7 +290,13 @@ async fn streaming_case(provider: Provider, interrupted: bool) {
     let result = execute_chat_turn_streaming(&client, &request(), |s| text.push_str(s)).await;
     assert_eq!(text, "答案🦀");
     if interrupted {
-        let error = result.unwrap_err().to_string();
+        let error = result.unwrap_err();
+        if provider == Provider::Anthropic {
+            let usage = error.chat_usage().expect("interrupted usage snapshot");
+            assert_eq!(usage.input_tokens, Some(11));
+            assert_eq!(usage.output_tokens, None);
+        }
+        let error = error.to_string();
         assert!(error.contains("3 字符") && error.contains("EOF"), "{error}");
     } else {
         let response = result.unwrap();

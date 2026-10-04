@@ -111,7 +111,7 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 - core `execute_chat_turn_streaming` 与 `run_agent_turn_streaming` 复用原代理/TLS 根集、16MiB Content-Length/累计体积闸门、120 秒回合护栏与取消路径。只流模型文本，不流工具执行过程/思考链；工具参数收齐后仍按原白名单与预算执行。
 - OpenAI 兼容：SSE delta 文本、按 index 拼接工具 arguments，`[DONE]` 必须到达；请求带 `stream_options.include_usage`，仅 HTTP 400 明确提及该参数时去掉重试一次。无 usage 仍标未知，不重试普通 400/401/429。
 - Anthropic：SSE `message_start` 输入 usage、`content_block_delta` 的 text/partial_json、`message_delta` 停止原因/输出 usage，`message_stop` 终止。Gemini：`streamGenerateContent?alt=sse` 的 data 候选/完整 functionCall parts 与签名，finishReason 终止，usageMetadata 独立汇总。Ollama：NDJSON message.content 与完整 tool_calls，done:true 终止，prompt_eval_count/eval_count 计量。
-- 增量输入是字节，完整行/事件边界才解码 UTF-8；显式 SSE id 重复去重，无 id 的相同文本不能猜作重传（模型可能合法重复）。EOF/连接中断/超时不静默成功，错误含已收字符数；失败与停止保留部分回答，失败信息也落库，不自动付费重发。
+- 增量输入是字节，完整行/事件边界才解码 UTF-8；显式 SSE id 重复去重，无 id 的相同文本不能猜作重传（模型可能合法重复）。EOF/连接中断/超时不静默成功，错误含已收字符数；失败与停止保留部分回答，失败信息也落库，不自动付费重发。完整帧已报告的 usage 分量在断流、请求/回合超时与取消时仍随快照落库（即使在途 future 被丢弃），只有缺失分量保持未知，不以 0 覆盖已知用量。
 - `chat:chunk {sessionId,messageId,seq,text}` 每约 120ms 或累计 ≥80 字符合并；前端约 120ms 批量 patch 当前 assistant 文本节点。按会话/回合/序号丢重复、迟到和终态后的 chunk；回执前或离开页面收到的文本保留，不抢导航。距底部 ≥48px 时不强制滚底。
 - `chat_session_get(since_seq?,limit?)` 默认最新 50 条，limit 限 1–200；since_seq 是当前最早**持久消息** seq，取严格更早页并按正序返回。上滚到顶单 flight 加载 50 条，prepend 用高度差保持位置，已有气泡不重建。双端共用现有显式聊天容器/日报分段，无需修改 mobile.js 路由。消息列表 polite live log、输入 aria-label、停止按钮保持键盘可达。
 - Rust 四家成功/断流与工具回灌 mock、真实 HTTP 分包和 JS 竞态测试已通过；Xvfb 重建真产物的流式/上滚/分页/断流证据见 [.chorus 阶段③记录](.chorus/specs/rss-reader/2026-10-04-ai-chat-assistant/evidence/stage3/record.md)。真实 BYOK 与手机实机不属于本批验证。

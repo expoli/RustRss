@@ -1414,3 +1414,14 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - Mock/inspector DOM 动作不是真实 BYOK、原生键盘/指针或手机实机；Android IME/旋转/读屏器、Windows/macOS、Wayland 未验收。zai/glm-5.3-flash 后续真实流式实测由父会话执行。
 - 阶段②工具过程/能力/降级徽章 UI、来源引用仍保留遗留；本批只流模型文本，不流工具执行过程或思考链。
 - 既有菜单 selftest checked 条目失败仍在，无头日志如实记录，未将其算作本批通过项。
+
+## 2026-10-05 · 阶段③终审 P1：断流/取消保留已报告用量
+
+### 机械验证（已验证）
+- 先红后绿：既有 Anthropic 断流夹具已经报告 input_tokens=11，新增保留断言在修复前失败（原错误只有 Transport，没有 usage），修复后 input_tokens=Some(11)、output_tokens=None。
+- `cargo test --workspace`：617 passed、1 个既有 ignored（610 + 7，无删除测试）；新增四家分帧/空值 usage 保留、完成轮+断流轮累计，以及真实 loopback HTTP 的 EOF、外部取消、agent 取消、请求超时和外部回合超时五条持久化回归。SQLite 关闭重开后仍读到 input_tokens=11，缺失输出保持 None。
+- `cargo clippy --workspace --all-targets -- -D warnings`：零警告。非流式路径、预算熔断逻辑、UI 不变。
+- 快照回调在下一次 await 前发布完整帧 usage，位于可取消 future 外的 Tauri 快照在取消/超时丢弃 future 后仍可落库；agent 错误并行携带 usage。
+
+### 未验证 / 环境限制
+- 本批为 Rust 协议/取消/持久化机械验证，未新增 UI 实机、手机、跨平台或真实 BYOK 验收；loopback 合成服务商数据，不产生付费请求。

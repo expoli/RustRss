@@ -1,5 +1,5 @@
 //! Byte-framed SSE/NDJSON chat streams. Only complete frames are decoded as UTF-8.
-use super::chat::{decode_chat_response, ChatResponse};
+use super::chat::{decode_chat_response, ChatResponse, ChatUsage};
 use super::{AiError, Provider};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashSet};
@@ -36,11 +36,25 @@ impl ChatStreamParser {
     pub fn received_chars(&self) -> usize {
         self.text.chars().count()
     }
+    /// Only complete provider frames contribute; absent components stay unknown.
+    pub fn usage_snapshot(&self) -> ChatUsage {
+        let (input, output) = match self.provider {
+            Provider::OpenAiCompatible => ("prompt_tokens", "completion_tokens"),
+            Provider::Anthropic => ("input_tokens", "output_tokens"),
+            Provider::Gemini => ("promptTokenCount", "candidatesTokenCount"),
+            Provider::Ollama => ("prompt_eval_count", "eval_count"),
+        };
+        ChatUsage {
+            input_tokens: self.usage[input].as_u64(),
+            output_tokens: self.usage[output].as_u64(),
+        }
+    }
     pub fn interrupted(&self, cause: &str) -> AiError {
         AiError::Transport(format!(
             "{cause}（已收到 {} 字符，流未完整结束）",
             self.received_chars()
         ))
+        .with_chat_usage(self.usage_snapshot())
     }
     /// An empty input chunk is not EOF. Explicit `finish` checks termination.
     pub fn push(&mut self, bytes: &[u8], mut delta: impl FnMut(&str)) -> Result<(), AiError> {
@@ -92,6 +106,16 @@ impl ChatStreamParser {
             delta(text);
         }
     }
+    fn merge_usage(&mut self, usage: &Value) {
+        if let Some(fields) = usage.as_object() {
+            for (key, value) in fields {
+                // Missing/null fields must not erase a previously reported count.
+                if value.is_u64() {
+                    self.usage[key] = value.clone();
+                }
+            }
+        }
+    }
     fn frame(&mut self, bytes: &[u8], delta: &mut impl FnMut(&str)) -> Result<(), AiError> {
         if bytes == b"[DONE]" {
             if self.provider != Provider::OpenAiCompatible {
@@ -110,9 +134,7 @@ impl ChatStreamParser {
         // Terminal frames may be followed by usage-only frames; never append late text.
         match self.provider {
             Provider::OpenAiCompatible => {
-                if value["usage"].is_object() {
-                    self.usage = value["usage"].clone();
-                }
+                self.merge_usage(&value["usage"]);
                 if self.terminated {
                     return Ok(());
                 }
@@ -146,19 +168,13 @@ impl ChatStreamParser {
             Provider::Anthropic => {
                 match value["type"].as_str() {
                     Some("message_start") => {
-                        if value["message"]["usage"].is_object() {
-                            self.usage = value["message"]["usage"].clone();
-                        }
+                        self.merge_usage(&value["message"]["usage"]);
                     }
                     Some("message_delta") => {
                         if !value["delta"]["stop_reason"].is_null() {
                             self.reason = value["delta"]["stop_reason"].clone();
                         }
-                        if let Some(usage) = value["usage"].as_object() {
-                            for (key, v) in usage {
-                                self.usage[key] = v.clone();
-                            }
-                        }
+                        self.merge_usage(&value["usage"]);
                     }
                     Some("message_stop") => self.terminated = true,
                     Some("content_block_start") if !self.terminated => {
@@ -203,9 +219,7 @@ impl ChatStreamParser {
                 }
             }
             Provider::Gemini => {
-                if value["usageMetadata"].is_object() {
-                    self.usage = value["usageMetadata"].clone();
-                }
+                self.merge_usage(&value["usageMetadata"]);
                 if self.terminated {
                     return Ok(());
                 }
@@ -261,6 +275,7 @@ impl ChatStreamParser {
         if !self.terminated {
             return Err(self.interrupted("连接 EOF"));
         }
+        let usage = self.usage_snapshot();
         let calls: Vec<_> = self.calls.into_values().collect();
         let value = match self.provider {
             Provider::OpenAiCompatible => {
@@ -275,7 +290,10 @@ impl ChatStreamParser {
                     let input =
                         if let Some(partial) = call["partial"].as_str().filter(|s| !s.is_empty()) {
                             serde_json::from_str::<Value>(partial)
-                                .map_err(|_| AiError::BadResponse("工具流式参数不是 JSON".into()))?
+                                .map_err(|_| {
+                                    AiError::BadResponse("工具流式参数不是 JSON".into())
+                                        .with_chat_usage(usage.clone())
+                                })?
                         } else {
                             call["input"].clone()
                         };
@@ -288,7 +306,7 @@ impl ChatStreamParser {
                 json!({"candidates":[{"content":{"parts":self.parts},"finishReason":self.reason}],"usageMetadata":self.usage})
             }
         };
-        decode_chat_response(self.provider, &value)
+        decode_chat_response(self.provider, &value).map_err(|e| e.with_chat_usage(usage))
     }
 }
 
@@ -314,6 +332,54 @@ mod tests {
         p.push(b"data: [DONE]\n\n", |_| {}).unwrap();
         assert!(p.finish(|_| {}).is_ok());
     }
+    #[test]
+    fn interrupted_usage_keeps_reported_components_across_frames() {
+        for (provider, frames) in [
+            (
+                Provider::OpenAiCompatible,
+                vec![
+                    json!({"usage":{"prompt_tokens":11}}),
+                    json!({"usage":{"completion_tokens":0,"prompt_tokens":null}}),
+                ],
+            ),
+            (
+                Provider::Anthropic,
+                vec![
+                    json!({"type":"message_start","message":{"usage":{"input_tokens":11}}}),
+                    json!({"type":"message_delta","usage":{"output_tokens":0,"input_tokens":null}}),
+                ],
+            ),
+            (
+                Provider::Gemini,
+                vec![
+                    json!({"usageMetadata":{"promptTokenCount":11}}),
+                    json!({"usageMetadata":{"candidatesTokenCount":0,"promptTokenCount":null}}),
+                ],
+            ),
+            (
+                Provider::Ollama,
+                vec![
+                    json!({"prompt_eval_count":11}),
+                    json!({"eval_count":0,"prompt_eval_count":null}),
+                ],
+            ),
+        ] {
+            let mut parser = ChatStreamParser::new(provider);
+            for frame in frames {
+                let bytes = if provider == Provider::Ollama {
+                    format!("{frame}\n")
+                } else {
+                    format!("data: {frame}\n\n")
+                };
+                parser.push(bytes.as_bytes(), |_| {}).unwrap();
+            }
+            let error = parser.finish(|_| {}).unwrap_err();
+            let usage = error.chat_usage().unwrap();
+            assert_eq!(usage.input_tokens, Some(11));
+            assert_eq!(usage.output_tokens, Some(0));
+        }
+    }
+
     #[test]
     fn two_indexed_tools_and_explicit_duplicate_ids() {
         let mut p = ChatStreamParser::new(Provider::OpenAiCompatible);

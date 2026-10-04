@@ -134,6 +134,7 @@ created: 2026-09-20
 
 - [x] 四家 SSE/NDJSON 字节增量解析、UTF-8 跨包、空 chunk、工具参数按 index 拼装、显式 SSE id 重复/迟到容错；EOF/网络断流/超时含已收字符数，不静默成功，usage 缺失不伪造账单；OpenAI stream_options 明确 400 拒绝才去掉重试一次。
 - [x] 流式模型请求复用阶段②只读 agent 循环（四家工具回灌 mock）、取消/预算/代理/TLS/体积闸门不变；chat:chunk 按 120ms/80 字合并，started/progress/chunk/done/error 带回合事件 seq；停止/失败保留文本，错误也持久化。
+- [x] 阶段③终审 P1：已报告 usage 分量在 EOF/网络断流、请求/回合超时与取消时保留快照并持久化，缺失分量仍为未知；真实 loopback HTTP → agent → 取消/超时边界 → SQLite 重开回读断言 input_tokens=11、output_tokens=None，完成轮+断流轮累计不丢已知输入。
 - [x] 聊天历史默认最新 50 条、严格更早 seq 分页；双端共用容器批量 patch 当前文本节点、上滚不强制滚底、prepend 高度补偿、session/message/seq 去重迟到、polite live log/输入标签/停止按钮可达。JS 回归 + 桌面 Xvfb 真产物流式状态、真实 IPC 分页与断流持久回读有证据（见 [阶段③记录](2026-10-04-ai-chat-assistant/evidence/stage3/record.md)）。
 - [ ] 四家真实 BYOK、手机实机/IME/旋转及跨平台键盘/读屏器验收仍未验证；本批不关闭阶段①/②引用、能力与工具过程/降级 UI 的遗留项。
 

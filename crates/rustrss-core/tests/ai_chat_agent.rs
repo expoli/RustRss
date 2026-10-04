@@ -1202,3 +1202,43 @@ async fn gemini_streaming_agent_assembles_tools_then_streams_answer() {
 async fn ollama_streaming_agent_assembles_tools_then_streams_answer() {
     streaming_agent_tools(Provider::Ollama).await;
 }
+
+#[tokio::test]
+async fn interrupted_stream_retains_usage_from_completed_and_partial_rounds() {
+    use rustrss_core::ai::chat_agent::run_agent_turn_streaming_with_usage;
+    let server = MockServer::start().await;
+    let rounds = AtomicUsize::new(0);
+    Mock::given(method("POST"))
+        .respond_with(move |_: &Request| {
+            let body = if rounds.fetch_add(1, Ordering::SeqCst) == 0 {
+                concat!(
+                    "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":3}}}\n\n",
+                    "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"call\",\"name\":\"list_tags\",\"input\":{}}}\n\n",
+                    "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":2}}\n\n",
+                    "data: {\"type\":\"message_stop\"}\n\n"
+                )
+            } else {
+                "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":11}}}\n\n"
+            };
+            ResponseTemplate::new(200).set_body_string(body)
+        })
+        .expect(2)
+        .mount(&server)
+        .await;
+    let mut snapshot = rustrss_core::ai::chat::ChatUsage::default();
+    let error = run_agent_turn_streaming_with_usage(
+        &client(Provider::Anthropic, &server.uri()),
+        request(),
+        |_, _| output(),
+        |_| panic!("no fallback"),
+        || false,
+        |_| {},
+        |_| {},
+        |usage| snapshot = usage.clone(),
+    )
+    .await
+    .unwrap_err();
+    assert_eq!(snapshot.input_tokens, Some(14));
+    assert_eq!(snapshot.output_tokens, None);
+    assert_eq!(error.chat_usage(), Some(&snapshot));
+}

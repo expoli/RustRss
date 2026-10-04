@@ -1,6 +1,9 @@
 //! Bounded read-only agent turns. HTTP futures are dropped on cancellation; no
 //! store lock crosses an await. Local evidence is data, never an instruction.
-use super::chat::{execute_chat_turn, execute_chat_turn_streaming, ChatBlock, ChatMessage, ChatRequest, ChatRole, ChatUsage};
+use super::chat::{
+    execute_chat_turn, execute_chat_turn_streaming_with_usage, ChatBlock, ChatMessage, ChatRequest,
+    ChatRole, ChatUsage,
+};
 use super::tools::{
     bound_output, chat_tools, scope_feeds, validate_tool, ToolError, ToolOutput, TOOL_BYTES,
 };
@@ -165,6 +168,7 @@ pub async fn run_agent_turn(
         cancelled,
         progress,
         None::<fn(&str)>,
+        |_| {},
     )
     .await
 }
@@ -179,7 +183,33 @@ pub async fn run_agent_turn_streaming(
     progress: impl FnMut(&ToolCallLog),
     on_delta: impl FnMut(&str),
 ) -> Result<AgentTurnOutcome, AiError> {
-    run_agent_turn_inner(
+    run_agent_turn_streaming_with_usage(
+        client,
+        request,
+        tool,
+        retrieve,
+        cancelled,
+        progress,
+        on_delta,
+        |_| {},
+    )
+    .await
+}
+
+/// Usage snapshots outlive cancellation of the agent future by its caller.
+#[allow(clippy::too_many_arguments)]
+pub async fn run_agent_turn_streaming_with_usage(
+    client: &AiClient,
+    request: ChatRequest,
+    tool: impl FnMut(&str, &Value) -> Result<ToolOutput, ToolError>,
+    retrieve: impl FnMut(&mut ChatRequest) -> Result<String, AiError>,
+    cancelled: impl Fn() -> bool,
+    progress: impl FnMut(&ToolCallLog),
+    on_delta: impl FnMut(&str),
+    mut on_usage: impl FnMut(&ChatUsage),
+) -> Result<AgentTurnOutcome, AiError> {
+    let mut snapshot = ChatUsage::default();
+    let result = run_agent_turn_inner(
         client,
         request,
         tool,
@@ -187,10 +217,16 @@ pub async fn run_agent_turn_streaming(
         cancelled,
         progress,
         Some(on_delta),
+        |usage| {
+            snapshot = usage.clone();
+            on_usage(usage);
+        },
     )
-    .await
+    .await;
+    result.map_err(|error| error.with_chat_usage(snapshot))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_agent_turn_inner(
     client: &AiClient,
     mut request: ChatRequest,
@@ -199,6 +235,7 @@ async fn run_agent_turn_inner(
     cancelled: impl Fn() -> bool,
     mut progress: impl FnMut(&ToolCallLog),
     mut on_delta: Option<impl FnMut(&str)>,
+    mut on_usage: impl FnMut(&ChatUsage),
 ) -> Result<AgentTurnOutcome, AiError> {
     let started = Instant::now();
     let timeout = request.limits.timeout.min(Duration::from_secs(120));
@@ -260,7 +297,21 @@ async fn run_agent_turn_inner(
         let response = {
             let future = async {
                 if let Some(delta) = &mut on_delta {
-                    execute_chat_turn_streaming(client, &request, delta).await
+                    execute_chat_turn_streaming_with_usage(client, &request, delta, |usage| {
+                        let mut snapshot = outcome.usage.clone();
+                        accumulate(
+                            &mut snapshot.input_tokens,
+                            usage.input_tokens,
+                            successes == 0,
+                        );
+                        accumulate(
+                            &mut snapshot.output_tokens,
+                            usage.output_tokens,
+                            successes == 0,
+                        );
+                        on_usage(&snapshot);
+                    })
+                    .await
                 } else { execute_chat_turn(client, &request).await }
             };
             tokio::pin!(future);
