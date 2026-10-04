@@ -6,6 +6,8 @@ import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 
 class MainActivity : TauriActivity() {
   // TauriActivity disables Wry's default history navigation. The phone UI
@@ -14,8 +16,9 @@ class MainActivity : TauriActivity() {
 
   /// WebView 引用与最新 insets：注入 CSS 变量用（onWebViewCreate 后才可用）。
   private var webView: WebView? = null
-  private var lastTop = -1
-  private var lastBottom = -1
+  private var lastTop = 0
+  private var lastBottom = 0
+  private var documentStartRegistered = false
 
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
@@ -46,22 +49,36 @@ class MainActivity : TauriActivity() {
   override fun onWebViewCreate(webView: WebView) {
     super.onWebViewCreate(webView)
     this.webView = webView
-    // 首次注入要落在真实页面（tauri:// 加载完成后）才不被后续导航冲掉；
-    // 页面是本地资产，加载毫秒级，三段重试覆盖时序竞态，脚本本身幂等。
-    webView.postDelayed({ pushInsets(lastTop, lastBottom) }, 0)
-    webView.postDelayed({ pushInsets(lastTop, lastBottom) }, 400)
-    webView.postDelayed({ pushInsets(lastTop, lastBottom) }, 1200)
+    if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+      // document-start：脚本在**每次页面导航**的文档起点自动执行——根除
+      // 「注入早于文档就绪、随后被导航冲掉」的时序竞态（真机冷启动 >1s 时
+      // 延迟注入全部落空，状态栏时间与报头重叠）。函数定义 + 立即应用当前值。
+      val script = "window.__applyInsets=function(t,b){var d=document.documentElement;" +
+        "d.style.setProperty('--inset-top',t+'px');" +
+        "d.style.setProperty('--inset-bottom',b+'px');};" +
+        "window.__applyInsets($lastTop,$lastBottom);"
+      WebViewCompat.addDocumentStartJavaScript(webView, script, setOf("*"))
+      documentStartRegistered = true
+    } else {
+      // 老 WebView 无 document-start 支持：退回延迟注入（尽力而为）
+      webView.postDelayed({ pushInsets(lastTop, lastBottom, force = true) }, 0)
+      webView.postDelayed({ pushInsets(lastTop, lastBottom, force = true) }, 800)
+      webView.postDelayed({ pushInsets(lastTop, lastBottom, force = true) }, 2000)
+    }
   }
 
   /// 把上下系统栏 inset 写进 CSS 变量。同值短路：insets 事件里重复触发零注入。
-  private fun pushInsets(top: Int, bottom: Int) {
-    if (top == lastTop && bottom == lastBottom) return
+  private fun pushInsets(top: Int, bottom: Int, force: Boolean = false) {
+    if (!force && top == lastTop && bottom == lastBottom) return
     lastTop = top
     lastBottom = bottom
     val web = webView ?: return
-    val script =
+    val script = if (documentStartRegistered) {
+      "window.__applyInsets&&window.__applyInsets($top,$bottom);"
+    } else {
       "document.documentElement.style.setProperty('--inset-top','${top}px');" +
         "document.documentElement.style.setProperty('--inset-bottom','${bottom}px');"
+    }
     web.post { web.evaluateJavascript(script, null) }
   }
 }
