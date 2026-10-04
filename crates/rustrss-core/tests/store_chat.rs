@@ -293,5 +293,6 @@ fn delete_session_guard_is_cross_connection() {
     assert!(err.to_string().contains("正在生成中"));
     // 评审 P2 note：由原连接标记终态、另一连接执行删除——真实跨连接形态
     store.mark_running_interrupted().unwrap();
+    drop(store);
     assert!(other.delete_session(sid).unwrap());
 }
