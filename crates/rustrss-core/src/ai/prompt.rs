@@ -56,6 +56,10 @@ pub enum AiTask {
     },
     /// 翻译：`target` 是目标语言
     Translate { target: String },
+    /// 日报·单篇要点：提炼供每日日报汇编的要点（缓存跨日期复用）
+    DigestItem { language: String },
+    /// 日报·合成：把一批要点/小节合成日报（输入由编排层拼好）
+    DigestCompose { language: String },
 }
 
 impl AiTask {
@@ -63,6 +67,8 @@ impl AiTask {
         match self {
             AiTask::Summarize { .. } => "summarize",
             AiTask::Translate { .. } => "translate",
+            AiTask::DigestItem { .. } => "digest_item",
+            AiTask::DigestCompose { .. } => "digest_compose",
         }
     }
 
@@ -73,6 +79,8 @@ impl AiTask {
                 format!("{}:{}", length.as_str(), language)
             }
             AiTask::Translate { target } => target.clone(),
+            AiTask::DigestItem { language } => language.clone(),
+            AiTask::DigestCompose { language } => language.clone(),
         }
     }
 }
@@ -125,6 +133,24 @@ pub fn build(task: &AiTask, article: &ArticleText<'_>) -> AiRequest {
         AiTask::Translate { target } => AiRequest {
             system: Some("你是翻译助手。只输出译文，不要解释、不要原文对照、不要 Markdown 标记。".to_string()),
             user: format!("把下面这篇文章翻译成{target}：\n\n标题：{title}\n\n正文：\n{body}"),
+        },
+        AiTask::DigestItem { language } => AiRequest {
+            system: Some(
+                "你是 RSS 阅读助手。把文章提炼成要点条目，供稍后汇编成每日日报。只输出要点本身。"
+                    .to_string(),
+            ),
+            user: format!(
+                "标题：{title}\n\n正文：\n{body}\n\n请用{language}输出 2-4 条要点，每条一行、以 - 开头；\n只保留对「今天发生了什么」有意义的信息，不要总结性套话。"
+            ),
+        },
+        AiTask::DigestCompose { language } => AiRequest {
+            system: Some(
+                "你是每日日报的编辑。把给定的要点素材汇编成一份连贯的日报。输出 Markdown。"
+                    .to_string(),
+            ),
+            user: format!(
+                "{body}\n\n请用{language}把以上素材汇编成一份每日日报：\n- 以一段 2-3 句的总览开头；\n- 按「今天发生了什么」的意义分成小节，每节以 `## ` 标题开始；\n- 保留具体事实（数字、名称、结果），不要空话；\n- 末尾不要总结陈词。"
+            ),
         },
     }
 }

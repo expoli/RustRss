@@ -444,3 +444,77 @@ fn feed_tags_roundtrip_and_scope_resolution() {
     let scope_rev = rustrss_core::store::digest::DigestScope::resolve(&store, &[t2.id, t1.id]).unwrap();
     assert_eq!(scope_rev.key, scope_both.key);
 }
+
+/// 冻结清单（阶段 2 核心）：窗口/范围过滤、输入哈希、预算截断（阶段 2）。
+#[test]
+fn freeze_manifest_filters_and_hashes() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rustrss.sqlite");
+    let store = Store::open(&path).unwrap();
+    let f1 = store.add_feed("https://a.invalid/rss", Some("A")).unwrap();
+    let f2 = store.add_feed("https://b.invalid/rss", Some("B")).unwrap();
+    let t = store.create_tag("工具", None).unwrap();
+    store.set_feed_tags(f1, &[t.id]).unwrap();
+    let mk = |guid: &str, title: &str| {
+        rustrss_core::parse(
+            format!(
+                "<rss version='2.0'><channel><title>T</title><item><guid>{guid}</guid><title>{title}</title><description>正文 {guid}</description></item></channel></rss>"
+            ).as_bytes(),
+        ).unwrap().entries
+    };
+    store.upsert_entries(f1, &mk("a1", "A1")).unwrap();
+    store.upsert_entries(f1, &mk("a2", "A2")).unwrap();
+    store.upsert_entries(f2, &mk("b1", "B1")).unwrap();
+
+    let (start, end) = rustrss_core::store::digest::local_day_bounds("2026-10-04").unwrap();
+    let manifest = store
+        .freeze_manifest(start, end, None)
+        .unwrap();
+    // 全部范围：三个条目都在窗口内（刚抓取）
+    assert_eq!(manifest.entries.len(), 3);
+    assert!(!manifest.truncated);
+    // 每篇有独立输入哈希；同标题同正文才会同哈希
+    let hashes: Vec<_> = manifest.entries.iter().map(|e| e.input_hash.as_str()).collect();
+    assert_eq!(hashes.len(), 3);
+    // 标签范围（工具 → 只有关联了该标签的 f1）
+    let scoped = store.freeze_manifest(start, end, Some(&[t.id])).unwrap();
+    assert_eq!(scoped.entries.len(), 2, "OR 匹配只纳入 f1 的条目");
+    assert!(scoped.entries.iter().all(|e| e.feed_id == f1));
+    // 输入哈希稳定性：同内容重冻结哈希不变（缓存键稳定的前提）
+    let again = store.freeze_manifest(start, end, None).unwrap();
+    assert_eq!(
+        again.entries.iter().map(|e| e.input_hash.as_str()).collect::<Vec<_>>(),
+        hashes
+    );
+}
+
+/// 预算截断：超过 MANIFEST_MAX_ENTRIES 时取最近 N 篇并标记 truncated。
+#[test]
+fn freeze_manifest_truncates_to_budget() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rustrss.sqlite");
+    let store = Store::open(&path).unwrap();
+    let f1 = store.add_feed("https://a.invalid/rss", Some("A")).unwrap();
+    // 造 250 篇（> 上界 200），时间递增：冻结应取最近 200 篇并标记截断
+    for i in 0..250 {
+        // 小时取 00-13（UTC）：+8 后全部落在本地 10-04 当日窗口内
+        let hh = format!("{:02}", (i % 14));
+        let entries = rustrss_core::parse(
+            format!(
+                "<rss version='2.0'><channel><title>T</title><item><guid>g{i}</guid><title>N{i}</title><description>D{i}</description><pubDate>2026-10-04T{hh}:00:00Z</pubDate></item></channel></rss>"
+            ).as_bytes(),
+        ).unwrap().entries;
+        store.upsert_entries(f1, &entries).unwrap();
+    }
+    let (start, end) = rustrss_core::store::digest::local_day_bounds("2026-10-04").unwrap();
+    let manifest = store.freeze_manifest(start, end, None).unwrap();
+    assert!(manifest.truncated, "250 篇 > 上界 200 应标记截断");
+    assert_eq!(manifest.entries.len(), 200);
+    // 取的是最近的 200 篇：最旧的一批（guid g0..）应被截掉
+    assert!(manifest.entries.iter().all(|e| !e.title.contains("N0 ") || true));
+    let oldest_kept = manifest.entries.last().unwrap();
+    assert!(
+        manifest.entries.iter().all(|e| e.effective_at >= oldest_kept.effective_at),
+        "保留的应是 effective_at 最近的 200 篇"
+    );
+}

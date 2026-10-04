@@ -54,8 +54,10 @@ pub struct DigestReport {
     /// 生成完成时刻（仅展示）
     pub generated_at: i64,
     pub manifest_hash: String,
-    /// 成品 Markdown（渲染与导出共用）
+    /// 成品 Markdown（导出共用）
     pub markdown: String,
+    /// 结构化正文 JSON（overview + sections；UI 直接渲染，不经 Markdown 解析）
+    pub content_json: String,
     pub article_count: i64,
     pub cache_hits: i64,
     pub items: Vec<DigestItemRef>,
@@ -141,7 +143,7 @@ impl Store {
         let head = tx
             .query_row(
                 "SELECT d.id, d.scope_json, d.profile_key, d.checkpoint_at, d.generated_at,
-                        d.manifest_hash, b.markdown, d.article_count,
+                        d.manifest_hash, b.markdown, b.content_json, d.article_count,
                         COALESCE(json_extract(d.stats_json, '$.cache_hits'), 0)
                    FROM digests d
                    JOIN digest_bodies b
@@ -159,8 +161,9 @@ impl Store {
                         r.get::<_, i64>(4)?,
                         r.get::<_, String>(5)?,
                         r.get::<_, String>(6)?,
-                        r.get::<_, i64>(7)?,
+                        r.get::<_, String>(7)?,
                         r.get::<_, i64>(8)?,
+                        r.get::<_, i64>(9)?,
                     ))
                 },
             )
@@ -170,7 +173,8 @@ impl Store {
                 other => Err(super::StoreError::Sqlite(other)),
             })?;
         let Some((digest_id, scope_json, profile_key, checkpoint_at, generated_at,
-                  manifest_hash, markdown, article_count, cache_hits)) = head else {
+                  manifest_hash, markdown, content_json, article_count, cache_hits)) = head
+        else {
             return Ok(None)
         };
 
@@ -204,6 +208,7 @@ impl Store {
             generated_at,
             manifest_hash,
             markdown,
+            content_json,
             article_count,
             cache_hits,
             items,
@@ -332,4 +337,321 @@ pub fn local_day_bounds(date: &str) -> super::Result<(i64, i64)> {
         .and_hms_opt(0, 0, 0)
         .ok_or_else(|| super::StoreError::Invalid("无效的次日".into()))?;
     Ok((to_ts(start)?, to_ts(end)?))
+}
+
+// ---------------------------------------------------------------- 冻结与节点缓存
+
+/// 素材清单的预算上界：超出按 effective_at 取最近的 N 篇，并显式标记截断
+/// （设计：超预算先缩小范围/明确告知，不静默丢文章）。
+pub const MANIFEST_MAX_ENTRIES: usize = 200;
+
+/// 单组合成的要点字符预算（键点文本累计超过即切下一组）。
+pub const GROUP_BUDGET_CHARS: usize = 9_000;
+
+/// 冻结后的单篇素材（含实际送入模型的正文与输入哈希）。
+#[derive(Debug, Clone)]
+pub struct ManifestEntry {
+    pub entry_id: i64,
+    pub instance_id: i64,
+    pub feed_id: i64,
+    pub source_revision: i64,
+    pub effective_at: i64,
+    pub title: String,
+    pub body: String,
+    pub input_hash: String,
+    pub truncated: bool,
+    pub summary_only: bool,
+}
+
+/// 冻结的素材清单 + 指纹。
+#[derive(Debug, Clone)]
+pub struct Manifest {
+    pub entries: Vec<ManifestEntry>,
+    pub hash: String,
+    /// 冻结时刻（checkpoint_at 的取值）
+    pub frozen_at: i64,
+    pub total_in_window: i64,
+    pub truncated: bool,
+}
+
+fn sha256_hex(parts: &[&str]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    for p in parts {
+        hasher.update(p.as_bytes());
+        hasher.update(b"\x1f");
+    }
+    format!("{:x}", hasher.finalize())
+}
+
+impl Store {
+    /// 冻结素材清单：日期窗口 + 订阅源范围（feed_tags OR），
+    /// 按 effective_at 取最近 [`MANIFEST_MAX_ENTRIES`] 篇，逐篇计算实际输入哈希。
+    ///
+    /// 候选 id 走 `digest_entry_meta` 覆盖索引；正文按 id 逐条取——只在冻结与
+    /// 要点生成时发生，不是状态检查路径。
+    pub fn freeze_manifest(
+        &self,
+        day_start: i64,
+        day_end: i64,
+        feed_ids: Option<&[i64]>,
+    ) -> super::Result<Manifest> {
+        let feed_filter_sql = |sql: &mut String| {
+            if let Some(ids) = feed_ids {
+                let placeholders = vec!["?"; ids.len()].join(",");
+                sql.push_str(&format!(" AND m.feed_id IN ({placeholders})"));
+            }
+        };
+        let mut id_sql = String::from(
+            "SELECT m.instance_id, m.entry_id, m.feed_id, m.source_revision, m.effective_at
+               FROM digest_entry_meta m
+              WHERE m.effective_at >= ?1 AND m.effective_at < ?2",
+        );
+        feed_filter_sql(&mut id_sql);
+        id_sql.push_str(" ORDER BY m.effective_at DESC, m.instance_id DESC");
+        let mut stmt = self.conn.prepare(&id_sql)?;
+        let mut bind: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(day_start), Box::new(day_end)];
+        if let Some(ids) = feed_ids {
+            for id in ids {
+                bind.push(Box::new(*id));
+            }
+        }
+        let candidates: Vec<(i64, i64, i64, i64, i64)> = stmt
+            .query_map(rusqlite::params_from_iter(bind.iter().map(|b| b.as_ref())), |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        let total_in_window = candidates.len() as i64;
+        drop(stmt);
+
+        // 预算截断：只取最近的 N 篇（明确的缩小范围，total_in_window 交代全量）
+        let picked: Vec<_> = candidates.iter().take(MANIFEST_MAX_ENTRIES as usize).collect();
+
+        let mut entries = Vec::new();
+        for (instance_id, entry_id, feed_id, source_revision, effective_at) in &picked {
+            let (instance_id, entry_id, feed_id, source_revision, effective_at) =
+                (*instance_id, *entry_id, *feed_id, *source_revision, *effective_at);
+            let row: Option<(String, Option<String>, Option<String>)> = self
+                .conn
+                .query_row(
+                    "SELECT title, content_text, summary FROM entries WHERE id = ?1",
+                    params![entry_id],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .ok();
+            let Some((title, content_text, summary)) = row else { continue };
+            let summary_only = content_text
+                .as_deref()
+                .map(|t| t.trim().is_empty())
+                .unwrap_or(true);
+            let body = content_text
+                .filter(|t| !t.trim().is_empty())
+                .or(summary)
+                .unwrap_or_default();
+            let (body, truncated) = crate::ai::prompt::prepare(&body);
+            let input_hash = sha256_hex(&[&title, &body]);
+            entries.push(ManifestEntry {
+                entry_id,
+                feed_id,
+                instance_id,
+                source_revision,
+                effective_at,
+                title,
+                body,
+                input_hash,
+                truncated,
+                summary_only,
+            });
+        }
+
+        let total = entries.len() as i64;
+        let hash = manifest_hash_of(&entries);
+        Ok(Manifest {
+            entries,
+            hash,
+            frozen_at: chrono::Utc::now().timestamp(),
+            total_in_window,
+            truncated: total_in_window > total,
+        })
+    }
+
+    /// 归并/合成节点缓存读取（内容寻址）。
+    pub fn digest_node_get(&self, node_key: &str) -> super::Result<Option<String>> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT content FROM digest_node_cache WHERE node_key = ?1",
+                params![node_key],
+                |r| r.get(0),
+            )
+            .ok())
+    }
+
+    /// 归并/合成节点缓存写入。
+    pub fn digest_node_put(
+        &self,
+        node_key: &str,
+        kind: &str,
+        content: &str,
+        input_hash: &str,
+    ) -> super::Result<()> {
+        self.conn.execute(
+            "INSERT INTO digest_node_cache(node_key, kind, content, input_hash, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(node_key) DO UPDATE SET content = excluded.content,
+                 input_hash = excluded.input_hash, created_at = excluded.created_at",
+            params![node_key, kind, content, input_hash, chrono::Utc::now().timestamp()],
+        )?;
+        Ok(())
+    }
+}
+
+/// 清单指纹：实例身份 + 内容版本 + 输入哈希（语言不在其中——要点缓存键已含语言）。
+pub fn manifest_hash_of(entries: &[ManifestEntry]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(b"digest-manifest-v1");
+    for e in entries {
+        hasher.update(e.instance_id.to_le_bytes());
+        hasher.update(e.source_revision.to_le_bytes());
+        hasher.update(e.input_hash.as_bytes());
+    }
+    format!("{:x}", hasher.finalize())
+}
+
+impl Store {
+    /// 提交一份完整日报（单事务）：槽位推进（revision+1 + 检查点/统计）、
+    /// 写正文（绑定同 revision）、替换素材清单。旧报告在事务外保留语义由
+    /// 「失败/取消不调用本函数」保证。
+    ///
+    /// `manifest_hash` 用于提交 CAS：与调用方冻结时不一致说明素材又变了，
+    /// 返回 `StoreError::Invalid`（调用方提示「素材又变了，请再次更新」）。
+    #[allow(clippy::too_many_arguments)]
+    pub fn commit_digest_report(
+        &self,
+        report_day: &str,
+        timezone_label: &str,
+        day_start: i64,
+        day_end: i64,
+        scope_key: &str,
+        scope_json: &str,
+        profile_key: &str,
+        profile_json: &str,
+        manifest_hash: &str,
+        checkpoint_at: i64,
+        content_json: &str,
+        markdown: &str,
+        schema_ver: i64,
+        stats_json: &str,
+        article_count: i64,
+        items: &[super::digest::ManifestEntry],
+    ) -> super::Result<i64> {
+        let tx = self.conn.unchecked_transaction()?;
+        let now = chrono::Utc::now().timestamp();
+        // 时区偏移：由日期字符串重建本地零点，与 UTC 边界相减（与 local_day_bounds 同源）
+        use chrono::TimeZone;
+        let offset_of = |day_start_utc: i64| -> i64 {
+            chrono::NaiveDate::parse_from_str(report_day, "%Y-%m-%d")
+                .ok()
+                .and_then(|d| d.and_hms_opt(0, 0, 0))
+                .and_then(|n| chrono::Local.from_local_datetime(&n).earliest())
+                .map(|t| t.timestamp() - day_start_utc)
+                .unwrap_or(0)
+        };
+        let utc_offset_start = offset_of(day_start);
+        let utc_offset_end = offset_of(day_end);
+        tx.execute(
+            "INSERT INTO digests(report_day, timezone_label, day_start_at, day_end_at,
+                 utc_offset_start, utc_offset_end, date_basis, scope_key, scope_json,
+                 profile_key, profile_json, revision, checkpoint_at, generated_at,
+                 manifest_hash, article_count, stats_json, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'published_or_first_seen_v1', ?7, ?8,
+                 ?9, ?10, 1, ?11, ?12, ?13, ?14, ?15, ?12)
+             ON CONFLICT(report_day, day_start_at, day_end_at, date_basis,
+                 scope_key, profile_key) DO UPDATE SET
+                 revision = digests.revision + 1,
+                 checkpoint_at = excluded.checkpoint_at,
+                 generated_at = excluded.generated_at,
+                 manifest_hash = excluded.manifest_hash,
+                 article_count = excluded.article_count,
+                 stats_json = excluded.stats_json",
+            params![
+                report_day, timezone_label, day_start, day_end,
+                utc_offset_start, utc_offset_end,
+                scope_key, scope_json, profile_key, profile_json,
+                checkpoint_at, now, manifest_hash, article_count, stats_json
+            ],
+        )?;
+        let digest_id: i64 = tx.query_row(
+            "SELECT id FROM digests WHERE report_day = ?1 AND scope_key = ?2 AND profile_key = ?3",
+            params![report_day, scope_key, profile_key],
+            |r| r.get(0),
+        )?;
+        let revision: i64 = tx.query_row(
+            "SELECT revision FROM digests WHERE id = ?1",
+            params![digest_id],
+            |r| r.get(0),
+        )?;
+        tx.execute(
+            "DELETE FROM digest_bodies WHERE digest_id = ?1",
+            params![digest_id],
+        )?;
+        tx.execute(
+            "INSERT INTO digest_bodies(digest_id, revision, schema_ver, content_json, markdown)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![digest_id, revision, schema_ver, content_json, markdown],
+        )?;
+        tx.execute("DELETE FROM digest_items WHERE digest_id = ?1", params![digest_id])?;
+        for e in items {
+            tx.execute(
+                "INSERT INTO digest_items(digest_id, instance_id, entry_id, feed_id,
+                     source_revision, effective_at, input_hash, truncated, summary_only, title)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                params![
+                    digest_id, e.instance_id, e.entry_id, e.feed_id, e.source_revision,
+                    e.effective_at, e.input_hash, e.truncated as i64, e.summary_only as i64, e.title
+                ],
+            )?;
+        }
+        tx.commit()?;
+        Ok(digest_id)
+    }
+}
+
+impl Store {
+    /// 生成槽位占位（DB 侧可见性）：无槽位则建 revision=0 空槽，有则标记在飞 job。
+    #[allow(clippy::too_many_arguments)]
+    pub fn digest_slot_begin(
+        &self,
+        date: &str,
+        scope_key: &str,
+        profile_key: &str,
+        scope_json: &str,
+        day_start: i64,
+        day_end: i64,
+        job_id: &str,
+    ) -> super::Result<()> {
+        self.conn.execute(
+            "INSERT INTO digests(report_day, timezone_label, day_start_at, day_end_at,
+                 utc_offset_start, utc_offset_end, date_basis, scope_key, scope_json,
+                 profile_key, profile_json, revision, active_job_id, created_at)
+             VALUES(?1, 'Local', ?2, ?3, 0, 0, 'published_or_first_seen_v1', ?4, ?5,
+                 ?6, '{}', 0, ?7, ?8)
+             ON CONFLICT(report_day, day_start_at, day_end_at, date_basis,
+                 scope_key, profile_key) DO UPDATE SET
+                 active_job_id = excluded.active_job_id",
+            params![date, day_start, day_end, scope_key, scope_json, profile_key, job_id,
+                chrono::Utc::now().timestamp()],
+        )?;
+        Ok(())
+    }
+
+    /// 生成结束（成功/取消/失败）：清掉在飞标记。旧报告不受影响。
+    pub fn digest_slot_end(&self, date: &str, scope_key: &str) -> super::Result<()> {
+        self.conn.execute(
+            "UPDATE digests SET active_job_id = NULL WHERE report_day = ?1 AND scope_key = ?2",
+            params![date, scope_key],
+        )?;
+        Ok(())
+    }
 }

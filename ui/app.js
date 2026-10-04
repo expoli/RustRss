@@ -1252,6 +1252,8 @@ function onSentinel(records) {
 // ---------------- 每日日报 ----------------
 
 let digestOpenDate = null;
+// 进行中的日报生成任务（{ jobId, date } 或 null）
+let digestJob = null;
 // 阅读窗格内容令牌：文章/空态/日报每次替换 +1；异步返回时令牌过期即丢弃，
 // 防止迟到的 digest_get 覆盖之后打开的文章（反之亦然）。
 let readerToken = 0;
@@ -1289,12 +1291,13 @@ async function openDigest(kind) {
 
 function renderDigestView(view) {
   readerToken++;
+  digestOpenDate = view.date;
   state.readerFeedId = null;
   state.readerEntry = null;
   const st = view.status;
+  const running = digestJob && digestJob.date === view.date;
   const statusBits = [];
   if (st.has_report) {
-    // 有变更就不能写「已是最新」（审核 P2）
     statusBits.push(
       st.added || st.changed || st.removed
         ? t('digest.statusChanges', { a: st.added, c: st.changed, r: st.removed })
@@ -1304,27 +1307,109 @@ function renderDigestView(view) {
     statusBits.push(t('digest.statusNoReport'));
   }
   statusBits.push(t('digest.candidates', { n: st.candidate_count }));
-  const meta = view.has_report
-    ? `<div class="digest-meta dim">${t('digest.generatedAt', {
-        t: new Date(view.generated_at * 1000).toLocaleString(),
-      })} · ${t('digest.articles', { n: view.article_count })} · ${t('digest.cacheHits', {
-        n: view.cache_hits,
-      })}</div>`
+  const metaBits = [];
+  if (view.checkpoint_at) {
+    metaBits.push(
+      t('digest.snapshotAt', { t: new Date(view.checkpoint_at * 1000).toLocaleString() })
+    );
+  }
+  if (view.generated_at) {
+    metaBits.push(t('digest.generatedAt', { t: new Date(view.generated_at * 1000).toLocaleString() }));
+  }
+  if (view.has_report) {
+    metaBits.push(t('digest.articles', { n: view.article_count }));
+    metaBits.push(t('digest.cacheHits', { n: view.cache_hits }));
+  }
+  const buttons = running
+    ? `<button class="digest-cancel" id="digest-cancel">${t('digest.cancel')}</button>
+       <span class="digest-progress dim" id="digest-progress">${t('digest.generating')}</span>`
+    : `<button class="digest-gen" data-mode="update">${t('digest.update')}</button>
+       <button class="digest-gen" data-mode="rewrite" title="${t('digest.rewriteHint')}">${t('digest.rewrite')}</button>`;
+  const warn = view.manifest_truncated
+    ? `<p class="dim digest-warn">${t('digest.manifestTruncated', { n: view.entries })}</p>`
     : '';
-  const content = view.has_report
-    ? `<div class="article digest-article">${escapeHtml(view.markdown)}</div>`
-    : `<div class="reader-empty">
-         <p>${t('digest.emptyTitle')}</p>
-         <p class="dim">${t('digest.emptyHint', { n: st.candidate_count })}</p>
-       </div>`;
+  let content;
+  if (running) {
+    content = '';
+  } else if (view.has_report && view.sections.length) {
+    const parts = [];
+    if (view.overview) parts.push(`<p>${escapeHtml(view.overview)}</p>`);
+    for (const sec of view.sections) {
+      parts.push(`<h2>${escapeHtml(sec.title)}</h2>`);
+      parts.push(`<p>${escapeHtml(sec.text).replace(/\n/g, '<br>')}</p>`);
+    }
+    content = `<div class="article digest-article">${parts.join('')}</div>`;
+  } else if (view.has_report) {
+    content = `<div class="article digest-article">${escapeHtml(view.markdown || '')}</div>`;
+  } else {
+    content = `<div class="reader-empty">
+        <p>${t('digest.emptyTitle')}</p>
+        <p class="dim">${t('digest.emptyHint', { n: st.candidate_count })}</p>
+      </div>`;
+  }
   el('reader').innerHTML = `<div class="digest-view">
       <div class="reader-head">
         <h1>${t('digest.title', { date: view.date })}</h1>
         <div class="meta">${statusBits.map(escapeHtml).join('<span class="dim"> · </span>')}</div>
       </div>
-      ${meta}
+      <div class="digest-actions">${buttons}</div>
+      ${warn}
+      ${view.has_report ? `<div class="digest-meta dim">${metaBits.map(escapeHtml).join(' · ')}</div>` : ''}
       ${content}
     </div>`;
+  el('digest-cancel')?.addEventListener('click', () => {
+    if (!digestJob) return;
+    invoke('digest_cancel', { jobId: digestJob.jobId }).catch((e) => setStatus(e.message, true));
+  });
+  el('reader')
+    .querySelectorAll('.digest-gen')
+    .forEach((btn) =>
+      btn.addEventListener('click', () => digestGenerate(btn.dataset.mode || 'update'))
+    );
+}
+
+/// 生成/更新当前打开的日报（流水线在命令层；进度走 digest:progress 事件）。
+async function digestGenerate(mode) {
+  const date = digestOpenDate;
+  if (!date || digestJob) return;
+  digestJob = { date, jobId: null };
+  renderDigestRefresh();
+  try {
+    const job = await invoke('digest_generate', { date, mode });
+    digestJob = { date, jobId: job.job_id };
+    // 后续进度/完成由 digest:progress / digest:done 事件驱动
+  } catch (e) {
+    digestJob = null;
+    setStatus(e.message, true);
+    if (digestOpenDate === date) openDigestDate(date);
+  }
+}
+
+/// 重渲染当前日报视图（保留头部，正文区显示生成中状态）
+function renderDigestRefresh() {
+  if (!digestJob || digestOpenDate !== digestJob.date) return;
+  const bar = el('reader').querySelector('.digest-actions');
+  if (bar) {
+    bar.innerHTML = `<button class="digest-cancel" id="digest-cancel">${t('digest.cancel')}</button>
+      <span class="digest-progress dim" id="digest-progress">${t('digest.generating')}</span>`;
+    el('digest-cancel')?.addEventListener('click', () => {
+      if (!digestJob?.jobId) return;
+      invoke('digest_cancel', { jobId: digestJob.jobId }).catch((e) => setStatus(e.message, true));
+    });
+  }
+}
+
+/// 按具体日期打开日报（跨午夜后入口语义滚动，内部统一走日期）。
+async function openDigestDate(date) {
+  digestOpenDate = date;
+  renderSidebar();
+  try {
+    const view = await invoke('digest_get', { date, tagIds: digestScopeTags() });
+    if (digestOpenDate !== date) return;
+    renderDigestView(view);
+  } catch (e) {
+    setStatus(e.message, true);
+  }
 }
 
 function renderReaderEmpty() {
@@ -4005,6 +4090,31 @@ function initRefreshEvents() {
       setStatus(backgroundRefreshHint);
     })
     .catch((e) => log(`listen refresh:progress failed: ${e.message}`));
+  // 日报生成进度：正文区进度行 + 完成后重开当前日期
+  events
+    .listen('digest:progress', (e) => {
+      const p = e.payload || {};
+      if (!digestJob || digestJob.jobId !== p.jobId) return;
+      const bar = document.getElementById('digest-progress');
+      if (!bar) return;
+      const key =
+        p.stage === 'items'
+          ? 'digest.progressItems'
+          : p.stage === 'groups'
+            ? 'digest.progressGroups'
+            : 'digest.progressFinal';
+      bar.textContent = t(key, { done: p.done ?? 0, total: p.total ?? 0 });
+    })
+    .catch((e2) => log(`listen digest:progress failed: ${e2.message}`));
+  events
+    .listen('digest:done', (e) => {
+      const p = e.payload || {};
+      if (!digestJob || digestJob.jobId !== p.jobId) return;
+      digestJob = null;
+      setStatus('');
+      if (digestOpenDate === p.date) openDigestDate(p.date).catch(() => {});
+    })
+    .catch((e2) => log(`listen digest:done failed: ${e2.message}`));
   events
     .listen('refresh:done', async () => {
       log('refresh:done');

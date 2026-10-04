@@ -11,6 +11,7 @@
 //!   边界会用 `scrub_log_line` 把查询串凭据打码后再进 `AiError::Transport`；
 //! - `preview()` 给出的请求预览里 key 已被替换，供「发送前让用户确认要发什么」使用。
 
+pub mod digest;
 pub mod prompt;
 
 use crate::logging::scrub_log_line;
