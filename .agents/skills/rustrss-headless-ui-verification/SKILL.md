@@ -64,6 +64,37 @@ python3 -c "from PIL import Image; Image.open('/tmp/<tag>/NN.png').crop((0,0,124
 4. 断言脚本输出（像素差/md5/计数）；
 5. **如实区分**：已验证 / 未验证 / 无法验证（例：Wayland、HiDPI、IME、真实文件管理器交互）。
 
+## 5.5 Android 模拟器验证回路（edge-to-edge / 挖孔屏 / 真机问题复现）
+
+Android UI 修复（系统栏避让、手势条、挖孔刘海）不要靠真机来回试——本机就有
+模拟器回路（KVM + API 36 镜像已就绪）：
+
+```bash
+export ANDROID_SDK_ROOT=/usr/lib/android-sdk
+# 启动（Pixel 7 profile 自带挖孔；-no-window 无头也照常渲染内容）
+/usr/lib/android-sdk/emulator/emulator -avd RustRss_API_36 -no-window \
+  -no-audio -no-boot-anim -gpu swiftshader_indirect -accel on -no-snapshot &
+/usr/lib/android-sdk/platform-tools/adb wait-for-device shell \
+  'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
+# 安装 + 启动 + 截屏（注意：release 包直接覆盖安装，数据保留）
+/usr/lib/android-sdk/platform-tools/adb install -r \
+  src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+/usr/lib/android-sdk/platform-tools/adb shell monkey -p tech.expoli.rustrss \
+  -c android.intent.category.LAUNCHER 1; sleep 12
+/usr/lib/android-sdk/platform-tools/adb exec-out screencap -p > /tmp/emu.png
+# 顶部（状态栏避让）与底部（手势条/贴底）裁出来看：
+# 顶部断言 = 状态栏图标行与报头内容分离；底部断言 = 面板背景填到手势条、无底色断层
+```
+
+要点（2026-10-04 实测）：
+- AVD 见 `~/.android/avd/`（RustRss_API_36 = pixel_7/API 36；另有 pixel_6、tablet）。
+- 模拟器 WebView 新（API 36），document-start 注入路径必然生效——它验证的是
+  **CSS/布局正确性**；老 WebView 的注入失败要靠 MainActivity 里的 verify 循环
+  （读回 computed style 重试，原生闭环）兜底，模拟器测不出该路径。
+- 真机截图工具常裁掉状态栏——排查「重叠/遮挡」类问题必须让用户拍**含系统时间**
+  的照片，或直接用模拟器复现。
+- 排查完 `adb emu kill` 或留着复用。
+
 ## 6. 清理
 
 ```bash
