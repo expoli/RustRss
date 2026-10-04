@@ -1035,22 +1035,31 @@ impl Store {
                             e.thumbnail_url
                         ],
                     )?;
-                    // 内容指纹已变化：投影跟随（effective_at 可变）并推进内容版本，
-                    // 日报据此判「内容变化」。 Upsert 语义：新行插入、旧行版本 +1。
-                    // 冲突时保留原 first_seen_*（首见时间不可变），仅跟随
-                    // published 变化更新 effective_at 并推进内容版本。
+                    // 内容指纹已变化：推进投影版本（日报据此判「内容变化」）。
+                    // 日期归属不可漂移（审核 P1）：无 published_at 的条目永远锚定
+                    // first_seen_at，不能用本次 fetched_at（会把昨天的条目搬到今天）。
+                    // UPDATE 先行（已有投影）；changes()==0 再补插（防御性：阶段 0
+                    // 迁移后缺失投影的库）。
                     tx.execute(
-                        "INSERT INTO digest_entry_meta
-                            (entry_id, feed_id, first_seen_at, first_seen_estimated,
-                             effective_at, source_revision)
-                         SELECT id, feed_id, fetched_at, 0,
-                                COALESCE(published_at, fetched_at), 1
-                           FROM entries WHERE id = ?1
-                         ON CONFLICT(entry_id) DO UPDATE SET
-                             effective_at = excluded.effective_at,
-                             source_revision = digest_entry_meta.source_revision + 1",
+                        "UPDATE digest_entry_meta
+                            SET effective_at = COALESCE(
+                                    (SELECT published_at FROM entries WHERE id = ?1),
+                                    first_seen_at),
+                                source_revision = source_revision + 1
+                          WHERE entry_id = ?1",
                         params![id],
                     )?;
+                    if tx.changes() == 0 {
+                        tx.execute(
+                            "INSERT INTO digest_entry_meta
+                                (entry_id, feed_id, first_seen_at, first_seen_estimated,
+                                 effective_at, source_revision)
+                             SELECT id, feed_id, fetched_at, 1,
+                                    COALESCE(published_at, fetched_at), 1
+                               FROM entries WHERE id = ?1",
+                            params![id],
+                        )?;
+                    }
                     stats.updated += 1;
                 }
                 None => {

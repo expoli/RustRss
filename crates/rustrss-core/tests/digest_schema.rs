@@ -273,6 +273,41 @@ fn digest_report_binds_one_identity_and_days_exclude_slots() {
     let again = store2.digest_report(day, "all").unwrap().unwrap();
     assert_eq!(again.items.len(), 2);
     assert_eq!(again.markdown, "# 日报正文 v1");
+
+    // 多变体身份绑定：同日期+范围的旧变体（更早 generated_at）不得混入
+    // 头/正文/素材。插入旧变体（profile 'old'，generated_at 更早，items 不同）。
+    conn.execute(
+        "INSERT INTO digests(report_day, timezone_label, day_start_at, day_end_at,
+             utc_offset_start, utc_offset_end, scope_key, scope_json, profile_key,
+             profile_json, revision, generated_at, checkpoint_at, manifest_hash,
+             article_count, created_at)
+         VALUES('2026-10-03','Asia/Shanghai',1000,2000,28800,28800,
+             'all','{}','old','{}',1,10,9,'old-m',1,10)",
+        [],
+    ).unwrap();
+    let old_id: i64 = conn.last_insert_rowid();
+    conn.execute(
+        "INSERT INTO digest_bodies(digest_id, revision, schema_ver, content_json, markdown)
+         VALUES(?1, 1, 1, '{}', '# 旧变体')",
+        params![old_id],
+    ).unwrap();
+    conn.execute(
+        "INSERT INTO digest_items(digest_id, instance_id, entry_id, feed_id,
+             source_revision, effective_at, input_hash, truncated, summary_only, title)
+         VALUES(?1, 99, 999, 1, 1, 1500, 'old', 0, 0, '旧素材')",
+        params![old_id],
+    ).unwrap();
+
+    let latest = store.digest_report(day, "all").unwrap().unwrap();
+    assert_eq!(latest.markdown, "# 日报正文 v1", "必须取最近完成的变体");
+    assert!(latest.items.iter().all(|i| i.title != "旧素材"), "不得混入旧变体素材");
+
+    // 状态检查的 checkpoint 是真检查点（15），不是报告行号（两报告 id 分别 ≥1）
+    let status = store.digest_status(1000, 2000, &rustrss_core::store::digest::DigestScope::resolve(&store, &[]).unwrap()).unwrap();
+    assert!(status.has_report);
+    assert_eq!(status.checkpoint_at, 15, "checkpoint 应来自字段而非行号");
+    // checkpoint=15 而 digests.id ∈ {1..}：若实现退回行号（≠15）此断言即红。
+    assert_ne!(status.checkpoint_at, 0);
 }
 
 /// 回填边界：published_at 为 NULL 的存量文章，effective_at 用 fetched_at。
@@ -305,4 +340,71 @@ fn backfill_handles_null_published_at() {
     // 迁移后重开（幂等）
     let store2 = Store::open(&path).unwrap();
     assert_eq!(store2.schema_version().unwrap(), 2);
+}
+
+/// 日期归属不可漂移（审核 P1 回归）：无 published_at 的条目，首见在第 1 天、
+/// 内容在第 2 天变化——投影 effective_at 必须仍锚定首见（第 1 天），不被新
+/// fetched_at 搬到第 2 天。
+#[test]
+fn effective_at_does_not_drift_for_null_published_entries() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rustrss.sqlite");
+    let store = Store::open(&path).unwrap();
+    let feed_id = store.add_feed("https://fixture.invalid/rss", Some("F")).unwrap();
+
+    // 第 1 天：首次入库（fetched_at=1000，无发布时间）
+    let day1 = rustrss_core::parse(
+        b"<rss version='2.0'><channel><title>T</title><item><guid>d</guid><title>N</title><description>D</description></item></channel></rss>",
+    ).unwrap().entries;
+    store.upsert_entries(feed_id, &day1).unwrap();
+    let conn = rusqlite::Connection::open(&path).unwrap();
+    let effective: i64 = conn
+        .query_row("SELECT effective_at FROM digest_entry_meta", [], |r| r.get(0))
+        .unwrap();
+
+    // 第 2 天：内容变化（fetched_at 推进 86400）
+    std::thread::sleep(std::time::Duration::from_millis(1100));
+    let day2 = rustrss_core::parse(
+        b"<rss version='2.0'><channel><title>T</title><item><guid>d</guid><title>N v2</title><description>D v2</description></item></channel></rss>",
+    ).unwrap().entries;
+    store.upsert_entries(feed_id, &day2).unwrap();
+
+    let (effective2, revision): (i64, i64) = conn
+        .query_row(
+            "SELECT effective_at, source_revision FROM digest_entry_meta",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(effective2, effective, "日期归属不得漂移到新的 fetched_at");
+    assert_eq!(revision, 2, "内容变化应推进版本");
+}
+
+/// 阶段 0 之后插入的条目若缺投影行（模拟修复前的 v2 库），打开时幂等补齐。
+#[test]
+fn missing_meta_rows_are_backfilled_on_open() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rustrss.sqlite");
+    {
+        let store = Store::open(&path).unwrap();
+        let feed_id = store.add_feed("https://fixture.invalid/rss", Some("F")).unwrap();
+        let entries = rustrss_core::parse(
+            b"<rss version='2.0'><channel><title>T</title><item><guid>m</guid><title>M</title><description>D</description></item></channel></rss>",
+        ).unwrap().entries;
+        store.upsert_entries(feed_id, &entries).unwrap();
+        // 模拟修复前的 v2 库：投影行缺失
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        conn.execute("DELETE FROM digest_entry_meta", []).unwrap();
+    }
+    let store = Store::open(&path).unwrap();
+    let conn = rusqlite::Connection::open(&path).unwrap();
+    let (estimated, count): (i64, i64) = conn
+        .query_row(
+            "SELECT first_seen_estimated, count(*) FROM digest_entry_meta",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!((count, estimated), (1, 1), "缺失投影应在打开时补齐（近似标记）");
+    assert_eq!(store.schema_version().unwrap(), 2);
 }
