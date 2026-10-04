@@ -515,7 +515,7 @@ impl Store {
         let summary_backfilled = store
             .conn
             .query_row(
-                "SELECT 1 FROM settings WHERE key = 'digest.summary_backfill_v2'",
+                "SELECT 1 FROM settings WHERE key = 'internal.digest.summary_backfill_v2'",
                 [],
                 |r| r.get::<_, i64>(0),
             )
@@ -532,7 +532,7 @@ impl Store {
             )?;
             store.conn.execute(
                 "INSERT OR REPLACE INTO settings(key, value, updated_at)
-                 VALUES('digest.summary_backfill_v2', '1', strftime('%s','now'))",
+                 VALUES('internal.digest.summary_backfill_v2', '1', strftime('%s','now'))",
                 [],
             )?;
         }
@@ -1925,8 +1925,12 @@ impl Store {
         Ok(())
     }
 
+    /// 用户可见设置全集。`internal.` 前缀是迁移/一次性回填哨兵（如
+    /// digest.summary_backfill_v2），不是用户设置：设置导出与调试视图不带回。
     pub fn all_settings(&self) -> Result<Vec<(String, String)>> {
-        let mut stmt = self.conn.prepare("SELECT key, value FROM settings ORDER BY key")?;
+        let mut stmt = self.conn.prepare(
+            "SELECT key, value FROM settings WHERE key NOT LIKE 'internal.%' ORDER BY key",
+        )?;
         let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }

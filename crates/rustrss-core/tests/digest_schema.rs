@@ -706,7 +706,7 @@ fn digest_list_reads_summary_column_and_dedupes_by_day() {
     )
     .unwrap();
     // 哨兵是首开时写的：模拟「回填机制上线前的旧库」需撤掉哨兵再重开
-    raw.execute("DELETE FROM settings WHERE key='digest.summary_backfill_v2'", [])
+    raw.execute("DELETE FROM settings WHERE key='internal.digest.summary_backfill_v2'", [])
         .unwrap();
     drop(raw);
     drop(store);
