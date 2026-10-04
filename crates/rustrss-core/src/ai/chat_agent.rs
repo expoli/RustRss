@@ -8,7 +8,7 @@ use super::{AiClient, AiError, Provider};
 use crate::Store;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -110,6 +110,7 @@ pub struct ToolCallLog {
 pub struct AgentTurnOutcome {
     pub final_blocks: Vec<ChatBlock>,
     pub usage: ChatUsage,
+    pub usage_unknown: bool,
     pub tool_calls_log: Vec<ToolCallLog>,
     pub degraded: bool,
     pub degraded_reason: Option<String>,
@@ -127,6 +128,23 @@ fn accumulate(total: &mut Option<u64>, next: Option<u64>, first: bool) {
     } else {
         total.zip(next).map(|(a, b)| a.saturating_add(b))
     };
+}
+
+// Sort object keys recursively, independent of serde_json's map feature flags.
+fn normalized_args(value: &Value) -> Value {
+    match value {
+        Value::Object(object) => {
+            let mut keys: Vec<_> = object.keys().collect();
+            keys.sort_unstable();
+            Value::Object(
+                keys.into_iter()
+                    .map(|key| (key.clone(), normalized_args(&object[key])))
+                    .collect(),
+            )
+        }
+        Value::Array(array) => Value::Array(array.iter().map(normalized_args).collect()),
+        other => other.clone(),
+    }
 }
 
 /// Callers inject short-lock tools, lazy local retrieval, a cancellation flag
@@ -152,6 +170,7 @@ pub async fn run_agent_turn(
     let mut outcome = AgentTurnOutcome {
         final_blocks: vec![],
         usage: ChatUsage::default(),
+        usage_unknown: false,
         tool_calls_log: vec![],
         degraded: cached == ChatCapability::Unsupported,
         degraded_reason: (cached == ChatCapability::Unsupported)
@@ -160,9 +179,8 @@ pub async fn run_agent_turn(
     request.tools = chat_tools().to_vec();
     request.limits.max_output_tokens = request.limits.max_output_tokens.min(4096);
     let mut evidence_bytes: usize = 0;
-    let mut previous_calls = Vec::new();
-    let mut last_query = None;
-    let mut previous_text = String::new();
+    let mut executed_queries = HashSet::new();
+    let mut reported_tokens: u64 = 0;
     let mut successes = 0;
     let mut fallback_injected = false;
     for round in 0..model_max {
@@ -231,27 +249,16 @@ pub async fn run_agent_turn(
             successes == 0,
         );
         successes += 1;
-        if outcome
-            .usage
-            .input_tokens
-            .unwrap_or(0)
-            .saturating_add(outcome.usage.output_tokens.unwrap_or(0))
-            > 32_000
-        {
+        // Unknown billing stays unknown, but each reported component remains a
+        // lower bound for the safety fuse (including partially reported usage).
+        outcome.usage_unknown |=
+            response.usage.input_tokens.is_none() || response.usage.output_tokens.is_none();
+        reported_tokens = reported_tokens
+            .saturating_add(response.usage.input_tokens.unwrap_or(0))
+            .saturating_add(response.usage.output_tokens.unwrap_or(0));
+        if reported_tokens > 32_000 {
             outcome.stop("回合 token 预算");
             return Ok(outcome);
-        }
-        let text: String = response
-            .blocks
-            .iter()
-            .filter_map(|b| match b {
-                ChatBlock::Text(t) => Some(t.as_str()),
-                _ => None,
-            })
-            .collect();
-        let has_text = !text.trim().is_empty() && text != previous_text;
-        if !text.trim().is_empty() {
-            previous_text = text;
         }
         // Synthetic Gemini/Ollama ids restart each response. Make all call ids
         // unique across rounds so replay resolves the correct tool name.
@@ -293,20 +300,6 @@ pub async fn run_agent_turn(
             outcome.stop("输入上下文预算");
             return Ok(outcome);
         }
-        let canonical: Vec<_> = calls
-            .iter()
-            .map(|(_, name, args)| {
-                (
-                    name.clone(),
-                    serde_json::from_str::<Value>(args).unwrap_or(Value::Null),
-                )
-            })
-            .collect();
-        if !has_text && canonical == previous_calls {
-            outcome.stop("重复查询且无新文本");
-            return Ok(outcome);
-        }
-        previous_calls = canonical;
         if calls.len() + outcome.tool_calls_log.len() > tool_max {
             outcome.stop("工具调用预算");
             return Ok(outcome);
@@ -334,12 +327,11 @@ pub async fn run_agent_turn(
             }
             let args: Value = serde_json::from_str(&args_json)
                 .map_err(|e| AiError::BadResponse(e.to_string()))?;
-            let query = (name.clone(), args.clone());
-            if !has_text && last_query.as_ref() == Some(&query) {
-                outcome.stop("重复查询且无新文本");
+            let query = (name.clone(), normalized_args(&args).to_string());
+            if !executed_queries.insert(query) {
+                outcome.stop("重复查询");
                 return Ok(outcome);
             }
-            last_query = Some(query);
             let result = validate_tool(&name, &args).and_then(|()| tool(&name, &args));
             let (data, error, ok) = match result {
                 Ok(output) => (output, None, true),
@@ -347,7 +339,9 @@ pub async fn run_agent_turn(
             };
             let overhead = error.as_ref().map_or(0, String::len) + 32;
             let remaining = (48 * 1024 - evidence_bytes).saturating_sub(overhead);
-            if remaining < 32 {
+            // Reserve room for structured scope metadata even at the tail of
+            // the evidence budget, not just an unscoped empty envelope.
+            if remaining < 80 {
                 outcome.stop("回合证据预算");
                 return Ok(outcome);
             }

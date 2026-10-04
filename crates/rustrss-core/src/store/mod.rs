@@ -2384,12 +2384,17 @@ fn ranked_search_sql(
     hide_read: bool,
     feed_ids: Option<&[i64]>,
 ) -> (String, Vec<Value>) {
-    let mut sql = String::from(
+    let index = if feed_ids.is_some() {
+        "idx_entries_scoped_search_order"
+    } else {
+        "idx_entries_search_order"
+    };
+    let mut sql = format!(
         "WITH hits AS MATERIALIZED (
             SELECT e.id, e.read, COALESCE(e.published_at, e.fetched_at) AS sortkey,
                    bm25(entries_fts) AS relevance
               FROM entries_fts
-              JOIN entries e INDEXED BY idx_entries_search_order ON e.id = entries_fts.rowid
+              JOIN entries e INDEXED BY {index} ON e.id = entries_fts.rowid
              WHERE entries_fts MATCH ?",
     );
     let mut values = vec![Value::Text(fts_query.to_owned())];
@@ -2825,6 +2830,32 @@ mod scoped_list_plan_tests {
         // fail to prepare instead of silently scanning body-bearing article rows.
         store.conn.execute("DROP INDEX idx_entries_search_order", []).unwrap();
         assert!(explain().is_err(), "query survived without its required index");
+    }
+
+    #[test]
+    fn scoped_ranked_search_candidates_use_covering_index_and_detect_its_removal() {
+        let store = Store::open_in_memory().unwrap();
+        let (sql, values) = ranked_search_sql("\"common\"", 10, true, Some(&[1, 2]));
+        let explain = || {
+            let mut stmt = store.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
+            let rows =
+                stmt.query_map(params_from_iter(values.clone()), |r| r.get::<_, String>(3))?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()
+        };
+        let plan = explain().unwrap().join(" | ");
+        assert!(
+            plan.contains("COVERING INDEX idx_entries_scoped_search_order"),
+            "{plan}"
+        );
+        assert!(plan.contains("MATERIALIZE hits"), "{plan}");
+        store
+            .conn
+            .execute("DROP INDEX idx_entries_scoped_search_order", [])
+            .unwrap();
+        assert!(
+            explain().is_err(),
+            "scoped query survived without its covering index"
+        );
     }
 
     // QUERY PLAN alone is insufficient: both plans say USING INDEX, but the old

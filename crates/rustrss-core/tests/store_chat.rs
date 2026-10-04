@@ -44,6 +44,15 @@ fn v2_migrates_to_v3_and_reopens_without_losing_data() {
     drop(store);
     let reopened = Store::open(&path).unwrap();
     assert_eq!(reopened.schema_version().unwrap(), 3);
+    let db = Connection::open(&path).unwrap();
+    let index_sql: String = db
+        .query_row(
+            "SELECT sql FROM sqlite_master WHERE name='idx_entries_scoped_search_order'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert!(index_sql.contains("feed_id"));
     assert_eq!(
         reopened.get_session(id).unwrap().unwrap().messages[0].parts_json,
         parts("持久正文")

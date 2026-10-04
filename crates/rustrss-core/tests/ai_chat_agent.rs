@@ -834,6 +834,7 @@ async fn usage_unknown_is_not_invented_and_output_limit_is_hard_clamped() {
     .unwrap();
     assert_eq!(out.usage.input_tokens, None);
     assert_eq!(out.usage.output_tokens, None);
+    assert!(out.usage_unknown);
 }
 
 #[tokio::test]
@@ -936,4 +937,114 @@ fn fallback_retrieval_scope_snippet_counts_and_total_chars_are_bounded() {
     assert!(evidence.matches("[id=").count() <= 10);
     assert_eq!(evidence.matches("[正文片段").count(), 3);
     assert!(evidence.contains("已截断"));
+}
+
+async fn nonadjacent_duplicate_query(batch: bool) {
+    let server = MockServer::start().await;
+    let requests = Arc::new(AtomicUsize::new(0));
+    let counter = requests.clone();
+    Mock::given(method("POST"))
+        .respond_with(move |_: &Request| {
+            let round = counter.fetch_add(1, Ordering::SeqCst);
+            let calls = if batch {
+                vec![
+                    ("search_articles", json!({"query":"A","limit":10})),
+                    ("search_articles", json!({"query":"B"})),
+                    ("search_articles", json!({"limit":10,"query":"A"})),
+                ]
+            } else {
+                vec![(
+                    "search_articles",
+                    json!({"query":if round == 1 { "B" } else { "A" }}),
+                )]
+            };
+            let mut response = call_response(Provider::OpenAiCompatible, &calls);
+            if batch {
+                response["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"] =
+                    json!(r#"{ "query": "A", "limit": 10 }"#);
+                response["choices"][0]["message"]["tool_calls"][2]["function"]["arguments"] =
+                    json!(r#"{"limit":10,"query":"A"}"#);
+            }
+            // New explanatory text must not bypass duplicate suppression.
+            response["choices"][0]["message"]["content"] = json!(format!("round {round}"));
+            ResponseTemplate::new(200).set_body_json(response)
+        })
+        .mount(&server)
+        .await;
+    let mut a_executions = 0;
+    let mut b_executions = 0;
+    let out = run_agent_turn(
+        &client(Provider::OpenAiCompatible, &server.uri()),
+        request(),
+        |_, args| {
+            match args["query"].as_str().unwrap() {
+                "A" => a_executions += 1,
+                "B" => b_executions += 1,
+                _ => unreachable!(),
+            }
+            output()
+        },
+        |_| panic!(),
+        || false,
+        |_| {},
+    )
+    .await
+    .unwrap();
+    assert_eq!(a_executions, 1, "A must never execute on the retry path");
+    assert_eq!(b_executions, 1);
+    assert_eq!(requests.load(Ordering::SeqCst), if batch { 1 } else { 3 });
+    assert!(matches!(&out.final_blocks[0], ChatBlock::Text(t) if t.contains("重复查询")));
+}
+
+#[tokio::test]
+async fn nonadjacent_duplicate_in_one_batch_is_not_executed() {
+    nonadjacent_duplicate_query(true).await;
+}
+
+#[tokio::test]
+async fn nonadjacent_duplicate_across_rounds_is_not_executed() {
+    nonadjacent_duplicate_query(false).await;
+}
+
+#[tokio::test]
+async fn unknown_usage_then_known_lower_bound_exceeding_budget_stops() {
+    let server = MockServer::start().await;
+    let counter = Arc::new(AtomicUsize::new(0));
+    let n = counter.clone();
+    Mock::given(method("POST"))
+        .respond_with(move |_: &Request| {
+            let round = n.fetch_add(1, Ordering::SeqCst);
+            let mut value = call_response(
+                Provider::OpenAiCompatible,
+                &[("search_articles", json!({"query":format!("round{round}")}))],
+            );
+            if round == 0 {
+                value.as_object_mut().unwrap().remove("usage");
+            } else {
+                value["usage"] = json!({"prompt_tokens":16000,"completion_tokens":1});
+            }
+            ResponseTemplate::new(200).set_body_json(value)
+        })
+        .mount(&server)
+        .await;
+    let mut tools = 0;
+    let out = run_agent_turn(
+        &client(Provider::OpenAiCompatible, &server.uri()),
+        request(),
+        |_, _| {
+            tools += 1;
+            output()
+        },
+        |_| panic!(),
+        || false,
+        |_| {},
+    )
+    .await
+    .unwrap();
+    assert_eq!(counter.load(Ordering::SeqCst), 3);
+    assert_eq!(tools, 2);
+    assert_eq!(out.usage.input_tokens, None);
+    assert_eq!(out.usage.output_tokens, None);
+    assert!(out.usage_unknown);
+    assert!(matches!(&out.final_blocks[0], ChatBlock::Text(t) if t.contains("token 预算")));
 }

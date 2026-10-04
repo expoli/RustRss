@@ -958,19 +958,33 @@ fn scrub_tool_strings(value: &mut Value) {
 }
 pub const TOOL_BYTES: usize = 12 * 1024;
 /// Valid JSON envelope on truncation; never feed broken JSON to a provider adapter.
-/// excerpt is a UTF-8 prefix of the shared projection.
+/// excerpt is a UTF-8 prefix of the shared projection. Structured scope count
+/// survives repeated truncation; max must fit the empty envelope (<=80 bytes
+/// even for a u64 scope count, versus 32 bytes for an unscoped result).
 pub fn bound_output(mut output: ToolOutput, max: usize) -> ToolOutput {
     // The empty truncation envelope is 31 bytes; agent callers reserve >=32.
     assert!(max >= 32, "tool envelope requires at least 32 bytes");
     if output.data_json.len() <= max {
         return output;
     }
+    let scope_count = serde_json::from_str::<Value>(&output.data_json)
+        .ok()
+        .and_then(|value| value.get("scope_feed_count").and_then(Value::as_u64));
+    let mut envelope = json!({"truncated":true,"excerpt":""});
+    if let Some(count) = scope_count {
+        envelope["scope_feed_count"] = json!(count);
+    }
+    assert!(
+        envelope.to_string().len() <= max,
+        "tool scope envelope exceeds budget"
+    );
     let mut cut = output.data_json.len().min(max);
     loop {
         while !output.data_json.is_char_boundary(cut) {
             cut -= 1;
         }
-        let data = json!({"truncated":true,"excerpt": &output.data_json[..cut]}).to_string();
+        envelope["excerpt"] = json!(&output.data_json[..cut]);
+        let data = envelope.to_string();
         if data.len() <= max {
             output.data_json = data;
             output.truncated = true;

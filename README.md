@@ -87,9 +87,9 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 
 ## 对话助手（阶段①双端 UI + 阶段② Rust 只读资料助手，非流式）
 
-- schema 追加 v2→v3；会话元数据与消息正文分表，手动删除级联清理。应用启动将遗留 `running` 标为 `interrupted`，普通 core/MCP 开库不恢复、不自动重试计费。
+- schema 追加 v2→v3（尚未发布）；会话元数据与消息正文分表，手动删除级联清理。应用启动将遗留 `running` 标为 `interrupted`，普通 core/MCP 开库不恢复、不自动重试计费。
 - 日报上下文冻结为第一条 `done` user 消息（`scope_json.has_seed` + `seq=1` 标识）；保存真实范围、checkpoint 与报告正文 hash，重写日报后仍讨论原快照。无日报也可会话，但助手明确说明资料不足。
-- 每回合最多 6 次模型请求、10 次只读工具调用、120 秒；每请求输出最多 4096 tokens，已报告的回合 usage 超过 32,000 tokens 熔断。输入采用保守 48,000 字符闸门（不是账单 token 估算，含工具声明/反馈），旧历史按完整回合裁剪并返回 `historyTrimmed`。绑定日报在工具模式恒钉住；降级时仅替换请求里的 seed 为相关章节，持久快照/徽章不变。provider usage 缺失即未知；已知会话累计达到 200,000 tokens 后要求新会话，暂不提供继续付费旗标。
+- 每回合最多 6 次模型请求、10 次只读工具调用、120 秒；每请求输出最多 4096 tokens，已报告 token 下界累计超过 32,000 熔断（即使某次 usage 缺失，后续已知用量仍计入护栏）。输入采用保守 48,000 字符闸门（不是账单 token 估算，含工具声明/反馈），旧历史按完整回合裁剪并返回 `historyTrimmed`。绑定日报在工具模式恒钉住；降级时仅替换请求里的 seed 为相关章节，持久快照/徽章不变。provider usage 缺失即未知；已知会话累计达到 200,000 tokens 后要求新会话，暂不提供继续付费旗标。
 - provider/模型/端点变化时旧会话拒绝发送，须开启新会话；同会话单 flight，在飞删除拒绝（先停止、等待终态）。停止会丢弃在途 HTTP future，但已发生费用不保证撤销。
 - Tauri 提供 `chat_send/stop/capability/sessions_list/session_get/session_delete`；返回 `sessionId/messageId`（本回合 user id），事件 `chat:started/progress/done/error` 携带身份；终态另给 `assistantMessageId/blocks/usage/status`。双端共用聊天容器，以会话身份处理终态事件，不因后台完成抢导航。消息按 id 增量更新，Markdown v1 仅显示安全转义纯文本。
 - 发送前按 provider/model/base_url 指纹与会话范围确认端点、正文外发与 token 费用；授权记在本地 `chat.privacyConfirmed.<指纹>`，换端点/模型或范围重新确认。已有会话未成功加载历史时禁用输入、发送与重试，加载后按持久范围显示与确认，加载失败不放行。会话头部提供新建、历史切换与删除；失败保留草稿并可手动重试，成功回执只清空仍与提交快照相同的输入，保留等待期间的新草稿。切换语言即时翻译聊天控件/消息并保留草稿与滚动位置；删除迟到回执不抢文章或其它会话导航。未配 key 显示 AI 设置入口，预算/配置漂移直接展示后端错误并可新建会话。
@@ -98,8 +98,10 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 
 ### 阶段② Rust 只读工具与诚实降级
 
+- 受限范围 FTS 候选阶段使用含 `feed_id` 的覆盖索引，不为判定范围读取正文表；无范围搜索保持原索引。新索引并入**未发布 v3**，不追加 v4、不修改已发布 v1/v2。已跑过旧 v3 的开发库不会自动重跑迁移：请先备份，再重建开发库、从 v2 备份重新迁移，或手动补建 `CREATE INDEX idx_entries_scoped_search_order ON entries(id, read, COALESCE(published_at, fetched_at) DESC, feed_id);`。不能只把现有 v3 的 `user_version` 改回 2（会重复创建聊天表）。
+
 - core `ai::tools` 下沉 MCP 的 10 个只读投影：`list_feeds/list_folders/list_articles/search_articles/get_article/get_unread_summary/db_stats/list_tags/digest_list/digest_get`；MCP 仍返回原有无界单取 JSON，聊天在共享投影上增加 JSON Schema 子集/Rust 校验、凭据脱敏与预算，不开放写入、主题、刷新、抓全文或生成日报。
-- 聊天单结果 ≤12KiB、回合证据 ≤48KiB；超限回灌有效 JSON 截断标记与 UTF-8 前缀，正文/日报在 SQLite 读取时先取有界片段。连续重复同查询且无新文本、次数/时间/上下文预算触发停止；只持久最终问答对，中间工具调用与结果不跨回合回放。
+- 聊天单结果 ≤12KiB、回合证据 ≤48KiB；超限回灌有效 JSON 截断标记与 UTF-8 前缀；受限范围的 `scope_feed_count` 始终保留为结构化字段并计入字节预算，正文/日报在 SQLite 读取时先取有界片段。回合内按工具名与规范化 JSON 参数去重，单批或跨轮的非相邻重复也直接熔断（新解释文本不能绕过）；次数/时间/上下文预算触发停止；只持久最终问答对，中间工具调用与结果不跨回合回放。
 - 会话范围从持久 `scope_json.scope_key` 注入；`tags:1,3` 是源标签 OR 的**当前** feed 成员，不是条目标签，也不改冻结日报。列表/FTS/正文/订阅/分组/统计限制到成员范围；日报仅取精确范围（省略 scope_key 时注入会话范围），范围在日期去重和 LIMIT 前过滤。受限会话 `list_tags` 明确拒绝 `scope_unsupported`，防止泄漏全库标签未读计数；结果附 `scope_feed_count`。
 - 能力缓存按 provider+端点指纹+模型区分 unknown/confirmed/unsupported，只根据明确 HTTP 400 不支持 tools/function 的错误更新；401、429、超时、无效参数/schema 不当作能力不足。降级后不声明 tools，注入本地 FTS ≤10 条短摘要、≤3 段正文及相关冻结日报章节，合计 ≤8,000 字符；找不到资料明确要求缩小范围。Gemini 签名 opaque 原样回放，思考文本不显示。
 - `chat_send` 回执/事件增加 `degraded/toolCallsLog`，终态增加 `degradedReason`；`chat:progress` 工具阶段含 name/summary/ok/truncated。这些字段供下一 UI 批消费，当前 UI 尚未显示能力、过程或「本地检索辅助模式」提示。四家真实 BYOK 检索→取文→回答尚未验收，mock 不替代实测。

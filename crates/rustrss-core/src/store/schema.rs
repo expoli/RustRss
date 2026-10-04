@@ -120,8 +120,12 @@ pub const MIGRATIONS: &[&str] = &[
         created_at INTEGER NOT NULL
     );
     "#,
-    // v2 → v3：聊天元数据与正文分表；不改变已发布基线/日报迁移。
+    // v2 → v3（尚未发布）：聊天元数据/正文分表及受限范围搜索覆盖索引。
+    // 已使用旧 v3 的开发库需重建，或备份后手动补建此索引；不追加 v4。
     r#"
+    -- FTS 候选阶段的 scope 谓词也从索引读 feed_id，不回正文大列表。
+    CREATE INDEX idx_entries_scoped_search_order
+        ON entries(id, read, COALESCE(published_at, fetched_at) DESC, feed_id);
     CREATE TABLE chat_sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,

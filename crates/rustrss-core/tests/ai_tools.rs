@@ -298,3 +298,27 @@ fn digest_chat_body_is_clipped_in_sql_without_loading_structured_content() {
     assert!(bounded.data_json.len() <= TOOL_BYTES);
     serde_json::from_str::<Value>(&bounded.data_json).unwrap();
 }
+
+#[test]
+fn scoped_large_result_retains_scope_count_through_repeated_byte_truncation() {
+    let (store, tag, id, _) = fixture();
+    let out = run_scoped_tool(
+        &store,
+        &format!("tags:{tag}"),
+        "get_article",
+        &json!({"id":id,"include_html":true}),
+    )
+    .unwrap();
+    assert!(out.truncated);
+    assert!(out.data_json.len() <= TOOL_BYTES);
+    let value: Value = serde_json::from_str(&out.data_json).unwrap();
+    assert_eq!(value["scope_feed_count"], 1);
+    assert_eq!(value["truncated"], true);
+    for max in [64, 128, 1024] {
+        let bounded = bound_output(out.clone(), max);
+        assert!(bounded.data_json.len() <= max);
+        let value: Value = serde_json::from_str(&bounded.data_json).unwrap();
+        assert_eq!(value["scope_feed_count"], 1);
+        assert_eq!(value["truncated"], true);
+    }
+}
