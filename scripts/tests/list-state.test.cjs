@@ -73,7 +73,7 @@ test('late article response cannot replace the more recently opened article', as
   const ctx = vm.createContext({ state: { selectedId: null }, paging: { generation: 1 },
     invoke: () => requests[call++].promise, renderReader: row => { displayed = row.id; },
     focusRow() {}, log() {} });
-  vm.runInContext('let readerRequest = 0;' + extract('openEntry'), ctx);
+  vm.runInContext('let readerRequest = 0; let readerToken = 0;' + extract('openEntry'), ctx);
   const old = vm.runInContext('openEntry(1)', ctx);
   const fresh = vm.runInContext('openEntry(2)', ctx);
   requests[1].resolve({ id: 2, read: true }); await fresh;

@@ -188,6 +188,17 @@ pub const TOOL_SPECS: &[ToolSpec] = &[
         scope: Scope::Read,
         dangerous: false,
     },
+    // 日报只读（设计 §8.2）：绝不触发 AI 生成，读 token 即可用
+    ToolSpec {
+        name: "digest_list",
+        scope: Scope::Read,
+        dangerous: false,
+    },
+    ToolSpec {
+        name: "digest_get",
+        scope: Scope::Read,
+        dangerous: false,
+    },
     // T3：阅读状态与刷新。三者都不危险（可逆/幂等/不删数据），所以不受危险开关约束，
     // 但仍需要写 scope + 写开关 + 写 token 三道闸。
     ToolSpec {
@@ -479,8 +490,8 @@ mod tests {
     /// `unsubscribe` / `folder_delete`（**tag 删除不在其中**）。
     #[test]
     fn read_tools_are_registered() {
-        assert_eq!(TOOL_SPECS.len(), 34);
-        assert_eq!(read_tool_count(), 11);
+        assert_eq!(TOOL_SPECS.len(), 36);
+        assert_eq!(read_tool_count(), 13);
         for name in [
             "list_feeds",
             "list_folders",
@@ -490,6 +501,8 @@ mod tests {
             "get_unread_summary",
             "db_stats",
             "list_tags",
+            "digest_list",
+            "digest_get",
         ] {
             let spec = spec(name).unwrap_or_else(|| panic!("{name} 未登记"));
             assert_eq!(spec.scope, Scope::Read, "{name} 应为只读");

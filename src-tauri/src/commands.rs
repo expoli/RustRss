@@ -4254,10 +4254,30 @@ pub fn digest_status(
     })
 }
 
-/// 有日报的日期列表（历史入口）。
+/// 历史报告列表（侧栏历史入口 / UI 日期导航）：元数据 + ≤140 字概览，零 AI。
 #[tauri::command]
-pub fn digest_list(state: State<'_, AppState>) -> R<Vec<String>> {
-    state.with_store(|s| s.digest_days().map_err(err))
+pub fn digest_list(state: State<'_, AppState>, limit: Option<u32>) -> R<Vec<serde_json::Value>> {
+    let limit = limit.unwrap_or(30).clamp(1, 90);
+    state.with_store(|s| {
+        s.digest_list(limit)
+            .map(|items| {
+                items
+                    .iter()
+                    .map(|i| {
+                        serde_json::json!({
+                            "date": i.report_day,
+                            "scope_key": i.scope_key,
+                            "scope_json": i.scope_json,
+                            "profile_key": i.profile_key,
+                            "generated_at": i.generated_at,
+                            "article_count": i.article_count,
+                            "overview": i.overview,
+                        })
+                    })
+                    .collect()
+            })
+            .map_err(|e| e.to_string())
+    })
 }
 
 /// 订阅源标签（读）。

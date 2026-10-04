@@ -624,9 +624,35 @@ function reconcileViews(existing) {
     const className = digestOpenDate === date ? 'active' : '';
     if (li.className !== className) li.className = className;
     setText(li.querySelector('.vlabel'), t(kind === 'today' ? 'sidebar.digestToday' : 'sidebar.digestYesterday'));
-    const mark = digestDays.includes(date) ? '●' : '';
+    const mark = digestDays.some((d) => d.date === date) ? '●' : '';
     const countEl = li.querySelector('.count');
     if (countEl.textContent !== mark) countEl.textContent = mark;
+    desired.push(li);
+  }
+  // 历史日期行（有完成报告的更早日期，近 5 条；今日/昨日已在上面）
+  const today = digestDate('today');
+  const yesterday = digestDate('yesterday');
+  const history = (digestDays || [])
+    .filter((d) => d.date !== today && d.date !== yesterday)
+    .slice(0, 5);
+  for (const d of history) {
+    const key = `d:date:${d.date}`;
+    let li = existing.get(key);
+    if (!li) {
+      li = document.createElement('li');
+      li.dataset.key = key;
+      bindSidebarKeyboard(li);
+      li.innerHTML = `<span class="icon">${window.RustRssIcons.svg('reading')}</span><span class="vlabel"></span><span class="count"></span>`;
+    }
+    li.onclick = () => openDigestDate(d.date);
+    const className = digestOpenDate === d.date ? 'active' : '';
+    if (li.className !== className) li.className = className;
+    const label = d.date.slice(5); // MM-DD
+    const labelEl = li.querySelector('.vlabel');
+    if (labelEl.textContent !== label) labelEl.textContent = label;
+    const countEl = li.querySelector('.count');
+    const n = String(d.article_count ?? '');
+    if (countEl.textContent !== n) countEl.textContent = n;
     desired.push(li);
   }
   reconcileChildren(el('views'), desired);
@@ -1297,12 +1323,23 @@ function renderDigestView(view) {
   const st = view.status;
   const running = digestJob && digestJob.date === view.date;
   const statusBits = [];
-  if (st.has_report) {
-    statusBits.push(
-      st.added || st.changed || st.removed
-        ? t('digest.statusChanges', { a: st.added, c: st.changed, r: st.removed })
-        : t('digest.statusUpToDate')
-    );
+  if (view.has_report) {
+    // 打开的是已生成的报告（含历史日期）：状态行不再显示「今日窗口」的
+    // 检查点对比——那是给「今天/昨天还在演进」的报告用的，对历史日期
+    // 会自相矛盾（报告明明已生成，却写「尚未生成」）。
+    if (view.date === digestDate('today') || view.date === digestDate('yesterday')) {
+      if (st.has_report) {
+        statusBits.push(
+          st.added || st.changed || st.removed
+            ? t('digest.statusChanges', { a: st.added, c: st.changed, r: st.removed })
+            : t('digest.statusUpToDate')
+        );
+      } else {
+        statusBits.push(t('digest.statusOutdated'));
+      }
+    } else {
+      statusBits.push(t('digest.historyBadge'));
+    }
   } else {
     statusBits.push(t('digest.statusNoReport'));
   }
@@ -2513,6 +2550,8 @@ async function loadAll({ reader = true } = {}) {
   log(
     `loaded feeds=${sidebar.db.feeds} entries=${sidebar.db.entries} unread=${sidebar.db.unread} starred=${sidebar.db.starred} markReadOnNavigate=${settings.mark_read_on_navigate} refreshInterval=${settings.refresh_interval_minutes} refreshOnStart=${settings.refresh_on_start} notifyNewArticles=${settings.notify_new_articles} fonts ui=${settings.font_ui || 'default'} read=${settings.font_read || 'follow-ui'} mono=${settings.font_mono || 'default'} size=${fontSizeText(settings.font_read_size)}px line=${fontLineText(settings.font_read_line)} logLevel=${settings.log_level} ai=${ai.provider}${ai.model ? '/' + ai.model : '（未配模型）'} hasKey=${ai.has_key} mcp=${mcp.running ? mcp.url : 'off'} mcpWrite=${mcp.write_enabled ? 'on' : 'off'} mcpDangerous=${mcp.dangerous_enabled ? 'on' : 'off'} mcpWriteToken=${mcp.write_token ? 'set' : 'none'}${reader ? '' : ' silent（正文未重渲染）'}`
   );
+  // 日报状态点 + 历史日期行：启动路径也要拉一次（refreshCounts 只覆盖刷新后的路径）
+  refreshSidebarDigestDays();
 }
 
 /// 每批条数：与后端 list_entries 的默认值一致，也是「有没有下一页」的判据。
@@ -2985,11 +3024,16 @@ async function refreshCounts() {
   // 头部与尾部都同值短路，未变零写入。
   renderListCount();
   refreshSentinelFooter();
-  // 日报状态点：轻量（日期列表），失败静默（侧栏不因它阻塞）
-  invoke('digest_list')
-    .then((days) => {
-      if (JSON.stringify(state.digestDays) === JSON.stringify(days)) return;
-      state.digestDays = days;
+  // 日报状态点 + 历史日期：轻量（元数据列表），失败静默（侧栏不因它阻塞）
+  refreshSidebarDigestDays();
+}
+
+/// 拉取日报历史列表并按需重渲侧栏（状态点 + 历史日期行）；失败静默。
+function refreshSidebarDigestDays() {
+  invoke('digest_list', { limit: 30 })
+    .then((items) => {
+      if (JSON.stringify(state.digestDays) === JSON.stringify(items)) return;
+      state.digestDays = items;
       renderSidebar();
     })
     .catch(() => {});
@@ -4136,6 +4180,7 @@ function initRefreshEvents() {
         setStatus(p.error || t('digest.failed'), true);
       }
       if (digestOpenDate === p.date) openDigestDate(p.date).catch(() => {});
+      if (p.ok) refreshSidebarDigestDays(); // 新报告进入侧栏历史（状态点/日期行）
     })
     .catch((e2) => log(`listen digest:done failed: ${e2.message}`));
   events

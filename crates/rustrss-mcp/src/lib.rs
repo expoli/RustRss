@@ -104,6 +104,27 @@ pub struct SearchParams {
     pub limit: Option<u32>,
 }
 
+/// `digest_list` 的参数。
+#[derive(Debug, Default, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct DigestListParams {
+    /// 最多返回多少份（默认 10，上限 50；按日期倒序）
+    pub limit: Option<u32>,
+}
+
+/// `digest_get` 的参数。
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct DigestGetParams {
+    /// 日期（YYYY-MM-DD，来自 digest_list）
+    pub date: String,
+    /// 范围键（来自 digest_list；缺省 "all" = 全部订阅源）
+    pub scope_key: Option<String>,
+    /// 来源清单每页条数（默认 10，上限 50）
+    pub items_page_size: Option<u32>,
+    /// 来源清单页码（从 1 起；缺省第 1 页）
+    pub items_page: Option<u32>,
+}
+
 /// `get_unread_summary` 的参数
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 #[serde(default)]
@@ -569,6 +590,90 @@ impl RustRssMcp {
         })
     }
 
+    /// 日报列表：元数据 + ≤140 字概览（默认 10、上限 50，按日期倒序）
+    pub fn digest_list_json(&self, p: &DigestListParams) -> String {
+        let limit = clamp_limit(p.limit);
+        self.with_store(|store| match store.digest_list(limit) {
+            Ok(items) => {
+                let list: Vec<serde_json::Value> = items
+                    .iter()
+                    .map(|i| {
+                        serde_json::json!({
+                            "date": i.report_day,
+                            "scope_key": i.scope_key,
+                            "generated_at": i.generated_at,
+                            "article_count": i.article_count,
+                            // ≤140 字概览；报告正文走 digest_get 单取
+                            "overview": i.overview,
+                        })
+                    })
+                    .collect();
+                to_json(&serde_json::json!({ "count": list.len(), "digests": list }))
+            }
+            Err(e) => error_json(&e.to_string()),
+        })
+    }
+
+    /// 单份日报：头 + 正文（Markdown）+ 来源清单分页（默认 10、上限 50）
+    pub fn digest_get_json(&self, p: &DigestGetParams) -> String {
+        let scope_key = p.scope_key.as_deref().unwrap_or("all");
+        let page_size = clamp_limit(p.items_page_size);
+        let page = p.items_page.unwrap_or(1).max(1);
+        self.with_store(|store| match store.digest_report(&p.date, scope_key) {
+            Ok(Some(report)) => {
+                // 来源清单分页（内存切片：清单上限即 200，无需 SQL 游标）
+                let total = report.items.len();
+                let start = ((page - 1) as usize * page_size as usize).min(total);
+                let end = (start + page_size as usize).min(total);
+                let items: Vec<serde_json::Value> = report.items[start..end]
+                    .iter()
+                    .map(|i| {
+                        serde_json::json!({
+                            "title": i.title,
+                            "feed_id": i.feed_id,
+                            // agent 可用 get_article(feed 过滤) 取正文
+                            "effective_at": i.effective_at,
+                        })
+                    })
+                    .collect();
+                // 正文上限：日报本身有 200 篇预算，成品 Markdown 天然有界；
+                // 仍按响应口径设硬顶，超出显式标注（不静默截断语义）
+                const MARKDOWN_MAX: usize = 32 * 1024;
+                let (markdown, truncated) = if report.markdown.len() > MARKDOWN_MAX {
+                    // 按 UTF-8 字符边界截断
+                    let mut cut = MARKDOWN_MAX;
+                    while !report.markdown.is_char_boundary(cut) {
+                        cut -= 1;
+                    }
+                    (report.markdown[..cut].to_string(), true)
+                } else {
+                    (report.markdown.clone(), false)
+                };
+                to_json(&serde_json::json!({
+                    "date": report.date,
+                    "scope_key": report.scope_key,
+                    "generated_at": report.generated_at,
+                    "checkpoint_at": report.checkpoint_at,
+                    "article_count": report.article_count,
+                    "cache_hits": report.cache_hits,
+                    "markdown": markdown,
+                    "markdown_truncated": truncated,
+                    "sources": {
+                        "total": total,
+                        "page": page,
+                        "page_size": page_size,
+                        "items": items,
+                    },
+                }))
+            }
+            Ok(None) => error_json(&format!(
+                "未找到 {date}（范围 {scope_key}）的日报；先用 digest_list 取可用日期",
+                date = p.date
+            )),
+            Err(e) => error_json(&e.to_string()),
+        })
+    }
+
     /// 未读聚合（按源或按分组）
     pub fn unread_summary_json(&self, p: &UnreadSummaryParams) -> String {
         let by = match p.by.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
@@ -739,6 +844,20 @@ impl RustRssMcp {
     #[tool(description = "全文搜索标题与正文（中文需两字及以上）")]
     fn search_articles(&self, Parameters(p): Parameters<SearchParams>) -> String {
         self.search_articles_json(&p)
+    }
+
+    #[tool(
+        description = "列出已生成的每日日报（元数据 + ≤140 字概览，按日期倒序；默认 10 份、上限 50）。正文用 digest_get 单取。"
+    )]
+    fn digest_list(&self, Parameters(p): Parameters<DigestListParams>) -> String {
+        self.digest_list_json(&p)
+    }
+
+    #[tool(
+        description = "取单份每日日报：头部（日期/范围/统计）+ 成品 Markdown + 来源清单分页（items_page_size 默认 10、上限 50）。日期与 scope_key 来自 digest_list。只读，不触发任何 AI 生成。"
+    )]
+    fn digest_get(&self, Parameters(p): Parameters<DigestGetParams>) -> String {
+        self.digest_get_json(&p)
     }
 
     #[tool(
@@ -1294,6 +1413,67 @@ mod tests {
         server.with_store(|s| config::clear_write_token(s).unwrap());
         assert_eq!(server.scope_of_credential(&new_write, None), None, "销毁后写 token 必须立刻失效");
         assert_eq!(server.scope_of_credential("read-token", None), Some(Scope::Read), "读 token 不受影响");
+    }
+
+    /// 日报只读工具口径：列表 ≤140 概览 + 分页上限；单取分页与缺报告报错。
+    #[test]
+    fn digest_tools_metadata_and_pagination() {
+        let store = Store::open_in_memory().unwrap();
+        // 造一个源 + 一条入窗条目（digest_entry_meta 由 upsert 维护）
+        let feed = store.add_feed("https://a.invalid/rss", Some("A")).unwrap();
+        let entries = rustrss_core::parse(
+            "<rss version='2.0'><channel><title>T</title><item><guid>g1</guid><title>N1</title><description>D1</description><pubDate>2026-10-04T01:00:00Z</pubDate></item></channel></rss>".as_bytes(),
+        ).unwrap().entries;
+        store.upsert_entries(feed, &entries).unwrap();
+        let start = 1791072000i64; // 2026-10-04T00:00Z
+        let end = 1791122400i64;
+        let manifest = store.freeze_manifest(start, end, None).unwrap();
+        let content = serde_json::json!({
+            "overview": "概".repeat(200), // >140 字：验证截断
+            "sections": []
+        });
+        store
+            .commit_digest_report(
+                "2026-10-04", "UTC", start, end, "all", "{}", "p", "{}",
+                &manifest.hash, &manifest.pairs_hash, &[],
+                manifest.frozen_at, 0, 0,
+                &content.to_string(), "# 日报", 1, "{}",
+                manifest.entries.len() as i64, &manifest.entries,
+            )
+            .unwrap();
+
+        let server = RustRssMcp::new(store);
+        // digest_list：概览截到 ≤140 字
+        let list = server.digest_list_json(&DigestListParams { limit: None });
+        let v: serde_json::Value = serde_json::from_str(&list).unwrap();
+        assert_eq!(v["count"], 1);
+        let overview = v["digests"][0]["overview"].as_str().unwrap();
+        assert_eq!(overview.chars().count(), 140, "概览必须截到 140 字");
+        assert!(!list.contains(&"概".repeat(200)), "列表不得带出全文概览");
+        // digest_list limit 上限 50：语义上 clamp 不报错（count 与库内报告数一致）
+        let capped = server.digest_list_json(&DigestListParams { limit: Some(999) });
+        let cv: serde_json::Value = serde_json::from_str(&capped).unwrap();
+        assert_eq!(cv["count"], 1, "超大 limit 被 clamp，不报错也不放大");
+
+        // digest_get：分页
+        let get = server.digest_get_json(&DigestGetParams {
+            date: "2026-10-04".into(),
+            scope_key: Some("all".into()),
+            items_page_size: Some(999), // clamp → 50
+            items_page: Some(1),
+        });
+        let gv: serde_json::Value = serde_json::from_str(&get).unwrap();
+        assert_eq!(gv["sources"]["page_size"], 50);
+        assert_eq!(gv["article_count"], 1);
+
+        // 缺报告 → 机器可读错误
+        let missing = server.digest_get_json(&DigestGetParams {
+            date: "2026-10-01".into(),
+            scope_key: None,
+            items_page_size: None,
+            items_page: None,
+        });
+        assert!(missing.contains("未找到"), "缺报告必须报错：{missing}");
     }
 
     /// 应用内托管：MCP 与界面共用同一个刷新 gate（agent 的 refresh 不得与界面刷叠加）

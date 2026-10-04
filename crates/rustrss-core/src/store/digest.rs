@@ -19,6 +19,19 @@ pub struct DigestScope {
     pub feed_ids: Option<Vec<i64>>,
 }
 
+/// 历史报告列表项（digest_list；MCP digest_list 同源）。
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct DigestListItem {
+    pub report_day: String,
+    pub scope_key: String,
+    pub scope_json: String,
+    pub profile_key: String,
+    pub generated_at: i64,
+    pub article_count: i64,
+    /// ≤140 字概览（列表口径，正文走 digest_report / digest_get 单取）
+    pub overview: String,
+}
+
 impl DigestScope {
     /// 从设置里的标签 id 数组解析范围。`tag_ids` 顺序无关。
     pub fn resolve(store: &Store, tag_ids: &[i64]) -> Result<Self, super::StoreError> {
@@ -116,6 +129,37 @@ impl Store {
         }
         tx.commit()?;
         Ok(())
+    }
+
+    /// 历史报告列表（历史入口 / MCP digest_list）：元数据 + ≤140 字概览。
+    /// 只取生成完成的行；概览经 json_extract 单列提取，不拉正文大列。
+    pub fn digest_list(&self, limit: u32) -> super::Result<Vec<DigestListItem>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT d.report_day, d.scope_key, d.scope_json, d.profile_key,
+                    d.generated_at, d.article_count,
+                    COALESCE(json_extract(b.content_json, '$.overview'), '')
+               FROM digests d
+               JOIN digest_bodies b
+                 ON b.digest_id = d.id AND b.revision = d.revision
+              WHERE d.generated_at IS NOT NULL
+              ORDER BY d.report_day DESC, d.generated_at DESC, d.id DESC
+              LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit], |r| {
+            let overview: String = r.get(6)?;
+            // 概览按字符边界截到 140（中文安全）
+            let short: String = overview.chars().take(140).collect();
+            Ok(DigestListItem {
+                report_day: r.get(0)?,
+                scope_key: r.get(1)?,
+                scope_json: r.get(2)?,
+                profile_key: r.get(3)?,
+                generated_at: r.get(4)?,
+                article_count: r.get(5)?,
+                overview: short,
+            })
+        })?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
     /// 有日报的日期（历史入口用；不读正文）。

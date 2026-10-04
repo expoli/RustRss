@@ -386,6 +386,7 @@ pub fn run() {
             commands::digest_list,
             commands::digest_generate,
             commands::digest_cancel,
+            commands::digest_list,
             commands::rename_tag,
             commands::set_tag_color,
             commands::set_tag_pinned,
