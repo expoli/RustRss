@@ -1102,5 +1102,5 @@ async fn nested_truncation_promotes_scope_count_to_top_level() {
     )
     .await
     .unwrap();
-    assert_eq!(out.degraded, false);
+    assert!(!out.degraded);
 }
