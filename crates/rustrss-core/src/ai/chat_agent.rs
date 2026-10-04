@@ -350,7 +350,14 @@ pub async fn run_agent_turn(
                 let value: Value = serde_json::from_str(&data.data_json)
                     .map_err(|e| AiError::BadResponse(e.to_string()))?;
                 if value.get("truncated") != Some(&Value::Bool(true)) {
-                    data.data_json = json!({"truncated":true,"data":value}).to_string();
+                    // 包装已有截断结果时，把内层 scope_feed_count 提升到顶层——
+                    // 评审 P2：否则二次截断只查顶层会丢失范围计数（且可能落在
+                    // 被截断的后缀里）。
+                    let mut wrapped = json!({"truncated":true,"data":value});
+                    if let Some(count) = value.get("scope_feed_count") {
+                        wrapped["scope_feed_count"] = count.clone();
+                    }
+                    data.data_json = wrapped.to_string();
                     data = bound_output(data, TOOL_BYTES.saturating_sub(overhead).min(remaining));
                 }
             }

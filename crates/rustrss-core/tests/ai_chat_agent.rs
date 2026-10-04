@@ -1048,3 +1048,59 @@ async fn unknown_usage_then_known_lower_bound_exceeding_budget_stops() {
     assert!(out.usage_unknown);
     assert!(matches!(&out.final_blocks[0], ChatBlock::Text(t) if t.contains("token 预算")));
 }
+
+/// 已截断结果被再包装时，scope_feed_count 必须提升到顶层（评审 P2：嵌套截断
+/// 丢失范围元数据的路径）。工具直接返回一个已带 truncated 信封的大结果。
+#[tokio::test]
+async fn nested_truncation_promotes_scope_count_to_top_level() {
+    let server = MockServer::start().await;
+    let big_inner = json!({
+        "truncated": true,
+        "scope_feed_count": 7,
+        "excerpt": "长".repeat(6000),
+    });
+    let n = Arc::new(AtomicUsize::new(0));
+    let counter = n.clone();
+    Mock::given(method("POST"))
+        .respond_with(move |req: &Request| {
+            let round = counter.fetch_add(1, Ordering::SeqCst);
+            if round == 0 {
+                let calls = vec![("search_articles", json!({"query":"q"}))];
+                ResponseTemplate::new(200)
+                    .set_body_json(call_response(Provider::OpenAiCompatible, &calls))
+            } else {
+                let body: Value = serde_json::from_slice(&req.body).unwrap();
+                let tool_msg = body["messages"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|m| m["role"] == "tool")
+                    .unwrap();
+                let data = tool_msg["content"].as_str().unwrap();
+                let parsed: Value = serde_json::from_str(data).unwrap();
+                // 顶层必须直接可见范围计数（不要求模型深入嵌套 data）
+                assert_eq!(parsed["scope_feed_count"], 7, "顶层保留范围计数：{parsed}");
+                assert_eq!(parsed["truncated"], true);
+                ResponseTemplate::new(200).set_body_json(final_response(Provider::OpenAiCompatible))
+            }
+        })
+        .expect(2)
+        .mount(&server)
+        .await;
+    let out = run_agent_turn(
+        &client(Provider::OpenAiCompatible, &server.uri()),
+        request(),
+        |_, _| {
+            Ok(ToolOutput {
+                data_json: big_inner.to_string(),
+                truncated: true,
+            })
+        },
+        |_| panic!(),
+        || false,
+        |_| {},
+    )
+    .await
+    .unwrap();
+    assert_eq!(out.degraded, false);
+}
