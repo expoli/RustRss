@@ -92,7 +92,7 @@ Linux 上的最终整合版已在隔离的 KWin Wayland 和 Openbox X11 会话�
 - 每回合仅一次模型请求、最多 120 秒、输出最多 4096 tokens；输入采用保守 48,000 字符闸门（不是账单 token 估算），旧历史按完整回合裁剪并返回 `historyTrimmed`，绑定日报不裁掉。provider usage 缺失即未知；已知累计达到 200,000 tokens 后要求新会话，暂不提供继续付费旗标。
 - provider/模型/端点变化时旧会话拒绝发送，须开启新会话；同会话单 flight，在飞删除拒绝（先停止、等待终态）。停止会丢弃在途 HTTP future，但已发生费用不保证撤销。
 - Tauri 提供 `chat_send/stop/sessions_list/session_get/session_delete`；返回 `sessionId/messageId`（本回合 user id），事件 `chat:started/progress/done/error` 携带身份；终态另给 `assistantMessageId/blocks/usage/status`。双端共用聊天容器，以会话身份处理终态事件，不因后台完成抢导航。消息按 id 增量更新，Markdown v1 仅显示安全转义纯文本。
-- 发送前按 provider/model/base_url 指纹与会话范围确认端点、正文外发与 token 费用；授权记在本地 `chat.privacyConfirmed.<指纹>`，换端点/模型或范围重新确认。会话头部提供新建、历史切换与删除；失败保留草稿并可手动重试，未配 key 显示 AI 设置入口，预算/配置漂移直接展示后端错误并可新建会话。
+- 发送前按 provider/model/base_url 指纹与会话范围确认端点、正文外发与 token 费用；授权记在本地 `chat.privacyConfirmed.<指纹>`，换端点/模型或范围重新确认。已有会话未成功加载历史时禁用输入、发送与重试，加载后按持久范围显示与确认，加载失败不放行。会话头部提供新建、历史切换与删除；失败保留草稿并可手动重试，成功回执只清空仍与提交快照相同的输入，保留等待期间的新草稿。切换语言即时翻译聊天控件/消息并保留草稿与滚动位置；删除迟到回执不抢文章或其它会话导航。未配 key 显示 AI 设置入口，预算/配置漂移直接展示后端错误并可新建会话。
 - 输入框 Enter 发送、Shift+Enter 换行，中文 composition 期间不发送；运行中按钮改为停止。手机助手位于日报 tab 内，不新增底栏 tab，输入区随 WebView/IME 可用高度贴底。
 - 会话不存 API key；SQLite 聊天正文不加密，整库备份含聊天及日报上下文。seed 仅显示「日报上下文」徽章，不进入可编辑输入；发送的日报、历史与新消息会交给配置的服务商。来源引用/工具过程属于后续批次，本批不伪造来源或检索能力。
 

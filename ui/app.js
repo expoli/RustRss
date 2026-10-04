@@ -1494,6 +1494,7 @@ function chatText(message) {
 }
 
 function chatScopeLabel(view) {
+  if (view.id && !view.data) return t('chat.loading');
   const scope = view.data ? chatScope(view.data.session) : view;
   return scope.date ? `${scope.date} · ${scope.scope_key || scope.scopeKey || 'all'}` : t('chat.noDigest');
 }
@@ -1539,6 +1540,7 @@ function buildChatMessage(message, seed, retryText, view) {
 function paintChatView(view) {
   if (!chatIsVisible(view)) return;
   const data = view.data;
+  const loading = !!view.id && !data;
   const messages = data?.messages || [];
   view.running = messages.some(message => message.status === 'running');
   setText(el('chat-heading'), data?.session.title || view.seedTitle || t('chat.title'));
@@ -1570,14 +1572,27 @@ function paintChatView(view) {
   desired.forEach((row, index) => { if (list.children[index] !== row) list.insertBefore(row, list.children[index] || null); });
   if (atBottom && messagesChanged) list.scrollTop = list.scrollHeight;
   const error = el('chat-error');
-  setText(error, view.error || (view.trimmed ? t('chat.historyTrimmed') : ''));
+  setText(error, view.error || (loading ? t('chat.loading') : view.trimmed ? t('chat.historyTrimmed') : ''));
   error.classList.toggle('error', !!view.error);
   el('chat-setup').hidden = !view.needSetup;
   el('chat-retry').hidden = !view.error || !view.lastText || view.needSetup;
-  el('chat-send').disabled = !!view.pending;
+  el('chat-retry').disabled = loading || !!view.pending;
+  for (const button of list.querySelectorAll('button')) button.disabled = loading || !!view.pending;
+  el('chat-send').disabled = loading || !!view.pending;
   setText(el('chat-send'), t(view.running ? 'chat.stop' : 'chat.send'));
-  el('chat-input').disabled = view.running;
+  el('chat-input').disabled = loading || view.running;
   el('chat-delete').disabled = !view.id || !!view.pending;
+}
+
+function rerenderChatI18n() {
+  if (!chatView || !chatIsVisible(chatView)) return;
+  const list = el('chat-messages');
+  const scrollTop = list.scrollTop;
+  applyStaticI18n(el('chat'));
+  const historyLabel = el('chat-history').options[0];
+  if (historyLabel) setText(historyLabel, t('chat.history'));
+  paintChatView(chatView);
+  list.scrollTop = scrollTop;
 }
 
 async function refreshChatView(view) {
@@ -1617,7 +1632,7 @@ async function refreshChatHistory(view) {
 }
 
 async function sendChat(view, retryText) {
-  if (!chatIsVisible(view) || view.pending) return;
+  if (!chatIsVisible(view) || view.pending || (view.id && !view.data)) return;
   if (view.running) {
     try { await invoke('chat_stop', { sessionId: view.id }); }
     catch (error) { chatError(view, error); }
@@ -1653,13 +1668,16 @@ async function sendChat(view, retryText) {
       sessionId: view.id || null, date: view.date || null,
       scopeKey: view.scopeKey || null, message: text,
     });
+    // The receipt can arrive after the user has edited a new, unsent draft.
+    const draft = chatIsVisible(view) ? el('chat-input').value : view.draft;
     chatDrafts.delete(view.id);
     view.id = result.sessionId;
     view.trimmed = result.historyTrimmed;
-    view.draft = '';
-    chatDrafts.delete(view.id);
+    view.draft = draft === text ? '' : draft;
+    if (view.draft) chatDrafts.set(view.id, view.draft);
+    else chatDrafts.delete(view.id);
     if (chatIsVisible(view)) {
-      el('chat-input').value = '';
+      el('chat-input').value = view.draft;
       await refreshChatView(view);
       await refreshChatHistory(view);
     }
@@ -1684,14 +1702,14 @@ async function renderChatView(target) {
   window.RustRssMobileChat?.onChatView?.();
   const host = el('chat');
   host.innerHTML = `<header class="chat-head">
-    <h2 id="chat-heading"></h2><button id="chat-new">${t('chat.newSession')}</button>
-    <select id="chat-history" aria-label="${t('chat.history')}"></select>
-    <button id="chat-delete">${t('chat.delete')}</button><p id="chat-meta" class="dim"></p>
+    <h2 id="chat-heading"></h2><button id="chat-new" data-i18n="chat.newSession">${t('chat.newSession')}</button>
+    <select id="chat-history" data-i18n-aria-label="chat.history" aria-label="${t('chat.history')}"></select>
+    <button id="chat-delete" data-i18n="chat.delete">${t('chat.delete')}</button><p id="chat-meta" class="dim"></p>
     </header><div id="chat-messages" class="chat-messages" role="log" aria-live="polite"></div>
     <div class="chat-notice"><p id="chat-error" role="status"></p>
-      <button id="chat-setup" hidden>${t('chat.needSetup')}</button>
-      <button id="chat-retry" hidden>${t('chat.errorRetry')}</button></div>
-    <div class="chat-compose"><textarea id="chat-input" rows="3" placeholder="${t('chat.inputPlaceholder')}" aria-label="${t('chat.inputPlaceholder')}"></textarea>
+      <button id="chat-setup" data-i18n="chat.needSetup" hidden>${t('chat.needSetup')}</button>
+      <button id="chat-retry" data-i18n="chat.errorRetry" hidden>${t('chat.errorRetry')}</button></div>
+    <div class="chat-compose"><textarea id="chat-input" rows="3" data-i18n-placeholder="chat.inputPlaceholder" data-i18n-aria-label="chat.inputPlaceholder" placeholder="${t('chat.inputPlaceholder')}" aria-label="${t('chat.inputPlaceholder')}"></textarea>
       <button id="chat-send">${t('chat.send')}</button></div>`;
   el('chat-input').value = view.draft;
   el('chat-input').oninput = () => { view.draft = el('chat-input').value; chatDrafts.set(view.id, view.draft); };
@@ -1709,7 +1727,13 @@ async function renderChatView(target) {
   el('chat-delete').onclick = async () => {
     const ok = await confirmDialog({ title: t('chat.delete'), body: t('chat.deleteConfirm') });
     if (!ok || !chatIsVisible(view)) return;
-    try { await invoke('chat_session_delete', { sessionId: view.id }); chatDrafts.delete(view.id); renderChatView(); }
+    const sessionId = view.id;
+    try {
+      await invoke('chat_session_delete', { sessionId });
+      chatDrafts.delete(sessionId);
+      if (chatIsVisible(view) && view.id === sessionId) renderChatView();
+      else if (chatView && chatIsVisible(chatView)) refreshChatHistory(chatView);
+    }
     catch (error) { chatError(view, error); }
   };
   el('chat-setup').onclick = () => { openSettings(); showPane('ai'); };
@@ -5225,6 +5249,7 @@ const SETTING_DROPDOWNS = [
       renderSidebar();
       renderList();
       rerenderLogsI18n();
+      rerenderChatI18n();
       if (state.selectedId) {
         const entry = await invoke('get_entry', { id: state.selectedId });
         if (entry) renderReader(entry);

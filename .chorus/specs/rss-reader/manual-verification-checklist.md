@@ -1366,3 +1366,20 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - Android 模拟器/手机 320px、旋转、大字号、真实 IME、后台恢复、四家真实 BYOK 多轮、重启中断与 X11/Wayland 输入法尚未实机验收；单元测试不能替代这些验收。
 - v1 Markdown 为安全纯文本，不自动渲染图片/链接；引用、工具过程、工具循环与流式仍后置。
 - 启动仍输出既有 `menu render selftest FAILED: checked 条目未打勾`（菜单未在本批修改），不将其记作聊天验证通过。
+
+## 2026-10-04 · 聊天 UI reviewer BLOCK 修复
+
+### 机械验证（已验证）
+- `node --test scripts/tests/*.test.cjs`：83/83；聊天 20 项，新增 7 个 deferred 场景：历史挂起/加载失败拒发、真实持久范围授权、成功迟到回执保留新草稿/清除未变快照、加载中切语言保留视图/草稿/滚动、删除迟到回执不抢文章/其它会话导航。修复前新增用例 6 项失败，修复后全绿。
+- `cargo test --workspace`：547 passed；`cargo build -p rustrss-desktop` 成功，最终 UI 已嵌入重建。双语新增 `chat.loading`，i18n selfTest ok（645 keys）。
+
+### 真产物 Xvfb 冒烟（已验证）
+- 隔离 HOME/合成库 `/tmp/rss-chat-review/home`、`/tmp/rss-chat-review/fixture.sqlite`；脚本 `/tmp/chat-review-smoke.py`，证据 `/tmp/rss-chat-review/evidence.json` 与 `/tmp/rss-chat-review/app.log`。8 项断言通过，无付费请求。
+- `/tmp/rss-chat-review/01-chat-open.png`：真实侧栏入口打开聊天。
+- `/tmp/rss-chat-review/02-chat-loading-disabled.png`：已有会话加载挂起，头部和状态区显示「会话加载中」，输入/发送/重试 disabled；程序触发 Enter/重试也未调用 chat_send 或弹授权框。
+- `/tmp/rss-chat-review/03-chat-loaded-scope.png`：释放真实 Rust session_get 回执后，显示 `2026-10-03 · tags:4` 和「日报上下文」，输入重新启用，草稿保留。三张截图哈希互异，二进制 mtime 晚于 app.js。
+
+### 未验证 / 环境限制
+- 加载延迟由 inspector 临时 IPC 包装器注入，仅用于测试；返回的会话来自真实 Rust/SQLite。产品代码没有加入调试钩子或设置显示后端。
+- Xvfb 无 WM；Android/真实 IME、Wayland、Windows/macOS 与真实 BYOK 未验证。切语言与迟到删除/成功回执以 deferred JS 回归为证，不冒称跨平台实机通过。
+- 既有 `menu render selftest FAILED: checked 条目未打勾` 仍存在，本批未修改菜单。

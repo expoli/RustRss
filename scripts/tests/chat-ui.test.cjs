@@ -14,7 +14,7 @@ function makeContext() {
   const right = { classList: { contains: x => classes.has(x), add: x => classes.add(x), remove: x => classes.delete(x) } };
   const el = id => {
     if (!nodes.has(id)) nodes.set(id, { value: '', textContent: '', innerHTML: '', hidden: false,
-      addEventListener(event, fn) { this[event] = fn; } });
+      querySelectorAll: () => [], addEventListener(event, fn) { this[event] = fn; } });
     return nodes.get(id);
   };
   const calls = [], store = new Map();
@@ -25,7 +25,7 @@ function makeContext() {
     escapeHtml: x => String(x).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'),
     localStorage: { getItem: k => store.get(k), setItem: (k, v) => store.set(k, v) },
     confirmDialog: async () => true, paintChatView: () => {}, renderList: () => {}, renderSidebar: () => {},
-    refreshChatView: async () => {}, refreshChatHistory: async () => {},
+    refreshChatView: async view => { view.data = { session: { scope_json: JSON.stringify({ date: view.date, scope_key: view.scopeKey }) }, messages: [] }; }, refreshChatHistory: async () => {},
     openSettings: () => {}, showPane: () => {}, window: {},
     invoke: async (command, args) => {
       calls.push({ command, args });
@@ -36,7 +36,7 @@ function makeContext() {
   });
   for (const name of ['chatScope', 'chatText', 'chatScopeLabel', 'chatIsVisible', 'chatError', 'sendChat', 'onChatTerminal']) vm.runInContext(extract(name), context);
   context.calls = calls; context.store = store; context.right = right;
-  context.view = { id: null, pending: false };
+  context.view = { id: null, pending: false, draft: '' };
   context.chatView = context.view;
   return context;
 }
@@ -60,7 +60,7 @@ test('send binds digest date/scope; privacy is remembered per endpoint and scope
   const args = c.calls.find(call => call.command === 'chat_send').args;
   assert.equal(args.date, '2026-10-03'); assert.equal(args.scopeKey, 'tags:4'); assert.equal(args.sessionId, null);
   await c.sendChat(c.view, 'followup'); assert.equal(confirmations, 1);
-  c.view.date = null; c.view.scopeKey = null;
+  c.view.data.session.scope_json = '{}';
   await c.sendChat(c.view, 'wider'); assert.equal(confirmations, 2);
   c.ai.model = 'changed'; await c.sendChat(c.view, 'changed endpoint'); assert.equal(confirmations, 3);
 });
@@ -75,7 +75,7 @@ test('privacy cancellation retains draft and never sends', async () => {
 test('single-flight submit and running stop do not resend', async () => {
   const c = makeContext(); c.view.pending = true;
   await c.sendChat(c.view, 'question'); assert.equal(c.calls.length, 0);
-  c.view.pending = false; c.view.running = true; c.view.id = 7;
+  c.view.pending = false; c.view.running = true; c.view.id = 7; c.view.data = { session: { scope_json: '{}' }, messages: [] };
   await c.sendChat(c.view, 'question'); assert.equal(c.calls[0].command, 'chat_stop'); assert.equal(c.calls.length, 1);
 });
 
@@ -172,6 +172,111 @@ test('i18n dictionaries have matching keys and all chat keys in both languages',
   vm.runInContext(fs.readFileSync('ui/i18n.js', 'utf8'), c);
   assert.equal(c.window.I18N.selfTest().ok, true);
   const dictionaries = c.window.I18N.DICTS;
-  assert.equal(Object.keys(dictionaries.en).filter(k => k.startsWith('chat.')).length, 25);
+  assert.equal(Object.keys(dictionaries.en).filter(k => k.startsWith('chat.')).length, 26);
   assert.deepEqual(Object.keys(dictionaries.en).sort(), Object.keys(dictionaries['zh-CN']).sort());
 });
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+function useRealPaint(c) {
+  vm.runInContext(extract('paintChatView'), c);
+  c.currentLocale = () => 'en';
+  c.setText = (node, text) => { node.textContent = text; };
+  for (const id of ['chat-error', 'chat-send', 'chat-delete', 'chat-input', 'chat-setup', 'chat-retry', 'chat-heading', 'chat-meta']) c.el(id).classList = { toggle() {} };
+  Object.assign(c.el('chat-messages'), { children: [], scrollHeight: 1000, scrollTop: 200, clientHeight: 400 });
+}
+const persistedSession = { session: { id: 7, title: 'Bound session', provider: 'openai', model: 'test', scope_json: '{"date":"2026-10-03","scope_key":"tags:4","has_seed":true}' }, messages: [] };
+
+test('deferred history load blocks input/send/retry and confirms the persisted scope after loading', async () => {
+  const c = makeContext(); useRealPaint(c);
+  vm.runInContext(extract('renderChatView') + '\n' + extract('refreshChatView'), c);
+  const load = deferred(); const original = c.invoke;
+  c.invoke = (command, args) => command === 'chat_session_get' ? load.promise : original(command, args);
+  const opening = c.renderChatView(7);
+  const view = c.chatView;
+  assert.equal(c.el('chat-input').disabled, true); assert.equal(c.el('chat-send').disabled, true);
+  assert.equal(c.el('chat-retry').disabled, true);
+  assert.match(c.el('chat-meta').textContent, /chat.loading/); assert.match(c.el('chat-error').textContent, /chat.loading/);
+  c.el('chat-input').value = 'draft'; view.lastText = 'retry';
+  await c.sendChat(view); await c.sendChat(view, view.lastText);
+  assert.equal(c.calls.length, 0); assert.equal(c.store.size, 0);
+  load.resolve(persistedSession); await opening;
+  assert.equal(c.el('chat-input').disabled, false); assert.equal(c.el('chat-send').disabled, false);
+  assert.match(c.el('chat-meta').textContent, /2026-10-03 · tags:4/);
+  c.confirmDialog = async args => { assert.match(args.body, /2026-10-03 · tags:4/); assert.doesNotMatch(args.body, /chat.noDigest/); return true; };
+  await c.sendChat(view);
+  assert.equal(c.calls.filter(x => x.command === 'chat_send').length, 1);
+  assert.match([...c.store.values()][0], /2026-10-03 · tags:4/);
+});
+
+test('failed deferred history load remains blocked instead of authorizing unknown scope', async () => {
+  const c = makeContext(); useRealPaint(c); vm.runInContext(extract('refreshChatView'), c);
+  c.view.id = 7; const load = deferred(); c.invoke = () => load.promise;
+  const loading = c.refreshChatView(c.view); load.reject(new Error('history unavailable')); await loading;
+  assert.equal(c.el('chat-input').disabled, true); assert.equal(c.el('chat-send').disabled, true);
+  await c.sendChat(c.view, 'retry'); assert.equal(c.store.size, 0); assert.equal(c.view.error, 'history unavailable');
+});
+
+test('deferred successful receipt preserves a newer draft even if completion arrived first', async () => {
+  const c = makeContext(); const receipt = deferred(); const original = c.invoke;
+  c.invoke = (command, args) => command === 'chat_send' ? receipt.promise : original(command, args);
+  c.el('chat-input').value = 'submitted'; c.view.draft = 'submitted'; c.chatDrafts.set(null, 'submitted');
+  const sending = c.sendChat(c.view); await new Promise(r => setImmediate(r));
+  c.el('chat-input').value = 'new unsent draft'; c.view.draft = 'new unsent draft'; c.chatDrafts.set(null, c.view.draft);
+  c.onChatTerminal({ payload: { sessionId: 7 } });
+  receipt.resolve({ sessionId: 7 }); await sending;
+  assert.equal(c.el('chat-input').value, 'new unsent draft'); assert.equal(c.view.draft, 'new unsent draft');
+  assert.equal(c.chatDrafts.get(7), 'new unsent draft'); assert.equal(c.chatDrafts.has(null), false);
+});
+
+test('deferred receipt only clears an unchanged submitted snapshot', async () => {
+  const c = makeContext(); const receipt = deferred(); const original = c.invoke;
+  c.invoke = (command, args) => command === 'chat_send' ? receipt.promise : original(command, args);
+  c.el('chat-input').value = 'submitted'; c.view.draft = 'submitted';
+  const sending = c.sendChat(c.view); await new Promise(r => setImmediate(r));
+  receipt.resolve({ sessionId: 7 }); await sending;
+  assert.equal(c.el('chat-input').value, ''); assert.equal(c.view.draft, ''); assert.equal(c.chatDrafts.has(7), false);
+});
+
+test('locale change during deferred history load retranslates chat without replacing draft, route or scroll', async () => {
+  const c = makeContext(); useRealPaint(c);
+  vm.runInContext(extract('renderChatView') + '\n' + extract('refreshChatView') + '\n' + extract('rerenderChatI18n'), c);
+  const load = deferred(); c.invoke = () => load.promise;
+  const opening = c.renderChatView(7); const view = c.chatView;
+  c.el('chat-input').value = 'draft'; view.draft = 'draft'; c.el('chat-messages').scrollTop = 200;
+  const host = c.el('chat').innerHTML;
+  for (const key of ['chat.newSession', 'chat.history', 'chat.delete', 'chat.needSetup', 'chat.errorRetry', 'chat.inputPlaceholder']) assert.match(host, new RegExp('data-i18n[^=]*="' + key + '"'));
+  c.el('chat-history').options = [{ textContent: 'old' }];
+  c.t = key => 'en:' + key; c.state.settings = { locale: 'en' };
+  c.setLocale = () => {}; c.applyStaticI18n = () => {}; c.themeEditors = []; c.mountThemeEditor = () => ({}); c.rerenderLogsI18n = () => {};
+  const start = source.indexOf('const SETTING_DROPDOWNS = [');
+  const end = source.indexOf("  {\n    id: 'set-close-action'", start);
+  await vm.runInContext(source.slice(start, end) + ']; SETTING_DROPDOWNS[0].after();', c);
+  assert.equal(c.el('chat-send').textContent, 'en:chat.send'); assert.equal(c.el('chat-error').textContent, 'en:chat.loading');
+  assert.equal(c.el('chat-history').options[0].textContent, 'en:chat.history');
+  assert.equal(c.chatView, view); assert.equal(c.el('chat-input').value, 'draft'); assert.equal(c.el('chat-messages').scrollTop, 200);
+  load.resolve(persistedSession); await opening;
+  assert.equal(c.chatView, view); assert.equal(c.el('chat-input').value, 'draft'); assert.equal(c.el('chat-messages').scrollTop, 200);
+});
+
+for (const destination of ['article', 'another chat']) {
+  test(`deferred delete cannot steal navigation to ${destination}`, async () => {
+    const c = makeContext(); vm.runInContext(extract('renderChatView'), c);
+    await c.renderChatView(7); const old = c.chatView;
+    const deletion = deferred(); c.invoke = () => deletion.promise;
+    c.chatDrafts.set(7, 'deleted draft');
+    const deleting = c.el('chat-delete').onclick(); await new Promise(r => setImmediate(r));
+    let renders = 0, refreshed;
+    c.renderChatView = () => { renders++; }; c.refreshChatHistory = view => { refreshed = view; };
+    if (destination === 'article') c.right.classList.remove('chat-active');
+    else c.chatView = { id: 8 };
+    deletion.resolve(); await deleting;
+    assert.equal(renders, 0); assert.equal(c.chatDrafts.has(7), false);
+    if (destination === 'another chat') assert.equal(refreshed, c.chatView);
+    else assert.equal(refreshed, undefined);
+    assert.equal(old.id, 7);
+  });
+}
