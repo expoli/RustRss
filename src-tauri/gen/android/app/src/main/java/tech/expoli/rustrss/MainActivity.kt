@@ -67,14 +67,20 @@ class MainActivity : TauriActivity() {
       // document-start：脚本在**每次页面导航**的文档起点自动执行——根除
       // 「注入早于文档就绪、随后被导航冲掉」的时序竞态（真机冷启动 >1s 时
       // 延迟注入全部落空，状态栏时间与报头重叠）。
+      // 顺序关键（评审）：先读缓存再应用——旧序「先应用快照（顺带把快照写进
+      // 缓存）→再读」读到的是刚写入的快照，最新值被覆盖，恢复形同虚设。
+      // DOM 未就绪时保留待应用值并挂 DOMContentLoaded 重放，不静默丢弃。
       val script = "window.__applyInsets=function(t,b){" +
-        "var d=document.documentElement;if(!d)return;" +
+        "var d=document.documentElement;" +
+        "if(!d){window.__PENDING_INSETS=[t,b];" +
+        "document.addEventListener('DOMContentLoaded',function(){" +
+        "var q=window.__PENDING_INSETS;if(q){window.__applyInsets(q[0],q[1]);}});return;}" +
         "d.style.setProperty('--inset-top',t+'px');" +
         "d.style.setProperty('--inset-bottom',b+'px');" +
         "try{sessionStorage.setItem('__insets',t+','+b);}catch(e){}};" +
-        "window.__applyInsets($topDp,$bottomDp);" +
-        "try{var s=sessionStorage.getItem('__insets');" +
-        "if(s){var p=s.split(',');window.__applyInsets(Number(p[0]),Number(p[1]));}}catch(e){}"
+        "var __saved=null;try{__saved=sessionStorage.getItem('__insets');}catch(e){}" +
+        "if(__saved){var p=__saved.split(',');window.__applyInsets(Number(p[0]),Number(p[1]));}" +
+        "else{window.__applyInsets($topDp,$bottomDp);}"
       WebViewCompat.addDocumentStartJavaScript(webView, script, setOf("*"))
       documentStartRegistered = true
     } else {
@@ -86,6 +92,20 @@ class MainActivity : TauriActivity() {
     // 慢设备/老 WebView 兜底：确认 CSS 变量真的算进去了，没生效就重试。
     // 两个分支共用（评审：fallback 分支此前无人重试）。上限 10 次 × 600ms。
     verifyApplied(0)
+    // 低频哨兵：页面重载后 document-start 恢复若失败（缓存损坏/结构异常），
+    // 由原生定期读回纠正——listener 同值短路不再触发时它是最后纠正层。
+    sentinel()
+  }
+
+  /// 每 10s 读回一次计算样式并按需纠正（重试窗口与 verifyApplied 相同）。
+  private fun sentinel() {
+    val web = webView ?: return
+    web.postDelayed({
+      if (webView != null) {
+        verifyApplied(0)
+        sentinel()
+      }
+    }, 10_000)
   }
 
   /// 读回计算样式验证 --inset-top 已生效；未生效则重注入并重试（原生侧闭环）。
