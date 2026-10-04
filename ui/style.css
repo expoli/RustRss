@@ -1460,6 +1460,10 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   /* 主区、状态和导航共享一套 flex 高度；不猜测字体/系统缩放后的底栏高度。
      Android 根视图已避让系统栏和 IME，网页不再重复扣安全区。 */
   body { min-width: 0; }
+  /* Android WebView 的滚动条是画进内容的实心条（非桌面 overlay）：触屏滚动
+     有惯性即可，长容器里那条粗杆只显得突兀（真机反馈）。桌面无此标记不受影响。 */
+  body[data-android="1"] * { scrollbar-width: none; }
+  body[data-android="1"] *::-webkit-scrollbar { width: 0; height: 0; }
   /* 报头延伸到状态栏后面：inset 由 Android 原生注入（--inset-top），
      桌面/未注入时变量默认 0，calc 原值不变。 */
   .toolbar {
@@ -1731,16 +1735,22 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   .m-settings-header h2 { font-size: 20px; line-height: 1.3; margin: 0; }
   #m-settings-back { flex: none; min-height: 48px; }
   .settings-dialog[data-screen="home"] #m-settings-back { display: none; }
-  .settings-nav { flex: 1; border: 0; padding: 12px 16px; min-height: 0; }
+  .settings-nav { flex: 1; border: 0; padding: 8px 10px; min-height: 0; }
+  /* 子页（外观/AI 等表单）：全宽下内边距收敛 */
+  .settings-body { padding: 12px 16px 28px; }
   .settings-nav-title, .settings-nav-foot { display: none; }
   .settings-nav ul { display: block; overflow-x: hidden; overflow-y: auto; }
   .settings-nav li { border-bottom: 1px solid var(--line); border-radius: 0; }
+  /* 全宽行不再 space-between（图标/文字/箭头三段拉开）：左对齐成组，箭头独占右侧 */
   .settings-nav li > button {
-    display: flex; align-items: center; justify-content: space-between;
-    min-height: 64px; padding: 16px 8px; font-size: 16px; white-space: normal;
+    display: flex; align-items: center; justify-content: flex-start;
+    gap: 12px;
+    min-height: 56px; padding: 10px 8px; font-size: 15px; white-space: normal;
   }
-  .settings-nav li > button::after { content: '›'; font-size: 24px; color: var(--fg-dim); }
-  .settings-nav-summary { padding: 0 8px 14px; font-size: 13px; }
+  .settings-nav li > button::after {
+    content: '›'; margin-left: auto; font-size: 20px; color: var(--fg-dim);
+  }
+  .settings-nav-summary { padding: 0 8px 12px; font-size: 13px; }
   .settings-nav li.active { background: transparent; }
   .settings-nav li.active > button { color: var(--fg); }
   .settings-dialog[data-screen="home"] .settings-body,
