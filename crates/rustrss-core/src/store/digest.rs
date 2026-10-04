@@ -316,27 +316,44 @@ impl Store {
 ///
 /// 日界由本地时区计算（DST 可产生 23/25 小时一天，禁止 +86400）；core 不读
 /// 系统时区之外的全局状态，调用方传日期字符串即可。
-pub fn local_day_bounds(date: &str) -> super::Result<(i64, i64)> {
+/// 本地自然日的 UTC 边界与时区偏移（秒）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DigestDayBounds {
+    pub start: i64,
+    pub end: i64,
+    pub offset_start: i32,
+    pub offset_end: i32,
+}
+
+/// 日界 + 当地时区偏移：偏移由同一 `from_local_datetime` 结果推导，
+/// 避免两处换算漂移（审核 P2-9；DST 用 earliest 有效时刻）。
+pub fn local_day_bounds(date: &str) -> super::Result<DigestDayBounds> {
     use chrono::{NaiveDate, TimeZone};
     let day = NaiveDate::parse_from_str(date, "%Y-%m-%d")
         .map_err(|e| super::StoreError::Invalid(format!("日期格式应为 YYYY-MM-DD：{e}")))?;
-    let to_ts = |n: chrono::NaiveDateTime| {
-        chrono::Local
-            .from_local_datetime(&n)
-            .earliest()
-            .map(|t| t.timestamp())
-            .ok_or_else(|| super::StoreError::Invalid(format!("本地时间不存在：{n}（DST 跳变）")))
-    };
-    let start = day
+    let start_naive = day
         .and_hms_opt(0, 0, 0)
         .ok_or_else(|| super::StoreError::Invalid(format!("无效日期 {date}")))?;
     let next = day
         .succ_opt()
         .ok_or_else(|| super::StoreError::Invalid(format!("日期溢出：{date}")))?;
-    let end = next
+    let end_naive = next
         .and_hms_opt(0, 0, 0)
         .ok_or_else(|| super::StoreError::Invalid("无效的次日".into()))?;
-    Ok((to_ts(start)?, to_ts(end)?))
+    let to_local = |n: chrono::NaiveDateTime| {
+        chrono::Local
+            .from_local_datetime(&n)
+            .earliest()
+            .ok_or_else(|| super::StoreError::Invalid(format!("本地时间不存在：{n}（DST 跳变）")))
+    };
+    let start_local = to_local(start_naive)?;
+    let end_local = to_local(end_naive)?;
+    Ok(DigestDayBounds {
+        start: start_local.timestamp(),
+        end: end_local.timestamp(),
+        offset_start: start_local.offset().local_minus_utc(),
+        offset_end: end_local.offset().local_minus_utc(),
+    })
 }
 
 // ---------------------------------------------------------------- 冻结与节点缓存
@@ -368,13 +385,16 @@ pub struct ManifestEntry {
 pub struct Manifest {
     pub entries: Vec<ManifestEntry>,
     pub hash: String,
+    /// 成员身份+版本对的指纹（CAS 提交校验用；内容变化必然推进版本，
+    /// 因此该指纹足以发现「新增/变化/移出」三类漂移）
+    pub pairs_hash: String,
     /// 冻结时刻（checkpoint_at 的取值）
     pub frozen_at: i64,
     pub total_in_window: i64,
     pub truncated: bool,
 }
 
-fn sha256_hex(parts: &[&str]) -> String {
+pub(crate) fn sha256_hex(parts: &[&str]) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     for p in parts {
@@ -466,9 +486,13 @@ impl Store {
 
         let total = entries.len() as i64;
         let hash = manifest_hash_of(&entries);
+        let pairs_hash = manifest_pairs_hash_of(
+            &entries.iter().map(|e| (e.instance_id, e.source_revision)).collect::<Vec<_>>(),
+        );
         Ok(Manifest {
             entries,
             hash,
+            pairs_hash,
             frozen_at: chrono::Utc::now().timestamp(),
             total_in_window,
             truncated: total_in_window > total,
@@ -506,6 +530,30 @@ impl Store {
     }
 }
 
+/// 生成配置身份（profile_key）：语言+provider/model+base_url+prompt 版本。
+pub fn profile_key_of(language: &str, provider_model: &str, base_url: &str, prompt_version: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(b"digest-profile-v1");
+    for p in [language, provider_model, base_url, prompt_version] {
+        hasher.update(p.as_bytes());
+        hasher.update(b"\x1e");
+    }
+    format!("{:x}", hasher.finalize())[..12].to_string()
+}
+
+/// 成员身份+版本对指纹（CAS 提交校验用）。
+pub fn manifest_pairs_hash_of(pairs: &[(i64, i64)]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(b"digest-pairs-v1");
+    for (instance, revision) in pairs {
+        hasher.update(instance.to_le_bytes());
+        hasher.update(revision.to_le_bytes());
+    }
+    format!("{:x}", hasher.finalize())
+}
+
 /// 清单指纹：实例身份 + 内容版本 + 输入哈希（语言不在其中——要点缓存键已含语言）。
 pub fn manifest_hash_of(entries: &[ManifestEntry]) -> String {
     use sha2::{Digest, Sha256};
@@ -538,7 +586,10 @@ impl Store {
         profile_key: &str,
         profile_json: &str,
         manifest_hash: &str,
+        expected_pairs_hash: &str,
         checkpoint_at: i64,
+        utc_offset_start: i32,
+        utc_offset_end: i32,
         content_json: &str,
         markdown: &str,
         schema_ver: i64,
@@ -548,18 +599,25 @@ impl Store {
     ) -> super::Result<i64> {
         let tx = self.conn.unchecked_transaction()?;
         let now = chrono::Utc::now().timestamp();
-        // 时区偏移：由日期字符串重建本地零点，与 UTC 边界相减（与 local_day_bounds 同源）
-        use chrono::TimeZone;
-        let offset_of = |day_start_utc: i64| -> i64 {
-            chrono::NaiveDate::parse_from_str(report_day, "%Y-%m-%d")
-                .ok()
-                .and_then(|d| d.and_hms_opt(0, 0, 0))
-                .and_then(|n| chrono::Local.from_local_datetime(&n).earliest())
-                .map(|t| t.timestamp() - day_start_utc)
-                .unwrap_or(0)
-        };
-        let utc_offset_start = offset_of(day_start);
-        let utc_offset_end = offset_of(day_end);
+        // 提交 CAS（审核 P1-2）：事务内重算当前「成员身份+版本对」指纹，
+        // 与冻结时不一致 = 生成期间素材又变了 → 拒绝覆盖旧报告。
+        // 闭包作用域兜住 stmt 借用：错误路径不再把借用带出块外（E0597）
+        let current_pairs: Vec<(i64, i64)> = (|| {
+            let mut stmt = tx.prepare(
+                "SELECT instance_id, source_revision FROM digest_entry_meta
+                  WHERE effective_at >= ?1 AND effective_at < ?2",
+            )?;
+            let rows = stmt.query_map(params![day_start, day_end], |r| {
+                Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?))
+            })?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()
+        })()
+        .map_err(super::StoreError::Sqlite)?;
+        if manifest_pairs_hash_of(&current_pairs) != expected_pairs_hash {
+            return Err(super::StoreError::Invalid(format!(
+                "日报素材在生成期间又发生了变化，请再次「更新日报」"
+            )));
+        }
         tx.execute(
             "INSERT INTO digests(report_day, timezone_label, day_start_at, day_end_at,
                  utc_offset_start, utc_offset_end, date_basis, scope_key, scope_json,
@@ -619,6 +677,23 @@ impl Store {
 }
 
 impl Store {
+    /// 在飞任务 id（单 flight 检查口）。
+    pub fn digest_active_job(&self, date: &str, scope_key: &str) -> super::Result<Option<String>> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT active_job_id FROM digests WHERE report_day = ?1 AND scope_key = ?2",
+                params![date, scope_key],
+                |r| r.get(0),
+            )
+            .ok())
+    }
+
+    /// 范围 JSON 序列化（与 digests.scope_json 同构）。
+    pub fn scope_json_for(&self, tag_ids: &[i64]) -> String {
+        format!("{{\"tag_ids\":{}}}", serde_json::to_string(tag_ids).unwrap_or_default())
+    }
+
     /// 生成槽位占位（DB 侧可见性）：无槽位则建 revision=0 空槽，有则标记在飞 job。
     #[allow(clippy::too_many_arguments)]
     pub fn digest_slot_begin(
@@ -653,5 +728,42 @@ impl Store {
             params![date, scope_key],
         )?;
         Ok(())
+    }
+}
+
+impl Store {
+    /// 日报单篇要点缓存读取：params 含语言+输入哈希+端点身份（内容寻址语义）。
+    pub fn digest_item_cached(
+        &self,
+        entry_id: i64,
+        params: &str,
+        provider_model: &str,
+    ) -> super::Result<Option<String>> {
+        let key = super::AiCacheKey {
+            entry_id,
+            task: "digest_item",
+            params,
+            provider_model,
+            prompt_version: crate::ai::prompt::PROMPT_VERSION,
+        };
+        self.ai_cached(&key)
+    }
+
+    /// 日报单篇要点缓存写入。
+    pub fn digest_item_store(
+        &self,
+        entry_id: i64,
+        params: &str,
+        provider_model: &str,
+        output: &str,
+    ) -> super::Result<()> {
+        let key = super::AiCacheKey {
+            entry_id,
+            task: "digest_item",
+            params,
+            provider_model,
+            prompt_version: crate::ai::prompt::PROMPT_VERSION,
+        };
+        self.ai_store(&key, output)
     }
 }

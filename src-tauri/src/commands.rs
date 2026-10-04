@@ -4143,7 +4143,8 @@ fn digest_view(
 ) -> Result<DigestView, rustrss_core::store::StoreError> {
     use rustrss_core::store::digest::local_day_bounds;
     let scope = rustrss_core::store::digest::DigestScope::resolve(s, tag_ids)?;
-    let (start, end) = local_day_bounds(date)?;
+    let bounds = local_day_bounds(date)?;
+    let (start, end) = (bounds.start, bounds.end);
     let report = s.digest_report(date, &scope.key)?;
     let status = s.digest_status(start, end, &scope)?;
     let (markdown, content_json, checkpoint_at, generated_at, article_count, cache_hits, items) =
@@ -4231,7 +4232,8 @@ pub fn digest_status(
     state.with_store(|s| {
         use rustrss_core::store::digest::{local_day_bounds, DigestScope};
         let scope = DigestScope::resolve(s, tag_ids.as_deref().unwrap_or(&[])).map_err(err)?;
-        let (start, end) = local_day_bounds(&date).map_err(err)?;
+        let bounds = local_day_bounds(&date).map_err(err)?;
+        let (start, end) = (bounds.start, bounds.end);
         s.digest_status(start, end, &scope)
             .map(|st| DigestStatusView {
                 has_report: st.has_report,
@@ -4273,25 +4275,56 @@ pub fn set_feed_tags(
 
 // ---------------------------------------------------------------- 每日日报 · 生成流水线
 
-/// 生成任务的取消旗标注册表（进程内；DB 的 active_job_id 只作可见性）。
+/// 在飞日报任务注册表：job_id → 取消旗标。guard 统一清理（审核 P1-6）。
 fn digest_jobs() -> &'static std::sync::Mutex<
     std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>,
 > {
     static JOBS: std::sync::OnceLock<
-        std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>>,
+        std::sync::Mutex<
+            std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>,
+        >,
     > = std::sync::OnceLock::new();
     JOBS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
 }
 
+/// 注册表守卫：持有期间任务在册；drop = 所有退出路径统一清册（审核 P1-6）。
+struct DigestJobGuard {
+    job_id: String,
+}
+
+impl DigestJobGuard {
+    fn new(job_id: String) -> Self {
+        digest_jobs()
+            .lock()
+            .unwrap()
+            .insert(
+                job_id.clone(),
+                std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            );
+        Self { job_id }
+    }
+    fn cancelled(&self) -> bool {
+        digest_jobs()
+            .lock()
+            .unwrap()
+            .get(&self.job_id)
+            .is_none_or(|f| f.load(std::sync::atomic::Ordering::Relaxed))
+    }
+}
+
+impl Drop for DigestJobGuard {
+    fn drop(&mut self) {
+        digest_jobs().lock().unwrap().remove(&self.job_id);
+    }
+}
+
+/// 生成任务受理回执（命令立即返回；流水线后台执行）。
 #[derive(serde::Serialize)]
 pub struct DigestJobView {
     pub job_id: String,
     pub date: String,
     pub entries: i64,
     pub manifest_truncated: bool,
-    pub status: String, // completed | cancelled
-    pub cache_hits: i64,
-    pub ai_calls: i64,
 }
 
 fn digest_scope_tag_ids(s: &rustrss_core::store::Store) -> Result<Vec<i64>, String> {
@@ -4302,10 +4335,9 @@ fn digest_scope_tag_ids(s: &rustrss_core::store::Store) -> Result<Vec<i64>, Stri
     serde_json::from_str(&raw).map_err(|e| format!("digest.scope_tags 解析失败: {e}"))
 }
 
-/// 生成（或更新）某日日报。`mode`: update（默认，最大化复用缓存）| rewrite（强制重写最终合成）。
-///
-/// 三阶段红线的批量版：每篇要点 = 取计划（持锁）→ 请求（锁外）→ 落缓存（持锁）；
-/// 取消旗标在每次请求之间检查；提交时 CAS 校验素材快照未漂移。
+/// 生成（或更新）某日日报：命令立即返回任务受理回执，流水线后台执行；
+/// job_id 经 `digest:started` 事件交给前端（审核 P1-4 的契约），进度与完成走
+/// `digest:progress` / `digest:done`。
 #[tauri::command]
 pub async fn digest_generate(
     app: tauri::AppHandle,
@@ -4313,253 +4345,312 @@ pub async fn digest_generate(
     date: String,
     mode: Option<String>,
 ) -> R<DigestJobView> {
-    use rustrss_core::ai::digest as digest_ai;
     use rustrss_core::store::digest::DigestScope;
-    use std::sync::atomic::Ordering;
-
     let mode = mode.as_deref().unwrap_or("update").to_string();
     let rewrite = mode == "rewrite";
+
     let client = crate::ai::client_from_state(&state)?;
-
-    // ---- 冻结（持锁一次）：范围 + 日界 + 素材清单 + 参数 ----
-    let (scope, start, end, manifest, language) = state.with_store(|s| {
+    let task_client = client.clone();
+    let (scope, bounds, manifest, language) = state.with_store(|s| {
         let tag_ids = digest_scope_tag_ids(s)?;
-        let scope = DigestScope::resolve(s, &tag_ids).map_err(|e| e.to_string())?;
-        let (start, end) =
-            rustrss_core::store::digest::local_day_bounds(&date).map_err(|e| e.to_string())?;
+        let scope = DigestScope::resolve(s, &tag_ids).map_err(err)?;
+        let bounds = rustrss_core::store::digest::local_day_bounds(&date).map_err(err)?;
+        if let Some(active) = s.digest_active_job(&date, &scope.key).map_err(err)? {
+            return Err(format!("该日期的日报正在生成中（任务 {active}）"));
+        }
         let manifest = s
-            .freeze_manifest(start, end, scope.feed_ids.as_deref())
-            .map_err(|e| e.to_string())?;
+            .freeze_manifest(bounds.start, bounds.end, scope.feed_ids.as_deref())
+            .map_err(err)?;
         let language = crate::ai::translate_target(s);
-        Ok((scope, start, end, manifest, language))
-    })?;
-    let slot_scope = format!("{date}:{}", scope.key);
-    let job_id = format!("digest:{slot_scope}:{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos() as i64).unwrap_or(0));
-
-    // 单 flight：同槽位已有在飞任务 → 拒绝（不排队；红线 13 的 CAS + 拒绝语义）
-    {
-        let mut jobs = digest_jobs().lock().unwrap();
-        if jobs.keys().any(|k| k.starts_with(&format!("digest:{date}:"))) {
-            return Err("该日期的日报正在生成中".into());
-        }
-        jobs.insert(job_id.clone(), std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)));
-    }
-    // 槽位占位（DB 侧可见性；崩溃后残留由下次生成的 takeover 清理）
-    state.with_store(|s| {
-        let scope_json =
-            format!("{{\"tag_ids\":{}}}", serde_json::to_string(&scope.tag_ids).unwrap_or_default());
-        s.digest_slot_begin(&date, &scope.key, "default", &scope_json, start, end, &job_id)
-            .map_err(err)
+        Ok((scope, bounds, manifest, language))
     })?;
 
-    let cancel_flag = digest_jobs().lock().unwrap().get(&job_id).cloned();
-    let Some(cancel_flag) = cancel_flag else {
-        return Err("生成任务已消失".into());
+    // cfg 借用 client：在 client 移入后台任务前，把 profile 需要的值取出来
+    let profile_json = {
+        let ai_cfg = client.config();
+        serde_json::json!({
+        "language": language,
+        "provider": format!("{:?}", ai_cfg.provider),
+        "model": ai_cfg.model,
+        "base_url": ai_cfg.base_url,
+        "prompt_version": rustrss_core::ai::prompt::PROMPT_VERSION,
+        })
     };
-
-    let emit_progress = |stage: &str, done: i64, total: i64| {
-        let _ = app.emit(
-            "digest:progress",
-            serde_json::json!({ "jobId": job_id, "date": date, "stage": stage,
-                                "done": done, "total": total }),
-        );
+    let profile_key = {
+        let ai_cfg = client.config();
+        rustrss_core::store::digest::profile_key_of(
+            &language,
+            &ai_cfg.cache_tag(),
+            &ai_cfg.base_url,
+            rustrss_core::ai::prompt::PROMPT_VERSION,
+        )
     };
+    let config_tag = client.config().cache_tag();
 
-    let started = std::time::Instant::now();
-    let _ = app.emit("digest:progress", serde_json::json!({ "jobId": job_id, "date": date,
-        "stage": "items", "done": 0, "total": manifest.entries.len() as i64 }));
-
-    // ---- ① 单篇要点（ai_cache 跨日期复用）----
-    let mut key_points: Vec<(String, String)> = Vec::new();
-    let mut cache_hits = 0i64;
-    let mut ai_calls = 0i64;
-    for (idx, entry) in manifest.entries.iter().enumerate() {
-        if cancel_flag.load(Ordering::Relaxed) {
-            digest_jobs().lock().unwrap().remove(&job_id);
-            let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
+    // 空素材：零请求直接返回空态（审核 P2-8）——不写槽位、不建任务。
+    if manifest.entries.is_empty() {
+        return Ok(DigestJobView {
+            job_id: String::new(),
+            date,
+            entries: 0,
+            manifest_truncated: manifest.truncated,
         });
-            let _ = app.emit("digest:done", serde_json::json!({ "jobId": job_id, "date": date, "ok": false, "cancelled": true }));
-            return Ok(DigestJobView { job_id, date, entries: manifest.entries.len() as i64,
-                manifest_truncated: manifest.truncated, status: "cancelled".into(),
-                cache_hits, ai_calls });
+    }
+
+    let job_id = format!("digest:{}:{}", date, &manifest.pairs_hash[..12]);
+    state.with_store(|s| {
+        s.digest_slot_begin(
+            &date,
+            &scope.key,
+            &profile_key,
+            &profile_json.to_string(),
+            bounds.start,
+            bounds.end,
+            &job_id,
+        )
+        .map_err(err)
+    })?;
+    let guard = DigestJobGuard::new(job_id.clone());
+
+    let _ = app.emit(
+        "digest:started",
+        serde_json::json!({ "jobId": job_id, "date": date,
+            "entries": manifest.entries.len(), "truncated": manifest.truncated }),
+    );
+
+    // ---- 后台流水线：AppHandle 是 'static 的，任务内经 app.state() 取存储 ----
+    let job_view = DigestJobView {
+        job_id: job_id.clone(),
+        date: date.clone(),
+        entries: manifest.entries.len() as i64,
+        manifest_truncated: manifest.truncated,
+    };
+    let task_app = app.clone();
+    let task_date = date.clone();
+    let task_job_id = job_id.clone();
+    tauri::async_runtime::spawn(async move {
+        use tauri::Manager;
+        let client = task_client;
+        let date = task_date;
+        let job_id = task_job_id;
+        let ai_cfg = client.config();
+        let state = task_app.state::<crate::state::AppState>();
+        let finish_slot = |guard: &DigestJobGuard| {
+            let _ = state.with_store(|s| {
+                s.digest_slot_end(&date, &scope.key).map_err(err)?;
+                Ok(())
+            });
+        };
+        let emit_progress = |stage: &str, done: i64, total: i64| {
+            let _ = task_app.emit(
+                "digest:progress",
+                serde_json::json!({ "jobId": job_id, "date": date, "stage": stage,
+                    "done": done, "total": total }),
+            );
+        };
+        let fail = |guard: &DigestJobGuard, payload: serde_json::Value| {
+            finish_slot(guard);
+            let _ = task_app.emit("digest:done", payload);
+        };
+
+        emit_progress("items", 0, manifest.entries.len() as i64);
+
+        // ① 单篇要点（ai_cache 跨日期复用；键含实际输入哈希 + 端点身份——审核 P1-1）
+        let endpoint = rustrss_core::ai::digest::endpoint_identity(&client);
+        let mut key_points: Vec<(String, String)> = Vec::new();
+        let mut cache_hits = 0i64;
+        let mut ai_calls = 0i64;
+        for (idx, entry) in manifest.entries.iter().enumerate() {
+            if guard.cancelled() {
+                finish_slot(&guard);
+                let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
+                    "date": date, "ok": false, "cancelled": true }));
+                return;
+            }
+            let plan = state.with_store(|s| {
+                rustrss_core::ai::digest::plan_item(
+                    s,
+                    entry,
+                    &language,
+                    &ai_cfg.cache_tag(),
+                    &endpoint,
+                )
+                .map_err(|e| e.to_string())
+            });
+            let plan = match plan {
+                Ok(p) => p,
+                Err(e) => return fail(&guard, serde_json::json!({ "jobId": job_id,
+                    "date": date, "ok": false, "error": e })),
+            };
+            if let Some(hit) = plan.cached.clone() {
+                cache_hits += 1;
+                key_points.push((entry.title.clone(), hit));
+            } else {
+                ai_calls += 1;
+                let output = match client.complete(plan.request.clone()).await {
+                    Ok(text) => text,
+                    Err(e) => {
+                        return fail(&guard, serde_json::json!({ "jobId": job_id,
+                            "date": date, "ok": false, "error": e.to_string() }));
+                    }
+                };
+                // 已付费的要点先落缓存再处理取消（不浪费）
+                let _ = state.with_store(|s| {
+                    rustrss_core::ai::digest::save_item(
+                        s, entry, &language, &ai_cfg.cache_tag(), &endpoint, &output)
+                        .map_err(|e| e.to_string())
+                });
+                if guard.cancelled() {
+                    finish_slot(&guard);
+                    let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
+                        "date": date, "ok": false, "cancelled": true }));
+                    return;
+                }
+                key_points.push((entry.title.clone(), output));
+            }
+            emit_progress("items", (idx + 1) as i64, manifest.entries.len() as i64);
         }
-        let plan = state.with_store(|s| {
-            rustrss_core::ai::plan_task(s, &client, entry.entry_id,
-                &digest_ai::item_task(&language), rustrss_core::ai::CachePolicy::UseCache)
+
+        // ② 分组合成（节点缓存复用；已付费的组节点先落缓存再查取消——审核 P1-5）
+        let groups = rustrss_core::ai::digest::group_key_points(
+            &key_points,
+            rustrss_core::store::digest::GROUP_BUDGET_CHARS,
+        );
+        emit_progress("groups", 0, groups.len() as i64);
+        let mut sections: Vec<String> = Vec::new();
+        for (gi, group) in groups.iter().enumerate() {
+            if guard.cancelled() {
+                finish_slot(&guard);
+                let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
+                    "date": date, "ok": false, "cancelled": true }));
+                return;
+            }
+            let titles: Vec<&str> = group.iter().map(|(t, _)| t.as_str()).collect();
+            let parts: Vec<&str> = group.iter().map(|(_, p)| p.as_str()).collect();
+            let key = rustrss_core::ai::digest::node_key(
+                "group",
+                &date,
+                &language,
+                &ai_cfg.cache_tag(),
+                &[&titles.join("\u{1f}"), &parts.join("\u{1e}")],
+            );
+            let cached = state
+                .with_store(|s| s.digest_node_get(&key).map_err(|e| e.to_string()));
+            let section = match cached {
+                Ok(Some(c)) => c,
+                Ok(None) => {
+                    ai_calls += 1;
+                    let req = rustrss_core::ai::digest::group_request(&language, &date, group);
+                    match client.complete(req).await {
+                        Ok(out) => {
+                            let _ = state.with_store(|s| {
+                                s.digest_node_put(&key, "group", &out, &key)
+                                    .map_err(|e| e.to_string())
+                            });
+                            out
+                        }
+                        Err(e) => {
+                            return fail(&guard, serde_json::json!({ "jobId": job_id,
+                                "date": date, "ok": false, "error": e.to_string() }));
+                        }
+                    }
+                }
+                Err(e) => {
+                    return fail(&guard, serde_json::json!({ "jobId": job_id,
+                        "date": date, "ok": false, "error": e }));
+                }
+            };
+            sections.push(section);
+            emit_progress("groups", (gi + 1) as i64, groups.len() as i64);
+        }
+
+        // ③ 最终合成：rewrite 绕过读缓存，但写回同一个规范键（审核 P1-3）；
+        //    合成前与提交前都检查取消（审核 P1-5）。
+        if guard.cancelled() {
+            finish_slot(&guard);
+            let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
+                "date": date, "ok": false, "cancelled": true }));
+            return;
+        }
+        let final_key = rustrss_core::ai::digest::node_key(
+            "final",
+            &date,
+            &language,
+            &ai_cfg.cache_tag(),
+            &[&manifest.pairs_hash, &sections.join("\u{1e}")],
+        );
+        let cached_final =
+            state.with_store(|s| s.digest_node_get(&final_key).map_err(|e| e.to_string()));
+        let markdown = match cached_final {
+            Ok(Some(c)) if !rewrite => c,
+            Ok(_) => {
+                ai_calls += 1;
+                let req = rustrss_core::ai::digest::final_request(&language, &date, &sections);
+                match client.complete(req).await {
+                    Ok(out) => {
+                        let _ = state.with_store(|s| {
+                            s.digest_node_put(&final_key, "final", &out, &final_key)
+                                .map_err(|e| e.to_string())
+                        });
+                        out
+                    }
+                    Err(e) => {
+                        return fail(&guard, serde_json::json!({ "jobId": job_id,
+                            "date": date, "ok": false, "error": e.to_string() }));
+                    }
+                }
+            }
+            Err(e) => {
+                return fail(&guard, serde_json::json!({ "jobId": job_id,
+                    "date": date, "ok": false, "error": e }));
+            }
+        };
+
+        // ④ 提交（CAS：事务内重算素材指纹，漂移即拒绝覆盖旧报告——审核 P1-2）
+        if guard.cancelled() {
+            finish_slot(&guard);
+            let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
+                "date": date, "ok": false, "cancelled": true }));
+            return;
+        }
+        let (overview, sections_json) =
+            rustrss_core::ai::digest::parse_digest_markdown(&markdown);
+        let content_json = serde_json::json!({ "overview": overview,
+            "sections": sections_json.iter()
+                .map(|(t, x)| serde_json::json!({ "title": t, "text": x }))
+                .collect::<Vec<_>>() })
+        .to_string();
+        let stats = serde_json::json!({ "cache_hits": cache_hits, "ai_calls": ai_calls,
+            "groups": groups.len(), "mode": mode, "manifest_hash": manifest.hash });
+        let commit = state.with_store(|s| {
+            s.commit_digest_report(
+                &date, "Local", bounds.start, bounds.end,
+                &scope.key, &s.scope_json_for(&scope.tag_ids),
+                &profile_key, &profile_json.to_string(),
+                &manifest.hash, &manifest.pairs_hash,
+                manifest.frozen_at,
+                bounds.offset_start, bounds.offset_end,
+                &content_json, &markdown, 1, &stats.to_string(),
+                manifest.entries.len() as i64, &manifest.entries)
                 .map_err(|e| e.to_string())
         });
-        let plan = match plan {
-            Ok(p) => p,
+        match commit {
+            Ok(_) => {
+                finish_slot(&guard);
+                let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
+                    "date": date, "ok": true }));
+            }
             Err(e) => {
-                digest_jobs().lock().unwrap().remove(&job_id);
-                let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-                return Err(e);
+                fail(&guard, serde_json::json!({ "jobId": job_id, "date": date,
+                    "ok": false, "error": e }));
             }
-        };
-        if let Some(hit) = plan.cached.clone() {
-            cache_hits += 1;
-            key_points.push((entry.title.clone(), hit));
-        } else {
-            ai_calls += 1;
-            let output = client.complete(plan.request.clone()).await.map_err(|e| {
-                digest_jobs().lock().unwrap().remove(&job_id);
-                let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-                e.to_string()
-            })?;
-            if cancel_flag.load(Ordering::Relaxed) {
-                // 先落缓存（已花钱的结果不浪费）再退出
-                let out = output.clone();
-                let _ = state.with_store(|s| rustrss_core::ai::save_task_output(s, &plan, &out).map_err(|e| e.to_string()));
-                digest_jobs().lock().unwrap().remove(&job_id);
-                let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-                let _ = app.emit("digest:done", serde_json::json!({ "jobId": job_id, "date": date, "ok": false, "cancelled": true }));
-                return Ok(DigestJobView { job_id, date, entries: manifest.entries.len() as i64,
-                    manifest_truncated: manifest.truncated, status: "cancelled".into(),
-                    cache_hits, ai_calls });
-            }
-            let _ = state.with_store(|s| rustrss_core::ai::save_task_output(s, &plan, &output).map_err(|e| e.to_string()));
-            key_points.push((entry.title.clone(), output));
         }
-        emit_progress("items", (idx + 1) as i64, manifest.entries.len() as i64);
-    }
-
-    // ---- ② 分组合成（节点缓存复用）----
-    let groups = digest_ai::group_key_points(&key_points, rustrss_core::store::digest::GROUP_BUDGET_CHARS);
-    emit_progress("groups", 0, groups.len() as i64);
-    let mut sections: Vec<String> = Vec::new();
-    for (gi, group) in groups.iter().enumerate() {
-        if cancel_flag.load(Ordering::Relaxed) {
-            digest_jobs().lock().unwrap().remove(&job_id);
-            let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-            let _ = app.emit("digest:done", serde_json::json!({ "jobId": job_id, "date": date, "ok": false, "cancelled": true }));
-            return Ok(DigestJobView { job_id, date, entries: manifest.entries.len() as i64,
-                manifest_truncated: manifest.truncated, status: "cancelled".into(),
-                cache_hits, ai_calls });
-        }
-        let titles: Vec<&str> = group.iter().map(|(t, _)| t.as_str()).collect();
-        let parts: Vec<&str> = group.iter().map(|(_, p)| p.as_str()).collect();
-        let key = digest_ai::node_key("group", &date, &language, &[&titles.join("\u{1f}"), &parts.join("\u{1e}")]);
-        let cached = state.with_store(|s| s.digest_node_get(&key).map_err(|e| e.to_string()))?;
-        let section = match cached {
-            Some(c) => c,
-            None => {
-                ai_calls += 1;
-                let req = digest_ai::group_request(&language, &date, group);
-                let out = client.complete(req).await.map_err(|e| {
-                    digest_jobs().lock().unwrap().remove(&job_id);
-                    let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-                    e.to_string()
-                })?;
-                let _ = state.with_store(|s| s.digest_node_put(&key, "group", &out, &key).map_err(|e| e.to_string()));
-                out
-            }
-        };
-        sections.push(section);
-        emit_progress("groups", (gi + 1) as i64, groups.len() as i64);
-    }
-
-    // ---- ③ 最终合成（rewrite 强制绕过 final 缓存）----
-    let final_key = digest_ai::node_key("final", &date, &language, &[
-        &manifest.hash, &(sections.len() as i64).to_le_bytes().iter().map(|b| format!("{b}")).collect::<String>(),
-        &mode,
-    ]);
-    let (markdown, from_final_cache) = if rewrite {
-        (None, false)
-    } else {
-        let cached = state.with_store(|s| s.digest_node_get(&final_key).map_err(|e| e.to_string()))?;
-        (cached, true)
-    };
-    let markdown = match markdown {
-        Some(m) => m,
-        None => {
-            ai_calls += 1;
-            let req = digest_ai::final_request(&language, &date, &sections);
-            let out = client.complete(req).await.map_err(|e| {
-                digest_jobs().lock().unwrap().remove(&job_id);
-                let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-                e.to_string()
-            })?;
-            let _ = state.with_store(|s| s.digest_node_put(&final_key, "final", &out, &final_key).map_err(|e| e.to_string()));
-            out
-        }
-    };
-    let _ = from_final_cache;
-
-    // ---- 提交（CAS：素材快照未漂移）----
-    let stats = serde_json::json!({ "cache_hits": cache_hits, "ai_calls": ai_calls,
-        "groups": groups.len(), "mode": mode, "manifest_hash": manifest.hash });
-    let (overview, sections_json) =
-        rustrss_core::ai::digest::parse_digest_markdown(&markdown);
-    let content_json = serde_json::json!({ "overview": overview,
-        "sections": sections_json.iter().map(|(t, x)| serde_json::json!({ "title": t, "text": x }))
-            .collect::<Vec<_>>() })
-    .to_string();
-    let commit = state.with_store(|s| {
-        let scope_json =
-            format!("{{\"tag_ids\":{}}}", serde_json::to_string(&scope.tag_ids).unwrap_or_default());
-        s.commit_digest_report(&date, "Local", start, end, &scope.key, &scope_json,
-            "default", &format!("{{\"language\":\"{language}\"}}"), &manifest.hash,
-            manifest.frozen_at, &content_json, &markdown, 1, &stats.to_string(),
-            manifest.entries.len() as i64, &manifest.entries)
-            .map_err(|e| e.to_string())
     });
-    match commit {
-        Ok(_) => {}
-        Err(e) if e.contains("素材") => {
-            // 素材在生成期间又变了：提示再次更新（不静默覆盖）
-            digest_jobs().lock().unwrap().remove(&job_id);
-            let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-            return Err(format!("素材在生成期间又发生了变化，请再次「更新日报」：{e}"));
-        }
-        Err(e) => {
-            digest_jobs().lock().unwrap().remove(&job_id);
-            let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-            return Err(e);
-        }
-    }
 
-    digest_jobs().lock().unwrap().remove(&job_id);
-    let _ = state.with_store(|s| {
-            s.digest_slot_end(&date, &scope.key).map_err(err)?;
-            Ok(())
-        });
-    let _ = app.emit("digest:done", serde_json::json!({ "jobId": job_id, "date": date, "ok": true }));
-    log::info!(
-        "[rustrss] digest 生成完成 date={date} entries={} cache_hits={cache_hits} ai_calls={ai_calls} 耗时={}ms",
-        manifest.entries.len(), started.elapsed().as_millis()
-    );
-    Ok(DigestJobView { job_id, date, entries: manifest.entries.len() as i64,
-        manifest_truncated: manifest.truncated, status: "completed".into(),
-        cache_hits, ai_calls })
+    Ok(job_view)
 }
 
-/// 取消进行中的日报生成（请求之间生效；已花钱的单篇要点会先落缓存）。
+/// 取消进行中的日报生成（请求之间生效；已付费的单篇要点会先落缓存）。
 #[tauri::command]
 pub fn digest_cancel(job_id: String) -> R<bool> {
     let cancelled = digest_jobs()

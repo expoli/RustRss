@@ -466,7 +466,8 @@ fn freeze_manifest_filters_and_hashes() {
     store.upsert_entries(f1, &mk("a2", "A2")).unwrap();
     store.upsert_entries(f2, &mk("b1", "B1")).unwrap();
 
-    let (start, end) = rustrss_core::store::digest::local_day_bounds("2026-10-04").unwrap();
+    let bounds = rustrss_core::store::digest::local_day_bounds("2026-10-04").unwrap();
+    let (start, end) = (bounds.start, bounds.end);
     let manifest = store
         .freeze_manifest(start, end, None)
         .unwrap();
@@ -506,7 +507,8 @@ fn freeze_manifest_truncates_to_budget() {
         ).unwrap().entries;
         store.upsert_entries(f1, &entries).unwrap();
     }
-    let (start, end) = rustrss_core::store::digest::local_day_bounds("2026-10-04").unwrap();
+    let bounds = rustrss_core::store::digest::local_day_bounds("2026-10-04").unwrap();
+    let (start, end) = (bounds.start, bounds.end);
     let manifest = store.freeze_manifest(start, end, None).unwrap();
     assert!(manifest.truncated, "250 篇 > 上界 200 应标记截断");
     assert_eq!(manifest.entries.len(), 200);
