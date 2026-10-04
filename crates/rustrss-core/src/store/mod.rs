@@ -508,6 +508,17 @@ impl Store {
               WHERE id NOT IN (SELECT entry_id FROM digest_entry_meta)",
             [],
         )?;
+        // 幂等回填历史报告的 ≤140 字摘要（digest_list 只读 digests.summary，
+        // 不再 JOIN 正文表——审核 R5-P1）。仅 summary='' 的完成报告需要补。
+        store.conn.execute(
+            "UPDATE digests SET summary = (
+                SELECT substr(COALESCE(json_extract(b.content_json, '$.overview'), ''), 1, 140)
+                  FROM digest_bodies b
+                 WHERE b.digest_id = digests.id AND b.revision = digests.revision
+             )
+             WHERE generated_at IS NOT NULL AND summary = ''",
+            [],
+        )?;
         Ok(store)
     }
 

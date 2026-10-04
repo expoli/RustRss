@@ -4144,12 +4144,26 @@ fn digest_view(
     s: &rustrss_core::store::Store,
     date: &str,
     tag_ids: &[i64],
+    scope_key: Option<&str>,
 ) -> Result<DigestView, rustrss_core::store::StoreError> {
     use rustrss_core::store::digest::local_day_bounds;
-    let scope = rustrss_core::store::digest::DigestScope::resolve(s, tag_ids)?;
+    // 历史入口给了确切范围键：按它读报告；状态检查仍用解析出的范围口径
+    // （标签集合可能已变化——对历史报告状态行本就不显示对比，见 UI 徽章逻辑）
+    let (scope, report_scope_key) = match scope_key {
+        Some(k) if !k.is_empty() => (
+            rustrss_core::store::digest::DigestScope::resolve(s, tag_ids)?,
+            k.to_string(),
+        ),
+        _ => {
+            let scope = rustrss_core::store::digest::DigestScope::resolve(s, tag_ids)?;
+            let key = scope.key.clone();
+            (scope, key)
+        }
+    };
+    let _ = &scope;
     let bounds = local_day_bounds(date)?;
     let (start, end) = (bounds.start, bounds.end);
-    let report = s.digest_report(date, &scope.key)?;
+    let report = s.digest_report(date, &report_scope_key)?;
     let status = s.digest_status(start, end, &scope)?;
     let (markdown, content_json, checkpoint_at, generated_at, article_count, cache_hits, items) =
         match report {
@@ -4222,9 +4236,12 @@ pub fn digest_get(
     state: State<'_, AppState>,
     date: String,
     tag_ids: Option<Vec<i64>>,
+    // 历史入口直通：指定报告范围键（来自 digest_list），优先于 tag_ids 推导
+    scope_key: Option<String>,
 ) -> R<DigestView> {
     state.with_store(|s| {
-        digest_view(s, &date, tag_ids.as_deref().unwrap_or(&[])).map_err(err)
+        digest_view(s, &date, tag_ids.as_deref().unwrap_or(&[]), scope_key.as_deref())
+            .map_err(err)
     })
 }
 

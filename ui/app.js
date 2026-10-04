@@ -644,7 +644,7 @@ function reconcileViews(existing) {
       bindSidebarKeyboard(li);
       li.innerHTML = `<span class="icon">${window.RustRssIcons.svg('reading')}</span><span class="vlabel"></span><span class="count"></span>`;
     }
-    li.onclick = () => openDigestDate(d.date);
+    li.onclick = () => openDigestDate(d.date, d.scope_key);
     const className = digestOpenDate === d.date ? 'active' : '';
     if (li.className !== className) li.className = className;
     const label = d.date.slice(5); // MM-DD
@@ -1299,20 +1299,7 @@ function digestScopeTags() {
 }
 
 async function openDigest(kind) {
-  const date = digestDate(kind);
-  digestOpenDate = date;
-  const token = ++readerToken;
-  // 日报展示与条目选中互斥：旧选中残留会让 s/u/l 改到看不见的文章（审核 P1）
-  state.selectedId = null;
-  renderList();
-  renderSidebar();
-  try {
-    const view = await invoke('digest_get', { date, tagIds: digestScopeTags() });
-    if (token !== readerToken) return; // 期间打开了文章/切了日期：丢弃过期渲染
-    renderDigestView(view);
-  } catch (e) {
-    setStatus(e.message, true);
-  }
+  await openDigestDate(digestDate(kind));
 }
 
 function renderDigestView(view) {
@@ -1445,12 +1432,23 @@ function renderDigestRefresh() {
 }
 
 /// 按具体日期打开日报（跨午夜后入口语义滚动，内部统一走日期）。
-async function openDigestDate(date) {
+/// 按具体日期（与可选范围键）打开日报。今日/昨日入口与侧栏历史行统一走这里：
+/// 清选中 + readerToken 竞态防护缺一不可——旧选中残留会让 s/u/l 改到看不见的文章；
+/// 没有令牌校验，「历史请求在飞 → 点文章 → 历史后返回」会把文章渲染顶掉（审核 R5-P1）。
+/// `scopeKey` 来自历史行（该报告的真实范围键）；入口路径不传，按当前标签选择解析。
+async function openDigestDate(date, scopeKey) {
   digestOpenDate = date;
+  const token = ++readerToken;
+  state.selectedId = null;
+  renderList();
   renderSidebar();
   try {
-    const view = await invoke('digest_get', { date, tagIds: digestScopeTags() });
-    if (digestOpenDate !== date) return;
+    const view = await invoke('digest_get', {
+      date,
+      tagIds: digestScopeTags(),
+      scopeKey: scopeKey || null,
+    });
+    if (token !== readerToken) return; // 期间打开了文章/切了日期：丢弃过期渲染
     renderDigestView(view);
   } catch (e) {
     setStatus(e.message, true);

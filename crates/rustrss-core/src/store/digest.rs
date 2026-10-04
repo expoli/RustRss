@@ -134,21 +134,25 @@ impl Store {
     /// 历史报告列表（历史入口 / MCP digest_list）：元数据 + ≤140 字概览。
     /// 只取生成完成的行；概览经 json_extract 单列提取，不拉正文大列。
     pub fn digest_list(&self, limit: u32) -> super::Result<Vec<DigestListItem>> {
+        // 只读 digests（含 summary 列，CHECK ≤140）；绝不 JOIN 正文表（审核 R5-P1）。
+        // 同日多范围/多配置变体按「最近生成」取一份（ROW_NUMBER 去重，LIMIT 在去重后
+        // 生效——侧栏/列表的键是日期，重复键会让 keyed reconcile 合并行）。
         let mut stmt = self.conn.prepare(
-            "SELECT d.report_day, d.scope_key, d.scope_json, d.profile_key,
-                    d.generated_at, d.article_count,
-                    COALESCE(json_extract(b.content_json, '$.overview'), '')
-               FROM digests d
-               JOIN digest_bodies b
-                 ON b.digest_id = d.id AND b.revision = d.revision
-              WHERE d.generated_at IS NOT NULL
-              ORDER BY d.report_day DESC, d.generated_at DESC, d.id DESC
+            "SELECT report_day, scope_key, scope_json, profile_key,
+                    generated_at, article_count, summary
+               FROM (
+                   SELECT d.*, ROW_NUMBER() OVER (
+                       PARTITION BY d.report_day
+                       ORDER BY d.generated_at DESC, d.id DESC
+                   ) AS rn
+                     FROM digests d
+                    WHERE d.generated_at IS NOT NULL
+               )
+              WHERE rn = 1
+              ORDER BY report_day DESC
               LIMIT ?1",
         )?;
         let rows = stmt.query_map(params![limit], |r| {
-            let overview: String = r.get(6)?;
-            // 概览按字符边界截到 140（中文安全）
-            let short: String = overview.chars().take(140).collect();
             Ok(DigestListItem {
                 report_day: r.get(0)?,
                 scope_key: r.get(1)?,
@@ -156,7 +160,7 @@ impl Store {
                 profile_key: r.get(3)?,
                 generated_at: r.get(4)?,
                 article_count: r.get(5)?,
-                overview: short,
+                overview: r.get::<_, String>(6)?,
             })
         })?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -684,6 +688,16 @@ impl Store {
     ) -> super::Result<i64> {
         let tx = self.conn.unchecked_transaction()?;
         let now = chrono::Utc::now().timestamp();
+        // 列表摘要 ≤140 字（digests.summary，CHECK 兜底）：digest_list 只读本列，
+        // 不再为列表读正文大列（审核 R5-P1）。overview 缺失时留空。
+        let summary: String = serde_json::from_str::<serde_json::Value>(content_json)
+            .ok()
+            .and_then(|v| {
+                v.get("overview")
+                    .and_then(|o| o.as_str())
+                    .map(|o| o.chars().take(140).collect())
+            })
+            .unwrap_or_default();
         // 提交 CAS（审核 P1-2）：事务内重算当前「成员身份+版本对」指纹，
         // 与冻结时不一致 = 生成期间素材又变了 → 拒绝覆盖旧报告。
         // 同源规则：与 freeze 相同的窗口/范围/排序；标签范围在此事务内
@@ -714,9 +728,9 @@ impl Store {
             "INSERT INTO digests(report_day, timezone_label, day_start_at, day_end_at,
                  utc_offset_start, utc_offset_end, date_basis, scope_key, scope_json,
                  profile_key, profile_json, revision, checkpoint_at, generated_at,
-                 manifest_hash, article_count, stats_json, created_at)
+                 manifest_hash, article_count, stats_json, summary, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'published_or_first_seen_v1', ?7, ?8,
-                 ?9, ?10, 1, ?11, ?12, ?13, ?14, ?15, ?12)
+                 ?9, ?10, 1, ?11, ?12, ?13, ?14, ?15, ?16, ?12)
              ON CONFLICT(report_day, day_start_at, day_end_at, date_basis,
                  scope_key, profile_key) DO UPDATE SET
                  revision = digests.revision + 1,
@@ -728,12 +742,13 @@ impl Store {
                  scope_json = excluded.scope_json,
                  profile_json = excluded.profile_json,
                  utc_offset_start = excluded.utc_offset_start,
-                 utc_offset_end = excluded.utc_offset_end",
+                 utc_offset_end = excluded.utc_offset_end,
+                 summary = excluded.summary",
             params![
                 report_day, timezone_label, day_start, day_end,
                 utc_offset_start, utc_offset_end,
                 scope_key, scope_json, profile_key, profile_json,
-                checkpoint_at, now, manifest_hash, article_count, stats_json
+                checkpoint_at, now, manifest_hash, article_count, stats_json, summary
             ],
         )?;
         let digest_id: i64 = tx.query_row(

@@ -618,3 +618,97 @@ fn commit_cas_rejects_when_material_drifts() {
         )
         .unwrap();
 }
+
+/// digest_list 口径：≤140 字摘要来自 digests.summary（不读正文表）；
+/// 同日多变体按最近生成去重；开库回填补齐旧报告摘要。
+#[test]
+fn digest_list_reads_summary_column_and_dedupes_by_day() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rustrss.sqlite");
+    let store = Store::open(&path).unwrap();
+    let f1 = store.add_feed("https://a.invalid/rss", Some("A")).unwrap();
+    let mk = |guid: &str, hh: u8| {
+        rustrss_core::parse(
+            format!(
+                "<rss version='2.0'><channel><title>T</title><item><guid>{guid}</guid><title>N{guid}</title><description>D{guid}</description><pubDate>2026-10-04T0{hh}:00:00Z</pubDate></item></channel></rss>"
+            )
+            .as_bytes(),
+        )
+        .unwrap()
+        .entries
+    };
+    store.upsert_entries(f1, &mk("1", 1)).unwrap();
+    store.upsert_entries(f1, &mk("2", 2)).unwrap();
+    let start = 1791072000i64;
+    let end = 1791122400i64;
+    let manifest = store.freeze_manifest(start, end, None).unwrap();
+    let long_overview = "详".repeat(300);
+    let commit = |store: &Store, overview: &str, scope_key: &str, scope_json: &str| {
+        let content = serde_json::json!({ "overview": overview, "sections": [] });
+        store.commit_digest_report(
+            "2026-10-04", "UTC", start, end, scope_key, scope_json, "p", "{}",
+            &manifest.hash, &manifest.pairs_hash, &[],
+            manifest.frozen_at, 0, 0,
+            &content.to_string(), "# 日报", 1, "{}",
+            manifest.entries.len() as i64, &manifest.entries,
+        )
+    };
+
+    // 同日两份变体（不同范围），最新一份 overview 超 140 字（截断断言 + 去重一份）
+    commit(&store, "短概览", "all", "{}").unwrap();
+    commit(&store, &long_overview, "tags:1", "{}").unwrap();
+
+    let items = store.digest_list(10).unwrap();
+    assert_eq!(items.len(), 1, "同日多变体按最近生成去重：{}", items.len());
+    assert_eq!(items[0].report_day, "2026-10-04");
+    assert_eq!(items[0].scope_key, "tags:1", "取最近生成的一份");
+    assert_eq!(items[0].overview.chars().count(), 140, "摘要必须截到 140 字");
+    // 未去重掉的旧变体（all）也按列写入：库内直读核对 ≤140 CHECK 生效
+    let raw = rusqlite::Connection::open(&path).unwrap();
+    let old_summary: String = raw
+        .query_row(
+            "SELECT summary FROM digests WHERE scope_key='all' AND report_day='2026-10-04'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(old_summary, "短概览");
+    drop(raw);
+
+    // 不读正文表：删掉 bodies 后列表仍完整（字段来自 digests 行本身）
+    let raw = rusqlite::Connection::open(&path).unwrap();
+    raw.execute("DELETE FROM digest_bodies", []).unwrap();
+    drop(raw);
+    let again = store.digest_list(10).unwrap();
+    assert_eq!(again.len(), 1);
+    assert_eq!(again[0].overview.chars().count(), 140);
+
+    // 旧库回填：手工造一份 summary='' 的完成报告，重开库后被补齐
+    let raw = rusqlite::Connection::open(&path).unwrap();
+    raw.execute(
+        "INSERT INTO digests(report_day, timezone_label, day_start_at, day_end_at,
+             utc_offset_start, utc_offset_end, date_basis, scope_key, scope_json,
+             profile_key, profile_json, revision, checkpoint_at, generated_at,
+             manifest_hash, article_count, stats_json, summary, created_at)
+         VALUES('2026-10-03','UTC',1790985600,1791072000,0,0,
+             'published_or_first_seen_v1','all','{}','p','{}',1,1,1,'h',0,'{}','',1)",
+        [],
+    )
+    .unwrap();
+    let body_id: i64 = raw
+        .query_row("SELECT id FROM digests WHERE report_day='2026-10-03'", [], |r| r.get(0))
+        .unwrap();
+    let old_content = serde_json::json!({ "overview": "旧报告概览内容", "sections": [] });
+    raw.execute(
+        "INSERT INTO digest_bodies(digest_id, revision, schema_ver, content_json, markdown)
+         VALUES(?1, 1, 1, ?2, '# md')",
+        rusqlite::params![body_id, old_content.to_string()],
+    )
+    .unwrap();
+    drop(raw);
+    drop(store);
+    let reopened = Store::open(&path).unwrap();
+    let list = reopened.digest_list(10).unwrap();
+    let old_row = list.iter().find(|i| i.report_day == "2026-10-03").unwrap();
+    assert_eq!(old_row.overview, "旧报告概览内容", "开库回填补齐旧摘要");
+}
