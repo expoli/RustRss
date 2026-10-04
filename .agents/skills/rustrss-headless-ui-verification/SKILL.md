@@ -88,9 +88,15 @@ export ANDROID_SDK_ROOT=/usr/lib/android-sdk
 
 要点（2026-10-04 实测）：
 - AVD 见 `~/.android/avd/`（RustRss_API_36 = pixel_7/API 36；另有 pixel_6、tablet）。
-- 模拟器 WebView 新（API 36），document-start 注入路径必然生效——它验证的是
-  **CSS/布局正确性**；老 WebView 的注入失败要靠 MainActivity 里的 verify 循环
-  （读回 computed style 重试，原生闭环）兜底，模拟器测不出该路径。
+- **必须核对安装真实成功**：`adb install` 输出 Success + `dumpsys package`
+  查 versionName/lastUpdateTime。构建 `--target aarch64` 的 APK 在 x86_64 AVD 上
+  装不上（exit code 非零），但输出被管道吞掉时截图截的是**旧包**——2026-10-04
+  实测踩坑：模拟器「验证通过」实为旧 v0.6.0 的表现，证据链作废重来。
+- 验证包要含对应 ABI（模拟器 x86_64：`cargo tauri android build --target
+  aarch64 --target x86_64`）。
+- **先查 CSS 再怀疑注入**：布局 bug 优先用 Chrome 直接加载 CSS 检查计算样式
+  （断点内靠后的 padding 简写覆盖靠前的 padding-top 这类覆盖，症状与「注入
+  失败」一模一样——2026-10-04 日报顶部重叠首因即此）。
 - 真机截图工具常裁掉状态栏——排查「重叠/遮挡」类问题必须让用户拍**含系统时间**
   的照片，或直接用模拟器复现。
 - 排查完 `adb emu kill` 或留着复用。
