@@ -15,6 +15,10 @@ class MainActivity : TauriActivity() {
   override val handleBackNavigation: Boolean = true
 
   /// WebView 引用与最新 insets：注入 CSS 变量用（onWebViewCreate 后才可用）。
+  /// lastTop/lastBottom 恒存**原始物理像素**——密度换算只在 pushInsets 内部
+  /// 做一次（评审 P0：此前把换算后的 dp 存回状态位，verify 重试把它当物理
+  /// 像素再除一次密度，32→10→3→1→0 指数衰减，600ms 一档——正是真机
+  /// 「启动正常→弹回重叠」的确定性回归）。
   private var webView: WebView? = null
   private var lastTop = 0
   private var lastBottom = 0
@@ -77,14 +81,15 @@ class MainActivity : TauriActivity() {
   /// 读回计算样式验证 --inset-top 已生效；未生效则重注入并重试（原生侧闭环）。
   private fun verifyApplied(attempt: Int) {
     val web = webView ?: return
+    val expected = "${(lastTop / resources.displayMetrics.density).toInt()}px"
     web.post {
       web.evaluateJavascript(
         "getComputedStyle(document.documentElement).getPropertyValue('--inset-top').trim()",
       ) { result ->
-        val applied = result?.trim()?.trim('"') == "${lastTop}px"
+        val applied = result?.trim()?.trim('"') == expected
         if (!applied && attempt < 10) {
           web.postDelayed({
-            pushInsets(lastTop, lastBottom, force = true)
+            pushInsets(lastTop, lastBottom, force = true) // 原始值重传：换算幂等
             verifyApplied(attempt + 1)
           }, 600)
         }
@@ -96,18 +101,20 @@ class MainActivity : TauriActivity() {
   /// inset 是物理像素，CSS px 是 dp——必须除以 density（评审指出的单位错误，
   /// 否则修好覆盖后会 ~2.6 倍过度留白）。
   private fun pushInsets(topPx: Int, bottomPx: Int, force: Boolean = false) {
-    val d = resources.displayMetrics.density
-    val top = (topPx / d).toInt()
-    val bottom = (bottomPx / d).toInt()
-    if (!force && top == lastTop && bottom == lastBottom) return
-    lastTop = top
-    lastBottom = bottom
+    if (!force && topPx == lastTop && bottomPx == lastBottom) return
+    lastTop = topPx
+    lastBottom = bottomPx
     val web = webView ?: return
+    val d = resources.displayMetrics.density
+    // 唯一的换算点：入参恒为物理 px，换算结果不回写状态位——重试传原始值
+    // 时换算幂等（32 → 32dp 恒定，不再衰减）。
+    val topDp = (topPx / d).toInt()
+    val bottomDp = (bottomPx / d).toInt()
     val script = if (documentStartRegistered) {
-      "window.__applyInsets&&window.__applyInsets($top,$bottom);"
+      "window.__applyInsets&&window.__applyInsets($topDp,$bottomDp);"
     } else {
-      "document.documentElement.style.setProperty('--inset-top','${top}px');" +
-        "document.documentElement.style.setProperty('--inset-bottom','${bottom}px');"
+      "document.documentElement.style.setProperty('--inset-top','${topDp}px');" +
+        "document.documentElement.style.setProperty('--inset-bottom','${bottomDp}px');"
     }
     web.post { web.evaluateJavascript(script, null) }
   }
