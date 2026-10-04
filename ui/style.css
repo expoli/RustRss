@@ -1460,7 +1460,12 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   /* 主区、状态和导航共享一套 flex 高度；不猜测字体/系统缩放后的底栏高度。
      Android 根视图已避让系统栏和 IME，网页不再重复扣安全区。 */
   body { min-width: 0; }
-  .toolbar { min-width: 0; }
+  /* 报头延伸到状态栏后面：inset 由 Android 原生注入（--inset-top），
+     桌面/未注入时变量默认 0，calc 原值不变。 */
+  .toolbar {
+    min-width: 0;
+    padding-top: calc(8px + var(--inset-top, 0px));
+  }
   .toolbar .grow { display: none; }
   .toolbar .brand { flex: none; }
   body[data-mpage="settings"] > .toolbar { display: none; }
@@ -1554,7 +1559,8 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
     display: inline-flex;
     position: absolute;
     z-index: 8;
-    top: 8px;
+    /* 阅读页顶栏隐藏，返回钮自己避让状态栏 */
+    top: calc(8px + var(--inset-top, 0px));
     left: 10px;
     margin: 0;
     padding: 8px;
@@ -1566,7 +1572,14 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
     overflow: hidden;
   }
   #m-reader-back .ui-icon { width: 22px; height: 22px; }
-  .reader { padding: 8px 18px 40px; overflow-x: hidden; display: flex; flex-direction: column; }
+  /* 阅读页无 toolbar/m-nav：滚动正文自己避让上下系统栏 */
+  .reader {
+    padding: calc(8px + var(--inset-top, 0px)) 18px
+      calc(40px + var(--inset-bottom, 0px));
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+  }
   .reader-actions {
     order: -1;
     position: sticky;
@@ -1620,7 +1633,8 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
     order: 3;
     z-index: 40;
     gap: 2px;
-    padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
+    /* 面板延伸到手势条后面：inset 由 Android 原生注入（--inset-bottom） */
+    padding: 4px 6px calc(4px + var(--inset-bottom, 0px));
     background: var(--bg-panel);
     border-top: 1px solid var(--line);
   }
@@ -1710,7 +1724,8 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
     align-items: center;
     gap: 8px;
     min-height: 64px;
-    padding: 8px 12px;
+    /* 设置页隐藏了 toolbar（main 顶到状态栏后面）：头部自己避让 */
+    padding: calc(8px + var(--inset-top, 0px)) 12px 8px;
     border-bottom: 1px solid var(--line);
   }
   .m-settings-header h2 { font-size: 20px; line-height: 1.3; margin: 0; }
