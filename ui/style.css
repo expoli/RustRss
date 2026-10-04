@@ -1495,11 +1495,16 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
 
   /* ---- 页面可见性矩阵 ---- */
   body:not([data-mpage="subscriptions"]) .sidebar { display: none; }
-  /* 日报页：right-col 承载日期列表（与 reader 覆盖层同容器） */
+  /* 日报页：right-col 承载日期列表（与 reader 覆盖层同容器）。
+     .right-col 由 flex 改 block 后内部 .statusbar 会跟在内容后形成「中部状态条」
+     （与底部 #m-status 镜像双显）——手机由 #m-status 承担，隐藏桌面状态条；
+     #reader 的阅读页 padding（顶部 inset/58px 返回槽）不适用于日期列表，覆盖之。 */
   body[data-mpage="digest"] .list,
-  body[data-mpage="digest"] .sidebar { display: none; }
-  body[data-mpage="digest"] .right-col { display: block; position: absolute; inset: 0; z-index: 5; background: var(--bg); }
-  .m-digest-home { padding: 8px 4px 24px; }
+  body[data-mpage="digest"] .sidebar,
+  body[data-mpage="digest"] .statusbar { display: none; }
+  body[data-mpage="digest"] .right-col { display: flex; flex-direction: column; position: absolute; inset: 0; z-index: 5; background: var(--bg); }
+  body[data-mpage="digest"] #reader { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px 24px; }
+  .m-digest-home { padding: 4px 4px 24px; }
   .m-digest-title { margin: 0 0 8px; font-size: 20px; }
   .m-digest-sub { margin: 14px 0 6px; font-size: 13px; color: var(--fg-dim); }
   .m-digest-row {

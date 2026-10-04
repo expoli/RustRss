@@ -1311,6 +1311,7 @@ async function openDigest(kind) {
 function renderDigestView(view) {
   readerToken++;
   digestOpenDate = view.date;
+  el('reader')?.classList.remove('digest-home');
   // 手机：日报在共享阅读层呈现（mobile.js 切 mpage=reader，返回钮/返回栈生效）
   window.RustRssMobileDigest?.onDigestView?.(view);
   state.readerFeedId = null;

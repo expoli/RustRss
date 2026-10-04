@@ -405,6 +405,7 @@
     html += '</div>';
     var host = document.querySelector('.right-col #reader');
     if (!host) return;
+    host.classList.add('digest-home');
     host.innerHTML = html;
     host.querySelectorAll('[data-digest-kind]').forEach(function (btn) {
       btn.addEventListener('click', function () { bridge.open(btn.dataset.digestKind); });
