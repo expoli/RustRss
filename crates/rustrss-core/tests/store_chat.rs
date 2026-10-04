@@ -291,7 +291,7 @@ fn delete_session_guard_is_cross_connection() {
     let other = Store::open(&path).unwrap(); // 模拟另一连接/进程
     let err = other.delete_session(sid).unwrap_err();
     assert!(err.to_string().contains("正在生成中"));
-    // 终态化后（另一连接标记 interrupted）即可删除
-    other.mark_running_interrupted().unwrap();
+    // 评审 P2 note：由原连接标记终态、另一连接执行删除——真实跨连接形态
+    store.mark_running_interrupted().unwrap();
     assert!(other.delete_session(sid).unwrap());
 }
