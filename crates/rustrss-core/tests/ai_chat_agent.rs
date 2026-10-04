@@ -1104,3 +1104,101 @@ async fn nested_truncation_promotes_scope_count_to_top_level() {
     .unwrap();
     assert!(!out.degraded);
 }
+
+fn as_stream(provider: Provider, response: Value) -> String {
+    let data = |v: Value| format!("data: {v}\n\n");
+    match provider {
+        Provider::OpenAiCompatible => {
+            let mut delta = response["choices"][0]["message"].clone();
+            if let Some(calls) = delta["tool_calls"].as_array_mut() {
+                for (index, call) in calls.iter_mut().enumerate() {
+                    call["index"] = json!(index);
+                }
+            }
+            format!(
+                "{}data: [DONE]\n\n",
+                data(
+                    json!({"choices":[{"delta":delta,"finish_reason":response["choices"][0]["finish_reason"]}],"usage":response["usage"]})
+                )
+            )
+        }
+        Provider::Anthropic => {
+            let mut frames =
+                data(json!({"type":"message_start","message":{"usage":response["usage"]}}));
+            for (index, block) in response["content"].as_array().unwrap().iter().enumerate() {
+                frames.push_str(&data(
+                    json!({"type":"content_block_start","index":index,"content_block":block}),
+                ));
+            }
+            frames.push_str(&data(json!({"type":"message_delta","delta":{"stop_reason":response["stop_reason"]},"usage":response["usage"]})));
+            frames.push_str(&data(json!({"type":"message_stop"})));
+            frames
+        }
+        Provider::Gemini => data(response),
+        Provider::Ollama => format!("{response}\n"),
+    }
+}
+async fn streaming_agent_tools(provider: Provider) {
+    use rustrss_core::ai::chat_agent::run_agent_turn_streaming;
+    let server = MockServer::start().await;
+    let count = Arc::new(AtomicUsize::new(0));
+    let c = count.clone();
+    Mock::given(method("POST"))
+        .respond_with(move |req: &Request| {
+            let body: Value = serde_json::from_slice(&req.body).unwrap();
+            let response = if c.fetch_add(1, Ordering::SeqCst) == 0 {
+                call_response(
+                    provider,
+                    &[
+                        ("search_articles", json!({"query":"Rust"})),
+                        ("list_tags", json!({})),
+                    ],
+                )
+            } else {
+                assert!(body.to_string().contains("articles"));
+                if provider == Provider::Gemini {
+                    assert!(body.to_string().contains("signature0"));
+                }
+                final_response(provider)
+            };
+            ResponseTemplate::new(200).set_body_string(as_stream(provider, response))
+        })
+        .expect(2)
+        .mount(&server)
+        .await;
+    let mut text = String::new();
+    let mut logs = vec![];
+    let outcome = run_agent_turn_streaming(
+        &client(provider, &server.uri()),
+        request(),
+        |_, _| output(),
+        |_| panic!("fallback"),
+        || false,
+        |log| logs.push(log.name.clone()),
+        |s| text.push_str(s),
+    )
+    .await
+    .unwrap();
+    assert_eq!(text, "answer");
+    assert_eq!(outcome.final_blocks, vec![ChatBlock::Text(text)]);
+    assert_eq!(logs, ["search_articles", "list_tags"]);
+    assert_eq!(outcome.tool_calls_log.len(), 2);
+    assert_eq!(outcome.usage.input_tokens, Some(6));
+    assert_eq!(outcome.usage.output_tokens, Some(4));
+}
+#[tokio::test]
+async fn openai_streaming_agent_assembles_tools_then_streams_answer() {
+    streaming_agent_tools(Provider::OpenAiCompatible).await;
+}
+#[tokio::test]
+async fn anthropic_streaming_agent_assembles_tools_then_streams_answer() {
+    streaming_agent_tools(Provider::Anthropic).await;
+}
+#[tokio::test]
+async fn gemini_streaming_agent_assembles_tools_then_streams_answer() {
+    streaming_agent_tools(Provider::Gemini).await;
+}
+#[tokio::test]
+async fn ollama_streaming_agent_assembles_tools_then_streams_answer() {
+    streaming_agent_tools(Provider::Ollama).await;
+}

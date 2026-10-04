@@ -1,4 +1,4 @@
-//! 四家 provider 的对话编解码与非流式单轮传输；不执行工具。
+//! 四家 provider 的对话编解码与单轮传输；流式分帧见 chat_stream，不执行工具。
 
 use super::{AiClient, AiError, Provider};
 use serde::{Deserialize, Serialize};
@@ -467,11 +467,12 @@ pub fn decode_chat_response(provider: Provider, value: &Value) -> Result<ChatRes
     })
 }
 
-/// 单次非流式请求，复用 AiClient 的代理、TLS 根集与响应体积闸门。
-pub async fn execute_chat_turn(
+fn chat_request_builder(
     client: &AiClient,
     req: &ChatRequest,
-) -> Result<ChatResponse, AiError> {
+    streaming: bool,
+    include_usage: bool,
+) -> Result<reqwest::RequestBuilder, AiError> {
     let config = client.config();
     let base = config.base_url.trim_end_matches('/');
     let mut body = encode_chat_request(config.provider, req)?;
@@ -483,7 +484,15 @@ pub async fn execute_chat_turn(
             body["reasoning_effort"] = json!(effort);
         }
     }
-    let mut builder = match config.provider {
+    if streaming {
+        if config.provider != Provider::Gemini {
+            body["stream"] = json!(true);
+        }
+        if config.provider == Provider::OpenAiCompatible && include_usage {
+            body["stream_options"] = json!({"include_usage":true});
+        }
+    }
+    let builder = match config.provider {
         Provider::OpenAiCompatible => client
             .http
             .post(format!("{base}/chat/completions"))
@@ -495,17 +504,33 @@ pub async fn execute_chat_turn(
             .header("anthropic-version", "2023-06-01"),
         Provider::Gemini => {
             let mut url = url::Url::parse(&format!(
-                "{base}/v1beta/models/{}:generateContent",
-                config.model
+                "{base}/v1beta/models/{}:{}",
+                config.model,
+                if streaming {
+                    "streamGenerateContent"
+                } else {
+                    "generateContent"
+                }
             ))
             .map_err(|e| AiError::Request(client.scrub(&e.to_string())))?;
             url.query_pairs_mut()
                 .append_pair("key", client.require_key()?);
+            if streaming {
+                url.query_pairs_mut().append_pair("alt", "sse");
+            }
             client.http.post(url)
         }
         Provider::Ollama => client.http.post(format!("{base}/api/chat")),
     };
-    builder = builder.json(&body);
+    Ok(builder.json(&body))
+}
+
+/// 单次非流式请求，复用 AiClient 的代理、TLS 根集与响应体积闸门。
+pub async fn execute_chat_turn(
+    client: &AiClient,
+    req: &ChatRequest,
+) -> Result<ChatResponse, AiError> {
+    let builder = chat_request_builder(client, req, false, false)?;
     let request = async {
         let resp = builder.send().await.map_err(|e| {
             AiError::Transport(client.scrub(&crate::logging::scrub_log_line(&e.to_string())))
@@ -530,7 +555,7 @@ pub async fn execute_chat_turn(
                 super::shorten(&client.scrub(&text), 300)
             ))
         })?;
-        decode_chat_response(config.provider, &value).map_err(|e| match e {
+        decode_chat_response(client.config().provider, &value).map_err(|e| match e {
             AiError::BadResponse(message) => AiError::BadResponse(client.scrub(&message)),
             other => other,
         })
@@ -538,6 +563,71 @@ pub async fn execute_chat_turn(
     tokio::time::timeout(req.limits.timeout.min(Duration::from_secs(120)), request)
         .await
         .map_err(|_| AiError::Transport("对话请求超时（最多 120 秒）".into()))?
+}
+
+/// Streaming single model request. The same TLS/proxy, byte cap and deadline as
+/// non-streaming transport apply; EOF without provider termination is an error.
+pub async fn execute_chat_turn_streaming(
+    client: &AiClient,
+    req: &ChatRequest,
+    mut on_delta: impl FnMut(&str),
+) -> Result<ChatResponse, AiError> {
+    let mut parser = super::chat_stream::ChatStreamParser::new(client.config().provider);
+    let request = async {
+        let mut include_usage = true;
+        let mut resp = loop {
+            let resp = chat_request_builder(client, req, true, include_usage)?
+                .send()
+                .await
+                .map_err(|e| {
+                    AiError::Transport(
+                        client.scrub(&crate::logging::scrub_log_line(&e.to_string())),
+                    )
+                })?;
+            let status = resp.status();
+            if status.is_success() {
+                break resp;
+            }
+            let text = super::read_ai_body_limited(resp, super::MAX_RESPONSE_BYTES).await?;
+            let text = client.scrub(&text);
+            // Retry only an explicit stream_options rejection, never an arbitrary
+            // 400 (which may have consumed a billed request or be a tools error).
+            if client.config().provider == Provider::OpenAiCompatible
+                && include_usage
+                && status.as_u16() == 400
+                && text.to_ascii_lowercase().contains("stream_options")
+            {
+                include_usage = false;
+                continue;
+            }
+            return Err(AiError::Provider {
+                status: status.as_u16(),
+                message: super::shorten(&text, 600),
+            });
+        };
+        if resp
+            .content_length()
+            .is_some_and(|len| len > super::MAX_RESPONSE_BYTES as u64)
+        {
+            return Err(AiError::BadResponse("AI 流式响应体积超过上限".into()));
+        }
+        let mut received = 0usize;
+        while let Some(chunk) = resp.chunk().await.map_err(|e| {
+            parser.interrupted(&client.scrub(&crate::logging::scrub_log_line(&e.to_string())))
+        })? {
+            received = received.saturating_add(chunk.len());
+            if received > super::MAX_RESPONSE_BYTES {
+                return Err(parser.interrupted("AI 流式响应体积超过上限"));
+            }
+            parser.push(&chunk, &mut on_delta)?;
+        }
+        Ok(())
+    };
+    match tokio::time::timeout(req.limits.timeout.min(Duration::from_secs(120)), request).await {
+        Err(_) => Err(parser.interrupted("对话请求超时（最多 120 秒）")),
+        Ok(Err(e)) => Err(e),
+        Ok(Ok(())) => parser.finish(on_delta),
+    }
 }
 
 /// 报告缺失不是错误；正文截断与文章 prompt 使用同一口径。

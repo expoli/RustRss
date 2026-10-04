@@ -1,0 +1,159 @@
+{
+  "checks": [
+    {
+      "name": "partial-stream-visible-and-stop-accessible",
+      "detail": {
+        "text": "流式回答 1。\n流式回答 2。\n流式回答 3。\n流式回答 4。\n流式回答 5。\n流式回答 6。\n流式回答 7。\n流式回答 8。\n",
+        "status": "正在接收回答…",
+        "button": "停止",
+        "disabled": false,
+        "live": "polite",
+        "label": "输入消息（Enter 发送，Shift+Enter 换行）"
+      }
+    },
+    {
+      "name": "accessible-live-log-and-labelled-input",
+      "detail": null
+    },
+    {
+      "name": "incremental-node-identity-and-user-upscroll-retained",
+      "detail": {
+        "same": true,
+        "userSame": true,
+        "top": 0,
+        "distance": 273,
+        "length": 279
+      }
+    },
+    {
+      "name": "chunk-sequences-monotonic",
+      "detail": {
+        "count": 60,
+        "sequence": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61
+        ]
+      }
+    },
+    {
+      "name": "mock-request-used-stream-and-tools",
+      "detail": null
+    },
+    {
+      "name": "real-completion-persisted",
+      "detail": [
+        "assistant",
+        "done",
+        11,
+        600
+      ]
+    },
+    {
+      "name": "all-streamed-text-persisted",
+      "detail": null
+    },
+    {
+      "name": "real-ipc-prepend-page-and-anchor",
+      "detail": {
+        "count": 100,
+        "top": 2750,
+        "same": true
+      }
+    },
+    {
+      "name": "disconnect-keeps-partial-error-count-and-draft",
+      "detail": {
+        "notice": "网络请求失败: 连接 EOF（已收到 81 字符，流未完整结束）（已收到 81 字符）",
+        "partial": "流式回答 1。流式回答 2。流式回答 3。流式回答 4。流式回答 5。流式回答 6。流式回答 7。流式回答 8。流式回答 9。流式回答 10。网络请求失败: 连接 EOF（已收到 81 字符，流未完整结束）（已收到 81 字符）生成失败重试",
+        "draft": "断流冒烟"
+      }
+    },
+    {
+      "name": "partial-and-error-persisted-after-disconnect",
+      "detail": {
+        "status": "failed",
+        "blocks": 2
+      }
+    },
+    {
+      "name": "different-damaged-frames",
+      "detail": null
+    },
+    {
+      "name": "rebuilt-ui",
+      "detail": null
+    }
+  ],
+  "screenshots": {
+    "01-streaming.png": "1e8f0d275d54a52adb639d912b14280dddb4c5946c7f693128683b0a683874e7",
+    "02-streaming-upscroll.png": "8b5e820ec56f3f374e44f90c435c28cae5661df64c8dac35d5e84961082d4711",
+    "03-complete.png": "e1f44398275ac6df116d3cb35744d80d96120d3963d7c01b6a982d92ce66858e",
+    "04-pagination.png": "a628a7772fd1940940f9267312c174b02382fc7508239c6bb2acaf9810409e8a",
+    "05-disconnected.png": "cc47ae2cfe912e35880239c5b7e3385c0f72294f65b4e772ae66783e32d9dccc"
+  },
+  "limits": [
+    "DOM inspector actions on real rebuilt Tauri/WebKitGTK; no native pointer/keyboard or paid BYOK.",
+    "Mock Ollama only for desktop smoke; four provider streams covered in Rust mock integration tests.",
+    "Android/IME/Wayland/Windows/macOS not exercised."
+  ],
+  "binary_sha256": "6cb6123eb6532a311ff93cb89ce569685162b9f2e067499847265679672a2bef",
+  "passed": true
+}

@@ -304,3 +304,33 @@ fn delete_session_guard_is_cross_connection() {
     drop(store);
     assert!(other.delete_session(sid).unwrap());
 }
+
+#[test]
+fn paginated_chat_reads_latest_then_earlier_without_gaps_or_duplicate_rows() {
+    use rustrss_core::ai::chat::ChatUsage;
+    let store = rustrss_core::Store::open_in_memory().unwrap();
+    let id = store
+        .create_session("long", "ollama", "test", "local", "{}")
+        .unwrap();
+    for _ in 0..123 {
+        store
+            .append_message(id, "assistant", "done", "[]", &ChatUsage::default())
+            .unwrap();
+    }
+    let latest = store.get_session_page(id, None, 50).unwrap().unwrap();
+    assert_eq!(latest.messages.len(), 50);
+    assert_eq!(latest.messages.first().unwrap().seq, 74);
+    assert_eq!(latest.messages.last().unwrap().seq, 123);
+    let earlier = store.get_session_page(id, Some(74), 50).unwrap().unwrap();
+    assert_eq!(earlier.messages.first().unwrap().seq, 24);
+    assert_eq!(earlier.messages.last().unwrap().seq, 73);
+    let first = store.get_session_page(id, Some(24), 50).unwrap().unwrap();
+    assert_eq!(first.messages.len(), 23);
+    assert!(store
+        .get_session_page(id, Some(1), 50)
+        .unwrap()
+        .unwrap()
+        .messages
+        .is_empty());
+    assert_eq!(store.get_session(id).unwrap().unwrap().messages.len(), 123);
+}

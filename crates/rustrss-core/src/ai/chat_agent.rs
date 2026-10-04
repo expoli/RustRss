@@ -1,6 +1,6 @@
 //! Bounded read-only agent turns. HTTP futures are dropped on cancellation; no
 //! store lock crosses an await. Local evidence is data, never an instruction.
-use super::chat::{execute_chat_turn, ChatBlock, ChatMessage, ChatRequest, ChatRole, ChatUsage};
+use super::chat::{execute_chat_turn, execute_chat_turn_streaming, ChatBlock, ChatMessage, ChatRequest, ChatRole, ChatUsage};
 use super::tools::{
     bound_output, chat_tools, scope_feeds, validate_tool, ToolError, ToolOutput, TOOL_BYTES,
 };
@@ -151,11 +151,54 @@ fn normalized_args(value: &Value) -> Value {
 /// and progress forwarding. The static whitelist is enforced before callbacks.
 pub async fn run_agent_turn(
     client: &AiClient,
+    request: ChatRequest,
+    tool: impl FnMut(&str, &Value) -> Result<ToolOutput, ToolError>,
+    retrieve: impl FnMut(&mut ChatRequest) -> Result<String, AiError>,
+    cancelled: impl Fn() -> bool,
+    progress: impl FnMut(&ToolCallLog),
+) -> Result<AgentTurnOutcome, AiError> {
+    run_agent_turn_inner(
+        client,
+        request,
+        tool,
+        retrieve,
+        cancelled,
+        progress,
+        None::<fn(&str)>,
+    )
+    .await
+}
+
+/// Same bounded agent loop, with streamed model text and assembled tool calls.
+pub async fn run_agent_turn_streaming(
+    client: &AiClient,
+    request: ChatRequest,
+    tool: impl FnMut(&str, &Value) -> Result<ToolOutput, ToolError>,
+    retrieve: impl FnMut(&mut ChatRequest) -> Result<String, AiError>,
+    cancelled: impl Fn() -> bool,
+    progress: impl FnMut(&ToolCallLog),
+    on_delta: impl FnMut(&str),
+) -> Result<AgentTurnOutcome, AiError> {
+    run_agent_turn_inner(
+        client,
+        request,
+        tool,
+        retrieve,
+        cancelled,
+        progress,
+        Some(on_delta),
+    )
+    .await
+}
+
+async fn run_agent_turn_inner(
+    client: &AiClient,
     mut request: ChatRequest,
     mut tool: impl FnMut(&str, &Value) -> Result<ToolOutput, ToolError>,
     mut retrieve: impl FnMut(&mut ChatRequest) -> Result<String, AiError>,
     cancelled: impl Fn() -> bool,
     mut progress: impl FnMut(&ToolCallLog),
+    mut on_delta: Option<impl FnMut(&str)>,
 ) -> Result<AgentTurnOutcome, AiError> {
     let started = Instant::now();
     let timeout = request.limits.timeout.min(Duration::from_secs(120));
@@ -215,7 +258,11 @@ pub async fn run_agent_turn(
         }
         request.limits.timeout = timeout.saturating_sub(started.elapsed());
         let response = {
-            let future = execute_chat_turn(client, &request);
+            let future = async {
+                if let Some(delta) = &mut on_delta {
+                    execute_chat_turn_streaming(client, &request, delta).await
+                } else { execute_chat_turn(client, &request).await }
+            };
             tokio::pin!(future);
             loop {
                 tokio::select! {

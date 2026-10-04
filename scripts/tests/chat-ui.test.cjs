@@ -20,7 +20,7 @@ function makeContext() {
   const calls = [], store = new Map();
   const context = vm.createContext({
     el, document: { querySelector: () => right }, state: { selectedId: 42, readerEntry: { id: 42 } },
-    chatView: null, chatRefreshSerial: 0, readerToken: 0, digestOpenDate: '2026-10-04',
+    chatView: null, chatRefreshSerial: 0, chatStreams: new Map(), setTimeout, clearTimeout, readerToken: 0, digestOpenDate: '2026-10-04',
     chatDrafts: new Map(), t: (key, args) => key + (args ? JSON.stringify(args) : ''),
     escapeHtml: x => String(x).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'),
     localStorage: { getItem: k => store.get(k), setItem: (k, v) => store.set(k, v) },
@@ -34,7 +34,7 @@ function makeContext() {
     },
     ai: { provider: 'openai', model: 'test', base_url: 'https://example.test' },
   });
-  for (const name of ['chatScope', 'chatText', 'chatScopeLabel', 'chatIsVisible', 'chatError', 'sendChat', 'onChatTerminal']) vm.runInContext(extract(name), context);
+  for (const name of ['chatScope', 'chatText', 'chatScopeLabel', 'chatIsVisible', 'chatError', 'activeChatStream', 'appendChatStreamRow', 'acceptChatEvent', 'onChatStarted', 'onChatChunk', 'loadEarlierChat', 'sendChat', 'onChatTerminal']) vm.runInContext(extract(name), context);
   context.calls = calls; context.store = store; context.right = right;
   context.view = { id: null, pending: false, draft: '' };
   context.chatView = context.view;
@@ -91,9 +91,9 @@ test('configuration/setup and budget errors retain draft and exact backend error
 
 test('completion never steals navigation, including events for another session', () => {
   const c = makeContext(); let refreshes = 0; c.refreshChatView = () => { refreshes++; };
-  c.view.id = 7; c.onChatTerminal({ payload: { sessionId: 8 } }); assert.equal(refreshes, 0);
-  c.right.classList.remove('chat-active'); c.onChatTerminal({ payload: { sessionId: 7 } }); assert.equal(refreshes, 0);
-  c.right.classList.add('chat-active'); c.onChatTerminal({ payload: { sessionId: 7, error: 'failure' } });
+  c.view.id = 7; c.onChatStarted({payload: {sessionId: 7, messageId: 1, seq: 0}}); c.onChatTerminal({ payload: { sessionId: 8, messageId: 1, seq: 1 } }); assert.equal(refreshes, 0);
+  c.right.classList.remove('chat-active'); c.onChatChunk({ payload: { sessionId: 7, messageId: 1, seq: 1, text: 'hidden' } }); assert.equal(refreshes, 0);
+  c.right.classList.add('chat-active'); c.onChatTerminal({ payload: { sessionId: 7, messageId: 1, seq: 2, error: 'failure' } });
   assert.equal(refreshes, 1); assert.equal(c.view.error, 'failure');
 });
 
@@ -172,7 +172,7 @@ test('i18n dictionaries have matching keys and all chat keys in both languages',
   vm.runInContext(fs.readFileSync('ui/i18n.js', 'utf8'), c);
   assert.equal(c.window.I18N.selfTest().ok, true);
   const dictionaries = c.window.I18N.DICTS;
-  assert.equal(Object.keys(dictionaries.en).filter(k => k.startsWith('chat.')).length, 26);
+  assert.equal(Object.keys(dictionaries.en).filter(k => k.startsWith('chat.')).length, 27);
   assert.deepEqual(Object.keys(dictionaries.en).sort(), Object.keys(dictionaries['zh-CN']).sort());
 });
 
@@ -280,3 +280,105 @@ for (const destination of ['article', 'another chat']) {
     assert.equal(old.id, 7);
   });
 }
+
+function streamingPaintContext() {
+  const c = makeContext(); useRealPaint(c);
+  const list = c.el('chat-messages');
+  list.insertBefore = (row, before) => {
+    const old = list.children.indexOf(row); if (old >= 0) list.children.splice(old, 1);
+    list.children.splice(before ? list.children.indexOf(before) : list.children.length, 0, row);
+  };
+  c.buildChatMessage = () => ({ dataset: {}, remove() { list.children.splice(list.children.indexOf(this), 1); }, replaceWith(next) { list.children[list.children.indexOf(this)] = next; } });
+  c.document.createElement = () => {
+    const text = { textContent: '' }, status = { textContent: '' };
+    return { dataset: {}, querySelector: selector => selector === '.chat-stream-text' ? text : status,
+      remove() { list.children.splice(list.children.indexOf(this), 1); } };
+  };
+  c.view.id = 7;
+  c.view.data = { session: { id: 7, title: 'Stream', scope_json: '{}' }, messages: [{ id: 20, seq: 10, role: 'user', status: 'running', parts_json: '[{"text":"Question"}]' }] };
+  c.onChatStarted({ payload: { sessionId: 7, messageId: 20, seq: 0 } });
+  return c;
+}
+
+test('chunks batch one render, patch only the current text node and never scroll up-scrolled readers', () => {
+  const c = streamingPaintContext(); let scheduled = [], delays = [];
+  c.setTimeout = (fn, ms) => { scheduled.push(fn); delays.push(ms); return 1; };
+  c.paintChatView(c.view); const list = c.el('chat-messages'); const user = list.children[0], bubble = list.children[1];
+  assert.equal(bubble.querySelector('.chat-stream-state').textContent, 'chat.running');
+  for (const [seq, text] of [[1, '<script>'], [2, 'safe🦀']]) c.onChatChunk({ payload: { sessionId: 7, messageId: 20, seq, text } });
+  assert.equal(scheduled.length, 1); assert.deepEqual(delays, [120]);
+  assert.equal(bubble.querySelector('.chat-stream-text').textContent, '');
+  scheduled.shift()();
+  assert.equal(list.children[0], user); assert.equal(list.children[1], bubble);
+  assert.equal(bubble.querySelector('.chat-stream-text').textContent, '<script>safe🦀');
+  assert.equal(bubble.querySelector('.chat-stream-state').textContent, 'chat.streaming');
+  assert.equal(list.scrollTop, 200);
+  list.scrollTop = 600;
+  c.onChatChunk({ payload: { sessionId: 7, messageId: 20, seq: 3, text: 'bottom' } }); scheduled.shift()();
+  assert.equal(list.scrollTop, list.scrollHeight);
+});
+
+test('late, duplicate, wrong-message and post-terminal chunks are discarded without rendering', () => {
+  const c = streamingPaintContext(); c.setTimeout = () => 1; c.clearTimeout = () => {};
+  const emit = (seq, text, messageId = 20) => c.onChatChunk({ payload: { sessionId: 7, messageId, seq, text } });
+  emit(2, 'valid'); emit(2, 'duplicate'); emit(1, 'late'); emit(3, 'wrong', 19); emit(4, 'unknown', 21);
+  assert.equal(c.chatStreams.get(7).text, 'valid');
+  c.onChatTerminal({ payload: { sessionId: 7, messageId: 20, seq: 5 } }); emit(6, 'after done');
+  assert.equal(c.chatStreams.get(7).text, 'valid');
+  c.onChatStarted({ payload: { sessionId: 7, messageId: 22, seq: 0 } }); emit(8, 'old run'); emit(1, 'new', 22);
+  assert.equal(c.chatStreams.get(7).text, 'new');
+  const sequence = c.chatStreams.get(7).seq;
+  c.onChatChunk({ payload: { sessionId: 7, messageId: 22, text: 'missing sequence' } });
+  assert.equal(c.chatStreams.get(7).seq, sequence);
+});
+
+test('earlier messages prepend with an anchored scroll position, single flight and deduplication', async () => {
+  const c = streamingPaintContext(); c.view.hasEarlier = true;
+  const load = deferred(); let requests = 0;
+  c.invoke = (command, args) => {
+    requests++; assert.equal(command, 'chat_session_get'); assert.equal(args.sinceSeq, 10); assert.equal(args.limit, 50);
+    return load.promise;
+  };
+  const list = c.el('chat-messages'); list.scrollTop = 0;
+  c.paintChatView = () => { list.scrollHeight += 200; };
+  const loading = c.loadEarlierChat(c.view); await c.loadEarlierChat(c.view); assert.equal(requests, 1);
+  load.resolve({ messages: [{ id: 18, seq: 8 }, { id: 19, seq: 9 }, { id: 20, seq: 10 }] }); await loading;
+  assert.deepEqual(Array.from(c.view.data.messages, row => row.id), [18, 19, 20]);
+  assert.equal(list.scrollTop, 200); assert.equal(c.view.hasEarlier, false); assert.equal(c.view.loadingEarlier, false);
+});
+
+test('pagination replies after navigation are ignored and terminal refresh retains previously loaded pages', async () => {
+  const c = makeContext(); c.view.id = 7; c.view.hasEarlier = true;
+  c.view.data = { messages: [{ id: 10, seq: 10 }] }; const load = deferred(); c.invoke = () => load.promise;
+  const loading = c.loadEarlierChat(c.view); c.chatView = { id: 8 }; load.resolve({ messages: [{ id: 9, seq: 9 }] }); await loading;
+  assert.equal(c.view.data.messages.length, 1);
+  c.chatView = c.view; vm.runInContext(extract('refreshChatView'), c);
+  c.invoke = async () => ({ session: { id: 7 }, messages: [{ id: 60, seq: 60, status: 'done' }] });
+  await c.refreshChatView(c.view);
+  assert.deepEqual(Array.from(c.view.data.messages, row => row.seq), [10, 60]);
+});
+
+test('chunks before a new-session receipt or while hidden are retained without stealing navigation', () => {
+  const c = makeContext(); c.setTimeout = () => 1;
+  c.onChatStarted({ payload: { sessionId: 7, messageId: 20, seq: 0 } });
+  c.onChatChunk({ payload: { sessionId: 7, messageId: 20, seq: 1, text: 'early' } });
+  assert.equal(c.view.id, null); assert.equal(c.chatStreams.get(7).text, 'early');
+  c.right.classList.remove('chat-active');
+  c.onChatChunk({ payload: { sessionId: 7, messageId: 20, seq: 2, text: ' hidden' } });
+  assert.equal(c.chatStreams.get(7).text, 'early hidden');
+  assert.equal(c.right.classList.contains('chat-active'), false);
+});
+
+test('error keeps the partial bubble until persisted reply and does not replace the failure notice with partial output', async () => {
+  const c = streamingPaintContext(); c.setTimeout = () => 1; c.clearTimeout = () => {};
+  c.onChatChunk({ payload: { sessionId: 7, messageId: 20, seq: 1, text: 'partial answer' } }); c.paintChatView(c.view);
+  const bubble = c.el('chat-messages').children[1]; const saved = deferred(); c.invoke = () => saved.promise;
+  vm.runInContext(extract('refreshChatView'), c);
+  c.onChatTerminal({ payload: { sessionId: 7, messageId: 20, seq: 2, error: 'EOF (received 14 characters)' } });
+  assert.equal(c.el('chat-messages').children[1], bubble);
+  assert.equal(c.view.error, 'EOF (received 14 characters)');
+  saved.resolve({ session: { id: 7, scope_json: '{}' }, messages: [{ id: 20, role: 'user', status: 'failed' }, { id: 21, role: 'assistant', status: 'failed', parts_json: '[{"text":"partial answer"},{"text":"persisted EOF"}]' }] });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(c.view.error, 'EOF (received 14 characters)');
+  assert.equal(c.el('chat-messages').children.includes(bubble), false);
+});

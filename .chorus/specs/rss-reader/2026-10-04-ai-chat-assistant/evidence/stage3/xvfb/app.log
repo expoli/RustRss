@@ -1,0 +1,31 @@
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+
+** (rustrss-desktop:3110684): WARNING **: 07:29:43.036: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+2026-10-05T07:29:43.044+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /tmp/rustrss-stage3-smoke/data/rustrss/logs/rustrss-20261005-072943.log
+2026-10-05T07:29:43.046+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /tmp/rustrss-stage3-smoke/db.sqlite
+2026-10-05T07:29:43.046+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: INFO（设置 log.level=""）
+
+(rustrss-desktop:3110684): libayatana-appindicator-WARNING **: 07:29:43.047: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+2026-10-05T07:29:43.156+08:00 INFO  ui: [ui] inline script ran
+2026-10-05T07:29:43.282+08:00 INFO  ui: [ui] app.js start
+2026-10-05T07:29:43.303+08:00 INFO  ui: [ui] i18n selftest ok (keys=646)
+2026-10-05T07:29:43.305+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-10-05T07:29:43.305+08:00 INFO  ui: [ui] menu render selftest FAILED: checked 条目未打勾
+2026-10-05T07:29:43.306+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-10-05T07:29:43.306+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-10-05T07:29:43.353+08:00 INFO  ui: [ui] renderSidebar feeds=0 4ms
+2026-10-05T07:29:43.389+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=0 loaded=0 total=0 totalKind=unread header= exhausted=true head=
+2026-10-05T07:29:43.390+08:00 INFO  ui: [ui] loaded feeds=0 entries=0 unread=0 starred=0 markReadOnNavigate=true refreshInterval=30 refreshOnStart=false notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=16.5px line=1.85 logLevel=info ai=ollama/stage3-mock hasKey=false mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-10-05T07:29:43.391+08:00 INFO  ui: [ui] viewport 0x0 dpr=1
+2026-10-05T07:29:43.394+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=dark bgPanel=#1d1913 minContrast=3.36 ratios=4.47/4.89/5.54/5.69/3.36/3.38/4.24/3.62)
+2026-10-05T07:29:43.394+08:00 INFO  ui: [ui] tags:rows=0 collapsed=0 rects=-
+2026-10-05T07:29:43.413+08:00 INFO  ui: [ui] renderSidebar feeds=0 0ms
+2026-10-05T07:29:43.435+08:00 INFO  ui: [ui] renderSidebar feeds=0 1ms
+2026-10-05T07:29:43.435+08:00 INFO  ui: [ui] viewport 1240x820 dpr=1
+2026-10-05T07:29:48.401+08:00 INFO  ui: [ui] viewport 1239x820 dpr=1
+2026-10-05T07:29:48.419+08:00 INFO  ui: [ui] viewport 1240x820 dpr=1
+2026-10-05T07:29:53.145+08:00 INFO  ui: [ui] renderSidebar feeds=0 0ms
+2026-10-05T07:29:53.825+08:00 INFO  ui: [ui] renderSidebar feeds=0 0ms
+2026-10-05T07:29:55.551+08:00 INFO  ui: [ui] viewport 1239x820 dpr=1
+2026-10-05T07:29:55.569+08:00 INFO  ui: [ui] viewport 1240x820 dpr=1

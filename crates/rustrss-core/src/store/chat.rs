@@ -154,6 +154,17 @@ impl Store {
     }
 
     pub fn get_session(&self, id: i64) -> Result<Option<ChatSession>> {
+        self.get_session_page(id, None, u32::MAX)
+    }
+
+    /// Latest bounded page, or messages strictly before the oldest displayed seq.
+    /// Returned in ascending order; model history continues using get_session.
+    pub fn get_session_page(
+        &self,
+        id: i64,
+        since_seq: Option<i64>,
+        limit: u32,
+    ) -> Result<Option<ChatSession>> {
         let tx = self.conn.unchecked_transaction()?;
         let session = tx
             .query_row(
@@ -166,25 +177,30 @@ impl Store {
             return Ok(None);
         };
         let messages = {
-            let mut stmt = tx.prepare("SELECT m.id,m.session_id,m.seq,m.run_id,m.role,m.status,m.input_tokens,m.output_tokens,m.created_at,b.parts_json FROM chat_messages m JOIN chat_message_bodies b ON b.message_id=m.id WHERE m.session_id=?1 ORDER BY m.seq")?;
+            let mut stmt = tx.prepare("SELECT m.id,m.session_id,m.seq,m.run_id,m.role,m.status,m.input_tokens,m.output_tokens,m.created_at,b.parts_json FROM chat_messages m JOIN chat_message_bodies b ON b.message_id=m.id WHERE m.session_id=?1 AND m.seq < ?2 ORDER BY m.seq DESC LIMIT ?3")?;
             let rows = stmt
-                .query_map([id], |r| {
-                    Ok(ChatMessageRow {
-                        id: r.get(0)?,
-                        session_id: r.get(1)?,
-                        seq: r.get(2)?,
-                        run_id: r.get(3)?,
-                        role: r.get(4)?,
-                        status: r.get(5)?,
-                        usage: ChatUsage {
-                            input_tokens: r.get::<_, Option<i64>>(6)?.map(|v| v as u64),
-                            output_tokens: r.get::<_, Option<i64>>(7)?.map(|v| v as u64),
-                        },
-                        created_at: r.get(8)?,
-                        parts_json: r.get(9)?,
-                    })
-                })?
+                .query_map(
+                    params![id, since_seq.unwrap_or(i64::MAX), limit.max(1)],
+                    |r| {
+                        Ok(ChatMessageRow {
+                            id: r.get(0)?,
+                            session_id: r.get(1)?,
+                            seq: r.get(2)?,
+                            run_id: r.get(3)?,
+                            role: r.get(4)?,
+                            status: r.get(5)?,
+                            usage: ChatUsage {
+                                input_tokens: r.get::<_, Option<i64>>(6)?.map(|v| v as u64),
+                                output_tokens: r.get::<_, Option<i64>>(7)?.map(|v| v as u64),
+                            },
+                            created_at: r.get(8)?,
+                            parts_json: r.get(9)?,
+                        })
+                    },
+                )?
                 .collect::<rusqlite::Result<_>>()?;
+            let mut rows: Vec<ChatMessageRow> = rows;
+            rows.reverse();
             rows
         };
         tx.commit()?;

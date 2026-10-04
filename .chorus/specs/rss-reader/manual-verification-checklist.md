@@ -1397,3 +1397,20 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - OpenAI 兼容、Anthropic、Gemini、Ollama 四家真实 BYOK 检索→取文→回答均**未验证**；签名/降级证据来自 mock，不能冒称真实服务商能力通过。
 - 未运行本批桌面/手机 UI 实机流程；工具过程/能力/降级字段已有 Rust payload，但前端消费下一批实施。可编辑降级检索关键词、来源引用、流式与设备验收仍未完成。
 - 查询按 scope_key 当前源标签成员执行；日报是冻结快照。受限范围 list_tags 暂拒绝 scope_unsupported，而非暴露全库计数。
+
+## 2026-10-05 · 对话助手阶段③ 流式与体验
+
+### 机械验证（已验证）
+- `cargo test --workspace`：610 passed、1 个既有 ignored（基线 588 + 22）；四家成功/断流与流式工具回灌、真实 HTTP 一字节 UTF-8 分包、无终止符/截断事件、重复/乱序容错、include_usage 保守重试、未知用量、体积闸门/超时、长历史分页均通过。
+- `cargo clippy --workspace --all-targets -- -D warnings`：零警告；`cargo build --workspace` 成功。
+- `node --test scripts/tests/*.test.cjs`：89/89，chat-ui 26/26；新增批量 patch/上滚锚点/分页 single flight/迟到身份与序号/终态后 chunk/错误保留回归。
+
+### 桌面 Xvfb 真产物（已验证）
+- 证据常驻仓库：[阶段③记录](2026-10-04-ai-chat-assistant/evidence/stage3/record.md)，含五张截图、JSON 断言、实际脚本和日志。
+- 真 Rust IPC → loopback Ollama NDJSON mock → 未结束部分回答/流式状态/停止可达；文本节点身份不变、内容溢出后的上滚不强制滚底；完整 60 段文本和 usage SQLite 回读；默认最新 50 条真实 IPC 上滚 prepend 至 100 条保持锚点；10 段后 EOF 保留文本/错误/草稿并落库 failed。
+- 二进制重建在 UI 修改之后；独立 HOME/XDG_RUNTIME_DIR/合成库，无付费端点，无强制显示后端变量。
+
+### 未验证 / 环境限制
+- Mock/inspector DOM 动作不是真实 BYOK、原生键盘/指针或手机实机；Android IME/旋转/读屏器、Windows/macOS、Wayland 未验收。zai/glm-5.3-flash 后续真实流式实测由父会话执行。
+- 阶段②工具过程/能力/降级徽章 UI、来源引用仍保留遗留；本批只流模型文本，不流工具执行过程或思考链。
+- 既有菜单 selftest checked 条目失败仍在，无头日志如实记录，未将其算作本批通过项。

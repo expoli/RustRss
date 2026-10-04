@@ -1,0 +1,4 @@
+    Checking rustrss-core v0.6.0 (/home/tcy/Github/RustRss/crates/rustrss-core)
+    Checking rustrss-mcp v0.6.0 (/home/tcy/Github/RustRss/crates/rustrss-mcp)
+    Checking rustrss-desktop v0.6.0 (/home/tcy/Github/RustRss/src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.53s

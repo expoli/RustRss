@@ -4853,7 +4853,9 @@ pub async fn chat_send(
     message: String,
 ) -> R<ChatSendView> {
     use rustrss_core::ai::chat::{ChatBlock, ChatUsage};
-    use rustrss_core::ai::chat_agent::{prepare_local_retrieval, run_agent_turn, ChatCapability};
+    use rustrss_core::ai::chat_agent::{
+        prepare_local_retrieval, run_agent_turn_streaming, ChatCapability,
+    };
     let client = crate::ai::client_from_state(&state)?;
     let turn = state.with_store(|s| {
         rustrss_core::ai::chat_session::prepare_chat_turn(
@@ -4887,18 +4889,31 @@ pub async fn chat_send(
         ) == ChatCapability::Unsupported,
         tool_calls_log: vec![],
     };
-    let payload = serde_json::json!({"sessionId":view.session_id,"messageId":view.message_id,"historyTrimmed":view.history_trimmed,"degraded":view.degraded,"toolCallsLog":view.tool_calls_log});
+    let payload = serde_json::json!({"sessionId":view.session_id,"messageId":view.message_id,"seq":0,"historyTrimmed":view.history_trimmed,"degraded":view.degraded,"toolCallsLog":view.tool_calls_log});
     let _ = app.emit("chat:started", &payload);
-    let _ = app.emit("chat:progress",serde_json::json!({"sessionId":view.session_id,"messageId":view.message_id,"stage":"generating"}));
+    let _ = app.emit("chat:progress",serde_json::json!({"sessionId":view.session_id,"messageId":view.message_id,"seq":1,"stage":"generating"}));
     let initial_degraded = view.degraded;
     tauri::async_runtime::spawn(async move {
         use tauri::Manager;
         // watch 保留取消值：stop 早于 await 时也不会丢失；select 丢弃在途 HTTP future。
         let cancel_snapshot = guard.cancel.clone();
-        let result = chat_until_cancelled(&mut guard.cancel, async {
-            tokio::time::timeout(
+        let event_seq = std::sync::atomic::AtomicU64::new(2);
+        let (delta_tx, mut delta_rx) = tokio::sync::mpsc::unbounded_channel::<String>();
+        let mut received_text = String::new();
+        let mut pending_text = String::new();
+        let emit_chunk = |text: &mut String| {
+            if text.is_empty() {
+                return;
+            }
+            let seq = event_seq.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let _ = app.emit("chat:chunk", serde_json::json!({"sessionId":turn.session_id,"messageId":turn.message_id,"seq":seq,"text":text}));
+            text.clear();
+        };
+        let result = {
+            let request = chat_until_cancelled(&mut guard.cancel, async {
+                tokio::time::timeout(
                 std::time::Duration::from_secs(120),
-                run_agent_turn(
+                run_agent_turn_streaming(
                     &client,
                     turn.request,
                     |name, args| {
@@ -4915,22 +4930,48 @@ pub async fn chat_send(
                     },
                     || *cancel_snapshot.borrow(),
                     |log| {
-                        let _ = app.emit("chat:progress", serde_json::json!({"sessionId":turn.session_id,"messageId":turn.message_id,"stage":"tool","name":log.name,"summary":if log.ok {"completed"} else {"rejected"},"ok":log.ok,"truncated":log.truncated}));
+                        let _ = app.emit("chat:progress", serde_json::json!({"sessionId":turn.session_id,"messageId":turn.message_id,"seq":event_seq.fetch_add(1, std::sync::atomic::Ordering::Relaxed),"stage":"tool","name":log.name,"summary":if log.ok {"completed"} else {"rejected"},"ok":log.ok,"truncated":log.truncated}));
                     },
+                    |text| { let _ = delta_tx.send(text.to_string()); },
                 ),
             )
             .await
             .map_err(|_| "对话回合超时（120 秒）".to_string())
             .and_then(|r| r.map_err(err))
-        })
-        .await;
+            });
+            tokio::pin!(request);
+            let mut ticker = tokio::time::interval(std::time::Duration::from_millis(120));
+            let result = loop {
+                tokio::select! {
+                    biased;
+                    Some(text) = delta_rx.recv() => {
+                        received_text.push_str(&text);
+                        pending_text.push_str(&text);
+                        if pending_text.chars().count() >= 80 { emit_chunk(&mut pending_text); }
+                    }
+                    _ = ticker.tick() => emit_chunk(&mut pending_text),
+                    result = &mut request => break result,
+                }
+            };
+            // A model can deliver its last frame and complete in the same poll.
+            while let Ok(text) = delta_rx.try_recv() {
+                received_text.push_str(&text);
+                pending_text.push_str(&text);
+            }
+            emit_chunk(&mut pending_text);
+            result
+        };
         let mut degraded = initial_degraded;
         let mut degraded_reason = None;
         let mut tool_calls_log = vec![];
         let (status, blocks, usage, error) = match result {
             None => (
                 "cancelled",
-                vec![],
+                if received_text.is_empty() {
+                    vec![]
+                } else {
+                    vec![ChatBlock::Text(received_text.clone())]
+                },
                 ChatUsage::default(),
                 Some("已停止回答".to_string()),
             ),
@@ -4940,12 +4981,16 @@ pub async fn chat_send(
                 tool_calls_log = response.tool_calls_log;
                 ("done", response.final_blocks, response.usage, None)
             }
-            Some(Err(error)) => (
-                "failed",
-                vec![ChatBlock::Text(error.clone())],
-                ChatUsage::default(),
-                Some(error),
-            ),
+            Some(Err(error)) => {
+                let error = format!("{error}（已收到 {} 字符）", received_text.chars().count());
+                let mut blocks = Vec::new();
+                if !received_text.is_empty() {
+                    blocks.push(ChatBlock::Text(received_text.clone()));
+                }
+                // Persist both partial output and the failure, including after restart.
+                blocks.push(ChatBlock::Text(error.clone()));
+                ("failed", blocks, ChatUsage::default(), Some(error))
+            }
         };
         let state = app.state::<AppState>();
         let saved = state.with_store(|s| {
@@ -4963,7 +5008,7 @@ pub async fn chat_send(
             "chat:done"
         };
         drop(guard);
-        let _ = app.emit(event,serde_json::json!({"sessionId":turn.session_id,"messageId":turn.message_id,"assistantMessageId":assistant_id,"status":status,"usage":usage,"blocks":blocks,"error":error,"degraded":degraded,"degradedReason":degraded_reason,"toolCallsLog":tool_calls_log}));
+        let _ = app.emit(event,serde_json::json!({"sessionId":turn.session_id,"messageId":turn.message_id,"assistantMessageId":assistant_id,"seq":event_seq.fetch_add(1, std::sync::atomic::Ordering::Relaxed),"status":status,"usage":usage,"blocks":blocks,"error":error,"degraded":degraded,"degradedReason":degraded_reason,"toolCallsLog":tool_calls_log}));
     });
     Ok(view)
 }
@@ -5005,8 +5050,13 @@ pub fn chat_sessions_list(
 pub fn chat_session_get(
     state: State<'_, AppState>,
     session_id: i64,
+    since_seq: Option<i64>,
+    limit: Option<u32>,
 ) -> R<Option<rustrss_core::store::chat::ChatSession>> {
-    state.with_store(|s| s.get_session(session_id).map_err(err))
+    state.with_store(|s| {
+        s.get_session_page(session_id, since_seq, limit.unwrap_or(50).clamp(1, 200))
+            .map_err(err)
+    })
 }
 
 #[tauri::command]

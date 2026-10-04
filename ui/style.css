@@ -1869,3 +1869,7 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
   .chat-compose textarea { min-height: 60px; max-height: 120px; }
   .chat-message { max-width: 95%; }
 }
+
+/* Stream updates patch this text node only; preserve model newlines safely. */
+.chat-stream-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-stream-state { min-height: 1.4em; margin: .5em 0 0; }

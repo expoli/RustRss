@@ -1481,6 +1481,7 @@ async function openDigestDate(date, scopeKey) {
 let chatView = null;
 const chatDrafts = new Map();
 let chatRefreshSerial = 0;
+const chatStreams = new Map();
 
 function chatScope(session) {
   try { return JSON.parse(session?.scope_json || '{}'); } catch { return {}; }
@@ -1522,9 +1523,7 @@ function buildChatMessage(message, seed, retryText, view) {
   row.innerHTML = seed
     ? `<span class="chat-context">${escapeHtml(t('chat.digestContext'))}</span>`
     : `<div>${escapeHtml(chatText(message)).replace(/\n/g, '<br>')}</div>`;
-  if (message.status === 'running') {
-    row.insertAdjacentHTML('beforeend', `<p class="dim">${escapeHtml(t('chat.running'))}</p>`);
-  } else if (failed && !seed) {
+  if (failed && !seed) {
     row.insertAdjacentHTML('beforeend', `<p>${escapeHtml(t(message.status === 'failed' ? 'chat.error' : 'chat.' + message.status))}</p>`);
     // Completed error turns include both user and assistant; expose retry only once.
     if (message.role === 'assistant' || message.status === 'interrupted') {
@@ -1535,6 +1534,84 @@ function buildChatMessage(message, seed, retryText, view) {
     }
   }
   return row;
+}
+
+function activeChatStream(view) {
+  const run = chatStreams.get(view.id);
+  return run && view.data?.messages.some(message => message.id === run.messageId && message.status === 'running') ? run : null;
+}
+
+function appendChatStreamRow(view, list, existing, desired) {
+  const run = activeChatStream(view);
+  if (!run) return false;
+  const key = `stream:${run.messageId}`;
+  let row = existing.get(key);
+  let changed = false;
+  if (!row) {
+    row = document.createElement('div');
+    row.className = 'chat-message chat-assistant chat-stream';
+    row.dataset.messageId = key;
+    row.innerHTML = '<div class="chat-stream-text"></div><p class="dim chat-stream-state"></p>';
+    changed = true;
+  }
+  const text = row.querySelector('.chat-stream-text');
+  if (text.textContent !== run.text) { text.textContent = run.text; changed = true; }
+  setText(row.querySelector('.chat-stream-state'), t(run.text ? 'chat.streaming' : 'chat.running'));
+  desired.push(row);
+  return changed;
+}
+
+// Keep streams independently of the visible route and command receipt, so a fast
+// first chunk or returning from an article cannot lose already received text.
+function acceptChatEvent(payload, terminal = false, started = false) {
+  if (!Number.isInteger(payload.sessionId) || !Number.isInteger(payload.messageId) || !Number.isInteger(payload.seq)) return null;
+  let run = chatStreams.get(payload.sessionId);
+  if (!run || run.messageId < payload.messageId) {
+    if (!started) return null;
+    if (run?.timer) clearTimeout(run.timer);
+    run = { messageId: payload.messageId, seq: -1, text: '', terminal: false };
+    chatStreams.set(payload.sessionId, run);
+  }
+  if (run.messageId !== payload.messageId || run.terminal || payload.seq <= run.seq) return null;
+  run.seq = payload.seq;
+  run.terminal = terminal;
+  return run;
+}
+
+function onChatStarted(event) {
+  acceptChatEvent(event.payload || {}, false, true);
+}
+
+function onChatChunk(event) {
+  const payload = event.payload || {};
+  if (typeof payload.text !== 'string') return;
+  const run = acceptChatEvent(payload);
+  if (!run) return;
+  run.text += payload.text;
+  if (!run.timer) run.timer = setTimeout(() => {
+    run.timer = null;
+    const view = chatView;
+    if (view?.id === payload.sessionId && chatIsVisible(view)) paintChatView(view);
+  }, 120);
+}
+
+async function loadEarlierChat(view) {
+  if (!chatIsVisible(view) || !view.id || !view.data || view.loadingEarlier || !view.hasEarlier) return;
+  const oldest = view.data.messages[0]?.seq;
+  if (!oldest) return;
+  view.loadingEarlier = true;
+  try {
+    const data = await invoke('chat_session_get', { sessionId: view.id, sinceSeq: oldest, limit: 50 });
+    if (!chatIsVisible(view)) return;
+    const rows = (data?.messages || []).filter(message => !view.data.messages.some(old => old.id === message.id));
+    view.hasEarlier = (data?.messages.length || 0) === 50;
+    const list = el('chat-messages');
+    const height = list.scrollHeight, top = list.scrollTop;
+    view.data.messages.unshift(...rows);
+    paintChatView(view);
+    list.scrollTop = top + list.scrollHeight - height;
+  } catch (error) { if (chatIsVisible(view)) chatError(view, error); }
+  finally { view.loadingEarlier = false; }
 }
 
 function paintChatView(view) {
@@ -1567,6 +1644,7 @@ function paintChatView(view) {
     }
     desired.push(row);
   }
+  messagesChanged = appendChatStreamRow(view, list, existing, desired) || messagesChanged;
   // Keyed reconcile: preserve unchanged bubbles and the user's scroll position.
   for (const row of [...list.children]) if (!desired.includes(row)) { messagesChanged = true; row.remove(); }
   desired.forEach((row, index) => { if (list.children[index] !== row) list.insertBefore(row, list.children[index] || null); });
@@ -1599,13 +1677,17 @@ async function refreshChatView(view) {
   if (!view.id) { paintChatView(view); return; }
   const serial = ++chatRefreshSerial;
   try {
-    const data = await invoke('chat_session_get', { sessionId: view.id });
+    const data = await invoke('chat_session_get', { sessionId: view.id, sinceSeq: null, limit: 50 });
     if (serial !== chatRefreshSerial || !chatIsVisible(view)) return;
     if (!data) { chatError(view, t('chat.notFound')); return; }
+    const previous = view.data?.messages || [];
+    const oldest = data.messages[0]?.seq;
+    data.messages = [...previous.filter(message => oldest && message.seq < oldest), ...data.messages];
+    if (!view.data) view.hasEarlier = data.messages.length === 50;
     view.data = data;
     const last = data.messages.at(-1);
     if (last?.status === 'failed') {
-      view.error = chatText(last) || t('chat.error');
+      view.error = view.error || chatText(last) || t('chat.error');
       view.needSetup = /API.?key|密钥|凭据|模型.*空|model.*empty/i.test(view.error);
       // Immediate completion may precede chat_send's receipt. Recover the draft
       // from the persisted terminal state as well as from completion events.
@@ -1673,6 +1755,7 @@ async function sendChat(view, retryText) {
     chatDrafts.delete(view.id);
     view.id = result.sessionId;
     view.trimmed = result.historyTrimmed;
+    view.messageId = result.messageId;
     view.draft = draft === text ? '' : draft;
     if (view.draft) chatDrafts.set(view.id, view.draft);
     else chatDrafts.delete(view.id);
@@ -1712,6 +1795,7 @@ async function renderChatView(target) {
     <div class="chat-compose"><textarea id="chat-input" rows="3" data-i18n-placeholder="chat.inputPlaceholder" data-i18n-aria-label="chat.inputPlaceholder" placeholder="${t('chat.inputPlaceholder')}" aria-label="${t('chat.inputPlaceholder')}"></textarea>
       <button id="chat-send">${t('chat.send')}</button></div>`;
   el('chat-input').value = view.draft;
+  el('chat-messages').onscroll = () => { if (el('chat-messages').scrollTop < 32) loadEarlierChat(view); };
   el('chat-input').oninput = () => { view.draft = el('chat-input').value; chatDrafts.set(view.id, view.draft); };
   let composing = false;
   el('chat-input').addEventListener('compositionstart', () => { composing = true; });
@@ -1731,6 +1815,9 @@ async function renderChatView(target) {
     try {
       await invoke('chat_session_delete', { sessionId });
       chatDrafts.delete(sessionId);
+      const stream = chatStreams.get(sessionId);
+      if (stream?.timer) clearTimeout(stream.timer);
+      chatStreams.delete(sessionId);
       if (chatIsVisible(view) && view.id === sessionId) renderChatView();
       else if (chatView && chatIsVisible(chatView)) refreshChatHistory(chatView);
     }
@@ -1745,7 +1832,11 @@ async function renderChatView(target) {
 function onChatTerminal(event) {
   const payload = event.payload || {};
   const view = chatView;
+  const run = acceptChatEvent(payload, true);
+  if (!run) return;
+  if (run.timer) { clearTimeout(run.timer); run.timer = null; }
   if (!view || payload.sessionId !== view.id || !chatIsVisible(view)) return;
+  if (view.messageId && view.messageId !== payload.messageId) return;
   if (payload.error) chatError(view, payload.error);
   refreshChatView(view);
   refreshChatHistory(view);
@@ -1770,6 +1861,8 @@ window.RustRssChatBridge = {
   leave: leaveChatView,
   invalidateReader: () => { readerToken++; digestOpenDate = null; },
 };
+window.__TAURI__?.event?.listen('chat:started', onChatStarted).catch(error => log(`listen chat:started failed: ${error.message}`));
+window.__TAURI__?.event?.listen('chat:chunk', onChatChunk).catch(error => log(`listen chat:chunk failed: ${error.message}`));
 for (const event of ['chat:done', 'chat:error']) {
   window.__TAURI__?.event?.listen(event, onChatTerminal).catch(error => log(`listen ${event} failed: ${error.message}`));
 }
