@@ -79,9 +79,8 @@ fn openai_request_tools_and_results_fixture() {
                     {"id":"call_1","type":"function","function":{"name":"get_article","arguments":"{\"id\":7}"}}
                 ]},
                 {"role":"tool","tool_call_id":"call_0","content":"{\"ids\":[7]}"},
-                {"role":"user","content":"搜索完成"},
                 {"role":"tool","tool_call_id":"call_1","content":"{\"data\":null,\"error\":\"未找到\"}"},
-                {"role":"user","content":"继续"}
+                {"role":"user","content":"搜索完成继续"}
             ],
             "tools":[{"type":"function","function":{"name":"search","description":"搜索文章","parameters":schema()}}],
             "max_tokens":4096,"stream":false
@@ -106,13 +105,63 @@ fn anthropic_request_ordered_blocks_fixture() {
                 ]},
                 {"role":"user","content":[
                     {"type":"tool_result","tool_use_id":"call_0","content":"{\"ids\":[7]}","is_error":false},
-                    {"type":"text","text":"搜索完成"},
                     {"type":"tool_result","tool_use_id":"call_1","content":"{\"data\":null,\"error\":\"未找到\"}","is_error":true},
+                    {"type":"text","text":"搜索完成"},
                     {"type":"text","text":"继续"}
                 ]}
             ],
             "tools":[{"name":"search","description":"搜索文章","input_schema":schema()}]
         })
+    );
+}
+
+#[test]
+fn openai_request_tool_results_are_contiguous_before_user_text() {
+    let mut req = request();
+    req.messages[2]
+        .blocks
+        .insert(0, ChatBlock::Text("结果如下".into()));
+    let body = encode_chat_request(Provider::OpenAiCompatible, &req).unwrap();
+    let messages = body["messages"].as_array().unwrap();
+    let assistant_index = messages
+        .iter()
+        .position(|message| message["role"] == "assistant")
+        .unwrap();
+    let calls = messages[assistant_index]["tool_calls"].as_array().unwrap();
+    assert_eq!(calls.len(), 2);
+    for (index, call) in calls.iter().enumerate() {
+        let result = &messages[assistant_index + 1 + index];
+        assert_eq!(result["role"], "tool");
+        assert_eq!(result["tool_call_id"], call["id"]);
+    }
+    assert_eq!(
+        &messages[assistant_index + 1 + calls.len()..],
+        &[json!({"role":"user","content":"结果如下搜索完成继续"})]
+    );
+}
+
+#[test]
+fn anthropic_request_tool_results_precede_all_interleaved_text_in_one_message() {
+    let mut req = request();
+    req.messages[2]
+        .blocks
+        .insert(0, ChatBlock::Text("结果如下".into()));
+    let body = encode_chat_request(Provider::Anthropic, &req).unwrap();
+    let messages = body["messages"].as_array().unwrap();
+    assert_eq!(messages.len(), 3);
+    assert_eq!(messages[2]["role"], "user");
+    let content = messages[2]["content"].as_array().unwrap();
+    assert_eq!(content[0]["type"], "tool_result");
+    assert_eq!(content[0]["tool_use_id"], "call_0");
+    assert_eq!(content[1]["type"], "tool_result");
+    assert_eq!(content[1]["tool_use_id"], "call_1");
+    assert_eq!(
+        &content[2..],
+        &[
+            json!({"type":"text","text":"结果如下"}),
+            json!({"type":"text","text":"搜索完成"}),
+            json!({"type":"text","text":"继续"}),
+        ]
     );
 }
 

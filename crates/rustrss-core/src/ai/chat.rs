@@ -131,7 +131,8 @@ fn call_name<'a>(calls: &'a BTreeMap<String, String>, id: &str) -> Result<&'a st
 
 /// 编码请求体（不含模型名）；工具调用与结果按历史顺序回放。
 /// OpenAI/Ollama 将同一消息内的文本按原序拼接、调用按原序归组；
-/// 工具结果独立成消息。Anthropic/Gemini 原样保留块顺序。
+/// OpenAI 工具结果连续输出，用户文本合并后置；Ollama 工具结果独立成消息。
+/// Anthropic 将工具结果保序归组到同一 user 消息的文本前；Gemini 保留块顺序。
 pub fn encode_chat_request(provider: Provider, request: &ChatRequest) -> Result<Value, AiError> {
     let mut messages = Vec::new();
     let mut calls = BTreeMap::new();
@@ -147,6 +148,7 @@ pub fn encode_chat_request(provider: Provider, request: &ChatRequest) -> Result<
             ChatRole::Assistant => "assistant",
         };
         let mut parts = Vec::new();
+        let mut tool_results = Vec::new();
         let mut text = String::new();
         let mut tool_calls = Vec::new();
         let flat = matches!(provider, Provider::OpenAiCompatible | Provider::Ollama);
@@ -189,8 +191,8 @@ pub fn encode_chat_request(provider: Provider, request: &ChatRequest) -> Result<
                     let data = result_data(data_json, error)?;
                     match provider {
                         Provider::OpenAiCompatible | Provider::Ollama => {
-                            // 结果前的文本先输出，避免跨 tool 消息改变文本顺序。
-                            if !text.is_empty() {
+                            // OpenAI 必须先连续输出全部结果；Ollama 保持原有文本顺序。
+                            if provider == Provider::Ollama && !text.is_empty() {
                                 messages.push(json!({"role": role, "content": std::mem::take(&mut text)}));
                             }
                             if provider == Provider::OpenAiCompatible {
@@ -199,7 +201,7 @@ pub fn encode_chat_request(provider: Provider, request: &ChatRequest) -> Result<
                                 messages.push(json!({"role": "tool", "tool_name": call_name(&calls, call_id)?, "content": data.to_string()}));
                             }
                         }
-                        Provider::Anthropic => parts.push(json!({"type": "tool_result", "tool_use_id": call_id, "content": data.to_string(), "is_error": error.is_some()})),
+                        Provider::Anthropic => tool_results.push(json!({"type": "tool_result", "tool_use_id": call_id, "content": data.to_string(), "is_error": error.is_some()})),
                         Provider::Gemini => {
                             // functionResponse.response 必须是对象；标量/数组结果包进 data。
                             let response = if data.is_object() { data } else { json!({"data": data}) };
@@ -218,6 +220,10 @@ pub fn encode_chat_request(provider: Provider, request: &ChatRequest) -> Result<
                 messages.push(encoded);
             }
         } else {
+            if provider == Provider::Anthropic && !tool_results.is_empty() {
+                tool_results.extend(parts);
+                parts = tool_results;
+            }
             messages.push(if provider == Provider::Gemini {
                 json!({"role": role, "parts": parts})
             } else {
