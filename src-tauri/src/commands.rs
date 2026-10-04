@@ -4115,6 +4115,10 @@ pub struct DigestSectionView {
 pub struct DigestView {
     pub date: String,
     pub has_report: bool,
+    /// 冻结时窗口内候选总数（未生成时也有，供空态提示）
+    pub total_in_window: i64,
+    /// 候选超过单日报量上限被截断
+    pub manifest_truncated: bool,
     pub markdown: Option<String>,
     pub overview: Option<String>,
     pub sections: Vec<DigestSectionView>,
@@ -4188,6 +4192,8 @@ fn digest_view(
     Ok(DigestView {
         date: date.into(),
         has_report: markdown.is_some(),
+        total_in_window: status.candidate_count,
+        manifest_truncated: status.candidate_count > rustrss_core::store::digest::MANIFEST_MAX_ENTRIES as i64,
         markdown,
         overview,
         sections,
@@ -4293,15 +4299,18 @@ struct DigestJobGuard {
 }
 
 impl DigestJobGuard {
-    fn new(job_id: String) -> Self {
-        digest_jobs()
-            .lock()
-            .unwrap()
-            .insert(
-                job_id.clone(),
-                std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
-            );
-        Self { job_id }
+    /// 原子抢占：互斥锁内完成「查槽 + 插任务」，两个并发受理只有一个成功
+    /// （审核 P1-单飞：检查与占位不再分属两次锁）。
+    fn claim(job_id: String) -> Result<Self, ()> {
+        let mut map = digest_jobs().lock().unwrap();
+        if map.contains_key(&job_id) {
+            return Err(());
+        }
+        map.insert(
+            job_id.clone(),
+            std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        );
+        Ok(Self { job_id })
     }
     fn cancelled(&self) -> bool {
         digest_jobs()
@@ -4355,9 +4364,6 @@ pub async fn digest_generate(
         let tag_ids = digest_scope_tag_ids(s)?;
         let scope = DigestScope::resolve(s, &tag_ids).map_err(err)?;
         let bounds = rustrss_core::store::digest::local_day_bounds(&date).map_err(err)?;
-        if let Some(active) = s.digest_active_job(&date, &scope.key).map_err(err)? {
-            return Err(format!("该日期的日报正在生成中（任务 {active}）"));
-        }
         let manifest = s
             .freeze_manifest(bounds.start, bounds.end, scope.feed_ids.as_deref())
             .map_err(err)?;
@@ -4395,21 +4401,31 @@ pub async fn digest_generate(
         });
     }
 
-    let job_id = format!("digest:{}:{}", date, &manifest.pairs_hash[..12]);
+    // 任务身份含范围与配置档案：不同范围/配置互不冒充（审核 P1-单飞）
+    let slot_stamp = &rustrss_core::store::digest::sha256_hex_of(&[
+        &scope.key,
+        &profile_key,
+        &manifest.pairs_hash,
+    ])[..12];
+    let job_id = format!("digest:{date}:{slot_stamp}");
+    // 注册表抢占 = 在飞权威；成功后才写槽（无条件覆盖崩溃残留的 active_job_id）
+    let guard = DigestJobGuard::claim(job_id.clone())
+        .map_err(|_| "该日期的日报正在生成中".to_string())?;
     state.with_store(|s| {
         s.digest_slot_begin(
             &date,
             &scope.key,
+            &s.scope_json_for(&scope.tag_ids),
             &profile_key,
             &profile_json.to_string(),
             bounds.start,
             bounds.end,
+            bounds.offset_start,
+            bounds.offset_end,
             &job_id,
         )
         .map_err(err)
     })?;
-    let guard = DigestJobGuard::new(job_id.clone());
-
     let _ = app.emit(
         "digest:started",
         serde_json::json!({ "jobId": job_id, "date": date,
@@ -4530,7 +4546,7 @@ pub async fn digest_generate(
                 "group",
                 &date,
                 &language,
-                &ai_cfg.cache_tag(),
+                &endpoint,
                 &[&titles.join("\u{1f}"), &parts.join("\u{1e}")],
             );
             let cached = state
@@ -4575,7 +4591,7 @@ pub async fn digest_generate(
             "final",
             &date,
             &language,
-            &ai_cfg.cache_tag(),
+            &endpoint,
             &[&manifest.pairs_hash, &sections.join("\u{1e}")],
         );
         let cached_final =
@@ -4626,7 +4642,7 @@ pub async fn digest_generate(
                 &date, "Local", bounds.start, bounds.end,
                 &scope.key, &s.scope_json_for(&scope.tag_ids),
                 &profile_key, &profile_json.to_string(),
-                &manifest.hash, &manifest.pairs_hash,
+                &manifest.hash, &manifest.pairs_hash, &scope.tag_ids,
                 manifest.frozen_at,
                 bounds.offset_start, bounds.offset_end,
                 &content_json, &markdown, 1, &stats.to_string(),

@@ -140,6 +140,7 @@ pub fn node_key(kind: &str, day: &str, language: &str, config_tag: &str, parts: 
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(b"digest-node-v1");
+    hasher.update(crate::ai::prompt::PROMPT_VERSION.as_bytes());
     hasher.update(kind.as_bytes());
     hasher.update(day.as_bytes());
     hasher.update(language.as_bytes());

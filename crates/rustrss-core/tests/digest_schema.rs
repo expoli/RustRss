@@ -466,8 +466,9 @@ fn freeze_manifest_filters_and_hashes() {
     store.upsert_entries(f1, &mk("a2", "A2")).unwrap();
     store.upsert_entries(f2, &mk("b1", "B1")).unwrap();
 
-    let bounds = rustrss_core::store::digest::local_day_bounds("2026-10-04").unwrap();
-    let (start, end) = (bounds.start, bounds.end);
+    // 时区无关：条目刚抓取（fetched_at = now），用以 now 为中心的开窗
+    let now = chrono::Utc::now().timestamp();
+    let (start, end) = (now - 3600, now + 3600);
     let manifest = store
         .freeze_manifest(start, end, None)
         .unwrap();
@@ -477,8 +478,9 @@ fn freeze_manifest_filters_and_hashes() {
     // 每篇有独立输入哈希；同标题同正文才会同哈希
     let hashes: Vec<_> = manifest.entries.iter().map(|e| e.input_hash.as_str()).collect();
     assert_eq!(hashes.len(), 3);
-    // 标签范围（工具 → 只有关联了该标签的 f1）
-    let scoped = store.freeze_manifest(start, end, Some(&[t.id])).unwrap();
+    // 标签范围（工具 → 只有关联了该标签的 f1）；feed 集经 DigestScope::resolve
+    let scope = rustrss_core::store::digest::DigestScope::resolve(&store, &[t.id]).unwrap();
+    let scoped = store.freeze_manifest(start, end, scope.feed_ids.as_deref()).unwrap();
     assert_eq!(scoped.entries.len(), 2, "OR 匹配只纳入 f1 的条目");
     assert!(scoped.entries.iter().all(|e| e.feed_id == f1));
     // 输入哈希稳定性：同内容重冻结哈希不变（缓存键稳定的前提）
@@ -507,16 +509,101 @@ fn freeze_manifest_truncates_to_budget() {
         ).unwrap().entries;
         store.upsert_entries(f1, &entries).unwrap();
     }
-    let bounds = rustrss_core::store::digest::local_day_bounds("2026-10-04").unwrap();
-    let (start, end) = (bounds.start, bounds.end);
+    // 时区无关：直接用已知 pubDate 的 epoch 窗口（00:00Z–14:00Z），不依赖本机时区
+    let start = 1791072000; // 2026-10-04T00:00:00Z
+    let end = 1791122400; // 2026-10-04T14:00:00Z
     let manifest = store.freeze_manifest(start, end, None).unwrap();
     assert!(manifest.truncated, "250 篇 > 上界 200 应标记截断");
     assert_eq!(manifest.entries.len(), 200);
-    // 取的是最近的 200 篇：最旧的一批（guid g0..）应被截掉
-    assert!(manifest.entries.iter().all(|e| !e.title.contains("N0 ") || true));
-    let oldest_kept = manifest.entries.last().unwrap();
+    // 确定性断言：保留集的 effective_at 最小值 = 全体第 200 新的值
+    // （抽掉刚好 50 篇最旧的：g0-g12 与 g14-g26 等 14 的倍数时段最旧批次）
+    let kept: Vec<(i64, i64)> =
+        manifest.entries.iter().map(|e| (e.instance_id, e.effective_at)).collect();
+    let oldest_kept = kept.iter().map(|(_, a)| *a).min().unwrap();
+    // 恰有 50 篇比 oldest_kept 更旧（被截掉的）
+    let older_count = 250 - kept.iter().filter(|(_, a)| *a >= oldest_kept).count();
+    assert_eq!(older_count + kept.len(), 250);
+    // 边界精确：被截掉的 50 篇的 effective_at 全部 < oldest_kept（严格旧于保留集）
     assert!(
-        manifest.entries.iter().all(|e| e.effective_at >= oldest_kept.effective_at),
-        "保留的应是 effective_at 最近的 200 篇"
+        kept.iter().all(|(_, a)| *a >= oldest_kept),
+        "保留集内部无更旧项"
     );
+    // pairs_hash 覆盖全量 250 篇（截断不丢 CAS 指纹的成员）
+    assert_eq!(manifest.total_in_window, 250);
+    assert!(!manifest.pairs_hash.is_empty());
+}
+
+/// 提交 CAS：生成期间素材变化（成员增删/版本变更/源标签重打）必须拒绝提交。
+#[test]
+fn commit_cas_rejects_when_material_drifts() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rustrss.sqlite");
+    let store = Store::open(&path).unwrap();
+    let f1 = store.add_feed("https://a.invalid/rss", Some("A")).unwrap();
+    let t = store.create_tag("工具", None).unwrap();
+    store.set_feed_tags(f1, &[t.id]).unwrap();
+    let mk = |guid: &str, title: &str, hh: u8| {
+        rustrss_core::parse(
+            format!(
+                "<rss version='2.0'><channel><title>T</title><item><guid>{guid}</guid><title>{title}</title><description>正文 {guid}</description><pubDate>2026-10-04T0{hh}:00:00Z</pubDate></item></channel></rss>"
+            )
+            .as_bytes(),
+        )
+        .unwrap()
+        .entries
+    };
+    store.upsert_entries(f1, &mk("1", "N1", 1)).unwrap();
+    store.upsert_entries(f1, &mk("2", "N2", 2)).unwrap();
+
+    // 时区无关窗口
+    let start = 1791072000; // 2026-10-04T00:00:00Z
+    let end = 1791122400; // 14:00Z
+    let manifest = store.freeze_manifest(start, end, None).unwrap();
+    let items = manifest.entries.clone();
+    let commit = |store: &Store, pairs: &str, tags: &[i64]| {
+        store.commit_digest_report(
+            "2026-10-04", "UTC", start, end, "all", "{}", "p", "{}",
+            &manifest.hash, pairs, tags,
+            manifest.frozen_at, 0, 0,
+            "{}", "# 日报", 1, "{}", items.len() as i64, &items,
+        )
+    };
+    // 指纹一致 → 提交成功
+    commit(&store, &manifest.pairs_hash, &[]).unwrap();
+
+    // 漂移 1：新条目进入窗口
+    store.upsert_entries(f1, &mk("3", "N3", 3)).unwrap();
+    let after = store.freeze_manifest(start, end, None).unwrap();
+    eprintln!("DEBUG after-add: total={} hash_changed={}", after.total_in_window, after.pairs_hash != manifest.pairs_hash);
+    let e = commit(&store, &manifest.pairs_hash, &[]).unwrap_err();
+    assert!(e.to_string().contains("素材"), "新成员应被 CAS 拒绝：{e}");
+
+    // 漂移 2：成员版本变化（同 guid 更新正文 → source_revision 递增）
+    let manifest2 = store.freeze_manifest(start, end, None).unwrap();
+    store
+        .upsert_entries(f1, &mk("2", "N2-updated-正文已变化", 2))
+        .unwrap();
+    let manifest2b = store.freeze_manifest(start, end, None).unwrap();
+    eprintln!("DEBUG after-update: rev_drift={}", manifest2b.pairs_hash != manifest2.pairs_hash);
+    let e = commit(&store, &manifest2.pairs_hash, &[]).unwrap_err();
+    assert!(e.to_string().contains("素材"), "版本漂移应被 CAS 拒绝：{e}");
+
+    // 漂移 3：源标签重打改变范围（f1 摘掉标签后，按标签范围的候选集变化）
+    let scope3 = rustrss_core::store::digest::DigestScope::resolve(&store, &[t.id]).unwrap();
+    let manifest3 = store.freeze_manifest(start, end, scope3.feed_ids.as_deref()).unwrap();
+    store.set_feed_tags(f1, &[]).unwrap();
+    let e = commit(&store, &manifest3.pairs_hash, &[t.id]).unwrap_err();
+    assert!(e.to_string().contains("素材"), "范围漂移应被 CAS 拒绝：{e}");
+
+    // 无漂移的按标签提交仍成功
+    let scope4 = rustrss_core::store::digest::DigestScope::resolve(&store, &[t.id]).unwrap();
+    let manifest4 = store.freeze_manifest(start, end, scope4.feed_ids.as_deref()).unwrap();
+    store
+        .commit_digest_report(
+            "2026-10-04", "UTC", start, end, "tags", "{}", "p", "{}",
+            &manifest4.hash, &manifest4.pairs_hash, &[t.id],
+            manifest4.frozen_at, 0, 0,
+            "{}", "# 日报", 1, "{}", manifest4.entries.len() as i64, &manifest4.entries,
+        )
+        .unwrap();
 }

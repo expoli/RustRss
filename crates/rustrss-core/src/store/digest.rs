@@ -394,6 +394,11 @@ pub struct Manifest {
     pub truncated: bool,
 }
 
+/// 对若干字符串片段做 sha256 十六进制（桌面层拼接任务身份用）。
+pub fn sha256_hex_of(parts: &[&str]) -> String {
+    sha256_hex(parts)
+}
+
 pub(crate) fn sha256_hex(parts: &[&str]) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
@@ -410,6 +415,38 @@ impl Store {
     ///
     /// 候选 id 走 `digest_entry_meta` 覆盖索引；正文按 id 逐条取——只在冻结与
     /// 要点生成时发生，不是状态检查路径。
+    /// 候选集查询（freeze 与 CAS 同源）：窗口 + 范围，返回全量 (instance_id, source_revision) 对。
+    fn digest_candidate_pairs(
+        &self,
+        day_start: i64,
+        day_end: i64,
+        feed_ids: Option<&[i64]>,
+    ) -> super::Result<Vec<(i64, i64)>> {
+        let mut sql = String::from(
+            "SELECT m.instance_id, m.source_revision
+               FROM digest_entry_meta m
+              WHERE m.effective_at >= ?1 AND m.effective_at < ?2",
+        );
+        if let Some(ids) = feed_ids {
+            let placeholders = vec!["?"; ids.len()].join(",");
+            sql.push_str(&format!(" AND m.feed_id IN ({placeholders})"));
+        }
+        sql.push_str(" ORDER BY m.effective_at DESC, m.instance_id DESC");
+        let mut stmt = self.conn.prepare(&sql)?;
+        let mut bind: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(day_start), Box::new(day_end)];
+        if let Some(ids) = feed_ids {
+            for id in ids {
+                bind.push(Box::new(*id));
+            }
+        }
+        let pairs = stmt
+            .query_map(rusqlite::params_from_iter(bind.iter().map(|b| b.as_ref())), |r| {
+                Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?))
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(pairs)
+    }
+
     pub fn freeze_manifest(
         &self,
         day_start: i64,
@@ -443,6 +480,12 @@ impl Store {
             .collect::<rusqlite::Result<Vec<_>>>()?;
         let total_in_window = candidates.len() as i64;
         drop(stmt);
+
+        // 全量对指纹（CAS + pairs_hash）：与 picked 集合同源但不含 LIMIT——
+        // feed_tags 变化改变候选集，指纹随之变化（审核 P1-2）
+        let all_pairs: Vec<(i64, i64)> =
+            candidates.iter().map(|(i, _e, _f, r, _a)| (*i, *r)).collect();
+        let pairs_hash = manifest_pairs_hash_of(&all_pairs);
 
         // 预算截断：只取最近的 N 篇（明确的缩小范围，total_in_window 交代全量）
         let picked: Vec<_> = candidates.iter().take(MANIFEST_MAX_ENTRIES).collect();
@@ -486,9 +529,6 @@ impl Store {
 
         let total = entries.len() as i64;
         let hash = manifest_hash_of(&entries);
-        let pairs_hash = manifest_pairs_hash_of(
-            &entries.iter().map(|e| (e.instance_id, e.source_revision)).collect::<Vec<_>>(),
-        );
         Ok(Manifest {
             entries,
             hash,
@@ -587,6 +627,7 @@ impl Store {
         profile_json: &str,
         manifest_hash: &str,
         expected_pairs_hash: &str,
+        scope_tag_ids: &[i64],
         checkpoint_at: i64,
         utc_offset_start: i32,
         utc_offset_end: i32,
@@ -601,18 +642,25 @@ impl Store {
         let now = chrono::Utc::now().timestamp();
         // 提交 CAS（审核 P1-2）：事务内重算当前「成员身份+版本对」指纹，
         // 与冻结时不一致 = 生成期间素材又变了 → 拒绝覆盖旧报告。
-        // 闭包作用域兜住 stmt 借用：错误路径不再把借用带出块外（E0597）
-        let current_pairs: Vec<(i64, i64)> = (|| {
-            let mut stmt = tx.prepare(
-                "SELECT instance_id, source_revision FROM digest_entry_meta
-                  WHERE effective_at >= ?1 AND effective_at < ?2",
-            )?;
-            let rows = stmt.query_map(params![day_start, day_end], |r| {
-                Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?))
-            })?;
-            rows.collect::<rusqlite::Result<Vec<_>>>()
-        })()
-        .map_err(super::StoreError::Sqlite)?;
+        // 同源规则：与 freeze 相同的窗口/范围/排序；标签范围在此事务内
+        // 重新解析 feed_tags（源打标变化 → 候选集变化 → 指纹变化）。
+        let scope_feed_ids: Option<Vec<i64>> = if scope_tag_ids.is_empty() {
+            None
+        } else {
+            let placeholders = vec!["?"; scope_tag_ids.len()].join(",");
+            let sql = format!(
+                "SELECT DISTINCT feed_id FROM feed_tags WHERE tag_id IN ({placeholders})"
+            );
+            let mut stmt = tx.prepare(&sql)?;
+            let ids = stmt
+                .query_map(rusqlite::params_from_iter(scope_tag_ids.iter()), |r| r.get(0))?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            Some(ids)
+        };
+        let current_pairs = {
+            let _tx_guard = &tx; // 借用检查：pairs 查询在事务提交前
+            self.digest_candidate_pairs(day_start, day_end, scope_feed_ids.as_deref())?
+        };
         if manifest_pairs_hash_of(&current_pairs) != expected_pairs_hash {
             return Err(super::StoreError::Invalid(
                 "日报素材在生成期间又发生了变化，请再次「更新日报」".into(),
@@ -632,7 +680,11 @@ impl Store {
                  generated_at = excluded.generated_at,
                  manifest_hash = excluded.manifest_hash,
                  article_count = excluded.article_count,
-                 stats_json = excluded.stats_json",
+                 stats_json = excluded.stats_json,
+                 scope_json = excluded.scope_json,
+                 profile_json = excluded.profile_json,
+                 utc_offset_start = excluded.utc_offset_start,
+                 utc_offset_end = excluded.utc_offset_end",
             params![
                 report_day, timezone_label, day_start, day_end,
                 utc_offset_start, utc_offset_end,
@@ -700,22 +752,26 @@ impl Store {
         &self,
         date: &str,
         scope_key: &str,
-        profile_key: &str,
         scope_json: &str,
+        profile_key: &str,
+        profile_json: &str,
         day_start: i64,
         day_end: i64,
+        utc_offset_start: i32,
+        utc_offset_end: i32,
         job_id: &str,
     ) -> super::Result<()> {
         self.conn.execute(
             "INSERT INTO digests(report_day, timezone_label, day_start_at, day_end_at,
                  utc_offset_start, utc_offset_end, date_basis, scope_key, scope_json,
                  profile_key, profile_json, revision, active_job_id, created_at)
-             VALUES(?1, 'Local', ?2, ?3, 0, 0, 'published_or_first_seen_v1', ?4, ?5,
-                 ?6, '{}', 0, ?7, ?8)
+             VALUES(?1, 'Local', ?2, ?3, ?4, ?5, 'published_or_first_seen_v1', ?6, ?7,
+                 ?8, ?9, 0, ?10, ?11)
              ON CONFLICT(report_day, day_start_at, day_end_at, date_basis,
                  scope_key, profile_key) DO UPDATE SET
                  active_job_id = excluded.active_job_id",
-            params![date, day_start, day_end, scope_key, scope_json, profile_key, job_id,
+            params![date, day_start, day_end, utc_offset_start, utc_offset_end,
+                scope_key, scope_json, profile_key, profile_json, job_id,
                 chrono::Utc::now().timestamp()],
         )?;
         Ok(())
