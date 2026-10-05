@@ -2201,7 +2201,10 @@ async function afterFeedTagChange() {
 async function afterFeedTagChangeInner(shown, token, gen) {
   // 参数为调用时刻快照（token/gen 守卫语义见 afterFeedTagChange）。
   const readerTags = shown ? invoke('get_entry', { id: shown.id }) : Promise.resolve(null);
-  await Promise.all([
+  // allSettled：任一分支 reject 都不得提前结束本次回读（否则队列放行下一次，
+  // 本次的 cache/counts 迟到响应会覆盖新值——评审复现的失败路径）；等全部
+  // settle 后再重抛首个 rejection（错误语义保持）。
+  const results = await Promise.allSettled([
     refreshTagCache(),
     refreshCounts(),
     ['digest', 'chat'].includes(state.view.kind) ? Promise.resolve() : loadEntries({ reader: false, reuseRows: true }),
@@ -2212,6 +2215,8 @@ async function afterFeedTagChangeInner(shown, token, gen) {
       }
     }),
   ]);
+  const firstRejected = results.find((r) => r.status === 'rejected');
+  if (firstRejected) throw firstRejected.reason;
 }
 
 /** 给条目附加/取消一个标签（选择器行与 Enter 确认都走这里，幂等由 core 保证） */
