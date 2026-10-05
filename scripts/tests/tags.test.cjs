@@ -62,14 +62,14 @@ for (const changedReader of [false, true]) {
     let resolve;
     const pending = new Promise(r => { resolve = r; });
     const shown = { id: 7, tags: [] };
-    const ctx = vm.createContext({ state: { readerEntry: shown, view: { kind: 'tag' } }, readerToken: 1,
+    const ctx = vm.createContext({ state: { readerEntry: shown, view: { kind: 'tag' } }, readerToken: 1, tagGeneration: 1,
       invoke: (cmd, args) => { calls.push([cmd, args]); return pending; },
       refreshTagCache: async () => calls.push(['cache']), refreshCounts: async () => calls.push(['counts']),
       loadEntries: async args => calls.push(['list', args]), setEntryTags: (id, tags) => calls.push(['tags', id, tags]),
       patchReaderTags: () => calls.push(['chips']) });
     vm.runInContext(extract('afterFeedTagChange'), ctx);
     const task = vm.runInContext('afterFeedTagChange()', ctx);
-    if (changedReader) { ctx.state.readerEntry = { id: 8 }; ctx.readerToken++; }
+    if (changedReader) { ctx.state.readerEntry = { id: 8 }; ctx.readerToken++; ctx.tagGeneration++; }
     resolve({ id: 7, tags: [{ id: 1, source: 'feed' }] });
     await task;
     assert.ok(calls.some(c => c[0] === 'cache'));
@@ -96,7 +96,7 @@ test('feed-tag reread uses keyed existing list nodes and patches only chips', ()
 });
 test('feed tags do not load an article list over the digest or chat view', async () => {
   for (const kind of ['digest', 'chat']) {
-    const ctx = vm.createContext({ state: { view: { kind }, readerEntry: null }, readerToken: 1,
+    const ctx = vm.createContext({ state: { view: { kind }, readerEntry: null }, readerToken: 1, tagGeneration: 1,
       refreshTagCache: async () => {}, refreshCounts: async () => {}, loadEntries: () => assert.fail('article list requested') });
     vm.runInContext(extract('afterFeedTagChange'), ctx);
     await vm.runInContext('afterFeedTagChange()', ctx);
