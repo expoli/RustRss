@@ -320,3 +320,66 @@ async fn billing_exhaustion_reported_as_429_is_not_retried() {
     assert!(outputs[0].as_ref().unwrap().is_err());
     assert_eq!(attempts.load(Ordering::SeqCst), 1);
 }
+
+#[tokio::test(start_paused = true)]
+async fn later_higher_configuration_recovers_shared_ramp_after_first_task_exits() {
+    let started = Arc::new(tokio::sync::Notify::new());
+    let release = Arc::new(tokio::sync::Notify::new());
+    let first = tokio::spawn({
+        let started = started.clone();
+        let release = release.clone();
+        async move {
+            DigestExtractionScheduler::new("test-config-cap", 1, flag())
+                .run(
+                    vec![0],
+                    move |_| {
+                        let started = started.clone();
+                        let release = release.clone();
+                        async move {
+                            started.notify_one();
+                            release.notified().await;
+                            Ok("first".into())
+                        }
+                    },
+                    |_, _| {},
+                )
+                .await
+        }
+    });
+    started.notified().await;
+    let active = Arc::new(AtomicUsize::new(0));
+    let peak = Arc::new(AtomicUsize::new(0));
+    let second = tokio::spawn({
+        let active = active.clone();
+        let peak = peak.clone();
+        async move {
+            DigestExtractionScheduler::new("test-config-cap/", 4, flag())
+                .run(
+                    (0..24).collect(),
+                    move |i: usize| {
+                        let active = active.clone();
+                        let peak = peak.clone();
+                        async move {
+                            let n = active.fetch_add(1, Ordering::SeqCst) + 1;
+                            peak.fetch_max(n, Ordering::SeqCst);
+                            tokio::time::sleep(Duration::from_millis(10)).await;
+                            active.fetch_sub(1, Ordering::SeqCst);
+                            Ok(i.to_string())
+                        }
+                    },
+                    |_, _| {},
+                )
+                .await
+        }
+    });
+    // Poll B through registration while A still owns the first shared slot.
+    tokio::task::yield_now().await;
+    release.notify_one();
+    assert!(first.await.unwrap()[0].as_ref().unwrap().is_ok());
+    assert!(second
+        .await
+        .unwrap()
+        .iter()
+        .all(|o| o.as_ref().unwrap().is_ok()));
+    assert_eq!(peak.load(Ordering::SeqCst), 4);
+}

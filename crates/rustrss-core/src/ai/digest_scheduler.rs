@@ -16,10 +16,23 @@ struct Budget {
     next_task: u64,
     in_flight: usize,
     level: usize,
-    rate_cap: usize,
+    config_cap: usize,
+    throttle_cap: Option<usize>,
     successes: usize,
     throttles: u32,
     cooldown: Option<Instant>,
+}
+
+impl Budget {
+    fn effective_cap(&self) -> usize {
+        self.config_cap
+            .min(self.throttle_cap.unwrap_or(self.config_cap))
+    }
+
+    fn recompute_config_cap(&mut self) {
+        self.config_cap = self.tasks.values().copied().max().unwrap_or(0);
+        self.level = self.level.max(1).min(self.effective_cap());
+    }
 }
 
 #[derive(Default)]
@@ -28,15 +41,59 @@ struct Limiter {
     changed: Notify,
 }
 
-fn endpoint_limiter(endpoint: &str) -> Arc<Limiter> {
-    static LIMITERS: OnceLock<Mutex<HashMap<String, Arc<Limiter>>>> = OnceLock::new();
+#[derive(Default)]
+struct EndpointRegistry {
+    limiters: HashMap<String, Arc<Limiter>>,
+}
+
+impl EndpointRegistry {
+    fn register(&mut self, endpoint: &str, concurrency: usize) -> Registration {
+        let now = Instant::now();
+        self.limiters.retain(|_, limiter| {
+            let b = limiter.budget.lock().unwrap();
+            // Outstanding handles (including draining workers) must never be
+            // orphaned from the registry, allowing a second limiter to coexist.
+            Arc::strong_count(limiter) > 1
+                || !b.tasks.is_empty()
+                || b.in_flight > 0
+                || b.cooldown.is_some_and(|until| until > now)
+        });
+        let limiter = self
+            .limiters
+            .entry(endpoint.trim().trim_end_matches('/').to_owned())
+            .or_default()
+            .clone();
+        let id = {
+            let mut b = limiter.budget.lock().unwrap();
+            if b.tasks.is_empty() && b.in_flight == 0 {
+                b.level = 1;
+                b.successes = 0;
+                if b.cooldown.is_none_or(|until| until <= now) {
+                    b.throttle_cap = None;
+                    b.throttles = 0;
+                    b.cooldown = None;
+                }
+            }
+            b.next_task += 1;
+            let id = b.next_task;
+            b.tasks.insert(id, concurrency);
+            b.recompute_config_cap();
+            id
+        };
+        limiter.changed.notify_waiters();
+        Registration { limiter, id }
+    }
+}
+
+fn endpoint_registration(endpoint: &str, concurrency: usize) -> Registration {
+    static LIMITERS: OnceLock<Mutex<EndpointRegistry>> = OnceLock::new();
+    // Lookup, cleanup and task insertion share one lock: no unregistered Arc
+    // can escape between lookup and insertion and be replaced by cleanup.
     LIMITERS
         .get_or_init(Default::default)
         .lock()
         .unwrap()
-        .entry(endpoint.trim().trim_end_matches('/').to_owned())
-        .or_default()
-        .clone()
+        .register(endpoint, concurrency)
 }
 
 fn retryable_throttle(error: &AiError) -> bool {
@@ -76,7 +133,11 @@ struct Registration {
 
 impl Drop for Registration {
     fn drop(&mut self) {
-        self.limiter.budget.lock().unwrap().tasks.remove(&self.id);
+        {
+            let mut b = self.limiter.budget.lock().unwrap();
+            b.tasks.remove(&self.id);
+            b.recompute_config_cap();
+        }
         self.limiter.changed.notify_waiters();
     }
 }
@@ -99,7 +160,7 @@ impl Permit {
                     .checked_add(delay)
                     .unwrap_or_else(|| Instant::now() + Duration::from_secs(365 * 24 * 3600));
                 b.cooldown = Some(b.cooldown.map_or(until, |old| old.max(until)));
-                b.rate_cap = (b.rate_cap / 2).max(1);
+                b.throttle_cap = Some((b.effective_cap() / 2).max(1));
                 b.level = 1;
                 b.successes = 0;
             }
@@ -107,7 +168,7 @@ impl Permit {
                 b.throttles = 0;
                 b.successes += 1;
                 if b.successes == 3 {
-                    b.level = (b.level + 1).min(b.rate_cap);
+                    b.level = (b.level + 1).min(b.effective_cap());
                     b.successes = 0;
                 }
             }
@@ -136,9 +197,8 @@ impl Limiter {
             }
             {
                 let mut b = self.budget.lock().unwrap();
-                let ceiling = b.tasks.values().copied().min().unwrap_or(1);
                 let cooling = b.cooldown.is_some_and(|until| until > Instant::now());
-                if !cooling && b.in_flight < b.level.min(b.rate_cap).min(ceiling) {
+                if !cooling && b.in_flight < b.level.min(b.effective_cap()) {
                     // No await between cancellation check, admission and HTTP start.
                     if cancel.load(Ordering::Relaxed) {
                         return None;
@@ -164,7 +224,8 @@ pub struct DigestExtractionScheduler {
 
 impl DigestExtractionScheduler {
     /// Use the service base URL, not the model-dependent cache identity. Active
-    /// tasks with different settings share the smallest requested endpoint cap.
+    /// tasks with different settings share the largest active endpoint cap;
+    /// each task still respects its own configured concurrency.
     pub fn new(endpoint: &str, concurrency: usize, cancel: Arc<AtomicBool>) -> Self {
         Self {
             endpoint: endpoint.into(),
@@ -189,26 +250,8 @@ impl DigestExtractionScheduler {
         C: FnMut(usize, &Result<String, AiError>),
         T: Clone,
     {
-        let limiter = endpoint_limiter(&self.endpoint);
-        let id = {
-            let mut b = limiter.budget.lock().unwrap();
-            if b.tasks.is_empty() {
-                b.level = 1;
-                b.successes = 0;
-                if b.cooldown.is_none_or(|until| until <= Instant::now()) {
-                    b.rate_cap = self.concurrency;
-                    b.throttles = 0;
-                }
-            }
-            b.next_task += 1;
-            let id = b.next_task;
-            b.tasks.insert(id, self.concurrency);
-            id
-        };
-        let _registration = Registration {
-            limiter: limiter.clone(),
-            id,
-        };
+        let registration = endpoint_registration(&self.endpoint, self.concurrency);
+        let limiter = registration.limiter.clone();
         let mut results: Vec<_> = (0..items.len()).map(|_| None).collect();
         let mut pending = items.into_iter().enumerate();
         let mut running = JoinSet::new();
@@ -278,13 +321,100 @@ impl DigestExtractionScheduler {
 mod tests {
     use super::*;
 
+    #[test]
+    fn endpoint_registry_reclaims_idle_records_on_registration() {
+        let mut registry = EndpointRegistry::default();
+        let registration = registry.register("test-registry-idle", 1);
+        let handle = registration.limiter.clone();
+        let weak = Arc::downgrade(&handle);
+        drop(registration);
+        let reused = registry.register("test-registry-idle/", 4);
+        assert!(
+            Arc::ptr_eq(&handle, &reused.limiter),
+            "live idle handle reused"
+        );
+        drop(reused);
+        drop(handle);
+        let _other = registry.register("test-registry-cleanup", 1);
+        assert!(weak.upgrade().is_none(), "idle endpoint must be reclaimed");
+        assert!(!registry.limiters.contains_key("test-registry-idle"));
+        let rebuilt = registry.register("test-registry-idle/", 4);
+        let b = rebuilt.limiter.budget.lock().unwrap();
+        assert_eq!(b.config_cap, 4);
+        assert_eq!(b.effective_cap(), 4);
+        assert_eq!(b.level, 1);
+        assert_eq!(b.throttle_cap, None);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn endpoint_registry_preserves_handles_in_flight_and_cooling_then_reclaims() {
+        let mut registry = EndpointRegistry::default();
+        let first = registry.register("shared/", 4);
+        let limiter = first.limiter.clone();
+        let weak = Arc::downgrade(&limiter);
+        let permit = limiter.acquire(&AtomicBool::new(false)).await.unwrap();
+        drop(first);
+        let second = registry.register("shared", 4);
+        assert!(Arc::ptr_eq(&limiter, &second.limiter));
+        drop(second);
+        drop(limiter);
+        let _other = registry.register("other", 1);
+        assert!(
+            registry.limiters.contains_key("shared"),
+            "in-flight handle retained"
+        );
+        permit.finish(&Err(AiError::Provider {
+            status: 429,
+            message: "rate".into(),
+            retry_after: Some(Duration::from_secs(10)),
+        }));
+        let cooling = registry.register("shared", 4);
+        assert!(Arc::ptr_eq(&weak.upgrade().unwrap(), &cooling.limiter));
+        assert_eq!(cooling.limiter.budget.lock().unwrap().throttle_cap, Some(1));
+        drop(cooling);
+        let _other = registry.register("other", 1);
+        assert!(
+            registry.limiters.contains_key("shared"),
+            "cooldown retained without handles"
+        );
+        tokio::time::advance(Duration::from_secs(10)).await;
+        let rebuilt = registry.register("shared", 4);
+        assert!(weak.upgrade().is_none(), "expired idle record reclaimed");
+        let b = rebuilt.limiter.budget.lock().unwrap();
+        assert_eq!(b.throttle_cap, None);
+        assert_eq!(b.config_cap, 4);
+        assert_eq!(b.level, 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn configuration_changes_do_not_erase_throttle_cap() {
+        let mut registry = EndpointRegistry::default();
+        let first = registry.register("throttled", 4);
+        first
+            .limiter
+            .acquire(&AtomicBool::new(false))
+            .await
+            .unwrap()
+            .finish(&Err(AiError::Provider {
+                status: 429,
+                message: "rate".into(),
+                retry_after: Some(Duration::from_secs(10)),
+            }));
+        let second = registry.register("throttled", 8);
+        drop(first);
+        let b = second.limiter.budget.lock().unwrap();
+        assert_eq!(b.config_cap, 8);
+        assert_eq!(b.throttle_cap, Some(2));
+        assert_eq!(b.effective_cap(), 2);
+    }
+
     #[tokio::test(start_paused = true)]
     async fn throttling_halves_cap_resets_ramp_and_uses_exponential_jitter() {
         let limiter = Arc::new(Limiter::default());
         {
             let mut b = limiter.budget.lock().unwrap();
             b.tasks.insert(0, 4);
-            b.rate_cap = 4;
+            b.config_cap = 4;
             b.level = 4;
             b.successes = 2;
         }
@@ -299,7 +429,7 @@ mod tests {
             let delay = b.cooldown.unwrap().duration_since(Instant::now());
             assert!(delay >= Duration::from_secs(seconds));
             assert!(delay <= Duration::from_millis(seconds * 1000 + 250));
-            assert_eq!(b.rate_cap, expected_cap);
+            assert_eq!(b.throttle_cap, Some(expected_cap));
             assert_eq!(b.level, 1);
             assert_eq!(b.successes, 0);
             assert_eq!(b.in_flight, 0);
@@ -307,27 +437,30 @@ mod tests {
     }
 
     #[tokio::test(start_paused = true)]
-    async fn shared_budget_uses_smallest_active_task_cap_and_waiting_cancel_stops() {
+    async fn shared_budget_uses_largest_active_task_cap_and_waiting_cancel_stops() {
         let limiter = Arc::new(Limiter::default());
         {
             let mut b = limiter.budget.lock().unwrap();
             b.tasks.insert(0, 4);
             b.tasks.insert(1, 1);
-            b.rate_cap = 4;
+            b.config_cap = 4;
             b.level = 4;
         }
         let cancel = Arc::new(AtomicBool::new(false));
-        let first = limiter.acquire(&cancel).await.unwrap();
+        let mut permits = Vec::new();
+        for _ in 0..4 {
+            permits.push(limiter.acquire(&cancel).await.unwrap());
+        }
         let waiting = tokio::spawn({
             let limiter = limiter.clone();
             let cancel = cancel.clone();
             async move { limiter.acquire(&cancel).await }
         });
         tokio::task::yield_now().await;
-        assert!(!waiting.is_finished(), "two tasks share one active slot");
+        assert!(!waiting.is_finished(), "two tasks share four active slots");
         cancel.store(true, Ordering::Relaxed);
         assert!(waiting.await.unwrap().is_none());
-        drop(first);
+        drop(permits);
         assert_eq!(limiter.budget.lock().unwrap().in_flight, 0);
     }
 }
