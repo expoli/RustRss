@@ -67,11 +67,11 @@ for (const changedReader of [false, true]) {
       refreshTagCache: async () => calls.push(['cache']), refreshCounts: async () => calls.push(['counts']),
       loadEntries: async args => calls.push(['list', args]), setEntryTags: (id, tags) => calls.push(['tags', id, tags]),
       patchReaderTags: () => calls.push(['chips']) });
-    vm.runInContext(extract('afterFeedTagChange'), ctx);
+    vm.runInContext('let tagRefreshChain = Promise.resolve();' + extract('afterFeedTagChange') + extract('afterFeedTagChangeInner'), ctx);
     const task = vm.runInContext('afterFeedTagChange()', ctx);
     if (changedReader) { ctx.state.readerEntry = { id: 8 }; ctx.readerToken++; ctx.tagGeneration++; }
     resolve({ id: 7, tags: [{ id: 1, source: 'feed' }] });
-    await task;
+    await task; console.log('CALLS:', JSON.stringify(calls));
     assert.ok(calls.some(c => c[0] === 'cache'));
     assert.ok(calls.some(c => c[0] === 'counts'));
     assert.deepEqual(JSON.parse(JSON.stringify(calls.find(c => c[0] === 'list')[1])), { reader: false, reuseRows: true });
@@ -98,7 +98,7 @@ test('feed tags do not load an article list over the digest or chat view', async
   for (const kind of ['digest', 'chat']) {
     const ctx = vm.createContext({ state: { view: { kind }, readerEntry: null }, readerToken: 1, tagGeneration: 1,
       refreshTagCache: async () => {}, refreshCounts: async () => {}, loadEntries: () => assert.fail('article list requested') });
-    vm.runInContext(extract('afterFeedTagChange'), ctx);
+    vm.runInContext('let tagRefreshChain = Promise.resolve();' + extract('afterFeedTagChange') + extract('afterFeedTagChangeInner'), ctx);
     await vm.runInContext('afterFeedTagChange()', ctx);
   }
 });

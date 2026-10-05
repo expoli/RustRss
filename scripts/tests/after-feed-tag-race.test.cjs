@@ -39,7 +39,8 @@ test('afterFeedTagChange late get_entry race: second (newer) call resolves first
   vm.runInContext(
     'let tagRefreshChain = Promise.resolve();' +
     'async function afterFeedTagChange() {' +
-    '  const run = tagRefreshChain.then(() => afterFeedTagChangeInner());' +
+    '  const shown = state.readerEntry; const token = readerToken; const gen = ++tagGeneration;' +
+    '  const run = tagRefreshChain.then(() => afterFeedTagChangeInner(shown, token, gen));' +
     '  tagRefreshChain = run.catch(() => {}); return run; }',
     ctx,
   );

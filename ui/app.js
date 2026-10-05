@@ -2189,16 +2189,17 @@ let tagGeneration = 0;
 // 覆盖（评审复现）——队列化串行让后到的调用（数据更新）最终生效。
 let tagRefreshChain = Promise.resolve();
 async function afterFeedTagChange() {
-  const run = tagRefreshChain.then(() => afterFeedTagChangeInner());
+  // 快照在**调用时刻**求值并传参给 inner——队列化推迟了 inner 执行，若在
+  // inner 里重新读 state，stale reader 守卫（changedReader 场景）会失效。
+  const shown = state.readerEntry;
+  const token = readerToken;
+  const gen = ++tagGeneration;
+  const run = tagRefreshChain.then(() => afterFeedTagChangeInner(shown, token, gen));
   tagRefreshChain = run.catch(() => {});
   return run;
 }
-async function afterFeedTagChangeInner() {
-  const shown = state.readerEntry;
-  const token = readerToken;
-  // 标签变更代次：连续两次源标签回读（第二次先 resolve）时，迟到的过期回读
-  // 不得覆盖新标签（评审复现的竞态）——readerToken/身份守卫不覆盖此场景。
-  const gen = ++tagGeneration;
+async function afterFeedTagChangeInner(shown, token, gen) {
+  // 参数为调用时刻快照（token/gen 守卫语义见 afterFeedTagChange）。
   const readerTags = shown ? invoke('get_entry', { id: shown.id }) : Promise.resolve(null);
   await Promise.all([
     refreshTagCache(),
