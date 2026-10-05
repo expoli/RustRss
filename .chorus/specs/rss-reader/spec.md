@@ -99,6 +99,9 @@ created: 2026-09-20
 - [x] 稍后读：条目可标记/取消（阅读器按钮、列表 ⚑ 标记、`l` 键），独立于已读/星标；侧栏「稍后读」智能视图可用
 - [x] 订阅右键菜单的「刷新间隔」与「移动到」以**子菜单**呈现（悬浮向右展开、点击父项切换；父项显示当前档位/当前分组，子菜单对当前项打勾）；空间不足时自动翻转/钳位不溢出视口（见 2026-09-23-submenu）
 - [x] 标签（文章级）：给文章打/取消标签、按标签筛选；侧栏标签区（未读计数、置顶、颜色、拖拽排序）；打开选择器支持最近使用优先与新建；MCP 可按权限增删改查标签（`delete_tag` 需 `confirm` + `dry_run`，不进危险工具集合）（见 2026-09-23-tags）——已交付 T1 `73a4433` / T2 `4bee3cf` / T3 `f397762` / T4 `14ac1a0`，逐条证据见验证清单第 21 节
+- [x] B′ 有效标签 = 文章手动 ∪ 源继承：列表/搜索/详情继承显示，双来源按 tag_id 去重（source=manual/feed/both）；筛选首/续页、总数/未读计数、标签范围批量与删除预览/执行同口径，移除源关联保留手动关联。三档排序 × 首/续页 × 计数 × 批量 EXPLAIN 及删索引变异测试（[证据](2026-10-04-mobile-followups/evidence/tags-b-prime/record.md)）。
+- [x] B′ 文章选择器中继承/双来源项为 disabled，只读并标明来源/修改说明；源打标成功批量回读 chips、侧栏计数与当前筛选，失效分页/总数缓存，保留阅读 DOM；双语 key 与 JS 回归覆盖。
+- [x] B′ MCP 标签名称数组保持兼容：有效标签去重按名称稳定排序取前 20，只有有效集合 >20 才置 tags_truncated；同序 tag_sources 暴露来源，工具说明取消手动关联不屏蔽继承；全量 MCP 测试保绿。
 - [x] 无网络时可阅读已抓取的全部文章，不出现阻塞式错误弹窗（2026-09-24：独立命名空间仅 lo 的 16 项证据 `2026-09-23-theme-preview/offline-namespace-results.json`；离线列表可读可滚 + 缩略图静默失败 + 缓存正文可读见 `2026-09-24-thumbnail-egress-policy/thumbnail-offline-results.json`；代理不可达时失败可读且缓存仍在见 `2026-09-24-local-acceptance-closeout/https-connect-tunnel-results.json` 的对照组）
   → 2026-09-24独立网络命名空间仅lo：缓存阅读、真实刷新失败后继续导航、10000条未丢通过（16 项）。**已补**：逐篇打开（缓存正文可读）与外部图片（离线缩略图静默失败、不阻塞阅读）见 `2026-09-24-thumbnail-egress-policy/thumbnail-offline-results.json`；代理不可用时的失败可读与缓存保留见 `2026-09-24-local-acceptance-closeout/https-connect-tunnel-results.json`。**仍未验**：原生 Wayland 与其它平台。
 - [x] 初始化失败时窗口仍可关闭（最小事件绑定集无条件生效，见 2026-09-22-audit-remediation-1）
@@ -126,7 +129,7 @@ created: 2026-09-20
 
 - [x] core 共享 10 个只读工具投影与静态正向白名单；MCP 薄包装逐字节兼容，聊天增加必填/类型/枚举及 Rust 校验，未知/写工具拒绝，查询不改阅读状态；同源与 MCP 全量回归通过；受限 FTS 候选用含 feed_id 的覆盖索引（并入未发布 v3，旧 v3 开发库需备份后重建/补索引），EXPLAIN 及删索引变异断言守护。
 - [x] 四 provider agent 循环：多调用回灌、Gemini opaque 签名回放；6 模型请求/10 工具调用/120s/4096 输出 tokens、单结果 12KiB/回合证据 48KiB（截断保留结构化 scope 计数）、回合内规范化参数去重（含单批/跨轮非相邻重复）与输入/usage 已报告下界预算熔断（缺失 usage 不屏蔽后续下界），取消丢弃在途请求；只持久最终完整问答。
-- [x] 范围由持久会话注入，tags 范围按当前源标签 OR 解析；FTS/列表/正文/统计不越界，日报精确范围在去重/LIMIT 前过滤，受限 list_tags 诚实拒绝 scope_unsupported（全库标签有效计数仍待 B′）。
+- [x] 范围由持久会话注入，tags 范围按当前源标签 OR 解析；FTS/列表/正文/统计不越界，日报精确范围在去重/LIMIT 前过滤，受限 list_tags 诚实拒绝 scope_unsupported（全库标签有效计数已由 B′ 统一）。
 - [x] 仅明确 HTTP 400 tools/function 不支持触发能力缓存与无 tools 降级；本地 FTS ≤10 摘要 + ≤3 正文 + 相关冻结日报章节，总证据 ≤8k 字符，结构性替换 seed 不改持久快照；401/429/超时/无效 schema 不降级。Tauri chat_capability 与 degraded/toolCallsLog/工具 progress 字段已接入。
 - [ ] 工具过程、能力/降级提示 UI（含可编辑检索关键词）、真实四家 BYOK 检索→取文→回答与双端设备验收；本子批仅 Rust/mock，不代表阶段②整体 ship。
 
@@ -151,7 +154,7 @@ created: 2026-09-20
 
 - [x] 按**本地日历日**（含 DST 偏移）聚合素材生成日报：侧栏「日报」分组（今日/昨日/最近历史日期行）、阅读窗格结构化渲染（总览+分节）、检查点对比状态行（新增/变化/移出分类计数）、强制重写（复用要点不重复付费）、生成中进度与取消（[design](2026-10-03-daily-digest/design.md)；实现 34ebb02+6d26a50+ffcea7e..72b3308 四轮独立评审收口：条目缓存输入哈希+端点身份、提交 CAS 同源指纹+feed_tags 事务内重解析、稳定槽位单飞+job_id 反查取消、注册表生命周期单测、前端 started/done 生命周期与回执身份隔离）
 - [x] 生成流水线缓存：文章要点按输入指纹缓存（ai_cache task=digest_item），分节/最终合成节点内容寻址缓存（含端点+提示词版本）；重复生成只对变化部分付费——单测钉住输入哈希变化→键变化（`digest_schema.rs`）
-- [x] 素材范围：源标签多选 OR 过滤（feed_tags，与条目标签独立）；无漂移提交成功、成员新增/版本递增/重打标签三类漂移 CAS 拒绝（`commit_cas_rejects_when_material_drifts`）
+- [x] 素材范围：源标签多选 OR 过滤（feed_tags，与条目手动关联独立存储；有效文章标签按 B′ 合并，不改变日报选源）；无漂移提交成功、成员新增/版本递增/重打标签三类漂移 CAS 拒绝（`commit_cas_rejects_when_material_drifts`）
 - [x] 历史入口：侧栏历史日期行 + 「历史报告」徽章（2026-10-04 Xvfb 实机截图 `zoom-h4-history.png`/`zoom-h6-badge.png`；种子报告回读通过）
 - [x] MCP 只读日报（`digest_list` 元数据+≤140 字概览 / `digest_get` 正文+来源分页，绝不触发 AI）：registry 登记 Read scope、单测钉口径（概览截断/分页 clamp/缺报告报错）；实机 HTTP 闭环（tools/list 13 只读含 digest 两件、digest_list 2 份、digest_get 分页回读、无/错 token 401 红线不破）
 - [ ] Android 适配：入口跟随响应式导航（桌面 E2E 已覆盖；Android 实机验收待设备批次）

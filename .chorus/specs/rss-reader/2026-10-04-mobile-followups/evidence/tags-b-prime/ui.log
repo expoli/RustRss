@@ -1,0 +1,73 @@
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+
+** (rustrss-desktop:3234766): WARNING **: 09:22:51.827: Disabled hardware acceleration because GTK failed to initialize GL: GL support disabled via GDK_DEBUG.
+2026-10-05T09:22:51.842+08:00 INFO  rustrss_desktop_lib: [rustrss] 本次日志文件: /tmp/rustrss-tags-b-prime-9tmkdrdd/data/rustrss/logs/rustrss-20261005-092251.log
+2026-10-05T09:22:51.854+08:00 INFO  rustrss_desktop_lib: [rustrss] 数据库: /tmp/rustrss-tags-b-prime-9tmkdrdd/fixture.sqlite
+2026-10-05T09:22:51.854+08:00 INFO  rustrss_desktop_lib: [rustrss] 日志级别: INFO（设置 log.level=""）
+
+(rustrss-desktop:3234766): libayatana-appindicator-WARNING **: 09:22:51.857: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+2026-10-05T09:22:52.000+08:00 INFO  ui: [ui] inline script ran
+2026-10-05T09:22:52.220+08:00 INFO  ui: [ui] app.js start
+2026-10-05T09:22:52.303+08:00 INFO  ui: [ui] i18n selftest ok (keys=649)
+2026-10-05T09:22:52.304+08:00 INFO  ui: [ui] sanitizer selftest ok
+2026-10-05T09:22:52.305+08:00 INFO  ui: [ui] menu render selftest FAILED: checked 条目未打勾
+2026-10-05T09:22:52.305+08:00 INFO  ui: [ui] submenu placement selftest ok (cases=5)
+2026-10-05T09:22:52.306+08:00 INFO  ui: [ui] shortcut selftest ok (keys=? j ArrowDown k ArrowUp Enter u s l t U A r g G ; 输入区/覆盖层里一律不触发)
+2026-10-05T09:22:52.382+08:00 INFO  ui: [ui] renderSidebar feeds=120 25ms
+2026-10-05T09:22:52.541+08:00 INFO  ui: [ui] renderList rows=200 withTags=0 6ms
+2026-10-05T09:22:52.541+08:00 INFO  ui: [ui] view=unread sort=newest hideRead=0 count=200 loaded=200 total=12000 totalKind=unread header=200/12000 exhausted=false head=12000,11999,11998,11997,11996
+2026-10-05T09:22:52.542+08:00 INFO  ui: [ui] loaded feeds=120 entries=12000 unread=12000 starred=100 markReadOnNavigate=true refreshInterval=off refreshOnStart=false notifyNewArticles=false fonts ui=default read=follow-ui mono=default size=16.5px line=1.85 logLevel=info ai=ollama（未配模型） hasKey=true mcp=off mcpWrite=off mcpDangerous=off mcpWriteToken=none
+2026-10-05T09:22:52.544+08:00 INFO  ui: [ui] viewport 0x0 dpr=1
+2026-10-05T09:22:52.548+08:00 INFO  ui: [ui] tagPalette selftest ok (n=8 theme=dark bgPanel=#1d1913 minContrast=3.36 ratios=4.47/4.89/5.54/5.69/3.36/3.38/4.24/3.62)
+2026-10-05T09:22:52.616+08:00 INFO  ui: [ui] tags:rows=1 collapsed=0 rects=Verification tag=0,426,139,52
+2026-10-05T09:22:52.650+08:00 INFO  ui: [ui] renderSidebar feeds=120 1ms
+2026-10-05T09:22:52.651+08:00 INFO  ui: [ui] viewport 1240x820 dpr=1
+2026-10-05T09:22:52.693+08:00 INFO  ui: [ui] renderSidebar feeds=120 0ms
+2026-10-05T09:22:52.713+08:00 INFO  ui: [ui] renderList rows=100 withTags=100 7ms
+2026-10-05T09:22:52.714+08:00 INFO  ui: [ui] view=feed#1 sort=newest hideRead=0 count=100 loaded=100 total=- totalKind=all header=已加载 100 篇 exhausted=true head=100,99,98,97,96
+2026-10-05T09:22:52.737+08:00 INFO  ui: [ui] view total feed#1 n=100 header=已加载 100 / 共 100 篇
+2026-10-05T09:22:52.830+08:00 INFO  ui: [ui] renderReader id=100 sanitize=1 innerHTML-set=1 highlight=2 total=2ms
+2026-10-05T09:22:52.847+08:00 INFO  ui: [ui] readerTags id=100 n=1 chips=Verification tag rect=946,181,90,20
+2026-10-05T09:22:52.857+08:00 INFO  ui: [ui] open id=100 markRead=true read=true
+2026-10-05T09:22:52.960+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:52.960+08:00 INFO  ui: [ui] tagPicker:open entry=100 attached=Verification tag order=Verification tag
+2026-10-05T09:22:53.080+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:53.092+08:00 INFO  ui: [ui] tagPicker:close reason=button entry=100 view=feed
+2026-10-05T09:22:53.099+08:00 INFO  ui: [ui] renderSidebar feeds=120 1ms
+2026-10-05T09:22:53.130+08:00 INFO  ui: [ui] renderList rows=200 withTags=200 7ms
+2026-10-05T09:22:53.130+08:00 INFO  ui: [ui] view=tag#tag=1 sort=newest hideRead=0 count=200 loaded=200 total=- totalKind=all header=已加载 200 篇 exhausted=false head=6000,5999,5998,5997,5996
+2026-10-05T09:22:53.166+08:00 INFO  ui: [ui] view total tag#1 n=6000 header=已加载 200 / 共 6000 篇
+2026-10-05T09:22:53.230+08:00 INFO  ui: [ui] renderReader id=6000 sanitize=0 innerHTML-set=1 highlight=1 total=1ms
+2026-10-05T09:22:53.232+08:00 INFO  ui: [ui] readerTags id=6000 n=1 chips=Verification tag rect=932,181,90,20
+2026-10-05T09:22:53.241+08:00 INFO  ui: [ui] open id=6000 markRead=true read=true
+2026-10-05T09:22:53.360+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:53.361+08:00 INFO  ui: [ui] tagPicker:open entry=6000 attached=Verification tag order=Verification tag
+2026-10-05T09:22:53.735+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:53.747+08:00 INFO  ui: [ui] renderSidebar feeds=120 1ms
+2026-10-05T09:22:53.789+08:00 INFO  ui: [ui] tagPicker:close reason=button entry=6000 view=tag
+2026-10-05T09:22:53.845+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:54.006+08:00 WARN  rustrss_desktop_lib::commands: [rustrss][slow] list_tags: 57ms
+2026-10-05T09:22:54.014+08:00 INFO  ui: [ui] renderList rows=200 withTags=200 13ms
+2026-10-05T09:22:54.015+08:00 INFO  ui: [ui] view=tag#tag=1 sort=newest hideRead=0 count=200 loaded=200 total=- totalKind=all header=loaded 200 exhausted=false head=5900,5899,5898,5897,5896
+2026-10-05T09:22:54.023+08:00 INFO  ui: [ui] view total tag#1 n=5900 header=loaded 200 / 5900 total
+2026-10-05T09:22:54.023+08:00 INFO  ui: [ui] renderSidebar feeds=120 1ms
+2026-10-05T09:22:54.026+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:54.108+08:00 INFO  ui: [ui] tagPicker:close reason=button entry=60 view=tag
+2026-10-05T09:22:54.153+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:54.302+08:00 INFO  ui: [ui] renderSidebar feeds=120 1ms
+2026-10-05T09:22:54.314+08:00 WARN  rustrss_desktop_lib::commands: [rustrss][slow] list_entries: 58ms
+2026-10-05T09:22:54.328+08:00 INFO  ui: [ui] renderList rows=200 withTags=200 8ms
+2026-10-05T09:22:54.329+08:00 INFO  ui: [ui] view=tag#tag=1 sort=newest hideRead=0 count=200 loaded=200 total=- totalKind=all header=loaded 200 exhausted=false head=5900,5899,5898,5897,5896
+2026-10-05T09:22:54.339+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:54.345+08:00 INFO  ui: [ui] view total tag#1 n=5900 header=loaded 200 / 5900 total
+2026-10-05T09:22:54.383+08:00 INFO  ui: [ui] tagPicker:close reason=button entry=1 view=tag
+2026-10-05T09:22:54.391+08:00 INFO  ui: [ui] renderSidebar feeds=120 0ms
+2026-10-05T09:22:54.408+08:00 INFO  ui: [ui] renderList rows=100 withTags=100 7ms
+2026-10-05T09:22:54.408+08:00 INFO  ui: [ui] view=feed#1 sort=newest hideRead=0 count=100 loaded=100 total=- totalKind=all header=loaded 100 exhausted=true head=100,99,98,97,96
+2026-10-05T09:22:54.440+08:00 INFO  ui: [ui] view total feed#1 n=100 header=loaded 100 / 100 total
+2026-10-05T09:22:54.526+08:00 INFO  ui: [ui] renderReader id=100 sanitize=0 innerHTML-set=0 highlight=0 total=0ms
+2026-10-05T09:22:54.527+08:00 INFO  ui: [ui] readerTags id=100 n=1 chips=Verification tag rect=962,181,90,20
+2026-10-05T09:22:54.528+08:00 INFO  ui: [ui] open id=100 markRead=true read=true
+2026-10-05T09:22:54.658+08:00 INFO  ui: [ui] tagPicker:filter q=- rows=1 sel=Verification tag order=Verification tag
+2026-10-05T09:22:54.658+08:00 INFO  ui: [ui] tagPicker:open entry=100 attached=Verification tag order=Verification tag

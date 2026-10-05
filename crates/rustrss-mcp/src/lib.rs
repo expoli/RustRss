@@ -449,7 +449,7 @@ impl RustRssMcp {
     }
 
     #[tool(
-        description = "列出条目元数据（不含正文）。默认口径固定：sort=newest 且不隐藏已读（不跟随界面设置，显式传参才覆盖）；每页默认 10 条、上限 50，翻页把 next_cursor 回传给 cursor；可用 feed_id / folder_id（二选一）、tag_id / tag_name（二选一，按标签筛选；未知标签报 tag_not_found）、unread_only、starred_only、read_later_only、since / until（对 COALESCE(published_at,fetched_at) 的闭区间，Unix 秒）、sort（newest/oldest/unread_first）、hide_read。每条带 tags（该条目的标签名，最多 20 个，超出置 tags_truncated）。正文用 get_article 单独取。"
+        description = "列出条目元数据（不含正文）。默认口径固定：sort=newest 且不隐藏已读（不跟随界面设置，显式传参才覆盖）；每页默认 10 条、上限 50，翻页把 next_cursor 回传给 cursor；可用 feed_id / folder_id（二选一）、tag_id / tag_name（二选一，按标签筛选；未知标签报 tag_not_found）、unread_only、starred_only、read_later_only、since / until（对 COALESCE(published_at,fetched_at) 的闭区间，Unix 秒）、sort（newest/oldest/unread_first）、hide_read。每条带 tags（文章手动 ∪ 源继承的有效标签名，去重按名称稳定排序，最多 20 个，超出置 tags_truncated）及同序 tag_sources（id/name/source，manual/feed/both）。正文用 get_article 单独取。"
     )]
     fn list_articles(&self, Parameters(p): Parameters<ListArticlesParams>) -> String {
         self.list_articles_json(&p)
@@ -620,7 +620,7 @@ impl RustRssMcp {
     }
 
     #[tool(
-        description = "移除条目上的标签（写工具，幂等）。目标与返回口径同 assign_tags：affected = 命中条目数、detail.changed = 本次真正移除的关联行数（重复调用 0）；只清关联，文章保留。"
+        description = "移除条目上的标签（写工具，幂等）。目标与返回口径同 assign_tags：affected = 命中条目数、detail.changed = 本次真正移除的关联行数（重复调用 0）；只清手动关联，文章保留；取消手动关联不屏蔽源继承（须在订阅源上修改）。"
     )]
     fn unassign_tags(&self, Parameters(p): Parameters<tag_tools::AssignTagsParams>) -> String {
         self.unassign_tags_json(&p)

@@ -194,6 +194,9 @@ struct ArticleMetaOut {
     /// 该条目的标签名（只回名称；写工具的 tag_id 用 list_tags 取）。
     /// 超过 [`TAGS_PER_ENTRY_MAX`] 时截断并置 `tags_truncated`
     tags: Vec<String>,
+    /// Same bounded, name-ordered effective set; additive metadata keeps tags compatible.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    tag_sources: Vec<crate::TagBrief>,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     tags_truncated: bool,
 }
@@ -668,6 +671,7 @@ fn meta_out(row: &crate::EntryRow) -> ArticleMetaOut {
             .take(TAGS_PER_ENTRY_MAX)
             .map(|t| t.name.clone())
             .collect(),
+        tag_sources: row.tags.iter().take(TAGS_PER_ENTRY_MAX).cloned().collect(),
         tags_truncated: row.tags.len() > TAGS_PER_ENTRY_MAX,
     }
 }

@@ -1,0 +1,10 @@
+   Compiling rustrss-core v0.6.0 (/home/tcy/Github/RustRss/crates/rustrss-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.92s
+     Running tests/tags.rs (target/debug/deps/tags-d2c7ef246b49f975)
+
+running 3 tests
+test effective_tag_explain_all_sorts_pages_counts_and_bulk_targets ... ok
+test effective_tags_projection_filter_counts_and_writes_agree ... ok
+test effective_tag_explain_mutations_require_every_union_index ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.03s

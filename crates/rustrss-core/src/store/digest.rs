@@ -111,7 +111,11 @@ impl Store {
               ORDER BY t.name COLLATE NOCASE, t.id",
         )?;
         let rows = stmt.query_map(params![feed_id], |r| {
-            Ok(TagBrief { id: r.get(0)?, name: r.get(1)? })
+            Ok(TagBrief {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                source: super::TagSource::Feed,
+            })
         })?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }

@@ -1,0 +1,198 @@
+   Compiling rustrss-core v0.6.0 (/home/tcy/Github/RustRss/crates/rustrss-core)
+   Compiling rustrss-mcp v0.6.0 (/home/tcy/Github/RustRss/crates/rustrss-mcp)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.65s
+     Running unittests src/lib.rs (target/debug/deps/rustrss_mcp-60b4061be9d0f54e)
+
+running 58 tests
+test audit::tests::summary_is_parsed_from_the_write_envelope ... ok
+test config::tests::snippet_is_valid_json_and_carries_url_and_token ... ok
+test audit::tests::line_carries_all_four_required_fields ... ok
+test audit::tests::rejected_calls_are_audited_with_the_error_code ... ok
+test audit::tests::args_summary_scrubs_credentials ... ok
+test audit::tests::long_args_are_truncated_after_scrubbing ... ok
+test config::tests::write_tokens_are_48_hex_chars_and_random ... ok
+test feed_tools::tests::custom_title_normalization_matches_the_ui ... ok
+test feed_tools::tests::interval_whitelist_matches_the_ui_choices ... ok
+test feed_tools::tests::update_feed_patch_is_tri_state ... ok
+test http::tests::tokens_are_random_and_long_enough ... ok
+test feed_tools::tests::subscribe_target_parsing_covers_all_shapes ... ok
+test http::tests::token_must_match_exactly ... ok
+test preview::tests::sweep_expires_memory_and_closes_resources_without_requests ... ok
+test registry::tests::read_tools_are_registered ... ok
+test registry::tests::read_tools_ignore_switches_and_scope ... ok
+test registry::tests::unknown_tools_are_filtered_out ... ok
+test registry::tests::visibility_matches_authorization_cell_by_cell ... ok
+test registry::tests::write_tool_authorization_matrix ... ok
+test tag_tools::tests::store_errors_map_to_machine_readable_codes ... ok
+test tag_tools::tests::tag_id_batch_is_capped_at_100 ... ok
+test config::tests::existing_token_is_never_overwritten_by_auto_generation ... ok
+test config::tests::switches_default_off_and_follow_the_store ... ok
+test config::tests::port_falls_back_on_bad_values ... ok
+test config::tests::write_token_lifecycle_is_explicit ... ok
+test config::tests::token_is_stable_and_persisted ... ok
+test config::tests::insert_if_absent_does_not_overwrite ... ok
+test tag_tools::tests::list_tags_rejects_unknown_sort ... ok
+test tests::scope_comes_from_the_transport_not_from_the_session ... ok
+test write_contract::tests::batch_ids_are_capped_at_100 ... ok
+test write_contract::tests::dangerous_writes_require_explicit_confirm ... ok
+test write_contract::tests::dry_run_never_runs_the_apply_branch ... ok
+test tag_tools::tests::assign_targets_are_mutually_exclusive_and_required ... ok
+test write_contract::tests::outcome_envelope_shape ... ok
+test write_tools::tests::error_codes_are_classified_explicitly ... ok
+test tag_tools::tests::tag_write_errors_use_codes_not_messages ... ok
+test preview::tests::deadline_drops_render_and_releases_single_flight ... ok
+test tag_tools::tests::assign_with_missing_tag_changes_nothing ... ok
+test tag_tools::tests::list_tags_reports_metadata_and_ordering ... ok
+test tests::every_exposed_tool_is_registered ... ok
+test tag_tools::tests::assign_reports_missing_entries_item_by_item ... ok
+test tag_tools::tests::delete_tag_needs_confirm_and_previews_with_the_same_count ... ok
+test tests::credential_scope_is_recomputed_on_every_call ... ok
+test tests::refresh_gate_is_shared_with_the_host ... ok
+test write_tools::tests::refresh_reports_rate_limited_when_the_shared_gate_is_held ... ok
+test write_tools::tests::refresh_target_validation_covers_all_three_scopes ... ok
+test tests::default_listing_is_read_only ... ok
+test write_tools::tests::set_flag_target_shape_is_validated ... ok
+test write_tools::tests::fetch_fulltext_rejects_missing_entries_and_missing_urls ... ok
+test write_tools::tests::set_read_by_condition_with_no_hit_is_a_noop ... ok
+test write_tools::tests::set_read_by_ids_reports_per_item_and_moves_the_counters ... ok
+test tests::digest_tools_metadata_and_pagination ... ok
+test tests::test_tools_use_the_same_registry ... ok
+test write_tools::tests::set_read_with_no_existing_id_fails_the_whole_call ... ok
+test write_tools::tests::starred_and_read_later_have_their_own_columns ... ok
+test tag_tools::tests::scoped_assign_samples_the_hit_set_and_flags_truncation ... ok
+test write_tools::tests::set_read_by_condition_samples_the_hit_set_and_flags_truncation ... ok
+test tag_tools::tests::list_tags_is_bounded_and_says_so ... ok
+
+test result: ok. 58 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running unittests src/main.rs (target/debug/deps/rustrss_mcp-bf6ab59daae90d86)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/feed_tools.rs (target/debug/deps/feed_tools-ec0299ab88dce825)
+
+running 8 tests
+test subscribe_rsshub_forms_share_one_identity ... ok
+test subscribe_discovers_homepage_and_is_idempotent ... ok
+test every_subscription_tool_call_leaves_a_scrubbed_audit_line ... ok
+test subscribe_failure_codes_are_distinguishable ... ok
+test update_feed_patch_is_tri_state_and_lands_in_sqlite ... ok
+test folder_crud_and_delete_keep_subscriptions ... ok
+test opml_round_trip_and_import_errors ... ok
+test unsubscribe_is_dangerous_and_dry_run_matches_execution ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/http.rs (target/debug/deps/http-74878f571623fcd1)
+
+running 3 tests
+test refuses_to_bind_a_non_loopback_address ... ok
+test rejects_requests_without_a_valid_token ... ok
+test accepts_initialize_and_serves_real_data_with_both_token_styles ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/read_tools_shared.rs (target/debug/deps/read_tools_shared-1110df42178cd4d2)
+
+running 2 tests
+test all_ten_mcp_wrappers_share_exact_core_projections ... ok
+test large_chat_result_is_utf8_prefix_of_unchanged_mcp_projection ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/stdio_smoke.rs (target/debug/deps/stdio_smoke-58bf6a8443e86988)
+
+running 2 tests
+test stdio_lists_only_read_tools_by_default ... ok
+test stdio_write_tools_need_both_the_switch_and_a_token ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/tag_tools.rs (target/debug/deps/tag_tools-7add44a84b4fcb6f)
+
+running 8 tests
+test tag_write_tools_follow_the_write_switch_as_well ... ok
+test every_tag_write_call_leaves_a_scrubbed_audit_line ... ok
+test read_token_calls_to_tag_write_tools_are_refused_without_touching_the_db ... ok
+test list_tags_works_for_both_tokens_and_visibility_matches_authorization ... ok
+test delete_tag_requires_confirm_and_dry_run_matches_the_real_delete ... ok
+test list_articles_default_view_ignores_ui_settings_and_bounds_the_tags_field ... ok
+test list_articles_filters_by_tag_and_carries_tag_names ... ok
+test tag_writes_land_in_the_database_and_read_paths_agree ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests/theme_preview.rs (target/debug/deps/theme_preview-5c6dae2ee67cd8e6)
+
+running 7 tests
+test failed_render_retains_candidate_id_for_cancel ... ok
+test save_cas_conflict_and_idempotent_finish ... ok
+test temporary_image_patch_cancel_and_permissions ... ok
+test bridge_checks_profile_and_forwards_file_and_cancel ... ok
+test concurrent_capture_and_rotation_during_render_fail_closed ... ok
+test file_limit_and_shutdown_preserve_candidate_for_cancel ... ok
+test screenshots_are_local_files_with_explicit_lifetime_and_no_inline_images ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.17s
+
+     Running tests/theme_tools.rs (target/debug/deps/theme_tools-2ea3bb906279e1ec)
+
+running 7 tests
+test audit_does_not_log_theme_values_or_unknown_input ... ok
+test preview_tool_descriptions_require_local_image_reading ... ok
+test theme_patch_tool_schemas_publish_the_core_object_contract ... ok
+test disabled_writes_and_rotated_tokens_take_effect_on_next_request ... ok
+test read_discovery_schema_and_validation_are_non_mutating ... ok
+test invalid_patch_and_corrupt_store_fail_without_writes ... ok
+test write_cas_noop_history_restore_and_notification ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests/tools.rs (target/debug/deps/tools-38dece93d35e98af)
+
+running 11 tests
+test get_article_reports_missing_id_helpfully ... ok
+test stats_and_limit_clamping ... ok
+test list_feeds_reports_unread_and_status ... ok
+test list_articles_returns_metadata_without_body ... ok
+test get_article_returns_full_body_and_optional_html ... ok
+test list_folders_and_unread_summary_report_complete_groups ... ok
+test search_works_for_latin_and_chinese ... ok
+test list_articles_defaults_do_not_follow_ui_settings ... ok
+test invalid_cursor_and_sort_are_reported_not_silently_ignored ... ok
+test list_articles_exposes_new_filters_sort_and_page_size ... ok
+test list_articles_cursor_pages_without_duplicates_or_gaps ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/write_auth.rs (target/debug/deps/write_auth-16159546ca631a5f)
+
+running 6 tests
+test health_stays_public_and_carries_no_subscription_data ... ok
+test write_calls_leave_an_audit_line_with_scrubbed_args ... ok
+test dry_run_previews_without_touching_the_database ... ok
+test read_token_cannot_see_or_call_write_tools ... ok
+test write_token_rotation_and_destruction_kill_the_old_credential_at_once ... ok
+test write_switch_and_dangerous_switch_gate_independently ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/write_tools.rs (target/debug/deps/write_tools-53b933658c056960)
+
+running 6 tests
+test refresh_reloads_proxy_config_from_shared_database ... ok
+test write_tools_are_unavailable_with_a_read_token_or_with_switches_off ... ok
+test refresh_covers_three_scopes_and_shares_the_single_flight ... ok
+test read_state_writes_land_in_the_database_and_agree_with_read_tools ... ok
+test fetch_fulltext_writes_back_and_reports_each_error_class ... ok
+test every_write_tool_call_leaves_a_scrubbed_audit_line ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.74s
+
+   Doc-tests rustrss_mcp
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

@@ -1,0 +1,870 @@
+   Compiling rustrss-core v0.6.0 (/home/tcy/Github/RustRss/crates/rustrss-core)
+   Compiling rustrss-mcp v0.6.0 (/home/tcy/Github/RustRss/crates/rustrss-mcp)
+   Compiling rustrss-desktop v0.6.0 (/home/tcy/Github/RustRss/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.75s
+     Running unittests src/lib.rs (target/debug/deps/rustrss_core-d82e634acb01e803)
+
+running 101 tests
+test ai::prompt::tests::cache_params_distinguish_task_variants ... ok
+test ai::prompt::tests::translate_request_names_the_target_language ... ok
+test ai::prompt::tests::short_body_is_not_truncated ... ok
+test ai::prompt::tests::summarize_request_carries_title_and_length ... ok
+test ai::chat_stream::tests::truncated_last_event_reports_already_received_characters ... ok
+test ai::chat_stream::tests::identical_tokens_without_event_ids_are_not_duplicates_and_late_usage_is_kept ... ok
+test ai::chat_stream::tests::two_indexed_tools_and_explicit_duplicate_ids ... ok
+test discover::tests::attr_supports_quoted_and_unquoted_values ... ok
+test discover::tests::amp_entities_in_href_are_decoded ... ok
+test discover::tests::candidates_prefer_standard_type_and_resolve_relative_hrefs ... ok
+test ai::chat_stream::tests::interrupted_usage_keeps_reported_components_across_frames ... ok
+test discover::tests::decode_entities_covers_named_numeric_and_unknown ... ok
+test ai::chat_stream::tests::anthropic_delta_before_start_and_late_text ... ok
+test discover::tests::suffix_fallback_matches_path_ignoring_query_and_fragment ... ok
+test fetch::network_failure_tests::real_network_https_fetch_via_webpki_roots ... ignored, 需要真实网络
+test fetch::network_failure_tests::retry_after_boundaries ... ok
+test logging::tests::debug_target_filter_admits_app_and_ui_only ... ok
+test fetch::network_failure_tests::webpki_root_certs_parse_all_builtin_roots ... ok
+test logging::scrub::tests::scrub_log_line_masks_credentials_in_urls ... ok
+test logging::tests::file_name_is_local_time_with_expected_shape ... ok
+test logging::tests::broken_mirror_does_not_panic_or_disturb_the_file ... ok
+test ai::chat_stream::tests::utf8_split_empty_chunk_and_missing_terminator ... ok
+test logging::tests::init_creates_dir_and_this_run_file ... ok
+test logging::tests::init_records_the_current_log_file_name ... ok
+test logging::tests::init_returns_err_instead_of_panicking_when_dir_cannot_be_created ... ok
+test ai::prompt::tests::long_body_is_truncated_and_marked ... ok
+test logging::tests::init_with_mirror_shares_init_contract ... ok
+test logging::tests::list_on_missing_or_empty_dir_is_empty ... ok
+test logging::tests::list_marks_exactly_the_current_file ... ok
+test logging::tests::mirror_enabled_truth_table ... ok
+test logging::tests::log_trait_writes_through_the_level_gate ... ok
+test logging::tests::list_sorts_newest_first_and_filters_to_the_whitelist ... ok
+test ai::tests::missing_key_is_reported_before_any_request ... ok
+test logging::tests::mirror_follows_the_same_level_and_target_gate_as_the_file ... ok
+test logging::tests::panic_payload_text_reads_str_and_string_payloads ... ok
+test ai::tests::provider_errors_do_not_leak_the_key ... ok
+test logging::tests::mirror_lines_are_byte_identical_to_file_lines ... ok
+test logging::tests::mirror_off_has_no_mirror_target_and_writes_only_the_file ... ok
+test logging::tests::prune_deletes_by_mtime_not_by_name ... ok
+test logging::tests::prune_deletes_until_total_bytes_under_the_limit ... ok
+test logging::tests::prune_keeps_at_least_the_newest_file ... ok
+test logging::tests::prune_keeps_newest_file_even_when_it_alone_exceeds_the_limit ... ok
+test logging::tests::prune_on_missing_dir_is_a_noop ... ok
+test logging::tests::read_apis_reject_names_outside_the_whitelist ... ok
+test logging::tests::read_apis_report_readable_errors_for_missing_files ... ok
+test logging::tests::read_log_file_over_limit_returns_readable_err ... ok
+test logging::tests::read_log_tail_keeps_first_line_when_cut_lands_on_a_line_boundary ... ok
+test logging::tests::read_log_tail_is_utf8_lossy_and_never_panics ... ok
+test logging::tests::read_log_tail_returns_whole_file_when_within_the_limit ... ok
+test logging::tests::read_log_tail_truncates_at_the_next_line_boundary ... ok
+test logging::tests::read_log_tail_without_any_newline_serves_the_raw_window ... ok
+test logging::tests::prune_deletes_oldest_when_over_the_file_limit ... ok
+test logging::tests::same_second_start_gets_a_suffix_instead_of_overwriting ... ok
+test logging::tests::writer_appends_multiple_lines_in_order ... ok
+test logging::tests::writer_drops_dependency_debug_but_keeps_their_errors ... ok
+test logging::tests::prune_keeps_exactly_the_limit ... ok
+test paths::tests::data_root_override_takes_precedence ... ok
+test logging::tests::writer_line_has_local_millis_level_target_and_message ... ok
+test logging::tests::prune_is_idempotent ... ok
+test paths::tests::default_path_is_inside_the_app_dir ... ok
+test paths::tests::env_var_wins_over_default ... ok
+test logging::tests::prune_never_touches_non_log_files ... ok
+test paths::tests::flags_are_not_mistaken_for_a_database_path ... ok
+test paths::tests::logs_dir_is_the_data_dirs_logs_subdir ... ok
+test paths::tests::only_the_default_path_counts_as_the_default_db ... ok
+test refresh_flight::tests::flight_is_exclusive_and_released_on_drop ... ok
+test refresh_flight::tests::flight_released_on_early_return ... ok
+test refresh_flight::tests::shared_gate_blocks_second_caller_across_threads ... ok
+test rsshub::tests::canonical_is_idempotent ... ok
+test rsshub::tests::canonical_keeps_scheme_and_normalizes_slashes ... ok
+test rsshub::tests::canonical_passes_other_urls_through ... ok
+test rsshub::tests::canonical_rebases_official_host_to_scheme ... ok
+test rsshub::tests::clean_base_normalizes ... ok
+test rsshub::tests::is_custom_base_detects_default ... ok
+test rsshub::tests::is_scheme_url_only_for_non_empty_path ... ok
+test rsshub::tests::multibyte_url_does_not_panic_in_scheme_check ... ok
+test rsshub::tests::resolve_passes_other_urls_through ... ok
+test rsshub::tests::resolve_rewrites_legacy_official_host_rows ... ok
+test rsshub::tests::resolve_scheme_to_current_base ... ok
+test ai::tests::preview_hides_credentials_for_every_provider ... ok
+test store::tokens::tests::query_plan_ands_multiple_terms ... ok
+test store::tokens::tests::query_plan_uses_phrase_for_multi_char_cjk ... ok
+test store::tokens::tests::single_char_has_index_candidate_and_retains_exact_field_filter ... ok
+test store::tokens::tests::tokens_mix_latin_and_cjk_bigrams ... ok
+test theme_preview::tests::ownership_revision_idle_and_max_lifetime ... ok
+test theme_preview_files::tests::directories_and_files_are_private ... ok
+test theme_preview_files::tests::revocation_removes_files_without_deleting_unrelated_paths ... ok
+test thumbnail::tests::first_image_skips_comments_and_script_and_resolves_relative_url ... ok
+test theme_preview_files::tests::unique_complete_files_expire_at_boundary_and_drop_cleans_directory ... ok
+test thumbnail::tests::unsafe_or_credentialed_image_urls_are_rejected ... ok
+test theme_preview::tests::patch_is_transactional_and_noop_preserves_revision ... ok
+test network::tests::settings_roundtrip_and_invalid_input_does_not_overwrite ... ok
+test store::backfill::tests::backfill_adds_unigrams_and_thumbnail_and_is_idempotent ... ok
+test store::scoped_list_plan_tests::ranked_search_limits_before_loading_entry_metadata_and_requires_covering_index ... ok
+test store::scoped_list_plan_tests::single_character_search_plan_stops_in_time_order_and_detects_unpinned_sort ... ok
+test store::scoped_list_plan_tests::scoped_ranked_search_candidates_use_covering_index_and_detect_its_removal ... ok
+test theme_preview_files::tests::count_and_byte_limits_precede_writes_and_do_not_evict ... ok
+test store::scoped_list_plan_tests::scoped_list_filters_feed_without_reading_table_and_detects_old_indexes ... ok
+test fetch::network_failure_tests::resolver_failure_has_a_stable_connection_code ... ok
+test fetch::network_failure_tests::request_deadline_has_a_stable_timeout_code ... ok
+test fetch::network_failure_tests::body_deadline_is_timeout_not_http_200 ... ok
+
+test result: ok. 100 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests/ai.rs (target/debug/deps/ai-e57d349901301d4f)
+
+running 14 tests
+test provider_error_is_surfaced_and_key_is_scrubbed ... ok
+test gemini_path_carries_model_and_parsing ... ok
+test openai_compatible_shape_and_parsing ... ok
+test empty_content_plain_length_reports_truncation ... ok
+test ai_requests_use_custom_proxy ... ok
+test empty_content_with_reasoning_budget_reports_actionable_error ... ok
+test anthropic_shape_and_parsing ... ok
+test ollama_needs_no_key_and_merges_system_into_prompt ... ok
+test reasoning_effort_is_sent_only_when_set ... ok
+test missing_entry_is_reported_not_silently_empty ... ok
+test task_result_is_cached_and_not_requested_twice ... ok
+test oversized_chunked_response_is_rejected_midstream ... ok
+test oversized_body_is_truncated_and_reported ... ok
+test oversized_response_with_content_length_is_rejected ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/ai_chat_agent.rs (target/debug/deps/ai_chat_agent-92777ef68f0cb7f5)
+
+running 34 tests
+test known_turn_usage_fuse_keeps_provider_billable_totals ... ok
+test interrupted_stream_retains_usage_from_completed_and_partial_rounds ... ok
+test gemini_streaming_agent_assembles_tools_then_streams_answer ... ok
+test anthropic_streaming_agent_assembles_tools_then_streams_answer ... ok
+test gemini_multi_tool_roundtrip ... ok
+test hard_ten_tools_and_multi_call_batch_is_atomic ... ok
+test authentication_rate_limit_and_generic_schema_errors_never_degrade ... ok
+test anthropic_multi_tool_roundtrip ... ok
+test nonadjacent_duplicate_in_one_batch_is_not_executed ... ok
+test provider_specific_capability_error_phrases_are_narrow ... ok
+test repeated_query_in_one_batch_stops_before_duplicate_callback ... ok
+test ollama_streaming_agent_assembles_tools_then_streams_answer ... ok
+test ollama_multi_tool_roundtrip ... ok
+test nonadjacent_duplicate_across_rounds_is_not_executed ... ok
+test nested_truncation_promotes_scope_count_to_top_level ... ok
+test openai_multi_tool_roundtrip ... ok
+test hard_six_requests_even_when_caller_loosens_limits ... ok
+test openai_streaming_agent_assembles_tools_then_streams_answer ... ok
+test repeated_query_without_text_stops_before_second_execution ... ok
+test tightened_model_budget ... ok
+test all_providers_explicit_capability_error_falls_back_without_tools ... ok
+test tightened_tool_budget ... ok
+test unknown_and_missing_arguments_never_reach_callback ... ok
+test cumulative_evidence_budget_truncates_last_result_before_feedback ... ok
+test unknown_usage_then_known_lower_bound_exceeding_budget_stops ... ok
+test usage_unknown_is_not_invented_and_output_limit_is_hard_clamped ... ok
+test tool_byte_and_total_evidence_gates_are_visible_to_model ... ok
+test fallback_replaces_only_structurally_pinned_report_seed ... ok
+test retrieval_caps_evidence_and_reports_empty_hits_honestly ... ok
+test explicit_unsupported_tools_injects_scoped_fts_and_caches_plain_qa ... ok
+test agent_timeout_does_not_poison_capability_cache ... ok
+test prepared_session_scope_is_injected_into_real_agent_callback ... ok
+test cancellation_drops_delayed_http_future_promptly ... ok
+test fallback_retrieval_scope_snippet_counts_and_total_chars_are_bounded ... ok
+
+test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/ai_chat_execute.rs (target/debug/deps/ai_chat_execute-5eb3ebcd38e6c840)
+
+running 23 tests
+test ollama_chat_error_scrubs_key ... ok
+test ollama_stream_success ... ok
+test gemini_chat_error_scrubs_key ... ok
+test anthropic_chat_success ... ok
+test anthropic_stream_success ... ok
+test anthropic_stream_interrupted ... ok
+test gemini_stream_interrupted ... ok
+test ollama_chat_success ... ok
+test gemini_chat_success ... ok
+test anthropic_chat_error_scrubs_key ... ok
+test gemini_transport_and_malformed_response_do_not_leak_key ... ok
+test ollama_stream_interrupted ... ok
+test gemini_stream_success ... ok
+test openai_stream_interrupted ... ok
+test openai_chat_success ... ok
+test openai_chat_error_scrubs_key ... ok
+test openai_stream_success ... ok
+test openai_stream_options_retry_preserves_unknown_usage ... ok
+test streaming_does_not_retry_generic_400_or_leak_gemini_key ... ok
+test streamed_chunks_are_visible_before_http_finishes_and_disconnect_keeps_text ... ok
+test chat_deadline_cancels_delayed_http_request ... ok
+test chat_response_body_size_gate_and_missing_key ... ok
+test streaming_response_size_gate_and_deadline_are_enforced ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/ai_chat_protocol.rs (target/debug/deps/ai_chat_protocol-4126448a13156bfe)
+
+running 21 tests
+test all_providers_minimal_request_omits_optional_fields_and_uses_output_limit ... ok
+test all_providers_plain_text_and_missing_usage_fixtures ... ok
+test all_providers_max_tokens_and_unknown_stop_reason_fixtures ... ok
+test anthropic_and_gemini_response_preserves_interleaved_text_and_calls ... ok
+test anthropic_response_multiple_calls_and_usage_fixture ... ok
+test anthropic_request_ordered_blocks_fixture ... ok
+test gemini_and_ollama_unknown_result_id_is_request_error ... ok
+test anthropic_request_tool_results_precede_all_interleaved_text_in_one_message ... ok
+test gemini_replay_must_follow_its_matching_call ... ok
+test chat_types_serde_roundtrip_and_default_limits ... ok
+test gemini_response_object_args_normalized_and_usage_fixture ... ok
+test gemini_array_tool_result_is_wrapped_as_response_object ... ok
+test gemini_request_function_response_looks_up_name_fixture ... ok
+test gemini_signed_function_part_is_replayed_opaque_and_other_providers_ignore_it ... ok
+test ollama_response_arguments_object_and_string_without_usage_fixture ... ok
+test ollama_chat_request_tools_and_tool_name_fixture ... ok
+test malformed_requests_and_responses_return_typed_errors ... ok
+test openai_nullable_content_and_tool_calls_fixtures ... ok
+test openai_response_multiple_calls_and_usage_fixture ... ok
+test openai_request_tool_results_are_contiguous_before_user_text ... ok
+test openai_request_tools_and_results_fixture ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/ai_chat_session.rs (target/debug/deps/ai_chat_session-cb1dd62f3f4f2397)
+
+running 6 tests
+test seed_missing_report_allows_no_report_session ... ok
+test session_provider_usage_budget_rejects_but_unknown_usage_is_not_invented ... ok
+test session_single_flight_config_drift_and_unknown_session_rejected ... ok
+test complete_turn_history_replay_excludes_failed_cancelled_and_interrupted ... ok
+test digest_seed_is_truncated_and_report_snapshot_survives_rewrite_and_restart ... ok
+test input_budget_rejects_without_writes_and_history_trims_whole_turns ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/ai_tools.rs (target/debug/deps/ai_tools-923f5d514af5c38d)
+
+running 7 tests
+test chat_scrubs_url_credentials_without_changing_legacy_mcp_projection ... ok
+test whitelist_required_types_enums_and_unknown_tools_are_enforced ... ok
+test digest_scope_precedes_date_dedup_and_limit_and_get_injects_default_scope ... ok
+test digest_chat_body_is_clipped_in_sql_without_loading_structured_content ... ok
+test scoped_large_result_retains_scope_count_through_repeated_byte_truncation ... ok
+test current_feed_tag_scope_cannot_be_overridden_and_never_marks_read ... ok
+test body_is_clipped_at_sql_read_then_json_byte_gate_and_utf8_is_valid ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/backup.rs (target/debug/deps/backup-b234f04b37bba11e)
+
+running 10 tests
+test stage_overwrites_previous_pending ... ok
+test validate_accepts_own_backup_and_rejects_garbage ... ok
+test apply_without_pending_never_touches_db_or_wal ... ok
+test crash_state_a_db_missing_with_pending_completes_the_replace ... ok
+test crash_state_b_db_missing_with_bak_and_no_pending_rolls_back ... ok
+test crash_state_c_stale_sidecars_with_pending_are_cleared_before_replace ... ok
+test sidecar_removal_failure_aborts_before_replacing_the_db ... ok
+test export_ignores_uncommitted_writes_from_the_second_connection ... ok
+test export_roundtrip_matches_source_with_a_second_connection_open ... ok
+test stage_then_apply_replaces_db_clears_sidecars_and_keeps_one_bak ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/digest_schema.rs (target/debug/deps/digest_schema-3e0847a8102b0bc5)
+
+running 14 tests
+test feed_tags_roundtrip_and_scope_resolution ... ok
+test freeze_manifest_filters_and_hashes ... ok
+test digest_meta_is_maintained_across_writes ... ok
+test commit_cas_rejects_when_material_drifts ... ok
+test status_check_uses_covering_index_not_a_scan ... ok
+test older_backup_is_accepted_and_migration_completes_after_restore ... ok
+test digest_report_binds_one_identity_and_days_exclude_slots ... ok
+test v1_database_migrates_to_v2_on_open_and_backfills_meta ... ok
+test full_index_scan_is_not_accepted_as_covering_search ... ok
+test backfill_handles_null_published_at ... ok
+test missing_meta_rows_are_backfilled_on_open ... ok
+test digest_list_reads_summary_column_and_dedupes_by_day ... ok
+test freeze_manifest_truncates_to_budget ... ok
+test effective_at_does_not_drift_for_null_published_entries ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.14s
+
+     Running tests/discover.rs (target/debug/deps/discover-a4502b81a33a3386)
+
+running 12 tests
+test structured_discovery_failure_preserves_code_and_raw_diagnostic ... ok
+test fetch_failure_keeps_the_original_reason ... ok
+test content_that_is_neither_feed_nor_html_is_rejected ... ok
+test page_without_any_candidate_reports_the_original_reason ... ok
+test relative_href_is_resolved_against_the_page_url ... ok
+test standard_type_wins_over_an_earlier_suffix_candidate ... ok
+test html_page_with_multiple_candidates_returns_the_first ... ok
+test relative_href_uses_the_final_page_url_after_redirect ... ok
+test rsshub_scheme_input_skips_discovery_without_network ... ok
+test candidates_without_standard_type_fall_back_to_href_suffix ... ok
+test url_returning_feed_content_is_used_as_is ... ok
+test rsshub_scheme_add_flow_then_first_fetch_hits_mirror ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/durability.rs (target/debug/deps/durability-f067032362fb2d0b)
+
+running 7 tests
+test crash_writer ... ok
+test legacy_chain_fixture_is_intact ... ok
+test legacy_v1_frozen_db_is_refused_at_detect_level ... ok
+test baseline_rows_and_flags_survive_reopen ... ok
+test legacy_frozen_db_is_refused_before_any_write ... ok
+test committed_wal_survives_forced_process_termination ... ok
+test baseline_schema_is_equivalent_to_legacy_terminal_state ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/feed_order.rs (target/debug/deps/feed_order-998fe7b7f85df8f8)
+
+running 3 tests
+test group_boundary_is_enforced_and_new_feeds_append ... ok
+test move_is_persistent_and_invalid_targets_leave_order_unchanged ... ok
+test alphabetical_order_and_cooldown_survive_reopen ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/fetch.rs (target/debug/deps/fetch-d4515581ec063aff)
+
+running 18 tests
+test fetch_applies_named_max_feed_bytes_limit ... ok
+test fetch_rejects_oversized_content_length_before_body_arrives ... ok
+test chunked_body_under_limit_is_returned_intact ... ok
+test conditional_request_sends_validators_and_handles_304 ... ok
+test fetch_bytes_limited_streams_and_returns_small_body ... ok
+test fetch_bytes_limited_rejects_oversized_content_length ... ok
+test fetch_aborts_chunked_body_mid_stream ... ok
+test fetch_returns_body_status_and_validators ... ok
+test http_error_is_reported_not_panicking ... ok
+test fetch_jobs_progress_counts_match_outcomes ... ok
+test oversize_failure_writes_no_data_for_the_source ... ok
+test legacy_official_host_row_follows_mirror_at_fetch_time ... ok
+test refresh_keeps_custom_title_and_tracks_source_title ... ok
+test one_bad_feed_does_not_block_the_others ... ok
+test rate_limit_code_preserves_cache_and_manual_retry_recovers ... ok
+test rsshub_scheme_feed_resolves_through_mirror_at_fetch_time ... ok
+test refresh_then_conditional_refresh_skips_unchanged ... ok
+test bounded_map_caps_concurrency ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/fulltext.rs (target/debug/deps/fulltext-ef5cfac22b212192)
+
+running 12 tests
+test non_html_body_is_rejected_before_parsing ... ok
+test url_must_be_absolute_http ... ok
+test bot_challenge_page_is_rejected_not_extracted ... ok
+test needs_fulltext_judgement ... ok
+test empty_body_has_no_content_to_extract ... ok
+test size_gate_rejects_over_limit_and_passes_the_boundary ... ok
+test typical_article_extracts_body_and_drops_page_chrome ... ok
+test refresh_still_updates_content_when_never_fetched ... ok
+test refresh_keeps_fetched_fulltext_and_updates_metadata_only ... ok
+test store_reports_needs_fulltext_for_summary_rows_only ... ok
+test set_fulltext_writes_back_content_tokens_and_flag ... ok
+test schema_reaches_fulltext_migration ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/logging_runtime.rs (target/debug/deps/logging_runtime-fcb421c28a31a8f3)
+
+running 1 test
+test level_gate_and_panic_hook_recording ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/opml.rs (target/debug/deps/opml-b092b990aa774a3e)
+
+running 7 tests
+test empty_opml_is_not_an_error ... ok
+test malformed_input_is_reported_not_silently_empty ... ok
+test import_adds_feeds_folders_and_counts ... ok
+test import_is_idempotent_by_url ... ok
+test export_escapes_special_characters_and_survives_roundtrip ... ok
+test rsshub_scheme_urls_export_as_scheme_and_reimport_as_duplicates ... ok
+test export_read_only_rescues_feeds_from_a_legacy_database ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/parse_formats.rs (target/debug/deps/parse_formats-74adfaa604851c6b)
+
+running 10 tests
+test html_to_text_strips_tags_and_scripts ... ok
+test rss_without_guid_but_with_link_is_stable ... ok
+test utf8_conflict_handles_bom_quotes_and_preserves_legitimate_declarations ... ok
+test chinese_legacy_encodings_and_incorrect_declarations ... ok
+test namespaced_content_and_multiple_enclosures_keep_article_identity ... ok
+test thumbnail_prefers_media_rss_then_uses_first_safe_inline_image ... ok
+test json_feed_basics ... ok
+test atom_basics ... ok
+test rss_without_guid_and_link_falls_back_to_content_hash ... ok
+test rss_with_guid_keeps_source_identity ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/proxy_environment.rs (target/debug/deps/proxy_environment-6b14f548b52920be)
+
+running 6 tests
+test proxy_child ... ok
+test unavailable_proxy_fails_without_direct_fallback ... ok
+test proxy_authentication_failure_is_reported ... ok
+test custom_proxy_switch_and_direct_bypass_take_effect ... ok
+test https_uses_connect_and_reports_tunnel_rejection ... ok
+test environment_proxy_and_no_proxy_are_honored ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/retry_after.rs (target/debug/deps/retry_after-33563e66635fb404)
+
+running 2 tests
+test nullable_cooldown_column_exists_and_feeds_survive_reopen ... ok
+test cooldown_survives_reopen_blocks_requests_and_recovers ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/search_unigrams.rs (target/debug/deps/search_unigrams-cba48ea35ae917a9)
+
+running 2 tests
+test interrupted_baseline_creation_rolls_back_then_retries ... ok
+test backfill_indexes_existing_characters_preserves_fields_and_time_order ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/store.rs (target/debug/deps/store-d04cbd6471d44916)
+
+running 58 tests
+test conditional_write_plans_use_indexes ... ok
+test add_feed_is_idempotent ... ok
+test checkpoint_wal_succeeds_on_file_backed_db ... ok
+test delete_setting_is_idempotent_and_removes_the_key ... ok
+test conditional_flag_write_rejects_an_empty_scope ... ok
+test add_feed_stores_scheme_identity_and_dedupes_both_forms ... ok
+test counts_rides_indexes_never_the_table_btree ... ok
+test custom_title_is_display_name_and_survives_refresh ... ok
+test baseline_read_later_column_is_writable_and_preserves_read_state ... ok
+test conditional_write_plan_assertion_turns_red_without_the_indexes ... ok
+test baseline_unread_sortkey_index_serves_unread_first_and_mutation_is_observable ... ok
+test baseline_starred_partial_index_exists_and_counts_ride_indexes ... ok
+test baseline_per_feed_interval_defaults_to_inherit_and_persists ... ok
+test baseline_custom_title_defaults_to_source_title_and_persists ... ok
+test conditional_flag_write_is_scoped_and_idempotent ... ok
+test feed_endpoint_resolves_scheme_and_legacy_rows_against_mirror ... ok
+test baseline_fulltext_flag_defaults_to_pending_then_is_writable ... ok
+test existing_entry_ids_dedupes_and_skips_missing ... ok
+test fetch_status_and_cache_headers_roundtrip ... ok
+test feed_refresh_interval_round_trip_and_scan ... ok
+test deleting_feed_cascades_entries_and_search_index ... ok
+test entry_count_for_feed_rides_covering_index_never_table_btree ... ok
+test mark_view_rejects_missing_or_unknown_scope ... ok
+test entry_query_explicit_sort_and_hide_read_override_settings ... ok
+test folder_rename_delete_and_reassign ... ok
+test feed_ids_filters_multi_source_and_empty_list_matches_nothing ... ok
+test fulltext_backfills_only_missing_thumbnail ... ok
+test folder_and_tag_scope_totals_stay_on_covering_indexes ... ok
+test normalization_rewrites_official_rows_and_keeps_scheme_rows ... ok
+test keyset_cursor_plans_use_sortkey_index ... ok
+test list_entries_order_by_uses_sortkey_index ... ok
+test list_entries_filters_and_limits ... ok
+test list_sort_three_modes_order_and_setting_fallback ... ok
+test hide_read_filters_lists_but_starred_and_later_views_are_exempt ... ok
+test refresh_keeps_read_and_starred_state ... ok
+test read_later_is_independent_and_queryable ... ok
+test ranked_search_limits_results_and_applies_hidden_read_before_limit ... ok
+test oldest_pages_reverse_scan_the_sortkey_index ... ok
+test schema_reaches_latest_version ... ok
+test keyset_cursor_pages_through_tied_and_null_published_rows ... ok
+test settings_roundtrip_and_defaults ... ok
+test scoped_query_plan_guards_fail_when_required_indexes_are_removed ... ok
+test thumbnail_is_stored_for_list_rows_and_survives_reopen ... ok
+test search_supports_latin_and_chinese ... ok
+test unread_counts_track_state ... ok
+test time_range_and_multi_source_plans_ride_indexes_not_table_btree ... ok
+test time_range_plan_assertion_turns_red_without_sortkey_index ... ok
+test unread_first_cursor_is_composite_and_missing_read_half_falls_back_to_first_page ... ok
+test time_range_is_closed_and_measures_the_sortkey_expression ... ok
+test upsert_dedupes_by_stable_id ... ok
+test unread_first_cursor_plans_use_v11_composite_index ... ok
+test keyset_cursor_supports_every_filter_shape ... ok
+test time_range_and_feed_ids_page_without_duplicates_or_gaps ... ok
+test unread_summary_groups_by_feed_and_folder ... ok
+test unread_summary_rides_covering_index_never_table_btree ... ok
+test list_sort_pagination_matrix_three_modes_by_five_views ... ok
+test folder_pages_cover_only_members_in_every_sort_order ... ok
+test mark_view_is_scoped_and_not_limited_to_loaded_page ... ok
+
+test result: ok. 58 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+     Running tests/store_chat.rs (target/debug/deps/store_chat-8bbb77681112993f)
+
+running 9 tests
+test delete_session_rejects_inflight_and_allows_terminal ... ok
+test append_failure_rolls_back_metadata_and_sequence ... ok
+test delete_session_guard_is_cross_connection ... ok
+test crud_roundtrip_seq_unique_and_all_cascades ... ok
+test database_single_flight_and_atomic_completion_reject_late_writes ... ok
+test sources_excerpt_byte_gate_and_running_query_uses_partial_index ... ok
+test startup_recovery_is_explicit_idempotent_and_preserves_terminal_messages ... ok
+test v2_migrates_to_v3_and_reopens_without_losing_data ... ok
+test paginated_chat_reads_latest_then_earlier_without_gaps_or_duplicate_rows ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/tags.rs (target/debug/deps/tags-f6965952356e1021)
+
+running 20 tests
+test tag_color_format_is_validated_and_normalized ... ok
+test tag_and_flag_plans_share_the_scope_where_clause ... ok
+test migration_v12_is_idempotent_and_keeps_tags ... ok
+test assign_and_unassign_batch_are_idempotent ... ok
+test conditional_assign_targets_feed_and_time_range ... ok
+test delete_tag_dry_run_matches_the_real_delete_and_keeps_articles ... ok
+test list_tags_reports_counts_pinning_and_ordering ... ok
+test tag_filter_keeps_ui_settings_and_mcp_explicit_overrides ... ok
+test baseline_provides_tag_schema_and_keeps_existing_data ... ok
+test list_tags_recent_first_puts_used_tags_ahead ... ok
+test repeat_assign_is_a_strict_no_op_for_last_used_at ... ok
+test entry_query_tag_filter_and_rows_carry_tags ... ok
+test effective_tag_explain_all_sorts_pages_counts_and_bulk_targets ... ok
+test tag_tables_do_not_disturb_existing_aggregates_and_rsshub_paths ... ok
+test tag_name_is_trimmed_and_unique_case_insensitively ... ok
+test remove_feed_leaves_no_orphan_entry_tags_and_keeps_other_feeds ... ok
+test effective_tags_projection_filter_counts_and_writes_agree ... ok
+test tag_filter_plan_rides_sort_and_tag_indexes ... ok
+test effective_tag_explain_mutations_require_every_union_index ... ok
+test tag_unread_count_plans_ride_covering_indexes ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/theme.rs (target/debug/deps/theme-239f1e299c815816)
+
+running 18 tests
+test print_is_default_and_ships_newsprint_values_in_both_modes ... ok
+test contrast_warnings_do_not_reject_a_valid_user_palette ... ok
+test every_preset_resolves_and_passes_declared_contrast_pairs ... ok
+test hash_ignores_revision_and_retains_preset_identity ... ok
+test patch_is_partial_with_mode_specific_colors_and_null_inheritance ... ok
+test corrupt_or_future_settings_are_not_overwritten ... ok
+test broken_legacy_values_follow_old_fallbacks ... ok
+test advertised_numeric_limits_match_core_validation ... ok
+test revision_probe_is_read_only_and_detects_other_connections ... ok
+test legacy_read_preserves_preferences_and_does_not_write ... ok
+test preview_validation_is_read_only_and_stale_revision_is_rejected ... ok
+test same_value_patch_does_not_write_or_advance_revision ... ok
+test existing_controls_share_versioned_store_and_preserve_other_overrides ... ok
+test preview_commit_replaces_overrides_and_checks_base_revision ... ok
+test failed_sql_write_rolls_back_current_and_history ... ok
+test separate_connections_compare_and_swap_and_reopen ... ok
+test validation_rejects_unknown_null_paths_types_and_ranges_without_writes ... ok
+test history_is_bounded_and_restore_advances_revision ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running unittests src/lib.rs (target/debug/deps/rustrss_desktop_lib-523c48fda712cf0e)
+
+running 88 tests
+test ai::tests::key_source_serializes_to_the_shape_the_ui_switches_on ... ok
+test commands::chat_jobs_tests::single_flight_cancel_before_await_and_drop ... ok
+test commands::digest_jobs_tests::claim_cancel_and_drop_lifecycle ... ok
+test commands::chat_jobs_tests::stop_drops_in_flight_future_and_latched_stop_wins ... ok
+test commands::tests::cursor_pair_needs_both_halves ... ok
+test commands::tests::custom_title_normalization_trims_clears_and_caps ... ok
+test commands::digest_jobs_tests::double_claim_same_slot_rejected ... ok
+test commands::mobile_fallback_guard_tests::desktop_only_actions_refuse_explicitly_on_mobile ... ok
+test commands::log_command_tests::export_log_reads_core_before_dialog_and_mirrors_export_opml ... ok
+test commands::tests::external_open_command_never_uses_a_shell ... ok
+test commands::tests::external_url_rejects_other_schemes ... ok
+test commands::log_command_tests::invalid_names_fail_before_any_file_or_dialog ... ok
+test commands::tests::external_url_accepts_http_and_https_verbatim ... ok
+test commands::tests::external_url_rejects_whitespace_control_and_metacharacters ... ok
+test commands::tests::feed_config_patch_distinguishes_absent_from_clear ... ok
+test commands::mobile_fallback_guard_tests::open_external_mobile_branch_routes_to_opener ... ok
+test commands::tests::feed_refresh_interval_normalization_uses_shared_whitelist ... ok
+test commands::tests::font_family_normalization_trims_collapses_and_bounds ... ok
+test commands::tests::font_numbers_clamp_to_slider_ranges ... ok
+test commands::credential_lock_tests::credential_lookup_releases_store_lock ... ok
+test ai::tests::confirm_before_send_defaults_to_on_and_only_accepts_explicit_off ... ok
+test commands::tests::locale_whitelist ... ok
+test commands::tests::log_level_filter_only_accepts_debug ... ok
+test commands::tests::open_dir_command_never_uses_a_shell ... ok
+test commands::tests::parse_font_families_sorts_dedups_and_drops_blanks ... ok
+test ai::tests::credential_client_creation_does_not_hold_store_lock ... ok
+test commands::tests::feed_refresh_interval_command_path_persists_and_restores ... ok
+test commands::tests::refresh_interval_duration_tiers_and_off ... ok
+test commands::tests::refresh_interval_whitelist ... ok
+test commands::tests::restore_confirm_text_is_bilingual_and_warns_about_restart ... ok
+test commands::tests::fetch_fulltext_reports_missing_url ... ok
+test commands::tests::run_font_command_degrades_when_binary_missing ... ok
+test commands::tests::fetch_fulltext_is_idempotent_and_touches_no_network ... ok
+test commands::tests::fetch_fulltext_second_call_is_offline_after_write_back ... ok
+test commands::chat_jobs_tests::disconnected_stream_persists_reported_input_usage ... ok
+test commands::chat_jobs_tests::cancelled_stream_persists_reported_input_usage ... ok
+test commands::tests::spawn_dir_opener_reports_missing_launcher ... ok
+test commands::tests::theme_whitelist ... ok
+test commands::tests::ui_path_still_uses_the_shared_scrub ... ok
+test commands::tests::fetch_fulltext_degrades_and_keeps_the_summary ... ok
+test commands::tests::list_scope_total_dispatches_feed_folder_tag ... ok
+test commands::tests::fetch_fulltext_end_to_end_fetches_extracts_and_writes_back ... ok
+test credentials::desktop_tests::keyring_retry_does_not_retry_missing_entry ... ok
+test commands::chat_jobs_tests::agent_cancel_retains_reported_input_usage ... ok
+test notify::tests::copy_follows_locale_and_english_plural ... ok
+test notify::tests::decide_needs_enabled_switch_and_positive_delta ... ok
+test preview_capture::mac_png_tests::bounded_png_converts_bottom_up_rows_to_png_order ... ok
+test preview_capture::mac_png_tests::bounded_png_preserves_colors_and_rejects_one_byte_over_budget ... ok
+test preview_capture::mac_png_tests::bounded_png_rejects_malformed_dimensions ... ok
+test scheduler::tests::due_boundary_is_exactly_at_the_interval ... ok
+test scheduler::tests::due_follows_global_when_no_override ... ok
+test scheduler::tests::empty_scan_or_nothing_due_gives_empty_batch ... ok
+test scheduler::tests::global_off_still_fires_explicit_overrides ... ok
+test commands::tests::mcp_write_settings_lifecycle_and_defaults ... ok
+test scheduler::tests::override_wins_over_global_in_both_directions ... ok
+test commands::tests::list_sort_and_hide_read_command_path_round_trips ... ok
+test state::refusal_tests::refusal_is_detected_inside_a_wrapped_message ... ok
+test state::refusal_tests::unrelated_startup_failures_are_not_refusals ... ok
+test commands::tests::ui_settings_reads_font_defaults_and_survives_broken_values ... ok
+test commands::tests::ui_settings_normalizes_refresh_values ... ok
+test commands::tests::set_feed_config_writes_only_patched_fields ... ok
+test tests::desktop_only_services_are_gated_by_desktop_cfg ... ok
+test tests::mcp_startup_line_carries_no_token_material ... ok
+test tests::global_shortcuts_have_no_conflicts_and_t_opens_the_tag_picker ... ok
+test commands::tests::set_log_level_clamps_unknown_values_and_applies_immediately ... ok
+test scheduler::tests::store_scan_rows_drive_due_calculation ... ok
+test tests::tray_module_is_available_on_every_target ... ok
+test theme_preview::tests::native_marker_rejects_stale_pixels ... ok
+test tests::tag_sidebar_section_and_management_commands_are_wired ... ok
+test theme_preview::tests::ready_requires_request_revision_hash_scene_mode_and_content_geometry ... ok
+test tray::tests::paint_badge_draws_dot_in_top_right_only ... ok
+test tray::tests::paint_badge_refuses_malformed_icons ... ok
+test tray::tests::tooltip_keeps_brand_and_appends_count ... ok
+test tray::tests::update_badge_without_a_tray_is_a_silent_noop ... ok
+test scheduler::tests::notify_switch_defaults_off_and_follows_store ... ok
+test commands::tests::tag_management_command_path_persists_and_delete_is_previewed ... ok
+test state::tests::refresh_flight_is_single_and_released_on_drop ... ok
+test tests::mcp_write_settings_controls_and_commands_are_wired ... ok
+test commands::tests::refresh_concurrency_whitelist_roundtrip ... ok
+test state::tests::refresh_flight_released_on_early_return ... ok
+test tests::migrated_files_have_no_stray_std_prints ... ok
+test commands::tests::set_font_config_writes_only_given_keys_and_clamps ... ok
+test commands::tests::probe_font_families_matches_environment ... ok
+test credentials::desktop_tests::keyring_retry_absorbs_transient_failures ... ok
+test commands::chat_jobs_tests::timed_out_agent_persists_reported_input_usage ... ok
+test commands::chat_jobs_tests::timed_out_stream_persists_reported_input_usage ... ok
+test credentials::desktop_tests::keyring_retry_gives_up_after_attempts_and_keeps_last_error ... ok
+test commands::tests::run_font_command_times_out_and_kills_child ... ok
+
+test result: ok. 88 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running unittests src/main.rs (target/debug/deps/rustrss_desktop-db2074c5891c0182)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/rustrss_mcp-c126cc6ca477862d)
+
+running 58 tests
+test audit::tests::line_carries_all_four_required_fields ... ok
+test audit::tests::args_summary_scrubs_credentials ... ok
+test audit::tests::rejected_calls_are_audited_with_the_error_code ... ok
+test audit::tests::summary_is_parsed_from_the_write_envelope ... ok
+test config::tests::snippet_is_valid_json_and_carries_url_and_token ... ok
+test feed_tools::tests::custom_title_normalization_matches_the_ui ... ok
+test audit::tests::long_args_are_truncated_after_scrubbing ... ok
+test config::tests::write_tokens_are_48_hex_chars_and_random ... ok
+test http::tests::tokens_are_random_and_long_enough ... ok
+test feed_tools::tests::update_feed_patch_is_tri_state ... ok
+test feed_tools::tests::interval_whitelist_matches_the_ui_choices ... ok
+test preview::tests::sweep_expires_memory_and_closes_resources_without_requests ... ok
+test feed_tools::tests::subscribe_target_parsing_covers_all_shapes ... ok
+test registry::tests::read_tools_ignore_switches_and_scope ... ok
+test registry::tests::read_tools_are_registered ... ok
+test http::tests::token_must_match_exactly ... ok
+test registry::tests::visibility_matches_authorization_cell_by_cell ... ok
+test registry::tests::unknown_tools_are_filtered_out ... ok
+test registry::tests::write_tool_authorization_matrix ... ok
+test tag_tools::tests::store_errors_map_to_machine_readable_codes ... ok
+test tag_tools::tests::tag_id_batch_is_capped_at_100 ... ok
+test config::tests::insert_if_absent_does_not_overwrite ... ok
+test config::tests::write_token_lifecycle_is_explicit ... ok
+test config::tests::switches_default_off_and_follow_the_store ... ok
+test config::tests::port_falls_back_on_bad_values ... ok
+test config::tests::token_is_stable_and_persisted ... ok
+test config::tests::existing_token_is_never_overwritten_by_auto_generation ... ok
+test tests::scope_comes_from_the_transport_not_from_the_session ... ok
+test tag_tools::tests::assign_targets_are_mutually_exclusive_and_required ... ok
+test tag_tools::tests::list_tags_rejects_unknown_sort ... ok
+test write_contract::tests::batch_ids_are_capped_at_100 ... ok
+test write_contract::tests::dangerous_writes_require_explicit_confirm ... ok
+test write_contract::tests::dry_run_never_runs_the_apply_branch ... ok
+test write_tools::tests::error_codes_are_classified_explicitly ... ok
+test write_contract::tests::outcome_envelope_shape ... ok
+test tag_tools::tests::assign_with_missing_tag_changes_nothing ... ok
+test tag_tools::tests::tag_write_errors_use_codes_not_messages ... ok
+test tag_tools::tests::list_tags_reports_metadata_and_ordering ... ok
+test preview::tests::deadline_drops_render_and_releases_single_flight ... ok
+test tests::every_exposed_tool_is_registered ... ok
+test tag_tools::tests::assign_reports_missing_entries_item_by_item ... ok
+test tag_tools::tests::delete_tag_needs_confirm_and_previews_with_the_same_count ... ok
+test tests::refresh_gate_is_shared_with_the_host ... ok
+test tests::credential_scope_is_recomputed_on_every_call ... ok
+test write_tools::tests::refresh_target_validation_covers_all_three_scopes ... ok
+test write_tools::tests::refresh_reports_rate_limited_when_the_shared_gate_is_held ... ok
+test write_tools::tests::set_flag_target_shape_is_validated ... ok
+test write_tools::tests::fetch_fulltext_rejects_missing_entries_and_missing_urls ... ok
+test write_tools::tests::set_read_by_condition_with_no_hit_is_a_noop ... ok
+test tests::digest_tools_metadata_and_pagination ... ok
+test tests::default_listing_is_read_only ... ok
+test write_tools::tests::set_read_by_ids_reports_per_item_and_moves_the_counters ... ok
+test tests::test_tools_use_the_same_registry ... ok
+test write_tools::tests::set_read_with_no_existing_id_fails_the_whole_call ... ok
+test write_tools::tests::starred_and_read_later_have_their_own_columns ... ok
+test tag_tools::tests::scoped_assign_samples_the_hit_set_and_flags_truncation ... ok
+test write_tools::tests::set_read_by_condition_samples_the_hit_set_and_flags_truncation ... ok
+test tag_tools::tests::list_tags_is_bounded_and_says_so ... ok
+
+test result: ok. 58 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running unittests src/main.rs (target/debug/deps/rustrss_mcp-9920e3d63fe78f56)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/feed_tools.rs (target/debug/deps/feed_tools-4de0cdf75136514e)
+
+running 8 tests
+test subscribe_rsshub_forms_share_one_identity ... ok
+test subscribe_discovers_homepage_and_is_idempotent ... ok
+test subscribe_failure_codes_are_distinguishable ... ok
+test every_subscription_tool_call_leaves_a_scrubbed_audit_line ... ok
+test update_feed_patch_is_tri_state_and_lands_in_sqlite ... ok
+test folder_crud_and_delete_keep_subscriptions ... ok
+test unsubscribe_is_dangerous_and_dry_run_matches_execution ... ok
+test opml_round_trip_and_import_errors ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/http.rs (target/debug/deps/http-3217284ae495e529)
+
+running 3 tests
+test refuses_to_bind_a_non_loopback_address ... ok
+test rejects_requests_without_a_valid_token ... ok
+test accepts_initialize_and_serves_real_data_with_both_token_styles ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/read_tools_shared.rs (target/debug/deps/read_tools_shared-07a927eb41c860d4)
+
+running 2 tests
+test all_ten_mcp_wrappers_share_exact_core_projections ... ok
+test large_chat_result_is_utf8_prefix_of_unchanged_mcp_projection ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/stdio_smoke.rs (target/debug/deps/stdio_smoke-889d82f759b77933)
+
+running 2 tests
+test stdio_lists_only_read_tools_by_default ... ok
+test stdio_write_tools_need_both_the_switch_and_a_token ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/tag_tools.rs (target/debug/deps/tag_tools-e323f77a1da0d992)
+
+running 8 tests
+test every_tag_write_call_leaves_a_scrubbed_audit_line ... ok
+test read_token_calls_to_tag_write_tools_are_refused_without_touching_the_db ... ok
+test list_tags_works_for_both_tokens_and_visibility_matches_authorization ... ok
+test tag_write_tools_follow_the_write_switch_as_well ... ok
+test delete_tag_requires_confirm_and_dry_run_matches_the_real_delete ... ok
+test list_articles_default_view_ignores_ui_settings_and_bounds_the_tags_field ... ok
+test list_articles_filters_by_tag_and_carries_tag_names ... ok
+test tag_writes_land_in_the_database_and_read_paths_agree ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/theme_preview.rs (target/debug/deps/theme_preview-0045e466bff4dda1)
+
+running 7 tests
+test failed_render_retains_candidate_id_for_cancel ... ok
+test save_cas_conflict_and_idempotent_finish ... ok
+test temporary_image_patch_cancel_and_permissions ... ok
+test bridge_checks_profile_and_forwards_file_and_cancel ... ok
+test concurrent_capture_and_rotation_during_render_fail_closed ... ok
+test file_limit_and_shutdown_preserve_candidate_for_cancel ... ok
+test screenshots_are_local_files_with_explicit_lifetime_and_no_inline_images ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.17s
+
+     Running tests/theme_tools.rs (target/debug/deps/theme_tools-8bf7a648168e71e1)
+
+running 7 tests
+test audit_does_not_log_theme_values_or_unknown_input ... ok
+test preview_tool_descriptions_require_local_image_reading ... ok
+test theme_patch_tool_schemas_publish_the_core_object_contract ... ok
+test disabled_writes_and_rotated_tokens_take_effect_on_next_request ... ok
+test read_discovery_schema_and_validation_are_non_mutating ... ok
+test invalid_patch_and_corrupt_store_fail_without_writes ... ok
+test write_cas_noop_history_restore_and_notification ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests/tools.rs (target/debug/deps/tools-32c11ce550f85113)
+
+running 11 tests
+test list_articles_returns_metadata_without_body ... ok
+test list_feeds_reports_unread_and_status ... ok
+test get_article_reports_missing_id_helpfully ... ok
+test search_works_for_latin_and_chinese ... ok
+test get_article_returns_full_body_and_optional_html ... ok
+test stats_and_limit_clamping ... ok
+test invalid_cursor_and_sort_are_reported_not_silently_ignored ... ok
+test list_folders_and_unread_summary_report_complete_groups ... ok
+test list_articles_defaults_do_not_follow_ui_settings ... ok
+test list_articles_exposes_new_filters_sort_and_page_size ... ok
+test list_articles_cursor_pages_without_duplicates_or_gaps ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/write_auth.rs (target/debug/deps/write_auth-f80590420b4e7353)
+
+running 6 tests
+test health_stays_public_and_carries_no_subscription_data ... ok
+test write_calls_leave_an_audit_line_with_scrubbed_args ... ok
+test dry_run_previews_without_touching_the_database ... ok
+test read_token_cannot_see_or_call_write_tools ... ok
+test write_token_rotation_and_destruction_kill_the_old_credential_at_once ... ok
+test write_switch_and_dangerous_switch_gate_independently ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/write_tools.rs (target/debug/deps/write_tools-5f27c3d138d8973a)
+
+running 6 tests
+test refresh_reloads_proxy_config_from_shared_database ... ok
+test write_tools_are_unavailable_with_a_read_token_or_with_switches_off ... ok
+test refresh_covers_three_scopes_and_shares_the_single_flight ... ok
+test read_state_writes_land_in_the_database_and_agree_with_read_tools ... ok
+test fetch_fulltext_writes_back_and_reports_each_error_class ... ok
+test every_write_tool_call_leaves_a_scrubbed_audit_line ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.70s
+
+   Doc-tests rustrss_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rustrss_desktop_lib
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rustrss_mcp
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

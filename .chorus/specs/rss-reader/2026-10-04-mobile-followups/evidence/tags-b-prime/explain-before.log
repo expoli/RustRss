@@ -1,0 +1,31 @@
+   Compiling rustrss-core v0.6.0 (/home/tcy/Github/RustRss/crates/rustrss-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.24s
+     Running tests/tags.rs (target/debug/deps/tags-d2c7ef246b49f975)
+
+running 3 tests
+
+thread 'effective_tag_explain_all_sorts_pages_counts_and_bulk_targets' (3186061) panicked at crates/rustrss-core/tests/tags.rs:1276:9:
+missing effective UNION covering leg idx_feed_tags_tag: SCAN e USING INDEX idx_entries_sortkey | LIST SUBQUERY 1 | SEARCH et USING COVERING INDEX idx_entry_tags_tag (tag_id=?) | CREATE BLOOM FILTER | SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'effective_tags_projection_filter_counts_and_writes_agree' (3186063) panicked at crates/rustrss-core/tests/tags.rs:1232:5:
+assertion `left == right` failed
+  left: Null
+ right: "both"
+test effective_tag_explain_all_sorts_pages_counts_and_bulk_targets ... FAILED
+test effective_tags_projection_filter_counts_and_writes_agree ... FAILED
+
+thread 'effective_tag_explain_mutations_require_every_union_index' (3186062) panicked at crates/rustrss-core/tests/tags.rs:1323:17:
+removed idx_feed_tags_tag: Newest, None must reject plan
+test effective_tag_explain_mutations_require_every_union_index ... FAILED
+
+failures:
+
+failures:
+    effective_tag_explain_all_sorts_pages_counts_and_bulk_targets
+    effective_tag_explain_mutations_require_every_union_index
+    effective_tags_projection_filter_counts_and_writes_agree
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p rustrss-core --test tags`

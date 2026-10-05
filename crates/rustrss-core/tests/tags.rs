@@ -160,7 +160,8 @@ fn baseline_provides_tag_schema_and_keeps_existing_data() {
         store.entry_tags(1).unwrap(),
         vec![TagBrief {
             id: tag.id,
-            name: "Rust".into()
+            name: "Rust".into(),
+            source: rustrss_core::TagSource::Manual,
         }]
     );
     assert_eq!(
@@ -443,7 +444,8 @@ fn delete_tag_dry_run_matches_the_real_delete_and_keeps_articles() {
         store.entry_tags(1).unwrap(),
         vec![TagBrief {
             id: other.id,
-            name: "数据库".into()
+            name: "数据库".into(),
+            source: rustrss_core::TagSource::Manual,
         }],
         "同条目上的其它标签必须留着"
     );
@@ -722,11 +724,13 @@ fn entry_query_tag_filter_and_rows_carry_tags() {
         vec![
             TagBrief {
                 id: rust.id,
-                name: "Rust".into()
+                name: "Rust".into(),
+                source: rustrss_core::TagSource::Manual,
             },
             TagBrief {
                 id: db.id,
-                name: "数据库".into()
+                name: "数据库".into(),
+                source: rustrss_core::TagSource::Manual,
             },
         ],
         "条目输出带 tags（id + 名称；名称序按字节比较，ASCII 在前）"
@@ -887,7 +891,8 @@ fn remove_feed_leaves_no_orphan_entry_tags_and_keeps_other_feeds() {
         store.entry_tags(4).unwrap(),
         vec![TagBrief {
             id: rust.id,
-            name: "Rust".into()
+            name: "Rust".into(),
+            source: rustrss_core::TagSource::Manual,
         }],
         "别的源的标签关联必须留着"
     );
@@ -938,7 +943,10 @@ fn remove_feed_leaves_no_orphan_entry_tags_and_keeps_other_feeds() {
 /// 裸表扫描（不带 `USING ...`）——正文大列所在的表 B 树被逐行穿过的信号。
 fn bare_scan(plan: &str, table: &str) -> Option<String> {
     plan.split(" | ")
-        .find(|l| l.starts_with(&format!("SCAN {table}")) && !l.contains("USING"))
+        .find(|l| {
+            (l == &format!("SCAN {table}") || l.starts_with(&format!("SCAN {table} ")))
+                && !l.contains("USING")
+        })
         .map(|l| l.to_string())
 }
 
@@ -967,8 +975,8 @@ fn tag_filter_plan_rides_sort_and_tag_indexes() {
             "{sort:?} 档标签过滤不得裸扫 entries 表: {plan}"
         );
         assert!(
-            !plan.contains("USE TEMP B-TREE"),
-            "{sort:?} 档标签过滤不得临时排序（排序索引应按序直取）: {plan}"
+            no_outer_tag_sort(&plan.split(" | ").map(str::to_owned).collect::<Vec<_>>()),
+            "{sort:?} 档标签过滤不得外层临时排序（仅允许 UNION ID 去重）: {plan}"
         );
         assert!(
             plan.contains("COVERING INDEX idx_entry_tags_tag"),
@@ -1075,8 +1083,8 @@ fn tag_unread_count_plans_ride_covering_indexes() {
         "关联篇数只扫 idx_entry_tags_tag: {count_plan}"
     );
     assert!(
-        !count_plan.contains("entries"),
-        "关联篇数的计划里不该出现 entries（根本不碰那张表）: {count_plan}"
+        count_plan.contains("COVERING INDEX idx_entries_feed_read"),
+        "继承腿只走 entries 覆盖索引（不碰正文表）: {count_plan}"
     );
 
     // 变异校验一：删掉 (id, read) 覆盖索引 → 未读计数计划必须建不出来
@@ -1170,8 +1178,11 @@ fn tag_tables_do_not_disturb_existing_aggregates_and_rsshub_paths() {
     );
     let plan = store.explain_counts().unwrap().join(" | ");
     // v15's wider sort index may lose COUNT(*) to the smaller covering index.
-    assert!(plan.contains("SCAN entries USING COVERING INDEX idx_entries_sortkey")
-        || plan.contains("SCAN entries USING COVERING INDEX idx_entries_feed_read"), "{plan}");
+    assert!(
+        plan.contains("SCAN entries USING COVERING INDEX idx_entries_sortkey")
+            || plan.contains("SCAN entries USING COVERING INDEX idx_entries_feed_read"),
+        "{plan}"
+    );
     assert_eq!(
         rsshub::canonical_scheme_url("https://rsshub.app/github/trending"),
         "rsshub://github/trending"
@@ -1217,4 +1228,265 @@ fn tag_and_flag_plans_share_the_scope_where_clause() {
     assert!(store
         .explain_set_flag_scoped(rustrss_core::EntryFlag::Read, &scope)
         .is_ok());
+}
+
+// B′: every consumer uses manual ∪ feed, without changing manual writes.
+#[test]
+fn effective_tags_projection_filter_counts_and_writes_agree() {
+    let (store, f1, f2) = setup();
+    store
+        .upsert_entries(f2, &[mk_entry("outside", BASE_TS)])
+        .unwrap();
+    let inherited = store.create_tag("Alpha", None).unwrap();
+    let manual = store.create_tag("Beta", None).unwrap();
+    store.set_feed_tags(f1, &[inherited.id]).unwrap();
+    store
+        .assign_tags(&TagTarget::Entries(vec![1, 4]), &[inherited.id])
+        .unwrap();
+    store
+        .assign_tags(&TagTarget::Entries(vec![1]), &[manual.id])
+        .unwrap();
+    let tags = serde_json::to_value(store.entry_tags(1).unwrap()).unwrap();
+    assert_eq!(tags[0]["source"], "both");
+    assert_eq!(tags[1]["source"], "manual");
+    assert_eq!(
+        serde_json::to_value(store.entry_tags(2).unwrap()).unwrap()[0]["source"],
+        "feed"
+    );
+    assert_eq!(
+        store.get_entry(1).unwrap().unwrap().tags,
+        store.entry_tags(1).unwrap()
+    );
+    assert_eq!(
+        store.search("a1", 10).unwrap()[0].tags,
+        store.entry_tags(1).unwrap()
+    );
+    assert_eq!(store.tag_entry_count(inherited.id).unwrap(), 4);
+    assert_eq!(store.tag_row(inherited.id).unwrap().unwrap().unread, 4);
+    assert_eq!(
+        store
+            .list_tags_recent_first()
+            .unwrap()
+            .iter()
+            .find(|t| t.id == inherited.id)
+            .unwrap()
+            .unread,
+        4
+    );
+    for sort in [ListSort::Newest, ListSort::Oldest, ListSort::UnreadFirst] {
+        let mut q = EntryQuery {
+            tag_id: Some(inherited.id),
+            sort: Some(sort),
+            hide_read: Some(false),
+            limit: Some(2),
+            ..Default::default()
+        };
+        let mut ids = Vec::new();
+        loop {
+            let rows = store.list_entries(&q).unwrap();
+            if rows.is_empty() {
+                break;
+            }
+            let last = rows.last().unwrap();
+            q.cursor = Some((last.sortkey, last.id));
+            q.cursor_read = Some(last.read);
+            ids.extend(rows.iter().map(|r| r.id));
+        }
+        ids.sort();
+        assert_eq!(ids, vec![1, 2, 3, 4]);
+    }
+    store
+        .unassign_tags(&TagTarget::Entries(vec![1]), &[inherited.id])
+        .unwrap();
+    assert_eq!(
+        serde_json::to_value(store.entry_tags(1).unwrap()).unwrap()[0]["source"],
+        "feed"
+    );
+    store
+        .mark_view(
+            &rustrss_core::store::ViewScope::Tag { id: inherited.id },
+            true,
+        )
+        .unwrap();
+    assert_eq!(store.tag_row(inherited.id).unwrap().unwrap().unread, 0);
+    assert!(
+        !store.get_entry(5).unwrap().unwrap().read,
+        "bulk tag marking must leave nonmembers unchanged"
+    );
+    store
+        .mark_view(
+            &rustrss_core::store::ViewScope::Tag { id: inherited.id },
+            false,
+        )
+        .unwrap();
+    assert_eq!(store.tag_row(inherited.id).unwrap().unwrap().unread, 4);
+    store
+        .assign_tags(&TagTarget::Entries(vec![1]), &[inherited.id])
+        .unwrap();
+    store.set_feed_tags(f1, &[]).unwrap();
+    assert_eq!(store.tag_entry_count(inherited.id).unwrap(), 2);
+    assert_eq!(
+        serde_json::to_value(store.entry_tags(1).unwrap()).unwrap()[0]["source"],
+        "manual"
+    );
+    assert_eq!(store.entry_tags(4).unwrap()[0].id, inherited.id);
+    store.set_feed_tags(f1, &[inherited.id]).unwrap();
+    store
+        .upsert_entries(f1, &[mk_entry("new", BASE_TS + 500)])
+        .unwrap();
+    assert_eq!(store.tag_entry_count(inherited.id).unwrap(), 5);
+    assert_eq!(
+        store
+            .delete_tag(inherited.id, true)
+            .unwrap()
+            .affected_entries,
+        5
+    );
+    assert_eq!(
+        store
+            .delete_tag(inherited.id, false)
+            .unwrap()
+            .affected_entries,
+        5
+    );
+    assert!(store.feed_tags(f1).unwrap().is_empty());
+    assert!(store.entry_tags(4).unwrap().is_empty());
+    assert_eq!(store.entry_tags(1).unwrap()[0].id, manual.id);
+}
+
+// SQLite can deduplicate the one-column UNION via either a temp B-tree or
+// MERGE (UNION). A sorter inside its materialization is ID-only; reject any
+// sorter in the outer article query (including partial ORDER BY sorters).
+fn no_outer_tag_sort(plan: &[String]) -> bool {
+    let start = plan.iter().position(|p| p == "MATERIALIZE effective_ids");
+    let end = plan.iter().position(|p| p == "SCAN effective_ids");
+    plan.iter().enumerate().all(|(i, p)| {
+        !p.contains("ORDER BY") || matches!((start, end), (Some(a), Some(b)) if a < i && i < b)
+    })
+}
+
+fn assert_effective_id_plan(plan: &[String]) {
+    let plan = plan.join(" | ");
+    for index in [
+        "idx_entry_tags_tag",
+        "idx_feed_tags_tag",
+        "idx_entries_feed_read",
+    ] {
+        assert!(
+            plan.contains(&format!("COVERING INDEX {index}")),
+            "missing effective UNION covering leg {index}: {plan}"
+        );
+    }
+    assert!(
+        plan.contains("UNION USING TEMP B-TREE") || plan.contains("MERGE (UNION)"),
+        "effective IDs must deduplicate: {plan}"
+    );
+    assert!(
+        no_outer_tag_sort(&plan.split(" | ").map(str::to_owned).collect::<Vec<_>>()),
+        "outer sorting forbidden: {plan}"
+    );
+    for alias in ["entries", "e", "fe"] {
+        assert!(
+            bare_scan(&plan, alias).is_none(),
+            "bare body table scan: {plan}"
+        );
+    }
+}
+
+#[test]
+fn effective_tag_explain_all_sorts_pages_counts_and_bulk_targets() {
+    let (store, f1, _) = setup();
+    let tag = store.create_tag("effective", None).unwrap();
+    store.set_feed_tags(f1, &[tag.id]).unwrap();
+    for sort in [ListSort::Newest, ListSort::Oldest, ListSort::UnreadFirst] {
+        for cursor in [None, Some((BASE_TS + 200, 2))] {
+            let q = EntryQuery {
+                tag_id: Some(tag.id),
+                sort: Some(sort),
+                cursor,
+                cursor_read: Some(false),
+                hide_read: Some(false),
+                ..Default::default()
+            };
+            let plan = store.explain_list_entries(&q).unwrap();
+            assert_effective_id_plan(&plan);
+            let index = if sort == ListSort::UnreadFirst {
+                "idx_entries_unread_sortkey"
+            } else {
+                "idx_entries_sortkey"
+            };
+            assert!(plan.iter().any(|p| p.contains(index)));
+        }
+    }
+    assert_effective_id_plan(&store.explain_tag_entry_count(tag.id).unwrap());
+    for read in [true, false] {
+        assert_effective_id_plan(
+            &store
+                .explain_mark_view(&rustrss_core::store::ViewScope::Tag { id: tag.id }, read)
+                .unwrap(),
+        );
+    }
+    let sidebar = store.explain_tag_list().unwrap();
+    // Sidebar may sort its small tags dictionary, never article targets.
+    let targets: Vec<_> = sidebar
+        .into_iter()
+        .filter(|p| !p.contains("FOR ORDER BY"))
+        .collect();
+    assert_effective_id_plan(&targets);
+    assert!(targets
+        .iter()
+        .any(|p| p.contains("COVERING INDEX idx_entries_unread_id")));
+}
+
+#[test]
+fn effective_tag_explain_mutations_require_every_union_index() {
+    for index in [
+        "idx_entry_tags_tag",
+        "idx_feed_tags_tag",
+        "idx_entries_feed_read",
+    ] {
+        let db = temp_db(index);
+        {
+            let store = Store::open(&db).unwrap();
+            assert!(store.explain_tag_entry_count(1).is_ok());
+        }
+        rusqlite::Connection::open(&db)
+            .unwrap()
+            .execute_batch(&format!("DROP INDEX {index}"))
+            .unwrap();
+        let store = Store::open(&db).unwrap();
+        for sort in [ListSort::Newest, ListSort::Oldest, ListSort::UnreadFirst] {
+            for cursor in [None, Some((BASE_TS, 1))] {
+                let q = EntryQuery {
+                    tag_id: Some(1),
+                    sort: Some(sort),
+                    cursor,
+                    cursor_read: Some(false),
+                    ..Default::default()
+                };
+                assert!(
+                    store.explain_list_entries(&q).is_err(),
+                    "removed {index}: {sort:?}, {cursor:?} must reject plan"
+                );
+            }
+        }
+        assert!(
+            store.explain_tag_entry_count(1).is_err(),
+            "removed {index}: count must reject plan"
+        );
+        assert!(
+            store.explain_tag_list().is_err(),
+            "removed {index}: unread must reject plan"
+        );
+        for read in [true, false] {
+            assert!(
+                store
+                    .explain_mark_view(&rustrss_core::store::ViewScope::Tag { id: 1 }, read)
+                    .is_err(),
+                "removed {index}: bulk targets must reject plan"
+            );
+        }
+        drop(store);
+        let _ = std::fs::remove_file(db);
+    }
 }

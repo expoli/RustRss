@@ -648,6 +648,8 @@ main {
 .tag-picker-list .tag-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tag-picker-list .tag-unread { flex: 0 0 auto; font-size: 11px; }
 .tag-picker-list .tag-mark { flex: 0 0 auto; width: 12px; color: var(--accent); }
+.tag-picker-list li.inherited { cursor: default; }
+.tag-picker-list .tag-origin { flex: 0 1 auto; font-size: 11px; }
 .tag-picker-list li.create { color: var(--accent); }
 
 /* ---------------- 右栏：正文 ---------------- */

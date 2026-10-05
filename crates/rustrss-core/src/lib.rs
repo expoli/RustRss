@@ -38,5 +38,5 @@ pub use store::backup;
 pub use store::{
     DeleteTagReport, EntryFlag, EntryFlagScope, EntryQuery, EntryRow, EntryScope, FeedIntervalRow,
     FeedRow, InsertStats, ListSort, MarkScope, Store, StoreError, TagAssignReport, TagBrief,
-    TagRow, TagTarget, UnreadGroup, UnreadGroupBy, TAG_BATCH_MAX_IDS,
+    TagRow, TagSource, TagTarget, UnreadGroup, UnreadGroupBy, TAG_BATCH_MAX_IDS,
 };

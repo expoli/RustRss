@@ -1073,8 +1073,10 @@ async fn list_articles_default_view_ignores_ui_settings_and_bounds_the_tags_fiel
     let a1 = entry_id(&db, "a1");
     let a4 = entry_id(&db, "a4");
     store
-        .assign_tags(&TagTarget::Entries(vec![a4]), &many)
+        .assign_tags(&TagTarget::Entries(vec![a4]), &many[..5])
         .expect("打标失败");
+    let feed_id = store.get_entry(a4).unwrap().unwrap().feed_id;
+    store.set_feed_tags(feed_id, &many).unwrap();
     drop(store);
     let handle = start_mcp(&db).await;
     let base = format!("http://{}", handle.addr);
@@ -1115,6 +1117,51 @@ async fn list_articles_default_view_ignores_ui_settings_and_bounds_the_tags_fiel
     );
     assert_eq!(many_row["tags_truncated"], true);
     assert!(many_row["tags"][0].is_string(), "{many_row}");
+    assert_eq!(
+        many_row["tag_sources"].as_array().unwrap().len(),
+        TAGS_PER_ENTRY_MAX
+    );
+    assert_eq!(many_row["tag_sources"][0]["source"], "both");
+    assert_eq!(many_row["tag_sources"][5]["source"], "feed");
+    for (i, tag) in many_row["tags"].as_array().unwrap().iter().enumerate() {
+        assert_eq!(tag, &json!(format!("tag-{i:02}")));
+        assert_eq!(tag, &many_row["tag_sources"][i]["name"]);
+    }
+    let store = Store::open(&db).unwrap();
+    store
+        .set_feed_tags(feed_id, &many[..TAGS_PER_ENTRY_MAX])
+        .unwrap();
+    // Overlap must not create a false truncation at exactly 20 effective tags.
+    let (_, _, exact) = call_tool(&http, &base, READ_TOKEN, "list_articles", json!({})).await;
+    let exact_row = exact["articles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["id"] == json!(a4))
+        .unwrap();
+    assert_eq!(
+        exact_row["tags"].as_array().unwrap().len(),
+        TAGS_PER_ENTRY_MAX
+    );
+    assert!(exact_row.get("tags_truncated").is_none());
+    store
+        .unassign_tags(&TagTarget::Entries(vec![a4]), &[many[0]])
+        .unwrap();
+    let (_, _, after) = call_tool(
+        &http,
+        &base,
+        READ_TOKEN,
+        "list_articles",
+        json!({"tag_id": many[0]}),
+    )
+    .await;
+    let after_row = after["articles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["id"] == json!(a4))
+        .unwrap();
+    assert_eq!(after_row["tag_sources"][0]["source"], "feed");
 
     handle.shutdown();
     let _ = std::fs::remove_file(db);

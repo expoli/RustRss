@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "root": "/tmp/rustrss-tags-b-prime-9tmkdrdd",
+  "binary": "target/debug/rustrss-desktop",
+  "both_zh": {
+    "disabled": true,
+    "title": "请在订阅源中修改继承标签",
+    "text": "Verification tag手动＋源继承5999 未读"
+  },
+  "feed_zh": {
+    "disabled": true,
+    "title": "请在订阅源中修改继承标签",
+    "text": "Verification tag源继承5998 未读"
+  },
+  "feed_en": {
+    "title": "Edit inherited tags on the feed",
+    "text": "Verification tagFrom feed5998 unread"
+  },
+  "after_feed_removal": {
+    "countText": "loaded 200 / 5900 total",
+    "unread": "5899",
+    "rows": 200,
+    "head": 5900,
+    "kept": true,
+    "reader": true,
+    "chips": 0
+  },
+  "manual_after_feed_removal": {
+    "disabled": false,
+    "text": "Verification tag5899 unread"
+  },
+  "limits": [
+    "Inspector DOM actions, not native pointer input",
+    "Linux Xvfb/WebKitGTK only; mobile/narrow-screen and other platforms unverified"
+  ]
+}

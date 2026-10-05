@@ -1425,3 +1425,15 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 
 ### 未验证 / 环境限制
 - 本批为 Rust 协议/取消/持久化机械验证，未新增 UI 实机、手机、跨平台或真实 BYOK 验收；loopback 合成服务商数据，不产生付费请求。
+
+
+## 2026-10-05 · B′ 有效标签（手动 ∪ 源继承）
+
+证据：[实施与边界](2026-10-04-mobile-followups/evidence/tags-b-prime/record.md)。
+
+- [x] core/MCP：620 workspace、118 MCP 全绿；三档/首续页/计数/批量 EXPLAIN + 删索引变异先红后绿，来源去重与移除保留、20/25 截断有测试；未读有效口径同步。
+- [x] JS：99 全绿（新增10）；继承/双来源 disabled、鼠标/Enter 写保护、源标签提交后的回读/会话失效/迟到阅读保护/行节点保留。
+- [x] Linux Xvfb + 系统 WebKitGTK 重建真实产物：DOM 事件 + IPC/SQLite 回读确认中英文只读标记、6000→5900有效总数、5899未读、行/正文DOM保留与chips清空、源移除保留原手动关联；不是 native pointer 或截图证明。
+- [x] 自有450 MiB fixture：每轮 mincore 0 resident 页的OS冷缓存，开库与SQL分层；仅ID去重临时结构、正文无裸扫描有计划断言。
+- [ ] Android AVD/实体手机、320px/大字号、横竖屏与 TalkBack 验证。
+- [ ] Windows/macOS/native Wayland 与实体平板验证。

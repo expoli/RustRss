@@ -1078,7 +1078,7 @@ function listEmptyKey() {
   return 'list.empty';
 }
 
-function renderList() {
+function renderList({ reuseRows = false } = {}) {
   const __t0 = performance.now();
   document.body.dataset.listKind = state.view.kind;
   el('list-title').textContent = viewTitle();
@@ -1087,7 +1087,8 @@ function renderList() {
   void fetchViewTotal();
 
   const list = el('entries');
-  list.innerHTML = '';
+  const existing = reuseRows ? new Map([...list.children].map((li) => [Number(li.dataset.id), li])) : new Map();
+  if (!reuseRows || !state.entries.length) list.innerHTML = '';
   if (!state.entries.length) {
     const li = document.createElement('li');
     li.className = 'dim';
@@ -1122,13 +1123,18 @@ function renderList() {
     return;
   }
 
-  for (const e of state.entries) list.appendChild(buildEntryRow(e));
+  if (reuseRows) {
+    reconcileChildren(list, state.entries.map((e) => existing.get(e.id) || buildEntryRow(e)));
+    for (const e of state.entries) patchRowTags(e.id);
+  } else {
+    for (const e of state.entries) list.appendChild(buildEntryRow(e));
+  }
   installSentinel();
   window.__LIST_MS = +(performance.now() - __t0).toFixed(1);
   log(
     `renderList rows=${state.entries.length} withTags=${state.entries.filter((e) => (e.tags || []).length).length} ${window.__LIST_MS}ms`
   );
-  focusRow(state.selectedId, { follow: true });
+  focusRow(state.selectedId, { follow: !reuseRows });
 }
 
 /**
@@ -2162,7 +2168,7 @@ async function afterTagChange(id, tag, attached) {
   refreshCountsSoon();
   if (state.view.kind === 'tag') {
     invalidateViewTotal();
-    if (!attached && state.view.tagId === tag.id) dropRowFromList(id);
+    if (!attached && state.view.tagId === tag.id && !entryTags(id).some((x) => x.id === tag.id)) dropRowFromList(id);
     renderListCount();
     refreshSentinelFooter();
     void fetchViewTotal();
@@ -2174,9 +2180,32 @@ async function afterTagChange(id, tag, attached) {
   );
 }
 
+/** Feed tags affect every entry in that feed, including the open tag/search view.
+ * Re-read data in batches; reset pagination and totals, reuse rows and keep reader DOM.
+ * This runs even if the picker was closed while the committed write was in flight.
+ */
+async function afterFeedTagChange() {
+  const shown = state.readerEntry;
+  const token = readerToken;
+  const readerTags = shown ? invoke('get_entry', { id: shown.id }) : Promise.resolve(null);
+  await Promise.all([
+    refreshTagCache(),
+    refreshCounts(),
+    ['digest', 'chat'].includes(state.view.kind) ? Promise.resolve() : loadEntries({ reader: false, reuseRows: true }),
+    readerTags.then((row) => {
+      if (row && state.readerEntry === shown && readerToken === token) {
+        setEntryTags(row.id, row.tags || []);
+        patchReaderTags();
+      }
+    }),
+  ]);
+}
+
 /** 给条目附加/取消一个标签（选择器行与 Enter 确认都走这里，幂等由 core 保证） */
 async function toggleTagOnEntry(entryId, tag) {
-  const attached = entryTags(entryId).some((x) => x.id === tag.id);
+  const current = entryTags(entryId).find((x) => x.id === tag.id);
+  if (current && (current.source === 'feed' || current.source === 'both')) return;
+  const attached = !!current;
   try {
     if (attached) await invoke('unassign_tags', { entryId, tagIds: [tag.id] });
     else await invoke('assign_tags', { entryId, tagIds: [tag.id] });
@@ -2228,7 +2257,9 @@ async function openTagPicker(entryId) {
   tagPickerMode = 'entry';
   tagPickerEntryId = entryId;
   // 每次打开重取一次：两次打标（last_used_at 被推进）后最近使用的那条必然排前
-  await refreshTagCache();
+  const [, fresh] = await Promise.all([refreshTagCache(), invoke('get_entry', { id: entryId })]);
+  if (session !== pickerSession) return;
+  if (fresh) setEntryTags(entryId, fresh.tags || []);
   const entry =
     state.readerEntry && state.readerEntry.id === entryId
       ? state.readerEntry
@@ -2315,11 +2346,15 @@ function renderTagPicker(q) {
           }
           const tg = row.tag;
           const on = attachedIds.has(tg.id);
+          const source = tagPickerMode === 'entry' ? entryTags(tagPickerEntryId).find((x) => x.id === tg.id)?.source : null;
+          const inherited = source === 'feed' || source === 'both';
+          const hint = inherited ? t('tags.inheritedHint') : on ? t('tags.pickerAttached') : tg.name;
           return (
-            `<li data-index="${i}" data-tag-id="${tg.id}" class="${active.trim()}${on ? ' attached' : ''}"${tagColorStyle(tg)} title="${on ? t('tags.pickerAttached') : escapeHtml(tg.name)}">` +
+            `<li data-index="${i}" data-tag-id="${tg.id}" class="${active.trim()}${on ? ' attached' : ''}${inherited ? ' inherited' : ''}"${inherited ? ' aria-disabled="true"' : ''}${tagColorStyle(tg)} title="${escapeHtml(hint)}">` +
             `<span class="tag-dot"></span><span class="tag-name">${escapeHtml(tg.name)}</span>` +
+            (inherited ? `<span class="tag-origin dim">${escapeHtml(t(source === 'both' ? 'tags.both' : 'tags.inherited'))}</span>` : '') +
             `<span class="tag-unread dim">${t('tags.pickerUnread', { n: tg.unread })}</span>` +
-            `<span class="tag-mark">${on ? '✓' : ''}</span></li>`
+            `<input type="checkbox" class="tag-mark" tabindex="-1" aria-label="${escapeHtml(tg.name)}"${on ? ' checked' : ''}${inherited ? ' disabled' : ''}></li>`
           );
         })
         .join('')
@@ -2354,6 +2389,7 @@ async function confirmTagPickerRow() {
     if (session !== pickerSession) return;
     ids.sort((a, b) => a - b);
     await invoke('set_feed_tags', { feedId, tagIds: ids });
+    await afterFeedTagChange();
     if (session !== pickerSession) return; // 提交期间会话失效：不写回全局勾选集
     tagPickerFeedTagIds = [...ids];
     renderTagPicker(el('tag-picker-input').value);
@@ -3184,7 +3220,7 @@ function renderSelectedEntry() {
 /// - `reset: false` 续页：只把新一页 append 到列表尾部，已有 DOM 一个都不重建，
 ///   选中项与正文也都不动；
 /// - `reader: false` 静默模式（后台刷新用）：只重读列表，正文与滚动位置保持原位。
-async function loadEntries({ reader = true, reset = true } = {}) {
+async function loadEntries({ reader = true, reset = true, reuseRows = false } = {}) {
   const kind = state.view.kind;
   if (reset) {
     paging.generation++;
@@ -3199,8 +3235,8 @@ async function loadEntries({ reader = true, reset = true } = {}) {
     paging.cursor = null;
     paging.exhausted = true;
     paging.error = false;
-    state.entries = [];
-    if (state.query) {
+    if (!reuseRows) state.entries = [];
+    if (state.query && !reuseRows) {
       el('entries').innerHTML = `<li class="dim">${escapeHtml(t('m.searching'))}</li>`;
     }
     let rows;
@@ -3214,7 +3250,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
     }
     if (rows === null || generation !== paging.generation) return;
     state.entries = rows;
-    renderList();
+    renderList({ reuseRows });
     if (reader) renderSelectedEntry();
     log(`view=${kind} count=${state.entries.length} exhausted=true`);
     return;
@@ -3257,7 +3293,7 @@ async function loadEntries({ reader = true, reset = true } = {}) {
   // 文章（实测 2026-09-22：后台刷新把 selected 挪到 9320 而正文还是 9135）。
   // 静默刷新（reader=false）不动 selectedId；视图切换（reader=true）也不再回退
   // 选中首行——保持「点击才算已读」，阅读区显示占位（见 renderSelectedEntry）。
-  renderList();
+  renderList({ reuseRows });
   // 重建路径的机器可核对诊断：档位 / 过滤 + 头部 id 序列。换排序、换过滤、刷新后的
   // 「顺序对不对」不用只能盯着屏幕看——head 直接与库里的期望顺序对比即可。
   log(

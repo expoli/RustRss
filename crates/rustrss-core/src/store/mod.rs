@@ -282,7 +282,7 @@ pub struct EntryQuery {
     /// 按标签过滤（关联存在性）。`None` = 不过滤——**既有默认口径不变**（界面跟随
     /// 设置、MCP 固定 newest + 不隐藏已读）。
     ///
-    /// 走 `idx_entry_tags_tag` 取该标签的条目 id 集，再按既有排序索引取条目（排序索引
+    /// 手动/源继承两腿 UNION 经覆盖索引取有效条目 id，再按既有排序索引取条目（排序索引
     /// 在带标签过滤时被 `INDEXED BY` 钉住，见 `list_entries_sql`），因此**不会退化成
     /// `SCAN entries`**——断言与变异校验见 `explain_list_entries` 的标签用例。
     pub tag_id: Option<i64>,
@@ -393,11 +393,21 @@ pub struct TagRow {
     pub unread: i64,
 }
 
-/// 条目身上的标签（[`EntryRow::tags`]）：只带 id + 名称，够渲染 chips 与点击筛选。
+/// 有效标签的来源；两种关联独立存储，文章写操作只改变手动关联。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TagSource {
+    Manual,
+    Feed,
+    Both,
+}
+
+/// 条目身上的有效标签（[`EntryRow::tags`]），按 tag_id 合并手动与源继承关联。
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct TagBrief {
     pub id: i64,
     pub name: String,
+    pub source: TagSource,
 }
 
 /// [`Store::delete_tag`] 的结果。
@@ -1500,7 +1510,12 @@ impl Store {
     }
 
     fn mark_view_sql(&self, scope: &ViewScope, read: bool) -> Result<(String, Vec<Value>)> {
-        let mut sql = String::from("SELECT e.id FROM entries e");
+        let mut sql = String::from(if matches!(scope, ViewScope::Tag { .. }) {
+            // Target read/id comes entirely from this covering index, never the body table.
+            "SELECT e.id FROM entries e INDEXED BY idx_entries_feed_read"
+        } else {
+            "SELECT e.id FROM entries e"
+        });
         let mut values = Vec::new();
         if let ViewScope::Search { query } = scope {
             if query.trim().is_empty() {
@@ -1618,7 +1633,7 @@ impl Store {
 
     /// 单个标签行（写操作后回给界面，用法同 [`Store::feed_row`]）。
     pub fn tag_row(&self, tag_id: i64) -> Result<Option<TagRow>> {
-        let sql = format!("{TAG_ROW_SELECT} WHERE t.id = ?1");
+        let sql = format!("{} WHERE t.id = ?1", tag_row_select());
         let mut stmt = self.conn.prepare(&sql)?;
         let mut rows = stmt.query_map(params![tag_id], tag_row_from)?;
         match rows.next() {
@@ -1646,6 +1661,7 @@ impl Store {
         // 显式清关联（FK CASCADE 也在，但连接级 pragma 不该成为不变量的前提——
         // 两道保险让「零孤儿」在本程序自己的删除路径上无条件成立）
         tx.execute("DELETE FROM entry_tags WHERE tag_id = ?1", params![tag_id])?;
+        tx.execute("DELETE FROM feed_tags WHERE tag_id = ?1", params![tag_id])?;
         tx.execute("DELETE FROM tags WHERE id = ?1", params![tag_id])?;
         tx.commit()?;
         Ok(DeleteTagReport {
@@ -1656,12 +1672,12 @@ impl Store {
 
     /// 标签关联篇数：`delete_tag` 的 `dry_run` 与实际执行共用这一个函数。
     ///
-    /// 只扫 `idx_entry_tags_tag` 覆盖索引，不碰 `entries` 表 B 树（EXPLAIN 断言与
+    /// 两腿 UNION 都走覆盖索引，不碰 `entries` 表 B 树（EXPLAIN 断言与
     /// 变异校验见 [`Store::explain_tag_entry_count`]）。
     pub fn tag_entry_count(&self, tag_id: i64) -> Result<i64> {
         Ok(self
             .conn
-            .query_row(TAG_ENTRY_COUNT_SQL, params![tag_id], |r| r.get(0))?)
+            .query_row(&tag_entry_count_sql(), params![tag_id], |r| r.get(0))?)
     }
 
     /// [`Store::tag_entry_count`] 的 EXPLAIN 断言入口（与线上 SQL 逐字同源）。
@@ -1669,7 +1685,7 @@ impl Store {
     pub fn explain_tag_entry_count(&self, tag_id: i64) -> Result<Vec<String>> {
         let mut stmt = self
             .conn
-            .prepare(&format!("EXPLAIN QUERY PLAN {TAG_ENTRY_COUNT_SQL}"))?;
+            .prepare(&format!("EXPLAIN QUERY PLAN {}", tag_entry_count_sql()))?;
         let rows = stmt.query_map(params![tag_id], |r| r.get::<_, String>(3))?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
@@ -1678,7 +1694,7 @@ impl Store {
     /// 与线上 SQL 逐字同源）。
     #[doc(hidden)]
     pub fn explain_tag_list(&self) -> Result<Vec<String>> {
-        let sql = format!("{TAG_ROW_SELECT}{TAG_SIDEBAR_ORDER}");
+        let sql = format!("{}{TAG_SIDEBAR_ORDER}", tag_row_select());
         let mut stmt = self.conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
         let rows = stmt.query_map([], |r| r.get::<_, String>(3))?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -1766,7 +1782,7 @@ impl Store {
     }
 
     fn query_tags(&self, order_by: &str) -> Result<Vec<TagRow>> {
-        let sql = format!("{TAG_ROW_SELECT}{order_by}");
+        let sql = format!("{}{order_by}", tag_row_select());
         let mut stmt = self.conn.prepare(&sql)?;
         let rows = stmt.query_map([], tag_row_from)?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -1894,9 +1910,19 @@ impl Store {
         for chunk in unique.chunks(500) {
             let placeholders = vec!["?"; chunk.len()].join(",");
             let sql = format!(
-                "SELECT et.entry_id, t.id, t.name
-                   FROM entry_tags et JOIN tags t ON t.id = et.tag_id
-                  WHERE et.entry_id IN ({placeholders})
+                "WITH selected AS MATERIALIZED (
+                     SELECT id, feed_id FROM entries INDEXED BY idx_entries_scoped_search_order
+                      WHERE id IN ({placeholders})
+                 ), effective AS (
+                     SELECT et.entry_id, et.tag_id, 1 AS manual, 0 AS inherited
+                       FROM entry_tags et WHERE et.entry_id IN (SELECT id FROM selected)
+                     UNION ALL
+                     SELECT e.id, ft.tag_id, 0, 1 FROM selected e
+                       JOIN feed_tags ft ON ft.feed_id = e.feed_id
+                 )
+                 SELECT effective.entry_id, t.id, t.name, MAX(manual), MAX(inherited)
+                   FROM effective JOIN tags t ON t.id = effective.tag_id
+                  GROUP BY effective.entry_id, t.id
                   ORDER BY t.name COLLATE NOCASE, t.id"
             );
             let mut stmt = self.conn.prepare(&sql)?;
@@ -1906,6 +1932,11 @@ impl Store {
                     TagBrief {
                         id: r.get(1)?,
                         name: r.get(2)?,
+                        source: match (r.get::<_, bool>(3)?, r.get::<_, bool>(4)?) {
+                            (true, true) => TagSource::Both,
+                            (true, false) => TagSource::Manual,
+                            _ => TagSource::Feed,
+                        },
                     },
                 ))
             })?;
@@ -2196,28 +2227,37 @@ const ENTRY_COUNT_FOR_FEED_SQL: &str =
 const ENTRY_COUNT_FOR_FOLDER_SQL: &str = "SELECT COUNT(*) FROM entries e INDEXED BY idx_entries_feed_read
       JOIN feeds f ON f.id = e.feed_id WHERE f.folder_id = ?1";
 
-/// 标签关联篇数的 SQL（`delete_tag` 的 dry_run 与实际执行**共用**）：
-/// `INDEXED BY` 钉住 `(tag_id, entry_id)` 覆盖索引——COUNT 只扫 entry_tags 的索引，
-/// 根本不碰 entries 表 B 树。抽成常量让 EXPLAIN 断言与线上 SQL 逐字同源。
-const TAG_ENTRY_COUNT_SQL: &str =
-    "SELECT COUNT(*) FROM entry_tags INDEXED BY idx_entry_tags_tag WHERE tag_id = ?1";
+/// Effective article IDs: both UNION legs are covering; UNION deduplicates IDs only.
+/// Shared by list filters, unread/count projections and bulk target selection.
+/// Materialization keeps any UNION ID-dedup sorting inside the ID-only projection.
+fn effective_tag_ids_sql(tag: &str) -> String {
+    format!(
+        "WITH effective_ids AS MATERIALIZED (
+             SELECT et.entry_id FROM entry_tags et INDEXED BY idx_entry_tags_tag
+              WHERE et.tag_id = {tag}
+             UNION
+             SELECT fe.id FROM feed_tags ft INDEXED BY idx_feed_tags_tag
+              CROSS JOIN entries fe INDEXED BY idx_entries_feed_read ON fe.feed_id = ft.feed_id
+              WHERE ft.tag_id = {tag}
+         ) SELECT entry_id FROM effective_ids"
+    )
+}
 
-/// 标签行 + 未读计数的列清单（[`Store::list_tags`] / [`Store::tag_row`] 共用，
-/// 新增列只改这里——同 `FEED_ROW_SELECT` 的道理）。
-///
-/// 未读计数子查询里的两个 `INDEXED BY` 都是性能红线的钉子：
-/// - 内层 `idx_entry_tags_tag(tag_id, entry_id)` 给出「这个标签的条目 id 集」；
-/// - 外层 `idx_entries_unread_id(id) WHERE read = 0`（部分索引，只含未读行）按 rowid
-///   走覆盖索引——「这行未读」就是索引的存在性事实，不需要回表。`read` 列在 entries 里
-///   排在 11.5KB 正文大列之后，回表取它就要穿溢出页链（counts() 教训：冷启动
-///   83-119ms/次）。两个索引任一被删，`explain_tag_list` 直接报错（变异校验）。
-const TAG_ROW_SELECT: &str = "\
-    SELECT t.id, t.name, t.color, t.pinned, t.sort_order, t.last_used_at,
+fn tag_entry_count_sql() -> String {
+    format!("SELECT COUNT(*) FROM ({})", effective_tag_ids_sql("?1"))
+}
+
+/// All sidebar/recent/single-tag counts use the same effective ID projection.
+/// Unread membership is an index fact: never load read from the article body table.
+fn tag_row_select() -> String {
+    format!(
+        "SELECT t.id, t.name, t.color, t.pinned, t.sort_order, t.last_used_at,
            (SELECT COUNT(*) FROM entries e INDEXED BY idx_entries_unread_id
-             WHERE e.read = 0
-               AND e.id IN (SELECT et.entry_id FROM entry_tags et
-                             INDEXED BY idx_entry_tags_tag WHERE et.tag_id = t.id)) AS unread
-      FROM tags t";
+             WHERE e.read = 0 AND e.id IN ({})) AS unread
+          FROM tags t",
+        effective_tag_ids_sql("t.id")
+    )
+}
 
 /// 侧栏标签区顺序：置顶优先 → 手动顺序 → 名称（不区分大小写，与源名同口径）。
 const TAG_SIDEBAR_ORDER: &str = " ORDER BY t.pinned DESC, t.sort_order, t.name COLLATE NOCASE";
@@ -2486,14 +2526,13 @@ fn append_entry_filter(sql: &mut String, values: &mut Vec<Value>, q: &EntryQuery
     if q.read_later_only {
         sql.push_str(" AND e.read_later = 1");
     }
-    // 标签过滤：存在性检查。两层索引各司其职——子查询用 `idx_entry_tags_tag`
-    // 取「这个标签的条目 id 集」，外层继续按排序索引序取条目（LIMIT 一到就停）。
+    // 标签过滤：有效 ID UNION 两腿走覆盖索引；外层继续按排序索引序取条目
+    // （LIMIT 一到就停），不按关联驱动文章回表排序。
     // `INDEXED BY` 钉在子查询上：索引被删/被改名时 EXPLAIN 直接报错，而不是静默
     // 换成某个会穿正文大列表 B 树的计划（变异校验就是这么转红的）。
     if let Some(tag_id) = q.tag_id {
-        sql.push_str(
-            " AND e.id IN (SELECT et.entry_id FROM entry_tags et\n                 INDEXED BY idx_entry_tags_tag WHERE et.tag_id = ?)",
-        );
+        let bind = format!("?{}", values.len() + 1);
+        sql.push_str(&format!(" AND e.id IN ({})", effective_tag_ids_sql(&bind)));
         values.push(Value::Integer(tag_id));
     }
     // 隐藏已读：星标/稍后读视图豁免——「星标了但读完了」还要能找到（PRD 需求 3）。
