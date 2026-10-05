@@ -2185,7 +2185,15 @@ async function afterTagChange(id, tag, attached) {
  * This runs even if the picker was closed while the committed write was in flight.
  */
 let tagGeneration = 0;
+// 源标签回读队列：并发调用会造成 list_tags/counts/get_entry 三条回读的乱序
+// 覆盖（评审复现）——队列化串行让后到的调用（数据更新）最终生效。
+let tagRefreshChain = Promise.resolve();
 async function afterFeedTagChange() {
+  const run = tagRefreshChain.then(() => afterFeedTagChangeInner());
+  tagRefreshChain = run.catch(() => {});
+  return run;
+}
+async function afterFeedTagChangeInner() {
   const shown = state.readerEntry;
   const token = readerToken;
   // 标签变更代次：连续两次源标签回读（第二次先 resolve）时，迟到的过期回读
