@@ -39,3 +39,6 @@
 - 对照：串行实现同规模估算 36-48s → 约 2-2.5×（免费档限流约束下；付费档并发上限更高）
 - 运行方式：`RUSTSS_AI_KEY=… cargo test -p rustrss-core --test ai_chat_real_endpoint -- --ignored --nocapture`
   （tests/ai_chat_real_endpoint.rs，ignored 测量，CI 不跑）
+
+## 测试 APK（2026-10-06）
+- /tmp/rss-audit/rustrss-0.6.0-mobile-v11-release.apk（aarch64 39.3MB，含并发优化 + 全部修复，发布签名）
