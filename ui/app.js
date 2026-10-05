@@ -1372,8 +1372,20 @@ function startDigestPolling(date, scopeKey, token = readerToken) {
       if (!current()) return;
       if (!status.generating) {
         if (digestJob?.date === date) digestJob = null;
-        await openDigestDate(date, scopeKey);
-        refreshSidebarDigestDays();
+        // openDigestDate invalidates this poll's serial/token before reading.
+        // Retry only if that open still owns the reader, never after navigation.
+        const openedToken = readerToken + 1;
+        const openedSerial = digestPollSerial + 1;
+        try {
+          if (await openDigestDate(date, scopeKey)) {
+            refreshSidebarDigestDays();
+            return;
+          }
+        } catch {} // Rejected reads and reported failures both keep recovery alive.
+        if (readerToken === openedToken && digestPollSerial === openedSerial &&
+            digestOpenDate === date && digestOpenScope === scopeKey) {
+          startDigestPolling(date, scopeKey, readerToken);
+        }
         return;
       }
     } catch {} // 瞬时错误不结束轮询
@@ -1567,11 +1579,13 @@ async function openDigestDate(date, scopeKey, { silent = false } = {}) {
       tagIds: digestScopeTags(),
       scopeKey: scopeKey || null,
     });
-    if (token !== readerToken) return; // 期间打开了文章/切了日期：丢弃过期渲染
+    if (token !== readerToken) return false; // 期间打开了文章/切了日期：丢弃过期渲染
     renderDigestView(view);
+    return true;
   } catch (e) {
     if (silent) throw e;
     setStatus(e.message, true);
+    return false;
   }
 }
 

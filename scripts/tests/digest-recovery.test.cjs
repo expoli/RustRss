@@ -134,3 +134,58 @@ test('known local job keeps cancellation enabled when rendering backend generati
   x.c.renderDigestView({ date: '2026-10-04', scope_key: 'tags:1', generating: true, status: { candidate_count: 2 }, sections: [] });
   assert.doesNotMatch(x.c.el('reader').innerHTML, /id="digest-cancel" disabled/);
 });
+
+test('generating=false then a failed digest_get re-arms polling and succeeds on retry', async () => {
+  const x = context();
+  const deferred = () => {
+    let resolve, reject;
+    const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+    return { promise, resolve, reject };
+  };
+  const reads = [deferred(), deferred()], started = [deferred(), deferred()];
+  let digestGets = 0;
+  x.c.renderList = () => {}; x.c.renderSidebar = () => {};
+  for (const name of ['openDigestDate', 'renderDigestView']) vm.runInContext(extract(name), x.c);
+  x.c.invoke = async (cmd, args) => {
+    x.calls.push({ cmd, args });
+    if (cmd === 'digest_status') return { generating: false };
+    if (cmd === 'digest_get') {
+      const index = digestGets++;
+      assert.ok(index < reads.length, 'only the failed read and its retry are expected');
+      started[index].resolve();
+      return reads[index].promise;
+    }
+    throw Error('unexpected cmd ' + cmd);
+  };
+  x.c.renderDigestView({ date: '2026-10-04', scope_key: 'tags:1', generating: true, status: { candidate_count: 2 }, sections: [] });
+  const placeholder = x.c.el('reader').innerHTML;
+  const first = x.tick();
+  await started[0].promise;
+  assert.deepEqual(x.calls.map(c => c.cmd), ['digest_status', 'digest_get']);
+  assert.equal(x.timers.size, 0, 'no overlapping poll while digest_get is pending');
+  reads[0].reject(Error('transient db'));
+  await first;
+  assert.equal(digestGets, 1);
+  assert.equal(x.timers.size, 1, 'failed digest_get must re-arm polling');
+  assert.equal(x.c.el('reader').innerHTML, placeholder, 'failed read retains the generating view');
+  assert.ok(!x.calls.includes('sidebar'), 'recovery is not complete after a failed read');
+
+  const retry = x.tick();
+  await started[1].promise;
+  assert.deepEqual(x.calls.map(c => c.cmd), ['digest_status', 'digest_get', 'digest_status', 'digest_get']);
+  for (const call of x.calls) {
+    assert.equal(call.args.date, '2026-10-04');
+    assert.equal(call.args.scopeKey, 'tags:1');
+  }
+  assert.equal(x.timers.size, 0, 'retry must also be single-flight');
+  assert.equal(x.c.el('reader').innerHTML, placeholder, 'render waits for the successful read');
+  reads[1].resolve({ date: '2026-10-04', scope_key: 'tags:1', generating: false, has_report: true,
+    status: { candidate_count: 2, has_report: true }, sections: [], markdown: 'Recovered digest body' });
+  await retry;
+  assert.equal(digestGets, 2, 'digest_get succeeded on its retry');
+  assert.match(x.c.el('reader').innerHTML, /Recovered digest body/);
+  assert.doesNotMatch(x.c.el('reader').innerHTML, /digest.generating/);
+  assert.equal(x.calls.filter(c => c === 'sidebar').length, 1);
+  assert.equal(x.timers.size, 0, 'successful rendering ends polling');
+  assert.equal(x.c.digestPollTimer, null);
+});
