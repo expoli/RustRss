@@ -31,3 +31,11 @@
 
 ## 待真机/后续
 - 手机实机（320px/IME/旋转）、Anthropic/Gemini/Ollama 真实 key 到位后补验
+
+## 附：并发提取真实端点测量（2026-10-05，第一批优化）
+- 端点/模型：同上（OpenAI 兼容 · glm-4-flash 免费档）
+- 场景：24 篇测试文章，DigestExtractionScheduler 并发上限 4（渐增），真实 HTTP
+- 结果：**24/24 成功，耗时 19.5s**（≈0.81s/篇含限流自适应）
+- 对照：串行实现同规模估算 36-48s → 约 2-2.5×（免费档限流约束下；付费档并发上限更高）
+- 运行方式：`RUSTSS_AI_KEY=… cargo test -p rustrss-core --test ai_chat_real_endpoint -- --ignored --nocapture`
+  （tests/ai_chat_real_endpoint.rs，ignored 测量，CI 不跑）
