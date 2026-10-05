@@ -39,6 +39,7 @@
     document.querySelector('main > .list').inert = name === 'reader';
     syncNav();
     syncSegments();
+    window.RustRssLocation?.page(name);
   }
 
   function syncNav() {
@@ -395,6 +396,7 @@
     syncDigestTabs();
     window.RustRssChatBridge?.leave();
     window.RustRssChatBridge?.invalidateReader();
+    window.RustRssLocation?.digestHome();
     var t = window.I18N ? window.I18N.t : function (k) { return k; };
     try {
     var bridge = window.RustRssDigestBridge || {};
@@ -447,13 +449,15 @@
   // digest 首页渲染入口暴露给 app.js（digest_list 刷新时同步）；
   // onDigestView：日报详情进共享阅读层，返回（#m-reader-back / 系统返回）回日报首页
   window.RustRssMobileDigest = {
+    restoreDefault: function () { if (active()) setPage('articles'); },
+    restoreHome: function () { if (active()) { digestMode = 'digest'; setPage('digest'); renderDigestHome(); } },
     renderDigestHome: function () { if (active() && bodyPage() === 'digest' && digestMode === 'digest') renderDigestHome(); },
     // 日报详情进共享阅读层：显式压返回栈（returnPage=digest）。watchReader 的
     // 观察器在 bodyPage 已变 reader 后会跳过压栈——这里不压，返回就落 articles。
     onDigestView: function () {
       if (!active()) return;
       returnPage = 'digest';
-      pushEntry({ t: 'reader', returnPage: 'digest' });
+      if (bodyPage() !== 'reader') pushEntry({ t: 'reader', returnPage: 'digest' });
       setPage('reader');
     },
   };

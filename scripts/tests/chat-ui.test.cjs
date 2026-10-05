@@ -17,7 +17,7 @@ function makeContext() {
       querySelectorAll: () => [], addEventListener(event, fn) { this[event] = fn; } });
     return nodes.get(id);
   };
-  const calls = [], store = new Map();
+  const calls = [], locations = [], store = new Map();
   const context = vm.createContext({
     el, document: { querySelector: () => right }, state: { selectedId: 42, readerEntry: { id: 42 } },
     chatView: null, chatRefreshSerial: 0, chatStreams: new Map(), setTimeout, clearTimeout, readerToken: 0, digestOpenDate: '2026-10-04',
@@ -27,6 +27,7 @@ function makeContext() {
     confirmDialog: async () => true, paintChatView: () => {}, renderList: () => {}, renderSidebar: () => {},
     refreshChatView: async view => { view.data = { session: { scope_json: JSON.stringify({ date: view.date, scope_key: view.scopeKey }) }, messages: [] }; }, refreshChatHistory: async () => {},
     openSettings: () => {}, showPane: () => {}, window: {},
+    rememberLocation: (...args) => locations.push(args), stopDigestPolling: () => {},
     invoke: async (command, args) => {
       calls.push({ command, args });
       if (command === 'get_ai_settings') return context.ai;
@@ -35,7 +36,7 @@ function makeContext() {
     ai: { provider: 'openai', model: 'test', base_url: 'https://example.test' },
   });
   for (const name of ['chatScope', 'chatText', 'chatScopeLabel', 'chatIsVisible', 'chatError', 'activeChatStream', 'appendChatStreamRow', 'acceptChatEvent', 'onChatStarted', 'onChatChunk', 'loadEarlierChat', 'sendChat', 'onChatTerminal']) vm.runInContext(extract(name), context);
-  context.calls = calls; context.store = store; context.right = right;
+  context.calls = calls; context.locations = locations; context.store = store; context.right = right;
   context.view = { id: null, pending: false, draft: '' };
   context.chatView = context.view;
   return context;
@@ -381,4 +382,15 @@ test('error keeps the partial bubble until persisted reply and does not replace 
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(c.view.error, 'EOF (received 14 characters)');
   assert.equal(c.el('chat-messages').children.includes(bubble), false);
+});
+
+test('chat location follows session open and newly persisted send receipt', async () => {
+  const c = makeContext(); vm.runInContext(extract('renderChatView'), c);
+  await c.renderChatView(12);
+  assert.deepEqual(c.locations.at(-1), ['chat', null, null, 12]);
+  await c.renderChatView();
+  assert.deepEqual(c.locations.at(-1), ['chat', null, null, null]);
+  c.el('chat-input').value = 'new session';
+  await c.sendChat(c.chatView);
+  assert.deepEqual(c.locations.at(-1), ['chat', null, null, 7]);
 });

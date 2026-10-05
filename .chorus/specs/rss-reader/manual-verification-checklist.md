@@ -1437,3 +1437,11 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - [x] 自有450 MiB fixture：每轮 mincore 0 resident 页的OS冷缓存，开库与SQL分层；仅ID去重临时结构、正文无裸扫描有计划断言。
 - [ ] Android AVD/实体手机、320px/大字号、横竖屏与 TalkBack 验证。
 - [ ] Windows/macOS/native Wayland 与实体平板验证。
+
+## 2026-10-05 日报后台返回防御性恢复
+
+- 机械验证：workspace 624 passed / 0 failed / 1 existing ignored，JS 113 passed，clippy 无告警，桌面与 x86_64 Android debug 构建通过。
+- 模拟器快照：隔离 API 36 emulator-5582，真实未配 AI 错误路径解除 pending；日报 IPC mock 下生成→HOME→返回→强制页面重载恢复日期/范围与生成占位，3001ms 轮询，漏 done 也刷新成品并停止轮询；真实 Android 原生启动清除离线残留标记夹具并保留旧 Markdown。
+- 恢复调用点：桌面与 Android 共用 AppState::open / lib.rs::run 原生启动路径，显式调用 core clear_stale_digest_jobs；WebView 重载与 MCP 开库不清理在飞标记。
+- 环境限制：没有复现用户厂商 ROM 查杀；无真实 BYOK 生成中进程查杀证据。进程重启不续跑任务；sessionStorage 在进程查杀后不保证保存位置。桌面 F5 会话恢复本批仅 VM 回归及构建验证，未做原生桌面运行旅程。
+- 截图、结果 JSON、可复跑脚本与最终产物哈希见 [记录](2026-10-05-digest-recovery/evidence/record.md)。

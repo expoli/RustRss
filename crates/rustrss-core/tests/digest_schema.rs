@@ -715,3 +715,137 @@ fn digest_list_reads_summary_column_and_dedupes_by_day() {
     let old_row = list.iter().find(|i| i.report_day == "2026-10-03").unwrap();
     assert_eq!(old_row.overview, "旧报告概览内容", "开库回填补齐旧摘要");
 }
+
+#[test]
+fn digest_status_tracks_active_job_without_a_finished_report() {
+    use rustrss_core::store::digest::DigestScope;
+    let store = Store::open_in_memory().unwrap();
+    let scope = DigestScope::resolve(&store, &[]).unwrap();
+    assert!(!store.digest_status(1000, 2000, &scope).unwrap().generating);
+    store
+        .digest_slot_begin(
+            "2026-10-03",
+            "all",
+            "{}",
+            "p",
+            "{}",
+            1000,
+            2000,
+            0,
+            0,
+            "job",
+        )
+        .unwrap();
+    let status = store.digest_status(1000, 2000, &scope).unwrap();
+    assert!(status.generating);
+    assert!(!status.has_report);
+    assert!(!store.digest_status(2000, 3000, &scope).unwrap().generating);
+    let other_scope = DigestScope {
+        tag_ids: vec![1],
+        key: "tags:1".into(),
+        feed_ids: Some(vec![]),
+    };
+    assert!(
+        !store
+            .digest_status(1000, 2000, &other_scope)
+            .unwrap()
+            .generating
+    );
+    store.digest_slot_end("2026-10-03", "all", "p").unwrap();
+    assert!(!store.digest_status(1000, 2000, &scope).unwrap().generating);
+}
+
+#[test]
+fn digest_active_job_finds_running_profile_after_an_idle_slot() {
+    let store = Store::open_in_memory().unwrap();
+    for (profile, job) in [("idle", "old"), ("running", "active")] {
+        store
+            .digest_slot_begin(
+                "2026-10-03",
+                "all",
+                "{}",
+                profile,
+                "{}",
+                1000,
+                2000,
+                0,
+                0,
+                job,
+            )
+            .unwrap();
+    }
+    store.digest_slot_end("2026-10-03", "all", "idle").unwrap();
+    assert_eq!(
+        store
+            .digest_active_job("2026-10-03", "all")
+            .unwrap()
+            .as_deref(),
+        Some("active")
+    );
+    store
+        .digest_slot_end("2026-10-03", "all", "running")
+        .unwrap();
+    assert_eq!(store.digest_active_job("2026-10-03", "all").unwrap(), None);
+}
+
+#[test]
+fn clear_stale_digest_jobs_after_process_restart_preserves_completed_report() {
+    use rustrss_core::store::digest::DigestScope;
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("digest-restart.sqlite");
+    let store = Store::open(&path).unwrap();
+    store
+        .digest_slot_begin(
+            "2026-10-03",
+            "all",
+            "{}",
+            "p",
+            "{}",
+            1000,
+            2000,
+            0,
+            0,
+            "interrupted-job",
+        )
+        .unwrap();
+    // A rewrite interrupted after an earlier successful report must retain it.
+    let conn = rusqlite::Connection::open(&path).unwrap();
+    conn.execute(
+        "UPDATE digests SET revision=1, generated_at=10, checkpoint_at=9, manifest_hash='saved'",
+        [],
+    )
+    .unwrap();
+    conn.execute(
+        "INSERT INTO digest_bodies(digest_id,revision,schema_ver,content_json,markdown)
+        SELECT id,1,1,'{}','# completed report' FROM digests",
+        [],
+    )
+    .unwrap();
+    drop(conn);
+    drop(store); // abrupt process loss: no digest_slot_end
+    let reopened = Store::open(&path).unwrap();
+    let scope = DigestScope::resolve(&reopened, &[]).unwrap();
+    assert!(
+        reopened
+            .digest_status(1000, 2000, &scope)
+            .unwrap()
+            .generating,
+        "opening a secondary/MCP connection must not clear live markers"
+    );
+    assert_eq!(reopened.clear_stale_digest_jobs().unwrap(), 1);
+    assert_eq!(reopened.clear_stale_digest_jobs().unwrap(), 0);
+    assert!(
+        !reopened
+            .digest_status(1000, 2000, &scope)
+            .unwrap()
+            .generating
+    );
+    assert_eq!(
+        reopened
+            .digest_report("2026-10-03", "all")
+            .unwrap()
+            .unwrap()
+            .markdown,
+        "# completed report"
+    );
+}

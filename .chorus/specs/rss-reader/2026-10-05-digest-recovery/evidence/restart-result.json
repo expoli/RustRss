@@ -1,0 +1,11 @@
+{
+  "serial": "emulator-5582",
+  "startupMarker": null,
+  "preservedMarkdown": "# saved restart report",
+  "nativeRecoveryLogObserved": true,
+  "recoveryLog": [
+    "2026-10-05T11:04:07.775+08:00 INFO  rustrss_desktop_lib::state: [rustrss] 已清理 1 个中断日报生成标记"
+  ],
+  "scope": "Actual AppState startup on Android, offline residual-marker fixture; no real AI or vendor ROM kill.",
+  "snapshotSha256": "a5ce6d94d7e8dbef67a1858ffd6aef01070ab41245abc9b6767775b2d0e78b53"
+}

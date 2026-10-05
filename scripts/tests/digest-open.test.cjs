@@ -24,6 +24,7 @@ function makeCtx() {
     state: { selectedId: 42, readerEntry: { id: 42 } },
     readerToken: 0,
     digestOpenDate: null,
+    stopDigestPolling() {}, rememberLocation() {},
     invoke: (_cmd, args) => {
       requests.push(args);
       return new Promise((resolve) => {

@@ -6,7 +6,7 @@
 //! 生成流水线在 `ai::digest`（后续阶段），本模块只管数据面。
 
 use super::{Store, TagBrief};
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 
 /// 日报范围：源标签多选（OR）；空 = 全部订阅源。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -92,6 +92,7 @@ pub struct DigestItemRef {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DigestUpdateStatus {
     pub has_report: bool,
+    pub generating: bool,
     pub added: i64,
     pub changed: i64,
     pub removed: i64,
@@ -342,6 +343,12 @@ impl Store {
         scope: &DigestScope,
     ) -> super::Result<DigestUpdateStatus> {
         let conn = &self.conn;
+        let generating = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM digests WHERE day_start_at = ?1
+                AND day_end_at = ?2 AND scope_key = ?3 AND active_job_id IS NOT NULL)",
+            params![day_start, day_end, scope.key],
+            |r| r.get::<_, bool>(0),
+        )?;
         // 当前候选集（范围内条目）的 (instance_id, source_revision)。
         let feed_filter = |sql: &mut String| {
             if let Some(ids) = &scope.feed_ids {
@@ -373,6 +380,7 @@ impl Store {
         else {
             return Ok(DigestUpdateStatus {
                 has_report: false,
+                generating,
                 candidate_count,
                 ..Default::default()
             });
@@ -388,6 +396,7 @@ impl Store {
 
         let mut status = DigestUpdateStatus {
             has_report: true,
+            generating,
             checkpoint_at,
             article_count: stored.len() as i64,
             candidate_count,
@@ -855,16 +864,26 @@ impl Store {
 }
 
 impl Store {
+    /// 应用进程启动时清除上个进程遗留的生成标记；不删除已完成报告。
+    /// 只由拥有生成任务的应用启动路径调用，不能放在 Store::open（MCP/次要连接会误清在飞任务）。
+    pub fn clear_stale_digest_jobs(&self) -> super::Result<usize> {
+        Ok(self.conn.execute(
+            "UPDATE digests SET active_job_id = NULL WHERE active_job_id IS NOT NULL",
+            [],
+        )?)
+    }
+
     /// 在飞任务 id（单 flight 检查口）。
     pub fn digest_active_job(&self, date: &str, scope_key: &str) -> super::Result<Option<String>> {
         Ok(self
             .conn
             .query_row(
-                "SELECT active_job_id FROM digests WHERE report_day = ?1 AND scope_key = ?2",
+                "SELECT active_job_id FROM digests WHERE report_day = ?1 AND scope_key = ?2
+                    AND active_job_id IS NOT NULL LIMIT 1",
                 params![date, scope_key],
                 |r| r.get(0),
             )
-            .ok())
+            .optional()?)
     }
 
     /// 范围 JSON 序列化（与 digests.scope_json 同构）。

@@ -1300,6 +1300,88 @@ function onSentinel(records) {
 // ---------------- 每日日报 ----------------
 
 let digestOpenDate = null;
+let digestOpenScope = null;
+let digestPollTimer = null;
+let digestPollSerial = 0;
+let locationReady = false;
+
+function rememberLocation(mpage, digestDate = null, digestScope = null, chatSessionId = null) {
+  if (!locationReady) return; // 初始默认页不能覆盖待恢复的位置
+  try {
+    const value = JSON.stringify({ mpage, digestDate, digestScope, chatSessionId });
+    if (sessionStorage.getItem('ui.location') !== value) sessionStorage.setItem('ui.location', value);
+  } catch {}
+}
+
+function rememberMobilePage(page) {
+  if (page === 'reader' && digestOpenDate) {
+    rememberLocation('digest', digestOpenDate, digestOpenScope);
+  } else if (page === 'digest' && chatView && document.querySelector('.right-col').classList.contains('chat-active')) {
+    rememberLocation('chat', null, null, chatView.id);
+  } else if (page !== 'reader') {
+    rememberLocation(page);
+  } else {
+    rememberLocation('articles');
+  }
+}
+
+async function restoreLocation() {
+  let saved;
+  try { saved = JSON.parse(sessionStorage.getItem('ui.location')); } catch {}
+  locationReady = true;
+  try {
+    if (saved?.mpage === 'digest') {
+      if (saved.digestDate) {
+        const view = await invoke('digest_get', { date: saved.digestDate, tagIds: digestScopeTags(), scopeKey: saved.digestScope || null });
+        if (!view.has_report && !view.generating && ![digestDate('today'), digestDate('yesterday')].includes(saved.digestDate)) throw new Error('missing digest');
+      }
+      window.RustRssMobileDigest?.restoreHome?.();
+      if (saved.digestDate) await openDigestDate(saved.digestDate, saved.digestScope, { silent: true });
+      else rememberLocation('digest');
+      return;
+    }
+    if (saved?.mpage === 'chat') {
+      if (saved.chatSessionId && !await invoke('chat_session_get', { sessionId: saved.chatSessionId, sinceSeq: null, limit: 1 })) throw new Error('missing chat');
+      await renderChatView(saved.chatSessionId || undefined);
+      return;
+    }
+  } catch { // 数据已删除/存储不可用：默认页，无错误提示
+    renderReaderEmpty();
+    window.RustRssMobileDigest?.restoreDefault?.();
+  }
+  rememberLocation('articles');
+}
+
+window.RustRssLocation = { page: rememberMobilePage, digestHome: () => rememberLocation('digest') };
+
+function stopDigestPolling() {
+  digestPollSerial++; // 使同一视图上重启轮询前的在飞请求也失效
+  if (digestPollTimer !== null) clearTimeout(digestPollTimer);
+  digestPollTimer = null;
+}
+
+function startDigestPolling(date, scopeKey, token = readerToken) {
+  stopDigestPolling();
+  const serial = digestPollSerial;
+  const current = () => serial === digestPollSerial && token === readerToken && digestOpenDate === date && digestOpenScope === scopeKey;
+  const poll = async () => {
+    digestPollTimer = null;
+    if (!current()) return;
+    try {
+      const status = await invoke('digest_status', { date, tagIds: digestScopeTags(), scopeKey });
+      if (!current()) return;
+      if (!status.generating) {
+        if (digestJob?.date === date) digestJob = null;
+        await openDigestDate(date, scopeKey);
+        refreshSidebarDigestDays();
+        return;
+      }
+    } catch {} // 瞬时错误不结束轮询
+    if (current()) digestPollTimer = setTimeout(poll, 3000);
+  };
+  digestPollTimer = setTimeout(poll, 3000);
+}
+
 // 进行中的日报生成任务（{ jobId, date } 或 null）
 let digestJob = null;
 // 阅读窗格内容令牌：文章/空态/日报每次替换 +1；异步返回时令牌过期即丢弃，
@@ -1328,14 +1410,18 @@ function renderDigestView(view) {
   leaveChatView();
   readerToken++;
   digestOpenDate = view.date;
+  digestOpenScope = view.scope_key;
+  rememberLocation('digest', view.date, view.scope_key);
+  stopDigestPolling();
   el('reader')?.classList.remove('digest-home');
   // 手机：日报在共享阅读层呈现（mobile.js 切 mpage=reader，返回钮/返回栈生效）
   window.RustRssMobileDigest?.onDigestView?.(view);
   state.readerFeedId = null;
   state.readerEntry = null;
   const st = view.status;
-  const running = digestJob && digestJob.date === view.date;
-  const statusBits = [];
+  const localJob = digestJob?.date === view.date ? digestJob : null;
+  const running = view.generating || localJob;
+  const statusBits = running ? [t('digest.generating')] : [];
   if (view.has_report) {
     // 打开的是已生成的报告（含历史日期）：状态行不再显示「今日窗口」的
     // 检查点对比——那是给「今天/昨天还在演进」的报告用的，对历史日期
@@ -1371,7 +1457,7 @@ function renderDigestView(view) {
     metaBits.push(t('digest.cacheHits', { n: view.cache_hits }));
   }
   const buttons = running
-    ? `<button class="digest-cancel" id="digest-cancel">${t('digest.cancel')}</button>
+    ? `<button class="digest-cancel" id="digest-cancel" ${localJob?.jobId ? '' : 'disabled'}>${t('digest.cancel')}</button>
        <span class="digest-progress dim" id="digest-progress">${t('digest.generating')}</span>`
     : `<button class="digest-gen" data-mode="update">${t('digest.update')}</button>
        <button class="digest-gen" data-mode="rewrite" title="${t('digest.rewriteHint')}">${t('digest.rewrite')}</button>`;
@@ -1409,7 +1495,7 @@ function renderDigestView(view) {
     </div>`;
   el('digest-discuss')?.addEventListener('click', () => renderChatView({ date: view.date, scopeKey: view.scope_key, seedTitle: t('digest.title', { date: view.date }) }));
   el('digest-cancel')?.addEventListener('click', () => {
-    if (!digestJob) return;
+    if (!digestJob?.jobId) return;
     invoke('digest_cancel', { jobId: digestJob.jobId }).catch((e) => setStatus(e.message, true));
   });
   el('reader')
@@ -1417,6 +1503,7 @@ function renderDigestView(view) {
     .forEach((btn) =>
       btn.addEventListener('click', () => digestGenerate(btn.dataset.mode || 'update'))
     );
+  if (running) startDigestPolling(view.date, view.scope_key);
 }
 
 /// 生成/更新当前打开的日报（流水线在命令层；进度走 digest:progress 事件）。
@@ -1437,6 +1524,7 @@ async function digestGenerate(mode) {
     }
     // 正常路径：jobId 先经 digest:started 绑定，回执兜底
     pending.jobId = pending.jobId || job.job_id;
+    if (digestOpenDate === date) startDigestPolling(date, digestOpenScope);
   } catch (e) {
     if (digestJob === pending) digestJob = null;
     setStatus(e.message, true);
@@ -1464,8 +1552,11 @@ function renderDigestRefresh() {
 /// 清选中 + readerToken 竞态防护缺一不可——旧选中残留会让 s/u/l 改到看不见的文章；
 /// 没有令牌校验，「历史请求在飞 → 点文章 → 历史后返回」会把文章渲染顶掉（审核 R5-P1）。
 /// `scopeKey` 来自历史行（该报告的真实范围键）；入口路径不传，按当前标签选择解析。
-async function openDigestDate(date, scopeKey) {
+async function openDigestDate(date, scopeKey, { silent = false } = {}) {
+  stopDigestPolling();
   digestOpenDate = date;
+  digestOpenScope = scopeKey || null;
+  rememberLocation('digest', date, digestOpenScope);
   const token = ++readerToken;
   state.selectedId = null;
   renderList();
@@ -1479,6 +1570,7 @@ async function openDigestDate(date, scopeKey) {
     if (token !== readerToken) return; // 期间打开了文章/切了日期：丢弃过期渲染
     renderDigestView(view);
   } catch (e) {
+    if (silent) throw e;
     setStatus(e.message, true);
   }
 }
@@ -1760,6 +1852,7 @@ async function sendChat(view, retryText) {
     const draft = chatIsVisible(view) ? el('chat-input').value : view.draft;
     chatDrafts.delete(view.id);
     view.id = result.sessionId;
+    if (chatIsVisible(view)) rememberLocation('chat', null, null, view.id);
     view.trimmed = result.historyTrimmed;
     view.messageId = result.messageId;
     view.draft = draft === text ? '' : draft;
@@ -1789,6 +1882,8 @@ async function renderChatView(target) {
   el('reader').innerHTML = '';
   document.querySelector('.right-col').classList.add('chat-active');
   window.RustRssMobileChat?.onChatView?.();
+  rememberLocation('chat', null, null, view.id);
+  stopDigestPolling();
   const host = el('chat');
   host.innerHTML = `<header class="chat-head">
     <h2 id="chat-heading"></h2><button id="chat-new" data-i18n="chat.newSession">${t('chat.newSession')}</button>
@@ -1861,11 +1956,13 @@ window.RustRssChatBridge = {
     renderSidebar();
     document.querySelector('.right-col').classList.add('chat-active');
     window.RustRssMobileChat?.onChatView?.();
+    rememberLocation('chat', null, null, chatView.id);
+    stopDigestPolling();
     refreshChatView(chatView);
     refreshChatHistory(chatView);
   },
   leave: leaveChatView,
-  invalidateReader: () => { readerToken++; digestOpenDate = null; },
+  invalidateReader: () => { readerToken++; digestOpenDate = null; stopDigestPolling(); },
 };
 window.__TAURI__?.event?.listen('chat:started', onChatStarted).catch(error => log(`listen chat:started failed: ${error.message}`));
 window.__TAURI__?.event?.listen('chat:chunk', onChatChunk).catch(error => log(`listen chat:chunk failed: ${error.message}`));
@@ -1874,6 +1971,8 @@ for (const event of ['chat:done', 'chat:error']) {
 }
 
 function renderReaderEmpty() {
+  rememberLocation('articles');
+  stopDigestPolling();
   leaveChatView();
   readerToken++;
   digestOpenDate = null;
@@ -1888,6 +1987,8 @@ function renderReaderEmpty() {
 }
 
 function renderReader(entry) {
+  rememberLocation('articles');
+  stopDigestPolling();
   leaveChatView();
   readerToken++;
   digestOpenDate = null;
@@ -3506,7 +3607,7 @@ async function refreshCounts() {
 
 /// 拉取日报历史列表并按需重渲侧栏（状态点 + 历史日期行）；失败静默。
 function refreshSidebarDigestDays() {
-  invoke('digest_list', { limit: 30 })
+  return invoke('digest_list', { limit: 30 })
     .then((items) => {
       if (JSON.stringify(state.digestDays) === JSON.stringify(items)) return;
       state.digestDays = items;
@@ -4599,6 +4700,23 @@ let backgroundRefreshHint = null;
 /// done 分两支：多页已加载走 prepend（新条目插到头部 + 补偿滚动位置，见
 /// `prependFreshEntries`），其余场景沿用静默 `loadAll({reader:false})`——
 /// 两支都不重渲染正文，阅读焦点与正文滚动位置保持原位。
+function onDigestDone(e) {
+  const p = e.payload || {};
+  const owned = digestJob && digestJob.jobId === p.jobId;
+  if (owned) {
+    digestJob = null;
+    if (p.ok) setStatus('');
+    else if (p.cancelled) setStatus(t('digest.cancelledDone'));
+    else setStatus(p.error || t('digest.failed'), true);
+  }
+  // 重载后没有 digestJob，仍唤醒当前日报；具体范围状态由后端重新读取。
+  if (digestOpenDate === p.date && (owned || !digestJob)) {
+    stopDigestPolling();
+    openDigestDate(p.date, digestOpenScope).catch(() => {});
+  }
+  if (p.ok) refreshSidebarDigestDays();
+}
+
 function initRefreshEvents() {
   const events = window.__TAURI__ && window.__TAURI__.event;
   if (!events || !events.listen) {
@@ -4653,20 +4771,7 @@ function initRefreshEvents() {
     })
     .catch((e2) => log(`listen digest:progress failed: ${e2.message}`));
   events
-    .listen('digest:done', (e) => {
-      const p = e.payload || {};
-      if (!digestJob || digestJob.jobId !== p.jobId) return;
-      digestJob = null;
-      if (p.ok) {
-        setStatus('');
-      } else if (p.cancelled) {
-        setStatus(t('digest.cancelledDone'));
-      } else {
-        setStatus(p.error || t('digest.failed'), true);
-      }
-      if (digestOpenDate === p.date) openDigestDate(p.date).catch(() => {});
-      if (p.ok) refreshSidebarDigestDays(); // 新报告进入侧栏历史（状态点/日期行）
-    })
+    .listen('digest:done', onDigestDone)
     .catch((e2) => log(`listen digest:done failed: ${e2.message}`));
   events
     .listen('refresh:done', async () => {
@@ -5703,6 +5808,8 @@ async function boot() {
     toggleUnreadOnly().catch((err) => setStatus(err.message, true));
   };
   initRefreshEvents();
+  await refreshSidebarDigestDays();
+  await restoreLocation();
   initSidebarEvents();
   initTagEvents();
   initTagPickerEvents();

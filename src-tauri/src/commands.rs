@@ -4096,6 +4096,7 @@ pub struct DigestSectionJson {
 #[derive(serde::Serialize)]
 pub struct DigestStatusView {
     pub has_report: bool,
+    pub generating: bool,
     pub added: i64,
     pub changed: i64,
     pub removed: i64,
@@ -4115,6 +4116,7 @@ pub struct DigestSectionView {
 pub struct DigestView {
     pub date: String,
     pub has_report: bool,
+    pub generating: bool,
     /// 冻结时窗口内候选总数（未生成时也有，供空态提示）
     pub total_in_window: i64,
     /// 候选超过单日报量上限被截断
@@ -4165,6 +4167,7 @@ fn digest_view(
     let (start, end) = (bounds.start, bounds.end);
     let report = s.digest_report(date, &report_scope_key)?;
     let status = s.digest_status(start, end, &scope)?;
+    let generating = s.digest_active_job(date, &report_scope_key)?.is_some();
     let (markdown, content_json, checkpoint_at, generated_at, article_count, cache_hits, items) =
         match report {
             Some(r) => {
@@ -4206,13 +4209,14 @@ fn digest_view(
     Ok(DigestView {
         date: date.into(),
         has_report: markdown.is_some(),
+        generating,
         total_in_window: status.candidate_count,
         manifest_truncated: status.candidate_count > rustrss_core::store::digest::MANIFEST_MAX_ENTRIES as i64,
         markdown,
         overview,
         sections,
         scope_tag_ids: scope.tag_ids.clone(),
-        scope_key: scope.key.clone(),
+        scope_key: report_scope_key,
         checkpoint_at,
         generated_at,
         article_count,
@@ -4220,6 +4224,7 @@ fn digest_view(
         items,
         status: DigestStatusView {
             has_report: status.has_report,
+            generating,
             added: status.added,
             changed: status.changed,
             removed: status.removed,
@@ -4251,15 +4256,19 @@ pub fn digest_status(
     state: State<'_, AppState>,
     date: String,
     tag_ids: Option<Vec<i64>>,
+    scope_key: Option<String>,
 ) -> R<DigestStatusView> {
     state.with_store(|s| {
         use rustrss_core::store::digest::{local_day_bounds, DigestScope};
         let scope = DigestScope::resolve(s, tag_ids.as_deref().unwrap_or(&[])).map_err(err)?;
         let bounds = local_day_bounds(&date).map_err(err)?;
         let (start, end) = (bounds.start, bounds.end);
+        let key = scope_key.as_deref().filter(|k| !k.is_empty()).unwrap_or(&scope.key);
+        let generating = s.digest_active_job(&date, key).map_err(err)?.is_some();
         s.digest_status(start, end, &scope)
             .map(|st| DigestStatusView {
                 has_report: st.has_report,
+                generating,
                 added: st.added,
                 changed: st.changed,
                 removed: st.removed,
@@ -5295,5 +5304,45 @@ mod chat_jobs_tests {
         drop(guard);
         let next = ChatJobGuard::claim(id, 3, None).unwrap();
         assert!(!*next.cancel.borrow());
+    }
+}
+
+#[cfg(test)]
+mod digest_recovery_tests {
+    use super::digest_view;
+    use rustrss_core::{store::digest::local_day_bounds, Store};
+
+    #[test]
+    fn digest_get_exposes_exact_scope_generating_state() {
+        let store = Store::open_in_memory().unwrap();
+        let date = "2026-10-04";
+        let bounds = local_day_bounds(date).unwrap();
+        assert!(!digest_view(&store, date, &[], None).unwrap().generating);
+        store
+            .digest_slot_begin(
+                date,
+                "tags:1",
+                "{}",
+                "p",
+                "{}",
+                bounds.start,
+                bounds.end,
+                0,
+                0,
+                "job",
+            )
+            .unwrap();
+        let view = digest_view(&store, date, &[], Some("tags:1")).unwrap();
+        assert!(view.generating);
+        assert!(view.status.generating);
+        assert_eq!(view.scope_key, "tags:1");
+        assert!(!view.has_report);
+        assert!(!digest_view(&store, date, &[], None).unwrap().generating);
+        store.digest_slot_end(date, "tags:1", "p").unwrap();
+        assert!(
+            !digest_view(&store, date, &[], Some("tags:1"))
+                .unwrap()
+                .generating
+        );
     }
 }

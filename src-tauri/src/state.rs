@@ -62,6 +62,11 @@ impl AppState {
         let store = Store::open(&db_path)
             .map_err(|e| format!("打开数据库失败（{}）: {e}", db_path.display()))?;
         store.mark_running_interrupted().map_err(|e| format!("恢复中断会话失败: {e}"))?;
+        // 桌面与 Android 原生进程启动共用；WebView 重载不会执行此路径。
+        let recovered = store.clear_stale_digest_jobs().map_err(|e| format!("恢复中断日报失败: {e}"))?;
+        if recovered > 0 {
+            log::info!("[rustrss] 已清理 {recovered} 个中断日报生成标记");
+        }
         let fetcher =
             Fetcher::new(DEFAULT_USER_AGENT).map_err(|e| format!("初始化 HTTP 客户端失败: {e}"))?;
         Ok(Self {

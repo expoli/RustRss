@@ -1,0 +1,30 @@
+{
+  "serial": "emulator-5582",
+  "checks": [
+    {
+      "name": "real unconfigured-AI generation resets pending state",
+      "error": "还没填模型名（设置 → AI）"
+    },
+    {
+      "name": "HOME return + forced reload restores generating placeholder and 3s polling",
+      "location": {
+        "mpage": "digest",
+        "digestDate": "2026-10-04",
+        "digestScope": "all",
+        "chatSessionId": null
+      },
+      "pollIntervalMs": 3001
+    },
+    {
+      "name": "completion refreshes cached report without digest:done",
+      "scope": "all"
+    },
+    {
+      "name": "completion stops polling"
+    },
+    {
+      "name": "reader back returns to digest home after completion"
+    }
+  ],
+  "mockScope": "Only digest IPC is mocked; fixture state survives reload. Actual configuration-error path uses Rust IPC. No real AI service, process-kill, or vendor ROM validation."
+}
