@@ -29,7 +29,7 @@ async fn concurrent_extraction_on_real_endpoint() {
     // 造 24 篇真实形态文章（正文长度贴近真实：500-1500 字符）
     let dir = tempfile::tempdir().unwrap();
     let store = {
-        let s = rustrss_core::Store::open(&dir.path().join("s.sqlite")).unwrap();
+        let s = rustrss_core::Store::open(dir.path().join("s.sqlite")).unwrap();
         let feed = s.add_feed("https://perf.invalid/rss", Some("Perf")).unwrap();
         for i in 0..24 {
             let body = format!("这是第 {i} 篇测试文章的正文。{}", "性能测量用的填充句子，包含足够长度以模拟真实正文截断行为。".repeat(12));
