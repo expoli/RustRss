@@ -10,52 +10,61 @@ function extract(name) {
   return (source.slice(start - 6, start) === 'async ' ? 'async ' : '') + source.slice(start, end);
 }
 
-test('afterFeedTagChange late get_entry race: second (newer) call resolves first, first resolves late', async () => {
-  const deferreds = [];
-  function makeDeferred() {
-    let resolve;
-    const promise = new Promise((r) => { resolve = r; });
-    deferreds.push({ promise, resolve });
-    return deferreds[deferreds.length - 1];
-  }
-  let call = 0;
+test('queued feed-tag refreshes: second invoke waits for first, fresher data wins', async () => {
+  const getDeferreds = [];   // get_entry 的 deferred（按调用序）
+  const cacheDeferreds = []; // refreshTagCache 的 deferred（按调用序）
+  const applied = [];
   const ctx = vm.createContext({
-    state: { readerEntry: { id: 7 }, view: { kind: 'all' } },
+    state: { readerEntry: { id: 7 }, view: { kind: 'all' }, tags: [{ id: 0, name: '旧未读' }] },
     readerToken: 5,
-    tagGeneration: 0,
+    tagGeneration: 5,
     invoke: (cmd, args) => {
       assert.equal(cmd, 'get_entry');
-      const d = makeDeferred();
-      return d.promise;
+      let resolve;
+      const promise = new Promise((r) => { resolve = r; });
+      getDeferreds.push({ promise, resolve, args });
+      return promise;
     },
-    refreshTagCache: async () => {},
-    refreshCounts: async () => {},
+    refreshTagCache: async () => {
+      let resolve;
+      const promise = new Promise((r) => { resolve = r; });
+      cacheDeferreds.push({ resolve, tags: null });
+      const tags = await promise;
+      ctx.state.tags = tags; // 真实函数行为：写回 state
+      return tags;
+    },
+    refreshCounts: async () => { ctx.__counts = (ctx.__counts || 0) + 1; },
     loadEntries: async () => {},
-    setEntryTags: (id, tags) => { ctx.__applied = { id, tags }; },
-    patchReaderTags: () => { ctx.__patched = (ctx.__patched || 0) + 1; },
+    setEntryTags: (id, tags) => { applied.push({ id, tags }); },
+    patchReaderTags: () => {},
     Promise,
   });
-  vm.runInContext(extract('afterFeedTagChange') + extract('afterFeedTagChangeInner'), ctx);
+  // 只注入 tagRefreshChain 变量；afterFeedTagChange/Inner 均为生产源码抽取
   vm.runInContext(
-    'let tagRefreshChain = Promise.resolve();' +
-    'async function afterFeedTagChange() {' +
-    '  const shown = state.readerEntry; const token = readerToken; const gen = ++tagGeneration;' +
-    '  const run = tagRefreshChain.then(() => afterFeedTagChangeInner(shown, token, gen));' +
-    '  tagRefreshChain = run.catch(() => {}); return run; }',
+    'let tagRefreshChain = Promise.resolve();' + extract('afterFeedTagChange') + extract('afterFeedTagChangeInner'),
     ctx,
   );
-  // 乱序场景（队列化下表现为串行）：第一次调用拿旧数据、完成后第二次调用
-  // 拿新数据——最终生效的必须是后者的新标签
+  // 同时发起两次调用
   const first = vm.runInContext('afterFeedTagChange()', ctx);
+  const second = vm.runInContext('afterFeedTagChange()', ctx);
   await new Promise((r) => setTimeout(r, 0)); // 队列微任务放行第一次的 invoke
-  deferreds[0].resolve({ id: 7, tags: [{ id: 8, name: '旧标签', source: 'feed' }] }); // 第一次的数据（旧）
-  await first; // 第一次完成 → 队列放行第二次
-  const second = vm.runInContext('afterFeedTagChange()', ctx); // 第二次发起
-  await new Promise((r) => setTimeout(r, 0)); // 队列微任务放行第二次的 invoke
-  deferreds[1].resolve({ id: 7, tags: [{ id: 9, name: '新标签', source: 'feed' }] }); // 第二次的数据（新）
+  // 队列语义：second 的 get_entry 未启动（仍在排队）
+  assert.equal(getDeferreds.length, 1, 'second invoke 未启动（排队中）');
+  // 释放 first：get_entry 旧数据 + cache 旧未读数
+  getDeferreds[0].resolve({ id: 7, tags: [{ id: 8, name: '旧标签', source: 'feed' }] });
+  cacheDeferreds[0].resolve([{ id: 0, name: '旧未读' }]);
+  await first;
+  await new Promise((r) => setTimeout(r, 0)); // 队列放行第二次的 invoke
+  // first 完成后 second 的 invoke 启动
+  assert.equal(getDeferreds.length, 2, 'first 完成后 second 的 invoke 启动');
+  // 释放 second：get_entry 新数据 + cache 新未读数
+  getDeferreds[1].resolve({ id: 7, tags: [{ id: 9, name: '新标签', source: 'feed' }] });
+  cacheDeferreds[1].resolve([{ id: 9, name: '新未读' }]);
   await second;
   await new Promise((r) => setTimeout(r, 10));
-  console.log('applied:', JSON.stringify(ctx.__applied));
-  assert.deepEqual(ctx.__applied.tags.map((t) => t.name), ['新标签'],
-    '队列化后最终生效的必须是后一次调用的数据');
+  // 最终生效的必须是后一次调用（fresher）的数据
+  assert.deepEqual(applied[applied.length - 1].tags.map((t) => t.name), ['新标签'],
+    '迟到/排队回读后最终生效的必须是新数据');
+  assert.deepEqual(ctx.state.tags, [{ id: 9, name: '新未读' }],
+    '缓存回读最终生效的必须是新未读数');
 });
