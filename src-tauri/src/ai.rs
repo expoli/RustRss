@@ -22,6 +22,7 @@ pub const K_BASE_URL: &str = "ai.base_url";
 pub const K_TRANSLATE_TARGET: &str = "ai.translate_target";
 pub const K_CONFIRM_BEFORE_SEND: &str = "ai.confirm_before_send";
 pub const K_MAX_OUTPUT_TOKENS: &str = "ai.max_output_tokens";
+pub const K_DIGEST_CONCURRENCY: &str = "ai.digest_concurrency";
 pub const K_REASONING_EFFORT: &str = "ai.reasoning_effort";
 
 pub const DEFAULT_PROVIDER: &str = "ollama";
@@ -48,6 +49,14 @@ pub fn max_output_tokens_from_store(store: &Store) -> u32 {
         .and_then(|v| v.parse::<u32>().ok())
         .unwrap_or(DEFAULT_MAX_OUTPUT_TOKENS)
         .clamp(MAX_OUTPUT_TOKENS_LIMITS.0, MAX_OUTPUT_TOKENS_LIMITS.1)
+}
+
+/// Extraction ceiling only; unset/invalid uses cloud=4, local Ollama=1.
+pub fn digest_concurrency_from_store(store: &Store, provider: Provider) -> usize {
+    non_empty_setting(store, K_DIGEST_CONCURRENCY)
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(if provider == Provider::Ollama { 1 } else { 4 })
+        .clamp(1, 8)
 }
 
 pub fn provider_from_str(value: &str) -> Provider {

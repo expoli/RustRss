@@ -10,6 +10,7 @@ quick-xml = "0.42"
 chrono = { version = "0.4", features = ["serde"] }
 # 日志门面：core 自研的文件 writer 实现 log::Log，桌面端与 MCP 复用同一套落点规则。
 # log 0.4.34 起无 default feature，`set_boxed_logger` 需要显式开 std（否则该项被 cfg 掉）。
+httpdate = "1"
 log = { version = "0.4", features = ["std"] }
 sha2 = "0.10"
 tempfile = "3"
@@ -36,4 +37,4 @@ dom_smoothie = "0.18.2"
 wiremock = "0.6"
 # 测试里要直接改 `PRAGMA user_version` / 造非法库文件（备份校验的输入），走裸连接最直接。
 rusqlite = { version = "0.40", features = ["bundled", "backup"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "test-util"] }

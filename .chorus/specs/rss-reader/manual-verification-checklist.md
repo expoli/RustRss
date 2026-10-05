@@ -1445,3 +1445,10 @@ headless 跑法：`Xvfb :99` + `GDK_BACKEND=x11`（**测试进程的环境，不
 - 恢复调用点：桌面与 Android 共用 AppState::open / lib.rs::run 原生启动路径，显式调用 core clear_stale_digest_jobs；WebView 重载与 MCP 开库不清理在飞标记。
 - 环境限制：没有复现用户厂商 ROM 查杀；无真实 BYOK 生成中进程查杀证据。进程重启不续跑任务；sessionStorage 在进程查杀后不保证保存位置。桌面 F5 会话恢复本批仅 VM 回归及构建验证，未做原生桌面运行旅程。
 - 截图、结果 JSON、可复跑脚本与最终产物哈希见 [记录](2026-10-05-digest-recovery/evidence/record.md)。
+
+## 日报提取优化第一批：有界并发 + 限流
+
+- 机械验证：`cargo test --workspace` 639 passed / 0 failed / 1 existing ignored（原624 + 新15）；`cargo clippy --workspace --all-targets -- -D warnings` 零告警。
+- 新测试：core 调度器单测2 + 注入闭包/HTTP mock9（乱序归位、渐进并发、同端点跨任务冷却、最小活动上限、指数抖动/减半、取消排空/停止重试、一次重试/401/格式/余额不重试、四provider头元数据）；Tauri `digest_generate` 真实命令路径mock3（并发交错及合成原序、失败排空缓存、取消双在途排空缓存）+ 配置默认/clamp1。
+- 行为边界：仅提取阶段限流；合成请求仍走原路径。同端点不同配置采用活动任务最小上限。429后减半后的共享上限在本轮活动任务中保持；无活动任务且冷却结束后，新任务重新采用配置上限并从1爬升。
+- 环境限制：无真实端点提速/账单、手机/桌面原生运行旅程证据；父会话另做真实端点测量，不承诺倍数。无UI修改。沿用整体失败语义而非生成不完整日报；沿用Transport(String)粗分类，永久TLS失败可能额外尝试一次。保留原缓存写失败处理，不改变缓存语义。

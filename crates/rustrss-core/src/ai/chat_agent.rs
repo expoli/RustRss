@@ -69,6 +69,7 @@ pub fn tools_unsupported(provider: Provider, error: &AiError) -> bool {
     let AiError::Provider {
         status: 400,
         message,
+        ..
     } = error
     else {
         return false;

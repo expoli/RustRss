@@ -419,6 +419,7 @@ pub fn run() {
             commands::ai_preview,
             commands::set_ai_confirm_before_send,
             commands::set_ai_reasoning_effort,
+            commands::set_ai_digest_concurrency,
             commands::get_mcp_settings,
             commands::set_mcp_enabled,
             commands::set_mcp_port,

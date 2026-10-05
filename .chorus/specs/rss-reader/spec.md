@@ -152,6 +152,8 @@ created: 2026-09-20
 
 ### 每日日报（2026-10-03 daily-digest）
 
+- [x] 要点提取第一批优化：有界渐进并发（云默认4 / Ollama默认1，`ai.digest_concurrency` 限1–8）、同base URL多任务共享最小活动上限/429冷却、Retry-After秒/HTTP-date及无头指数抖动退避、每篇最多一次429/网络重试、取消排空并缓存在途成果；单协调者完成序进度 + 原素材序归位。保持原有整体失败报告语义（其它篇继续提取并缓存，事件附failed计数），不改prompt/输入哈希/缓存键/候选/分组/CAS。Rust调度器与`digest_generate`交错mock回归覆盖；真实BYOK提速验证仍待后续。
+
 - [x] 后台返回/页面重载防御性恢复：`digest_get` / `digest_status` 暴露后端生成标记；进行中视图每 3 秒单 flight 轮询，完成或 `digest:done` 到达即刷新；本会话记忆日报日期/范围与助手会话（`sessionStorage`）。原生应用进程启动清理残留生成标记、保留旧报告（不自动续跑；MCP 开库不清理）。Rust/JS 回归 + Android HOME/强制页面重载 mock 及真实启动残留标记夹具验证见 [证据](2026-10-05-digest-recovery/evidence/record.md)；厂商 ROM 查杀与 sessionStorage 在查杀后的存续不作保证。
 - [x] 按**本地日历日**（含 DST 偏移）聚合素材生成日报：侧栏「日报」分组（今日/昨日/最近历史日期行）、阅读窗格结构化渲染（总览+分节）、检查点对比状态行（新增/变化/移出分类计数）、强制重写（复用要点不重复付费）、生成中进度与取消（[design](2026-10-03-daily-digest/design.md)；实现 34ebb02+6d26a50+ffcea7e..72b3308 四轮独立评审收口：条目缓存输入哈希+端点身份、提交 CAS 同源指纹+feed_tags 事务内重解析、稳定槽位单飞+job_id 反查取消、注册表生命周期单测、前端 started/done 生命周期与回执身份隔离）
 - [x] 生成流水线缓存：文章要点按输入指纹缓存（ai_cache task=digest_item），分节/最终合成节点内容寻址缓存（含端点+提示词版本）；重复生成只对变化部分付费——单测钉住输入哈希变化→键变化（`digest_schema.rs`）

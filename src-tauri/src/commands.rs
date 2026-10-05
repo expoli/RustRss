@@ -3566,6 +3566,8 @@ pub struct AiSettingsView {
     pub max_output_tokens: u32,
     /// 思考强度（""=跟随模型默认；minimal/low/medium/high；仅 OpenAI 兼容接口发送）
     pub reasoning_effort: String,
+    /// Item extraction ceiling (1-8); cloud default 4, Ollama default 1.
+    pub digest_concurrency: usize,
 }
 
 fn ai_settings_view(state: &AppState) -> R<AiSettingsView> {
@@ -3592,6 +3594,7 @@ fn ai_settings_view_with_key_loader(
             confirm_before_send: crate::ai::confirm_before_send(s),
             max_output_tokens: crate::ai::max_output_tokens_from_store(s),
             reasoning_effort: crate::ai::reasoning_effort_from_store(s).unwrap_or_default(),
+            digest_concurrency: crate::ai::digest_concurrency_from_store(s, provider),
         })
     })?;
     // Credential service may block or retry; the database guard is already gone.
@@ -3636,6 +3639,16 @@ pub fn set_ai_reasoning_effort(
             .map_err(err)
     })?;
     ai_settings_view(&state)
+}
+
+/// Extraction tuning without changing the AI profile or cache keys.
+#[tauri::command]
+pub fn set_ai_digest_concurrency(state: State<'_, AppState>, value: u32) -> R<usize> {
+    let value = value.clamp(1, 8) as usize;
+    state.with_store(|s| {
+        s.set_setting(crate::ai::K_DIGEST_CONCURRENCY, &value.to_string()).map_err(err)
+    })?;
+    Ok(value)
 }
 
 /// 保存 AI 设置。`api_key` 为 `Some("")` 表示清除凭据，`None` 表示不动它。
@@ -4402,8 +4415,8 @@ fn digest_scope_tag_ids(s: &rustrss_core::store::Store) -> Result<Vec<i64>, Stri
 /// job_id 经 `digest:started` 事件交给前端（审核 P1-4 的契约），进度与完成走
 /// `digest:progress` / `digest:done`。
 #[tauri::command]
-pub async fn digest_generate(
-    app: tauri::AppHandle,
+pub async fn digest_generate<Rt: tauri::Runtime>(
+    app: tauri::AppHandle<Rt>,
     state: State<'_, AppState>,
     date: String,
     mode: Option<String>,
@@ -4414,7 +4427,7 @@ pub async fn digest_generate(
 
     let client = crate::ai::client_from_state(&state)?;
     let task_client = client.clone();
-    let (scope, bounds, manifest, language) = state.with_store(|s| {
+    let (scope, bounds, manifest, language, concurrency) = state.with_store(|s| {
         let tag_ids = digest_scope_tag_ids(s)?;
         let scope = DigestScope::resolve(s, &tag_ids).map_err(err)?;
         let bounds = rustrss_core::store::digest::local_day_bounds(&date).map_err(err)?;
@@ -4422,7 +4435,8 @@ pub async fn digest_generate(
             .freeze_manifest(bounds.start, bounds.end, scope.feed_ids.as_deref())
             .map_err(err)?;
         let language = crate::ai::translate_target(s);
-        Ok((scope, bounds, manifest, language))
+        let concurrency = crate::ai::digest_concurrency_from_store(s, client.config().provider);
+        Ok((scope, bounds, manifest, language, concurrency))
     })?;
 
     // cfg 借用 client：在 client 移入后台任务前，把 profile 需要的值取出来
@@ -4512,11 +4526,12 @@ pub async fn digest_generate(
                 Ok(())
             });
         };
+        let failed = std::sync::atomic::AtomicUsize::new(0);
         let emit_progress = |stage: &str, done: i64, total: i64| {
             let _ = task_app.emit(
                 "digest:progress",
                 serde_json::json!({ "jobId": job_id, "date": date, "stage": stage,
-                    "done": done, "total": total }),
+                    "done": done, "total": total, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }),
             );
         };
         let fail = |guard: &DigestJobGuard, payload: serde_json::Value| {
@@ -4529,59 +4544,112 @@ pub async fn digest_generate(
 
         // ① 单篇要点（ai_cache 跨日期复用；键含实际输入哈希 + 端点身份——审核 P1-1）
         let endpoint = rustrss_core::ai::digest::endpoint_identity(&client);
-        let mut key_points: Vec<(String, String)> = Vec::new();
+        let mut key_points: Vec<Option<String>> = vec![None; manifest.entries.len()];
         let mut cache_hits = 0i64;
-        let mut ai_calls = 0i64;
+        let calls = std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0));
+        let mut pending = Vec::new();
+        let completed = std::sync::atomic::AtomicI64::new(0);
         for (idx, entry) in manifest.entries.iter().enumerate() {
             if guard.cancelled() {
-                finish_slot();
-                let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
-                    "date": date, "ok": false, "cancelled": true }));
-                return;
+                break;
             }
             let plan = state.with_store(|s| {
-                rustrss_core::ai::digest::plan_item(
-                    s,
-                    entry,
-                    &language,
-                    &ai_cfg.cache_tag(),
-                    &endpoint,
-                )
-                .map_err(|e| e.to_string())
+                rustrss_core::ai::digest::plan_item(s, entry, &language, &ai_cfg.cache_tag(), &endpoint)
+                    .map_err(|e| e.to_string())
             });
             let plan = match plan {
                 Ok(p) => p,
-                Err(e) => return fail(&guard, serde_json::json!({ "jobId": job_id,
-                    "date": date, "ok": false, "error": e })),
-            };
-            if let Some(hit) = plan.cached.clone() {
-                cache_hits += 1;
-                key_points.push((entry.title.clone(), hit));
-            } else {
-                ai_calls += 1;
-                let output = match client.complete(plan.request.clone()).await {
-                    Ok(text) => text,
-                    Err(e) => {
-                        return fail(&guard, serde_json::json!({ "jobId": job_id,
-                            "date": date, "ok": false, "error": e.to_string() }));
-                    }
-                };
-                // 已付费的要点先落缓存再处理取消（不浪费）
-                let _ = state.with_store(|s| {
-                    rustrss_core::ai::digest::save_item(
-                        s, entry, &language, &ai_cfg.cache_tag(), &endpoint, &output)
-                        .map_err(|e| e.to_string())
-                });
-                if guard.cancelled() {
-                    finish_slot();
-                    let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
-                        "date": date, "ok": false, "cancelled": true }));
-                    return;
+                Err(e) => {
+                    return fail(
+                        &guard,
+                        serde_json::json!({ "jobId": job_id,
+                "date": date, "ok": false, "failed": failed.load(std::sync::atomic::Ordering::Relaxed), "error": e }),
+                    )
                 }
-                key_points.push((entry.title.clone(), output));
+            };
+            if let Some(hit) = plan.cached {
+                cache_hits += 1;
+                key_points[idx] = Some(hit);
+                let done = completed.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                emit_progress("items", done, manifest.entries.len() as i64);
+            } else {
+                pending.push((idx, plan.request));
             }
-            emit_progress("items", (idx + 1) as i64, manifest.entries.len() as i64);
         }
+        let pending_indices: Vec<_> = pending.iter().map(|(idx, _)| *idx).collect();
+        let cancel = digest_jobs().lock().unwrap()[&guard.slot_key].flag.clone();
+        let scheduler = rustrss_core::ai::digest_scheduler::DigestExtractionScheduler::new(
+            &ai_cfg.base_url,
+            concurrency,
+            cancel,
+        );
+        let extraction_client = client.clone();
+        let extraction_calls = calls.clone();
+        let mut failures = Vec::new();
+        scheduler
+            .run(
+                pending,
+                move |(_, request)| {
+                    let client = extraction_client.clone();
+                    let calls = extraction_calls.clone();
+                    async move {
+                        calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        client.complete(request).await
+                    }
+                },
+                |pending_idx, result| {
+                    let idx = pending_indices[pending_idx];
+                    let entry = &manifest.entries[idx];
+                    match result {
+                        Ok(output) => {
+                            // Single coordinator caches every paid success before
+                            // reporting cancellation, including late in-flight results.
+                            let _ = state.with_store(|s| {
+                                rustrss_core::ai::digest::save_item(
+                                    s,
+                                    entry,
+                                    &language,
+                                    &ai_cfg.cache_tag(),
+                                    &endpoint,
+                                    output,
+                                )
+                                .map_err(|e| e.to_string())
+                            });
+                            key_points[idx] = Some(output.clone());
+                        }
+                        Err(error) => {
+                            failures.push((entry.entry_id, error.to_string()));
+                            failed.store(failures.len(), std::sync::atomic::Ordering::Relaxed);
+                        }
+                    }
+                    let done = completed.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                    emit_progress("items", done, manifest.entries.len() as i64);
+                },
+            )
+            .await;
+        let mut ai_calls = calls.load(std::sync::atomic::Ordering::Relaxed);
+        if guard.cancelled() {
+            finish_slot();
+            let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
+            "date": date, "ok": false, "cancelled": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
+            return;
+        }
+        // Preserve the existing all-or-nothing report behavior, but only after
+        // every other item has completed and its paid output has been cached.
+        if let Some((_, error)) = failures.first() {
+            return fail(
+                &guard,
+                serde_json::json!({ "jobId": job_id,
+            "date": date, "ok": false, "error": error, "failed": failed.load(std::sync::atomic::Ordering::Relaxed),
+            "failedEntries": failures.iter().map(|(id, _)| *id).collect::<Vec<_>>() }),
+            );
+        }
+        let key_points: Vec<_> = manifest
+            .entries
+            .iter()
+            .zip(key_points)
+            .map(|(entry, points)| (entry.title.clone(), points.expect("completed extraction")))
+            .collect();
 
         // ② 分组合成（节点缓存复用；已付费的组节点先落缓存再查取消——审核 P1-5）
         let groups = rustrss_core::ai::digest::group_key_points(
@@ -4594,7 +4662,7 @@ pub async fn digest_generate(
             if guard.cancelled() {
                 finish_slot();
                 let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
-                    "date": date, "ok": false, "cancelled": true }));
+                    "date": date, "ok": false, "cancelled": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
                 return;
             }
             let titles: Vec<&str> = group.iter().map(|(t, _)| t.as_str()).collect();
@@ -4623,13 +4691,13 @@ pub async fn digest_generate(
                         }
                         Err(e) => {
                             return fail(&guard, serde_json::json!({ "jobId": job_id,
-                                "date": date, "ok": false, "error": e.to_string() }));
+                                "date": date, "ok": false, "failed": failed.load(std::sync::atomic::Ordering::Relaxed), "error": e.to_string() }));
                         }
                     }
                 }
                 Err(e) => {
                     return fail(&guard, serde_json::json!({ "jobId": job_id,
-                        "date": date, "ok": false, "error": e }));
+                        "date": date, "ok": false, "failed": failed.load(std::sync::atomic::Ordering::Relaxed), "error": e }));
                 }
             };
             sections.push(section);
@@ -4641,7 +4709,7 @@ pub async fn digest_generate(
         if guard.cancelled() {
             finish_slot();
             let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
-                "date": date, "ok": false, "cancelled": true }));
+                "date": date, "ok": false, "cancelled": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
             return;
         }
         let final_key = rustrss_core::ai::digest::node_key(
@@ -4668,13 +4736,13 @@ pub async fn digest_generate(
                     }
                     Err(e) => {
                         return fail(&guard, serde_json::json!({ "jobId": job_id,
-                            "date": date, "ok": false, "error": e.to_string() }));
+                            "date": date, "ok": false, "failed": failed.load(std::sync::atomic::Ordering::Relaxed), "error": e.to_string() }));
                     }
                 }
             }
             Err(e) => {
                 return fail(&guard, serde_json::json!({ "jobId": job_id,
-                    "date": date, "ok": false, "error": e }));
+                    "date": date, "ok": false, "failed": failed.load(std::sync::atomic::Ordering::Relaxed), "error": e }));
             }
         };
 
@@ -4682,7 +4750,7 @@ pub async fn digest_generate(
         if guard.cancelled() {
             finish_slot();
             let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
-                "date": date, "ok": false, "cancelled": true }));
+                "date": date, "ok": false, "cancelled": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
             return;
         }
         let (overview, sections_json) =
@@ -4710,11 +4778,11 @@ pub async fn digest_generate(
             Ok(_) => {
                 finish_slot();
                 let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
-                    "date": date, "ok": true }));
+                    "date": date, "ok": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
             }
             Err(e) => {
                 fail(&guard, serde_json::json!({ "jobId": job_id, "date": date,
-                    "ok": false, "error": e }));
+                    "ok": false, "failed": failed.load(std::sync::atomic::Ordering::Relaxed), "error": e }));
             }
         }
     });
@@ -5346,3 +5414,7 @@ mod digest_recovery_tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "commands/digest_generation_tests.rs"]
+mod digest_generation_tests;

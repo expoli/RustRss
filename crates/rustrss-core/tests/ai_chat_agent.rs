@@ -384,7 +384,8 @@ fn provider_specific_capability_error_phrases_are_narrow() {
             provider,
             &AiError::Provider {
                 status: 400,
-                message: message.into()
+                message: message.into(),
+                retry_after: None,
             }
         ));
         for status in [401, 429, 500] {
@@ -392,7 +393,8 @@ fn provider_specific_capability_error_phrases_are_narrow() {
                 provider,
                 &AiError::Provider {
                     status,
-                    message: message.into()
+                    message: message.into(),
+                retry_after: None,
                 }
             ));
         }

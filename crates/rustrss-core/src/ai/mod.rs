@@ -17,6 +17,7 @@ pub mod chat_session;
 pub mod tools;
 pub mod chat_agent;
 pub mod digest;
+pub mod digest_scheduler;
 pub mod prompt;
 
 use crate::logging::scrub_log_line;
@@ -135,7 +136,11 @@ pub enum AiError {
         usage: chat::ChatUsage,
     },
     #[error("服务端返回 {status}: {message}")]
-    Provider { status: u16, message: String },
+    Provider {
+        status: u16,
+        message: String,
+        retry_after: Option<std::time::Duration>,
+    },
     #[error("响应结构不符合预期: {0}")]
     BadResponse(String),
     #[error("数据库错误: {0}")]
@@ -206,6 +211,26 @@ async fn read_ai_body_limited(
         body.extend_from_slice(&chunk);
     }
     String::from_utf8(body).map_err(|e| AiError::BadResponse(format!("响应不是有效的 UTF-8: {e}")))
+}
+
+/// Retry-After accepts delta seconds or any of the three HTTP-date formats.
+/// Past dates mean an immediate retry; malformed values use scheduler backoff.
+pub fn parse_retry_after(value: &str, now: std::time::SystemTime) -> Option<std::time::Duration> {
+    let value = value.trim();
+    if let Ok(seconds) = value.parse::<u64>() {
+        return Some(std::time::Duration::from_secs(seconds));
+    }
+    httpdate::parse_http_date(value)
+        .ok()
+        .map(|date| date.duration_since(now).unwrap_or_default())
+}
+
+fn response_retry_after(resp: &reqwest::Response) -> Option<std::time::Duration> {
+    resp.headers()
+        .get(reqwest::header::RETRY_AFTER)?
+        .to_str()
+        .ok()
+        .and_then(|value| parse_retry_after(value, std::time::SystemTime::now()))
 }
 
 impl AiClient {
@@ -282,6 +307,7 @@ impl AiClient {
             .map_err(|e| AiError::Transport(scrub_log_line(&e.to_string())))?;
 
         let status = resp.status();
+        let retry_after = response_retry_after(&resp);
         // 体积闸门在获取中（红线 11）：Content-Length 预检 + 流式累计超限即断，
         // 不做无上界的整包 .text()。
         let text = read_ai_body_limited(resp, MAX_RESPONSE_BYTES).await?;
@@ -290,6 +316,7 @@ impl AiClient {
             // 保留 provider 的原始错误信息（定位问题必需），但先对 key 打码
             return Err(AiError::Provider {
                 status: status.as_u16(),
+                retry_after,
                 message: self.scrub(&shorten(&text, 600)),
             });
         }

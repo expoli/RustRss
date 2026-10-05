@@ -536,6 +536,7 @@ pub async fn execute_chat_turn(
             AiError::Transport(client.scrub(&crate::logging::scrub_log_line(&e.to_string())))
         })?;
         let status = resp.status();
+        let retry_after = super::response_retry_after(&resp);
         let text = super::read_ai_body_limited(resp, super::MAX_RESPONSE_BYTES)
             .await
             .map_err(|e| match e {
@@ -545,6 +546,7 @@ pub async fn execute_chat_turn(
         if !status.is_success() {
             return Err(AiError::Provider {
                 status: status.as_u16(),
+                retry_after,
                 // 先打码再截短，避免凭据恰跨截断边界时留下前缀。
                 message: super::shorten(&client.scrub(&text), 600),
             });
@@ -596,6 +598,7 @@ pub async fn execute_chat_turn_streaming_with_usage(
                     )
                 })?;
             let status = resp.status();
+            let retry_after = super::response_retry_after(&resp);
             if status.is_success() {
                 break resp;
             }
@@ -613,6 +616,7 @@ pub async fn execute_chat_turn_streaming_with_usage(
             }
             return Err(AiError::Provider {
                 status: status.as_u16(),
+                retry_after,
                 message: super::shorten(&text, 600),
             });
         };
