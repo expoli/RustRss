@@ -2184,16 +2184,20 @@ async function afterTagChange(id, tag, attached) {
  * Re-read data in batches; reset pagination and totals, reuse rows and keep reader DOM.
  * This runs even if the picker was closed while the committed write was in flight.
  */
+let tagGeneration = 0;
 async function afterFeedTagChange() {
   const shown = state.readerEntry;
   const token = readerToken;
+  // 标签变更代次：连续两次源标签回读（第二次先 resolve）时，迟到的过期回读
+  // 不得覆盖新标签（评审复现的竞态）——readerToken/身份守卫不覆盖此场景。
+  const gen = ++tagGeneration;
   const readerTags = shown ? invoke('get_entry', { id: shown.id }) : Promise.resolve(null);
   await Promise.all([
     refreshTagCache(),
     refreshCounts(),
     ['digest', 'chat'].includes(state.view.kind) ? Promise.resolve() : loadEntries({ reader: false, reuseRows: true }),
     readerTags.then((row) => {
-      if (row && state.readerEntry === shown && readerToken === token) {
+      if (row && state.readerEntry === shown && readerToken === token && gen === tagGeneration) {
         setEntryTags(row.id, row.tags || []);
         patchReaderTags();
       }
