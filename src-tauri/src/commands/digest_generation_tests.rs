@@ -132,7 +132,10 @@ async fn generate_fixture(failure: bool, cancel: bool) {
         .map(|e| e["done"].as_i64().unwrap())
         .collect();
     let expected = if cancel { 5 } else { 9 };
-    assert_eq!(item_done, (0..=expected).collect::<Vec<_>>());
+    // 并发调度下 done 按完成序推进：首 0、终 N、非降（不再保证严格 +1 递增）
+    assert_eq!(item_done.first(), Some(&0));
+    assert_eq!(item_done.last(), Some(&expected));
+    assert!(item_done.windows(2).all(|w| w[0] <= w[1]), "进度非降：{item_done:?}");
     assert!(events
         .iter()
         .all(|e| e["stage"] != "items" || e["total"] == 9));

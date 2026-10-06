@@ -66,7 +66,10 @@ impl EndpointRegistry {
         let id = {
             let mut b = limiter.budget.lock().unwrap();
             if b.tasks.is_empty() && b.in_flight == 0 {
-                b.level = 1;
+                // 初始并发 = min(配置上限, 4)：免费档实测单篇 2.7-11.6s 且无 429，
+                // 「连续 3 成功 +1」的保守爬升让前 9 篇纯串行（真机反馈慢的成因）。
+                // 429 降档仍回 1 保守爬升（限流保护保留）。
+                b.level = concurrency.clamp(1, 4);
                 b.successes = 0;
                 if b.cooldown.is_none_or(|until| until <= now) {
                     b.throttle_cap = None;
@@ -258,13 +261,7 @@ impl DigestExtractionScheduler {
         // 初始并发直接到 min(配置上限, 4)：免费档实测单篇 2.7-11.6s 无 429，
         // 「连续 3 成功 +1」的保守爬升让前 9 篇纯串行（真机反馈慢的主观成因）。
         // 429 仍会降回 1 并保守爬升（限流保护的语义保留）。
-        let initial_level = limiter
-            .budget
-            .lock()
-            .unwrap()
-            .effective_cap()
-            .min(4)
-            .max(1);
+        let initial_level = limiter.budget.lock().unwrap().level;
         let mut level = initial_level;
         let mut successes = 0;
         loop {

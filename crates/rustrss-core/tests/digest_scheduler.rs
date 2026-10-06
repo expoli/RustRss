@@ -72,7 +72,11 @@ async fn progressive_concurrency_and_out_of_order_results_retain_manifest_order(
             |i, _| finished.push(i),
         )
         .await;
-    assert_eq!(&started.lock().unwrap()[..3], &[(0, 1), (1, 1), (2, 1)]);
+    // 初始并发 = min(configured, 4)：前 4 个请求直接并发（n=1..4）
+    assert_eq!(
+        &started.lock().unwrap()[..4],
+        &[(0, 1), (1, 2), (2, 3), (3, 4)]
+    );
     assert_eq!(peak.load(Ordering::SeqCst), 4);
     assert!(finished.iter().position(|i| *i == 4) < finished.iter().position(|i| *i == 3));
     for (i, output) in results.into_iter().enumerate() {
