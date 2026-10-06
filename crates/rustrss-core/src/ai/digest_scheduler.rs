@@ -349,7 +349,8 @@ mod tests {
         let b = rebuilt.limiter.budget.lock().unwrap();
         assert_eq!(b.config_cap, 4);
         assert_eq!(b.effective_cap(), 4);
-        assert_eq!(b.level, 1);
+        // 重建后的初始并发 = min(配置, 4)（真机反馈：保守爬升让前 9 篇纯串行）
+        assert_eq!(b.level, 4);
         assert_eq!(b.throttle_cap, None);
     }
 
@@ -390,7 +391,7 @@ mod tests {
         let b = rebuilt.limiter.budget.lock().unwrap();
         assert_eq!(b.throttle_cap, None);
         assert_eq!(b.config_cap, 4);
-        assert_eq!(b.level, 1);
+        assert_eq!(b.level, 4);
     }
 
     #[tokio::test(start_paused = true)]
