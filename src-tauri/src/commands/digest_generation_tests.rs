@@ -131,16 +131,29 @@ async fn generate_fixture(failure: bool, cancel: bool) {
         .filter(|e| e["stage"] == "items")
         .map(|e| e["done"].as_i64().unwrap())
         .collect();
+    // 并发调度下 done 按完成序推进：首 0、非降。cancel 时排空在途——终值落在
+    // 取消点与全量之间（并发时序相关，不钉死具体值）
     let expected = if cancel { 5 } else { 9 };
-    // 并发调度下 done 按完成序推进：首 0、终 N、非降（不再保证严格 +1 递增）
     assert_eq!(item_done.first(), Some(&0));
-    assert_eq!(item_done.last(), Some(&expected));
     assert!(item_done.windows(2).all(|w| w[0] <= w[1]), "进度非降：{item_done:?}");
+    if cancel {
+        assert!(
+            *item_done.last().unwrap() >= 5 && *item_done.last().unwrap() <= 9,
+            "取消排空终值范围：{item_done:?}"
+        );
+    } else {
+        assert_eq!(item_done.last(), Some(&9));
+    }
     assert!(events
         .iter()
         .all(|e| e["stage"] != "items" || e["total"] == 9));
     let starts = starts.lock().unwrap();
-    assert_eq!(starts.len(), expected as usize);
+    // 并发下发出的请求数 = 取消点前启动数（≥串行取消点的 5，≤9）
+    assert!(
+        (expected as usize..=9).contains(&starts.len()),
+        "发出的提取请求数：{}",
+        starts.len()
+    );
     let t3 = starts.iter().find(|(i, _)| *i == 3).unwrap().1;
     let t4 = starts.iter().find(|(i, _)| *i == 4).unwrap().1;
     assert!(
@@ -162,11 +175,11 @@ async fn generate_fixture(failure: bool, cancel: bool) {
                     &endpoint,
                 )
                 .unwrap();
+                // cancel 时并发排空在途：取消点后启动的篇也可能完成并入缓存——
+                // 缓存命中集合 ≥ 串行取消点口径且 ≤ 全量
                 if i < expected as usize && !(failure && i == 4) {
                     assert_eq!(plan.cached, Some(format!("points-{i}")));
                     count += 1;
-                } else {
-                    assert!(plan.cached.is_none());
                 }
             }
             assert_eq!(
@@ -176,7 +189,8 @@ async fn generate_fixture(failure: bool, cancel: bool) {
             Ok(count)
         })
         .unwrap();
-    assert_eq!(cache_count, expected - i64::from(failure));
+    assert!(cache_count >= expected - i64::from(failure), "缓存命中 ≥ 串行取消点口径");
+    assert!(cache_count <= 9, "缓存命中 ≤ 全量");
 }
 
 #[tokio::test]
