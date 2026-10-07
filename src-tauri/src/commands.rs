@@ -4788,6 +4788,11 @@ pub async fn digest_generate<Rt: tauri::Runtime>(
         match commit {
             Ok(_) => {
                 finish_slot();
+                log::info!(
+                    "[rustrss][digest] 生成完成: date={date} 耗时={:?} 缓存命中={cache_hits} 失败篇={}",
+                    digest_started.elapsed(),
+                    failed.load(std::sync::atomic::Ordering::Relaxed)
+                );
                 let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                     "date": date, "ok": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
             }
