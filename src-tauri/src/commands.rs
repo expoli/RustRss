@@ -4537,9 +4537,16 @@ pub async fn digest_generate<Rt: tauri::Runtime>(
         let fail = |guard: &DigestJobGuard, payload: serde_json::Value| {
             let _ = guard;
             finish_slot();
+        log::info!("[rustrss][digest] 提前返回: date={date} 原因=空/异常");
             let _ = task_app.emit("digest:done", payload);
         };
 
+        let model_label = format!("{}/{}", crate::ai::provider_to_str(ai_cfg.provider), ai_cfg.model);
+        log::info!(
+            "[rustrss][digest] 生成开始: date={date} 候选={candidates} 并发={concurrency} 模型={model_label}",
+            candidates = manifest.entries.len(),
+        );
+        let digest_started = std::time::Instant::now();
         emit_progress("items", 0, manifest.entries.len() as i64);
 
         // ① 单篇要点（ai_cache 跨日期复用；键含实际输入哈希 + 端点身份——审核 P1-1）
@@ -4630,6 +4637,7 @@ pub async fn digest_generate<Rt: tauri::Runtime>(
         let mut ai_calls = calls.load(std::sync::atomic::Ordering::Relaxed);
         if guard.cancelled() {
             finish_slot();
+                log::info!("[rustrss][digest] 生成取消: date={date}");
             let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
             "date": date, "ok": false, "cancelled": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
             return;
@@ -4661,6 +4669,7 @@ pub async fn digest_generate<Rt: tauri::Runtime>(
         for (gi, group) in groups.iter().enumerate() {
             if guard.cancelled() {
                 finish_slot();
+        log::info!("[rustrss][digest] 生成失败: date={date} err=见状态栏");
                 let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                     "date": date, "ok": false, "cancelled": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
                 return;
@@ -4708,6 +4717,7 @@ pub async fn digest_generate<Rt: tauri::Runtime>(
         //    合成前与提交前都检查取消（审核 P1-5）。
         if guard.cancelled() {
             finish_slot();
+                log::info!("[rustrss][digest] 生成取消: date={date}");
             let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                 "date": date, "ok": false, "cancelled": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
             return;
@@ -4749,6 +4759,7 @@ pub async fn digest_generate<Rt: tauri::Runtime>(
         // ④ 提交（CAS：事务内重算素材指纹，漂移即拒绝覆盖旧报告——审核 P1-2）
         if guard.cancelled() {
             finish_slot();
+                log::info!("[rustrss][digest] 生成失败: date={date}");
             let _ = task_app.emit("digest:done", serde_json::json!({ "jobId": job_id,
                 "date": date, "ok": false, "cancelled": true, "failed": failed.load(std::sync::atomic::Ordering::Relaxed) }));
             return;
