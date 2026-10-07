@@ -137,6 +137,12 @@ fn on_start_enabled(app: &AppHandle) -> bool {
 /// `feed_ids = None` 全量（启动首刷），`Some(ids)` 只抓本轮到期的源。
 async fn background_refresh(app: &AppHandle, feed_ids: Option<Vec<i64>>) {
     let state = app.state::<AppState>();
+    // 日报生成进行中跳过本轮自动刷新：抓取入库会改候选素材，触发生成提交的
+    // CAS 拒绝（用户的长提炼白费）。下一轮 30 分钟后自然补抓。
+    if commands::digest_generation_active() {
+        log::info!("[rustrss] 日报生成进行中，本轮自动刷新跳过（防素材漂移）");
+        return;
+    }
     let Ok(_flight) = state.try_begin_refresh() else {
         log::debug!("[rustrss] 已有刷新在跑（手动或上一轮），本轮后台刷新跳过");
         return; // 已有刷新在跑（手动或上一轮）：本轮跳过，不发事件

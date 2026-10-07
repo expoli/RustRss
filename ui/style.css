@@ -1459,6 +1459,8 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
 }
 
 @media (max-width: 960px) and (pointer: coarse) {
+  /* 手机状态显示由 #m-status 镜像承担；桌面 .statusbar 在手机上与镜像双显（真机截图反馈） */
+  .statusbar { display: none; }
   /* 主区、状态和导航共享一套 flex 高度；不猜测字体/系统缩放后的底栏高度。
      Android 根视图已避让系统栏和 IME，网页不再重复扣安全区。 */
   body { min-width: 0; }
@@ -1494,6 +1496,8 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
     z-index: 5;
     background: var(--bg);
   }
+  body[data-mpage="reader"] .right-col .reader {
+    padding-left: 58px; /* 沉浸式阅读的返回钮槽（m-reader-back absolute 覆于其上） */
 
   /* ---- 页面可见性矩阵 ---- */
   body:not([data-mpage="subscriptions"]) .sidebar { display: none; }
@@ -1619,11 +1623,10 @@ body[data-android="1"] #pane-data .m-only:not(.hidden) { display: block; }
     overflow: hidden;
   }
   #m-reader-back .ui-icon { width: 22px; height: 22px; }
-  /* 阅读页无 toolbar/m-nav：滚动正文自己避让上下系统栏 */
+  /* 阅读页无 toolbar/m-nav：滚动正文自己避让上下系统栏。
+     58px 左槽只在沉浸式阅读层生效——聊天/日报首页等视图有各自头部，不需要 */
   .reader {
-    /* 左侧 58px = 返回钮（48px）+ 8px 间距：日报/文章头部的返回槽（评审） */
-    padding: calc(8px + var(--inset-top, 0px)) 18px
-      calc(40px + var(--inset-bottom, 0px)) 58px;
+    padding: calc(8px + var(--inset-top, 0px)) 18px calc(40px + var(--inset-bottom, 0px)) 18px;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;

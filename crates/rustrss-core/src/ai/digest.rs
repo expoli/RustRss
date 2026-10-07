@@ -158,13 +158,28 @@ pub fn parse_digest_markdown(md: &str) -> (String, Vec<(String, String)>) {
     let mut overview_lines: Vec<&str> = Vec::new();
     let mut sections: Vec<(String, String)> = Vec::new();
     let mut current: Option<(String, Vec<&str>)> = None;
+    let mut seen_content = false;
     for line in md.lines() {
+        // ## 断节；顶部单独的 H1 总标题行直接丢弃（UI 头部已有日期标题，
+        // 保留会以 escape 文本裸露 # 语法）；正文中的 H1 当 H2 断节
         if let Some(title) = line.strip_prefix("## ") {
             if let Some((t, ls)) = current.take() {
                 sections.push((t, ls.join("\n").trim().to_string()));
             }
             current = Some((title.trim().to_string(), Vec::new()));
             continue;
+        }
+        if line.strip_prefix("# ").is_some() {
+            if seen_content {
+                if let Some((t, ls)) = current.take() {
+                    sections.push((t, ls.join("\n").trim().to_string()));
+                }
+                current = Some((line[2..].trim().to_string(), Vec::new()));
+            }
+            continue;
+        }
+        if !line.trim().is_empty() {
+            seen_content = true;
         }
         match &mut current {
             Some((_, ls)) => ls.push(line),
@@ -174,6 +189,49 @@ pub fn parse_digest_markdown(md: &str) -> (String, Vec<(String, String)>) {
     if let Some((t, ls)) = current.take() {
         sections.push((t, ls.join("\n").trim().to_string()));
     }
-    let overview = overview_lines.join("\n").trim().to_string();
+    // overview/sections 里的行内 markdown 语法剥除（**粗体**、`代码`）
+    let strip = |text: &str| text.replace("**", "").replace('`', "");
+    let overview = strip(overview_lines.join("\n").trim());
+    let overview = overview.trim().to_string();
+    let sections = sections
+        .into_iter()
+        .map(|(t, text)| (strip(&t), strip(&text)))
+        .collect();
     (overview, sections)
+}
+
+#[cfg(test)]
+mod parse_tests {
+    use super::parse_digest_markdown;
+
+    #[test]
+    fn h1_and_h2_both_break_sections() {
+        let (overview, sections) = parse_digest_markdown(
+            "# 每日日报 2026-10-07\n**总览**： 今天很热闹。\n\n## OpenAI 发布\n- 要点一\n\n## 安全动态\n- 要点二",
+        );
+        // H1 与引导段落后首个 H2 断节：overview 不含 H1 行与 ** 语法
+        assert!(overview.contains("今天很热闹"), "{overview}");
+        assert!(!overview.contains('#'), "{overview}");
+        assert!(!overview.contains("**"), "{overview}");
+        assert_eq!(sections.len(), 2);
+        assert_eq!(sections[0].0, "OpenAI 发布");
+        assert_eq!(sections[1].0, "安全动态");
+    }
+
+    #[test]
+    fn inline_markup_stripped_from_overview_and_sections() {
+        let (overview, sections) = parse_digest_markdown(
+            "**总览**： `重点`内容\n\n## 小节\n- **粗体**列表 与 `代码` 混排",
+        );
+        assert!(!overview.contains("**") && !overview.contains('`'));
+        assert!(!sections[0].1.contains("**") && !sections[0].1.contains('`'));
+        assert!(sections[0].1.contains("粗体列表"));
+    }
+
+    #[test]
+    fn no_heading_means_single_overview() {
+        let (overview, sections) = parse_digest_markdown("只有一段话。");
+        assert_eq!(sections.len(), 0);
+        assert_eq!(overview, "只有一段话。");
+    }
 }

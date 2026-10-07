@@ -4349,6 +4349,15 @@ struct DigestJobEntry {
     job_id: String,
 }
 
+/// 日报生成是否进行中（供自动刷新调度器跳过：生成中抓取会改素材，
+/// 提交 CAS 必拒，用户的长提炼白费）。
+pub fn digest_generation_active() -> bool {
+    digest_jobs()
+        .lock()
+        .map(|jobs| !jobs.is_empty())
+        .unwrap_or(false)
+}
+
 fn digest_jobs() -> &'static std::sync::Mutex<std::collections::HashMap<String, DigestJobEntry>> {
     static JOBS: std::sync::OnceLock<
         std::sync::Mutex<std::collections::HashMap<String, DigestJobEntry>>,
