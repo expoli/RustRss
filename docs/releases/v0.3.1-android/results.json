@@ -1,0 +1,18 @@
+{
+  "pre_existing_removed": {
+    "versionName": "0.2.1",
+    "versionCode": 2001
+  },
+  "published_021_hash_verified": true,
+  "uid_021": "10229",
+  "two_fixtures_021": true,
+  "uid_031": "10229",
+  "same_uid": true,
+  "version_name": "0.3.1",
+  "version_code": 3001,
+  "higher_version_code": true,
+  "new_launcher_launch": true,
+  "two_fixtures_retained_031": true,
+  "warm_ime_input_visible": true,
+  "phone_settings_home": true
+}
